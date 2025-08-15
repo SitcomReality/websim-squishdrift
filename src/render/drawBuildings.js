@@ -70,7 +70,7 @@ export function drawBuildings(r, state, mode = 'all') {
       ctx.closePath();
       ctx.fill();
 
-      // North wall (top)
+      // North wall
       ctx.fillStyle = topWallColor;
       ctx.beginPath();
       ctx.moveTo(floorRect.x, floorRect.y);
@@ -80,8 +80,7 @@ export function drawBuildings(r, state, mode = 'all') {
       ctx.closePath();
       ctx.fill();
 
-      // South wall (bottom)
-      ctx.fillStyle = topWallColor;
+      // South wall
       ctx.beginPath();
       ctx.moveTo(floorRect.x, floorRect.y + floorRect.h);
       ctx.lineTo(roofRect.x, roofRect.y + roofRect.h);

@@ -8,6 +8,8 @@
   - Resolved 404 errors for missing system files
   - Moved files to correct locations under /src/app/core/
 - 2025-08-16: Corrected import paths in PlayerSystem.js
-  - Addressed 404 errors by fixing relative paths for TileTypes, Vec2, and Health modules.
-
+  - Addressed 404 errors by fixing relative paths for TileTypes, Vec2, and Health modules
+- 2025-08-16: Updated import paths in RenderSystem.js
+  - Fixed all relative imports to match current file structure
+  - All systems now properly linked
 

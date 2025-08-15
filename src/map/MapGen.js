@@ -3,10 +3,10 @@ import { rng } from '../utils/RNG.js';
 
 export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4) {
   const W = 11, MED = 1;
-  const ROAD_RING = 2, FOOTPATH_RING = 1;
   const width = blocksWide * (W + MED) + MED;
   const height = blocksHigh * (W + MED) + MED;
   const tiles = Array.from({ length: height }, () => new Uint8Array(width).fill(Tile.Grass));
+  const buildings = [];
   const rand = rng(seed);
 
   // Per-block generation
@@ -63,19 +63,27 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
         const isBuilding = rand() < 0.7; // 70% buildings, 30% parks
         
         if (isBuilding) {
+          const buildingRect = {
+            x: ox + interiorStart + lot.x,
+            y: oy + interiorStart + lot.y,
+            width: 2,
+            height: 2,
+          };
+
+          buildings.push({
+            rect: buildingRect,
+            height: 40 + rand() * 80, // Building height in pixels
+            color: `hsl(${Math.floor(rand() * 40 + 190)}, 20%, ${Math.floor(rand() * 20 + 55)}%)`
+          });
+
           // Create a building with floor and walls
           for (let ly = 0; ly < 2; ly++) {
             for (let lx = 0; lx < 2; lx++) {
-              const tx = ox + interiorStart + lot.x + lx;
-              const ty = oy + interiorStart + lot.y + ly;
+              const tx = buildingRect.x + lx;
+              const ty = buildingRect.y + ly;
               
-              // Outer edge is walls, inner is floor
-              const isWall = (lx === 0 || lx === 1 && lot.x + lx === interiorStart + lot.x + 1) ||
-                           (ly === 0 || ly === 1 && lot.y + ly === interiorStart + lot.y + 1);
-              
-              // Simple wall pattern - walls on edges
-              const isEdge = lx === 0 || lx === 1 || ly === 0 || ly === 1;
-              tiles[ty][tx] = isEdge && rand() < 0.6 ? Tile.BuildingWall : Tile.BuildingFloor;
+              const isWall = (lx === 0 || lx === 1 || ly === 0 || ly === 1);
+              tiles[ty][tx] = isWall ? Tile.BuildingWall : Tile.BuildingFloor;
             }
           }
         } else {
@@ -114,7 +122,7 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
   }
 
   const roads = buildRoadGraph(tiles, width, height);
-  return { tiles, width, height, W, MED, seed, roads };
+  return { tiles, width, height, W, MED, seed, roads, buildings };
 }
 
 // helpers

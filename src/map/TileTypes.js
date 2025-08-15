@@ -9,3 +9,4 @@ export const TileColor = {
   [Tile.Median]: '#e6e8ec',
 };
 
+export function isWalkable(t) { return t !== Tile.Median; }

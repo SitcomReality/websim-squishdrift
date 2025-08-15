@@ -1,5 +1,6 @@
 import { generateCity } from '../map/MapGen.js';
 import { Tile, TileColor } from '../map/TileTypes.js';
+import { isWalkable } from '../map/TileTypes.js';
 
 export class Game {
   constructor(canvas, { debugEl } = {}) {
@@ -21,8 +22,17 @@ export class Game {
     if (dx || dy) {
       const inv = 1 / Math.hypot(dx, dy);
       dx *= inv; dy *= inv;
-      s.player.pos.x += dx * s.player.moveSpeed * dt;
-      s.player.pos.y += dy * s.player.moveSpeed * dt;
+      const p = s.player.pos, map = s.world.map;
+      const tryMove = (nx, ny) => {
+        const tx = Math.floor(nx), ty = Math.floor(ny);
+        if (tx < 0 || ty < 0 || tx >= map.width || ty >= map.height) return false;
+        return isWalkable(map.tiles[ty][tx]);
+      };
+      // separate-axis collision against non-walkable tiles
+      const nx = p.x + dx * s.player.moveSpeed * dt;
+      if (tryMove(nx, p.y)) p.x = nx;
+      const ny = p.y + dy * s.player.moveSpeed * dt;
+      if (tryMove(p.x, ny)) p.y = ny;
       s.player.facing.x = dx; s.player.facing.y = dy;
     }
 
@@ -30,6 +40,14 @@ export class Game {
     const cam = s.camera, p = s.player.pos;
     cam.x += (p.x - cam.x) * Math.min(1, dt * 6);
     cam.y += (p.y - cam.y) * Math.min(1, dt * 6);
+    // Clamp camera to map bounds
+    const ts = s.world.tileSize, map = s.world.map;
+    const halfX = (this.renderer.canvas.width / ts) / 2;
+    const halfY = (this.renderer.canvas.height / ts) / 2;
+    if (map.width <= 2 * halfX) cam.x = map.width / 2;
+    else cam.x = Math.min(Math.max(cam.x, halfX), map.width - halfX);
+    if (map.height <= 2 * halfY) cam.y = map.height / 2;
+    else cam.y = Math.min(Math.max(cam.y, halfY), map.height - halfY);
 
     // Debug
     this.debugOverlay.update({

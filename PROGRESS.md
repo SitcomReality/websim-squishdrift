@@ -1,10 +1,12 @@
 # Progress Log (Concise)
 
 - 2025-08-15: Map foundation
-  - Added deterministic RNG, Tile types, and simple road/median grid generator
+  - Deterministic RNG, Tile types, simple road/median grid generator
   - Replaced placeholder grid with tile renderer; camera/player retained
 
-# Next Step
+- 2025-08-15: Movement collision + camera clamp
+  - Player blocked by non-walkable tiles (medians/out-of-bounds), camera clamped to map extents
 
-- Add basic passability and collision against non-walkable tiles (player blocked by medians/water later), and clamp camera to map bounds.
+# Next Step
+- Implement lane direction assignment and scaffold a basic directed road graph per DESIGN.md (RoadN/E/S/W), updating MapGen and TileTypes accordingly.
 

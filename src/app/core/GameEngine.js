@@ -151,14 +151,23 @@ export class GameEngine {
         const spawnNode = validSpawns[Math.floor(this.state.rand() * validSpawns.length)];
         const next = spawnNode.next[Math.floor(this.state.rand() * spawnNode.next.length)];
         
+        // Determine direction based on road direction
+        let rot = 0;
+        switch(spawnNode.dir) {
+          case 'N': rot = -Math.PI/2; break;
+          case 'E': rot = 0; break;
+          case 'S': rot = Math.PI/2; break;
+          case 'W': rot = Math.PI; break;
+        }
+        
         this.state.entities.push({
           type: 'vehicle',
           pos: { x: spawnNode.x + 0.5, y: spawnNode.y + 0.5 },
           node: spawnNode,
           next,
           t: 0,
-          speed: 1.5,
-          rot: 0,
+          speed: 0.25 * 1.5, // 25% of original speed
+          rot,
           vel: { x: 0, y: 0 },
           angularVel: 0,
           ctrl: { throttle: 0, brake: 0, steer: 0 },

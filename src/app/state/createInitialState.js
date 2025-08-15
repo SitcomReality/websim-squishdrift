@@ -39,6 +39,44 @@ export function createInitialState() {
     };
     state.entities.push(vehicle);
   }
+  
+  // Spawn simple vehicles on road graph
+  const roads = state.world.map.roads;
+  const roadNodes = roads.nodes.filter(n => n.next && n.next.length > 0);
+  const validSpawns = roadNodes.filter(node => {
+    const distance = Math.hypot(node.x - spawnX, node.y - spawnY);
+    return distance <= 15 && distance >= 8;
+  }).slice(0, maxVehicles);
+
+  for (let i = 0; i < validSpawns.length; i++) {
+    const spawnNode = validSpawns[i];
+    const next = spawnNode.next[Math.floor(rand() * spawnNode.next.length)];
+    
+    // Determine direction based on road direction
+    let rot = 0;
+    switch(spawnNode.dir) {
+      case 'N': rot = -Math.PI/2; break;
+      case 'E': rot = 0; break;
+      case 'S': rot = Math.PI/2; break;
+      case 'W': rot = Math.PI; break;
+    }
+    
+    state.entities.push({
+      type: 'vehicle',
+      pos: new Vec2(spawnNode.x + 0.5, spawnNode.y + 0.5),
+      node: spawnNode,
+      next,
+      t: 0,
+      speed: 0.25 * 1.5, // 25% of original speed
+      rot,
+      vel: { x: 0, y: 0 },
+      angularVel: 0,
+      ctrl: { throttle: 0, brake: 0, steer: 0 },
+      mass: 1200, maxSpeed: 4, engineForce: 900, brakeForce: 1600,
+      rollingRes: 1.0, drag: 0.25, grip: 6.0, steerRate: 2.5
+    });
+  }
+  
   // Spawn simple NPC pedestrians on ped graph near player
   const pedNodes = map.peds?.list || [];
   const spawnCount = Math.min(30, pedNodes.length);

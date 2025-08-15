@@ -78,7 +78,7 @@ export class GameEngine {
   }
 
   update(dt) {
-    this.input.update();
+    // this.input.update() moved to end so 'pressed' keys are available this frame
     this.systems.player.update(this.state, this.input, dt);
     this.systems.vehicle.update(this.state, this.input, dt);
     this.systems.bullet.update(this.state, dt);
@@ -92,19 +92,21 @@ export class GameEngine {
     // Update spawn/despawn system
     this.updateSpawning(dt);
     this.updateDebugHUD();
+    
+    // Now clear one-shot inputs (pressed) after systems consumed them
+    this.input.update();
   }
 
   updateSpawning(dt) {
     const player = this.state.entities.find(e => e.type === 'player');
     if (!player) return;
 
-    // Update interaction prompt with vehicle info
+    // Update interaction prompt
     if (!this.state.control.inVehicle) {
       const nearbyVehicle = this.findNearbyVehicle(player);
       if (nearbyVehicle) {
         this.hud.interactionPromptEl.style.display = 'flex';
-        this.hud.interactionActionEl.textContent = `enter ${nearbyVehicle.type}`;
-        console.log('Nearby vehicle detected:', nearbyVehicle);
+        this.hud.interactionActionEl.textContent = 'enter vehicle';
       } else {
         this.hud.interactionPromptEl.style.display = 'none';
       }
@@ -133,19 +135,12 @@ export class GameEngine {
   }
 
   findNearbyVehicle(player) {
-    const interactionDistance = 1.5; // tiles
-    const nearbyVehicle = this.state.entities.find(e => 
+    const interactionDistance = 1.5;
+    return this.state.entities.find(e => 
       e.type === 'vehicle' && 
       !e.controlled && 
       Math.hypot(e.pos.x - player.pos.x, e.pos.y - player.pos.y) < interactionDistance
     );
-    
-    if (nearbyVehicle && this.lastLoggedVehicle !== nearbyVehicle.id) {
-      console.log('Nearby vehicle detected:', nearbyVehicle.id, nearbyVehicle);
-      this.lastLoggedVehicle = nearbyVehicle.id;
-    }
-    
-    return nearbyVehicle;
   }
 
   spawnEntitiesNearPlayer(player, innerRadius, outerRadius) {

@@ -21,7 +21,6 @@ export function createInitialState() {
   // Spawn empty vehicle right next to player
   const emptyVehicle = {
     type: 'vehicle',
-    id: `vehicle_${Math.random().toString(36).substr(2, 9)}`,
     pos: new Vec2(spawnX + 1.5, spawnY + 0.5), // Right side of player
     t: 0,
     speed: 0,
@@ -61,7 +60,6 @@ export function createInitialState() {
     
     state.entities.push({
       type: 'vehicle',
-      id: `vehicle_${Math.random().toString(36).substr(2, 9)}`,
       pos: new Vec2(spawnNode.x + 0.5, spawnNode.y + 0.5),
       node: spawnNode,
       next,
@@ -83,15 +81,7 @@ export function createInitialState() {
   for (let i=0;i<spawnCount;i++){
     const n = sortedByDist[i];
     const next = (n.neighbors && n.neighbors.length) ? n.neighbors[Math.floor(rand()*n.neighbors.length)] : { x:n.x, y:n.y };
-    state.entities.push({ 
-      type:'npc', 
-      id: `npc_${Math.random().toString(36).substr(2, 9)}`,
-      pos:new Vec2(n.x+0.5, n.y+0.5), 
-      from:{x:n.x,y:n.y}, 
-      to: next, 
-      t: 0, 
-      speed: 0.2 + rand()*0.15 
-    });
+    state.entities.push({ type:'npc', pos:new Vec2(n.x+0.5, n.y+0.5), from:{x:n.x,y:n.y}, to: next, t: 0, speed: 0.2 + rand()*0.15 });
   }
   
   // Spawn simple items (pistol) on footpaths near player
@@ -107,13 +97,7 @@ export function createInitialState() {
   footpathTiles.sort((a,b) => Math.hypot(a.x-spawnX, a.y-spawnY) - Math.hypot(b.x-spawnX, b.y-spawnY));
   for (let i = 0; i < Math.min(5, footpathTiles.length); i++) {
     const pos = footpathTiles[i];
-    state.entities.push({ 
-      type: 'item', 
-      id: `item_${Math.random().toString(36).substr(2, 9)}`,
-      pos: new Vec2(pos.x, pos.y), 
-      name: 'Pistol', 
-      color: '#FFD700' 
-    });
+    state.entities.push({ type: 'item', pos: new Vec2(pos.x, pos.y), name: 'Pistol', color: '#FFD700' });
   }
   return state;
 }

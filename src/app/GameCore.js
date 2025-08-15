@@ -11,12 +11,16 @@ import { drawNPC } from './entities/drawNPC.js';
 import { drawItem } from './entities/drawItem.js';
 import { isWalkable } from '../map/TileTypes.js';
 import { Vec2 } from '../utils/Vec2.js';
+import { Health } from './components/Health.js';
+import { CollisionSystem } from './systems/CollisionSystem.js';
+import { drawHealthBar } from './entities/drawHealthBar.js';
 
 export class Game {
   constructor(canvas, { debugEl } = {}) {
     this.renderer = new CanvasRenderer(canvas);
     this.input = new InputSystem(canvas);
     this.debugOverlay = new DebugOverlaySystem(debugEl);
+    this.collisionSystem = new CollisionSystem();
     this.state = createInitialState();
     this.state.control = { inVehicle: false, vehicle: null, equipped: null };
     this.hud = { 
@@ -24,10 +28,20 @@ export class Game {
       itemNameEl: document.getElementById('item-name')
     };
   }
+  
   update(dt) {
     this.input.update();
     const s = this.state;
     const player = s.entities.find(e => e.type === 'player');
+    
+    // Initialize health for entities that don't have it
+    [...s.entities, player].forEach(entity => {
+      if (entity && !entity.health) {
+        const maxHp = entity.type === 'vehicle' ? 150 : 
+                     entity.type === 'npc' ? 50 : 100;
+        entity.health = new Health(maxHp);
+      }
+    });
     
     // Interact (E) - enter/exit or pickup item
     if (this.input.pressed.has('KeyE')) {
@@ -150,6 +164,9 @@ export class Game {
       if (hitIdx !== -1) { s.entities.splice(hitIdx, 1); s.entities.splice(i, 1); }
     }
     
+    // Update collision system
+    this.collisionSystem.update(s);
+    
     const cam = s.camera, target = s.control.inVehicle ? s.control.vehicle.pos : player.pos;
     cam.x += (target.x - cam.x) * Math.min(1, dt * 6);
     cam.y += (target.y - cam.y) * Math.min(1, dt * 6);
@@ -210,18 +227,30 @@ export class Game {
       this.hud.itemNameEl.textContent = s.control.equipped ? s.control.equipped.name : 'None';
     }
   }
+  
   render() {
     const s = this.state;
     this.renderer.beginFrame(s);
     drawTiles(this.renderer, s, 'ground');
     drawTiles(this.renderer, s, 'floors');
+    
+    // Store tileSize for health bar drawing
+    this.renderer.ts = s.world.tileSize;
+    
     const sorted = s.entities.slice().sort((a, b) => a.pos.y - b.pos.y);
     for (const e of sorted) {
-      if (e.type === 'player') drawPlayer(this.renderer, s, e);
-      else if (e.type === 'npc') drawNPC(this.renderer, s, e);
-      else if (e.type === 'vehicle') drawVehicle(this.renderer, s, e);
-      else if (e.type === 'item') drawItem(this.renderer, s, e);
-      else if (e.type === 'bullet') {
+      if (e.type === 'player') {
+        drawPlayer(this.renderer, s, e);
+        drawHealthBar(this.renderer, e);
+      } else if (e.type === 'npc') {
+        drawNPC(this.renderer, s, e);
+        drawHealthBar(this.renderer, e);
+      } else if (e.type === 'vehicle') {
+        drawVehicle(this.renderer, s, e);
+        drawHealthBar(this.renderer, e, -1.2);
+      } else if (e.type === 'item') {
+        drawItem(this.renderer, s, e);
+      } else if (e.type === 'bullet') {
         const { ctx } = this.renderer;
         const ts = s.world.tileSize;
         ctx.save();

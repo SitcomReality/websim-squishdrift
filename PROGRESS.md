@@ -68,5 +68,10 @@
 - 2025-08-16: Bullet collision vs pedestrians
   - Bullets now detect and remove nearby NPCs on impact (simple radius check).
 
-# Next Step
-- Add collisions with vehicles and basic Health component for damage handling
+- 2025-08-16: Vehicle collision + Health system
+  - Added Health component to player, NPCs, and vehicles
+  - Implemented collision detection between bullets and vehicles
+  - Added damage system with health bars for all entities
+  - Player takes damage when hit by vehicles
+  - NPCs can now be damaged by both bullets and vehicle collisions
+

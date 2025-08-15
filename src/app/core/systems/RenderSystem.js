@@ -8,3 +8,61 @@ import { drawItem } from '../../entities/drawItem.js';
 import { drawEmergency } from '../../entities/drawEmergency.js';
 import { drawHealthBar } from '../../entities/drawHealthBar.js';
 
+export class RenderSystem {
+  render(state, renderer, debugOverlay) {
+    const { ctx, canvas } = renderer;
+    
+    // Clear canvas
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Setup camera transform
+    const ts = state.world.tileSize;
+    const cx = Math.floor(canvas.width / 2);
+    const cy = Math.floor(canvas.height / 2);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.translate(cx, cy);
+    ctx.translate(Math.floor(-state.camera.x * ts), Math.floor(-state.camera.y * ts));
+    
+    // Draw layers
+    drawTiles(renderer, state);
+    drawBuildings(renderer, state);
+    
+    // Draw entities
+    for (const entity of state.entities) {
+      switch (entity.type) {
+        case 'player':
+          drawPlayer(renderer, state, entity);
+          drawHealthBar(renderer, entity);
+          break;
+        case 'vehicle':
+          drawVehicle(renderer, state, entity);
+          drawHealthBar(renderer, entity);
+          break;
+        case 'npc':
+          drawNPC(renderer, state, entity);
+          break;
+        case 'item':
+          drawItem(renderer, state, entity);
+          break;
+        case 'emergency':
+          drawEmergency(renderer, state, entity);
+          break;
+        case 'bullet':
+          // Simple bullet rendering
+          ctx.save();
+          ctx.fillStyle = '#FFD700';
+          ctx.beginPath();
+          ctx.arc(entity.pos.x * ts, entity.pos.y * ts, ts * 0.1, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+          break;
+      }
+    }
+    
+    // Draw debug overlay if enabled
+    if (debugOverlay.enabled) {
+      drawRoadDebug(renderer, state);
+    }
+  }
+}

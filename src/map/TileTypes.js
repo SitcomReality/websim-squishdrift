@@ -10,7 +10,6 @@ export const Tile = {
   BuildingFloor: 8,
   BuildingWall: 9,
   Park: 10,
-  Water: 11, // Added Water tile type
 };
 
 export const TileColor = {
@@ -25,11 +24,10 @@ export const TileColor = {
   [Tile.BuildingFloor]: '#f8f9fa',
   [Tile.BuildingWall]: '#9ca3af',
   [Tile.Park]: '#228B22', // dark green
-  [Tile.Water]: '#1e40af', // ocean blue
 };
 
 export function isWalkable(t) { 
-  return t !== Tile.BuildingWall && t !== Tile.Water;
+  return t !== Tile.BuildingWall;
 }
 
 export function isRoad(t){ return t===Tile.RoadN||t===Tile.RoadE||t===Tile.RoadS||t===Tile.RoadW; }

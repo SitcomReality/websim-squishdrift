@@ -26,6 +26,13 @@ export class RenderSystem {
     
     // Draw layers
     // Floors must be behind any walls; roofs must be in front of any walls.
+    // Ocean background (lowest z): fill entire visible world area to avoid "void" streaks
+    {
+      const wTiles = Math.ceil(canvas.width/ts)+2, hTiles = Math.ceil(canvas.height/ts)+2;
+      const sx = Math.floor(state.camera.x - wTiles/2), sy = Math.floor(state.camera.y - hTiles/2);
+      ctx.fillStyle = '#b7e3f8'; // ocean
+      ctx.fillRect(sx*ts, sy*ts, wTiles*ts, hTiles*ts);
+    }
     drawTiles(renderer, state, 'ground');
     drawTiles(renderer, state, 'floors');
     drawBuildings(renderer, state, 'walls');

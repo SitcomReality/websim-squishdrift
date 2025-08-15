@@ -5,22 +5,8 @@ export function drawTiles(r, state, layer = 'all'){
   const wTiles = Math.ceil(canvas.width/ts)+2, hTiles = Math.ceil(canvas.height/ts)+2;
   const sx = Math.floor(state.camera.x - wTiles/2), sy = Math.floor(state.camera.y - hTiles/2);
   const floorTypes = new Set([Tile.BuildingFloor]);
-  
-  // Fill background with ocean for out-of-bounds areas
-  ctx.fillStyle = TileColor[Tile.Water] || '#1e40af';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  
   for (let y=0; y<hTiles; y++) for (let x=0; x<wTiles; x++){
-    const gx = sx + x, gy = sy + y;
-    
-    // Check if tile is within map bounds
-    if (gy < 0 || gx < 0 || gy >= map.height || gx >= map.width) {
-      // Draw ocean for out-of-bounds tiles
-      ctx.fillStyle = TileColor[Tile.Water] || '#1e40af';
-      ctx.fillRect(gx*ts, gy*ts, ts, ts);
-      continue;
-    }
-    
+    const gx = sx + x, gy = sy + y; if (gy<0||gx<0||gy>=map.height||gx>=map.width) continue;
     const t = map.tiles[gy][gx];
     if (layer === 'ground' && floorTypes.has(t)) continue;
     if (layer === 'floors' && !floorTypes.has(t)) continue;

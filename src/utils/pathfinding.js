@@ -28,12 +28,12 @@ export function findPath(graph, startNode, endNode) {
     const gScore = new Map();
     const fScore = new Map();
 
-    const startKey = `${startNode.x},${startNode.y}`;
-    const endKey = `${endNode.x},${endNode.y}`;
+    const startKey = `${startNode.x},${startNode.y},${startNode.dir}`;
+    const endKey = `${endNode.x},${endNode.y},${endNode.dir}`;
 
     graph.nodes.forEach(node => {
-        gScore.set(`${node.x},${node.y}`, Infinity);
-        fScore.set(`${node.x},${node.y}`, Infinity);
+        gScore.set(`${node.x},${node.y},${node.dir}`, Infinity);
+        fScore.set(`${node.x},${node.y},${node.dir}`, Infinity);
     });
 
     gScore.set(startKey, 0);
@@ -41,7 +41,7 @@ export function findPath(graph, startNode, endNode) {
     openSet.enqueue(fScore.get(startKey), startKey);
     
     const nodeMap = new Map();
-    graph.nodes.forEach(n => nodeMap.set(`${n.x},${n.y}`, n));
+    graph.nodes.forEach(n => nodeMap.set(`${n.x},${n.y},${n.dir}`, n));
 
     while (!openSet.isEmpty()) {
         const currentKey = openSet.dequeue();
@@ -57,7 +57,7 @@ export function findPath(graph, startNode, endNode) {
         const neighbors = currentNode.next.map(n => graph.byKey.get(`${n.x},${n.y},${n.dir}`)).filter(Boolean);
         
         for (const neighbor of neighbors) {
-            const neighborKey = `${neighbor.x},${neighbor.y}`;
+            const neighborKey = `${neighbor.x},${neighbor.y},${neighbor.dir}`;
             const tentativeGScore = gScore.get(currentKey) + 1; // assume cost is 1
 
             if (tentativeGScore < gScore.get(neighborKey)) {

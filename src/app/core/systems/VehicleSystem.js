@@ -33,17 +33,21 @@ export class VehicleSystem {
   }
 
   updateAIVehicles(state, dt) {
+    const roads = state.world.map.roads;
     for (const veh of state.entities.filter(e => e.type === 'vehicle' && !e.controlled)) {
       if (veh.next) {
         veh.t += (veh.speed * dt);
         while (veh.t >= 1 && veh.node) {
-          veh.node = veh.next;
+          const next = veh.next;
+          const key = `${next.x},${next.y},${next.dir}`;
+          veh.node = roads.byKey.get(key) || veh.node;
           const choices = veh.node.next;
-          veh.next = choices && choices.length ? choices[(Math.floor(state.rand()*choices.length))] : veh.node;
+          veh.next = (choices && choices.length)
+            ? choices[Math.floor(state.rand()*choices.length)]
+            : { x: veh.node.x, y: veh.node.y, dir: veh.node.dir };
           veh.t -= 1;
         }
       }
     }
   }
 }
-

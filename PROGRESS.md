@@ -10,6 +10,9 @@
 - 2025-08-15: Debug lane overlay
   - Canvas overlay draws lane direction arrows; debug shows FPS + road node/link counts
 
+- 2025-08-15: Simple autonomous vehicle
+  - Spawns at nearest road node to player and follows directed lane graph, validating path continuity
+
 # Next Step
-- Implement a simple vehicle that follows the lane graph (spawn near player, auto-drive), to validate path continuity.
+- Implement enter/exit vehicles (E) and basic player driving with WASD while keeping at least one AI vehicle active.
 

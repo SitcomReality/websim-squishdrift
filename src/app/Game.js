@@ -1,6 +1,7 @@
 import { generateCity } from '../map/MapGen.js';
 import { Tile, TileColor, isRoad, roadDir } from '../map/TileTypes.js';
 import { isWalkable } from '../map/TileTypes.js';
+import { rng } from '../utils/RNG.js';
 
 export class Game {
   constructor(canvas, { debugEl } = {}) {
@@ -49,6 +50,17 @@ export class Game {
     if (map.height <= 2 * halfY) cam.y = map.height / 2;
     else cam.y = Math.min(Math.max(cam.y, halfY), map.height - halfY);
 
+    // Vehicle follow-lane update
+    if (s.veh && s.veh.next) {
+      s.veh.t += (s.veh.speed * dt) / 1; // 1 tile per segment
+      while (s.veh.t >= 1 && s.veh.node) {
+        s.veh.node = s.veh.next;
+        const choices = s.veh.node.next;
+        s.veh.next = choices && choices.length ? choices[(Math.floor(s.rand()*choices.length))] : s.veh.node;
+        s.veh.t -= 1;
+      }
+    }
+
     // Debug
     this.debugOverlay.update({
       fps: this.renderer.fps, dt: dt,
@@ -57,12 +69,14 @@ export class Game {
       roads: {
         nodes: s.world.map.roads.nodes.length,
         links: s.world.map.roads.nodes.reduce((a,n)=>a+n.next.length,0)
-      }
+      },
+      vehicle: s.veh ? { at: [s.veh.node.x, s.veh.node.y], speed: s.veh.speed } : null
     });
   }
   render(interp) {
     this.renderer.beginFrame(this.state);
     drawTiles(this.renderer, this.state);
+    if (this.state.veh) drawVehicle(this.renderer, this.state, interp);
     drawPlayer(this.renderer, this.state);
     if (this.debugOverlay.enabled) drawRoadDebug(this.renderer, this.state);
     this.renderer.endFrame();
@@ -74,12 +88,22 @@ class Vec2 { constructor(x=0,y=0){this.x=x;this.y=y;} copy(v){this.x=v.x;this.y=
 
 function createInitialState() {
   const map = generateCity('alpha-seed', 2, 2);
-  return {
+  const rand = rng('alpha-seed');
+  const state = {
     time: 0,
     player: { pos: new Vec2(map.width/2, map.height/2), facing: new Vec2(1,0), moveSpeed: 6 },
     camera: { x: map.width/2, y: map.height/2 },
-    world: { tileSize: 24, map }
+    world: { tileSize: 24, map },
+    rand, veh: null
   };
+  // spawn simple vehicle at nearest road node to player
+  let best = null, bp = state.player.pos;
+  for (const n of map.roads.nodes) {
+    const dx = n.x - bp.x, dy = n.y - bp.y, d2 = dx*dx+dy*dy;
+    if (!best || d2 < best.d2) best = { n, d2 };
+  }
+  if (best) state.veh = { node: best.n, next: best.n.next[0] || best.n, t: 0, speed: 6 }; // tiles/sec
+  return state;
 }
 
 class CanvasRenderer {
@@ -170,6 +194,19 @@ function drawPlayer(r, state){
   ctx.beginPath();
   ctx.arc((state.player.facing.x)*ts*0.3, (state.player.facing.y)*ts*0.3, 3, 0, Math.PI*2);
   ctx.fill();
+  ctx.restore();
+}
+
+function drawVehicle(r, state, interp){
+  const { ctx } = r, ts = state.world.tileSize, v = state.veh;
+  const a = Math.min(1, Math.max(0, v.t + (state.time ? 0 : 0))); // simple; renderer not passing time interp into state
+  const x = (v.node.x*(1-a) + (v.next.x||v.node.x)*a) * ts;
+  const y = (v.node.y*(1-a) + (v.next.y||v.node.y)*a) * ts;
+  const dir = v.next.dir || v.node.dir;
+  const ang = dir==='N'?-Math.PI/2:dir==='E'?0:dir==='S'?Math.PI/2:Math.PI;
+  ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
+  ctx.fillStyle = '#111'; ctx.fillRect(-ts*0.45, -ts*0.25, ts*0.9, ts*0.5);
+  ctx.fillStyle = '#0ea5e9'; ctx.fillRect(ts*0.15, -2, ts*0.2, 4); // heading indicator
   ctx.restore();
 }
 

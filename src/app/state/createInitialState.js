@@ -7,7 +7,7 @@ export function createInitialState() {
   const map = generateCity('alpha-seed', 4, 4);
   const rand = rng('alpha-seed');
   const player = { type: 'player', pos: new Vec2(), facing: new Vec2(1,0), moveSpeed: 6 };
-  const state = { time: 0, entities: [player], camera: { x: map.width/2, y: map.height/2, zoom: 4 }, world: { tileSize: 24, map }, rand };
+  const state = { time: 0, entities: [player], camera: { x: map.width/2, y: map.height/2, zoom: 1.5 }, world: { tileSize: 24, map }, rand };
   let spawnX = map.width / 2, spawnY = map.height / 2, bestDist = Infinity;
   for (let y = 0; y < map.height; y++) for (let x = 0; x < map.width; x++) {
     const t = map.tiles[y][x];
@@ -24,7 +24,6 @@ export function createInitialState() {
     pos: new Vec2(spawnX + 1.5, spawnY + 0.5), // Right side of player
     node: null,
     next: null,
-    t: 0,
     speed: 0,
     rot: 0,
     vel: { x: 0, y: 0 },
@@ -88,7 +87,6 @@ export function createInitialState() {
       pos: new Vec2(spawnNode.x + 0.5, spawnNode.y + 0.5),
       node: spawnNode,
       next,
-      t: 0,
       speed: 0.25 * 1.5, // 25% of original speed
       rot,
       vel: { x: 0, y: 0 },
@@ -106,7 +104,13 @@ export function createInitialState() {
   for (let i=0;i<spawnCount;i++){
     const n = sortedByDist[i];
     const next = (n.neighbors && n.neighbors.length) ? n.neighbors[Math.floor(rand()*n.neighbors.length)] : { x:n.x, y:n.y };
-    state.entities.push({ type:'npc', pos:new Vec2(n.x+0.5, n.y+0.5), from:{x:n.x,y:n.y}, to: next, t: 0, speed: 0.2 + rand()*0.15 });
+    state.entities.push({ 
+      type:'npc', 
+      pos:new Vec2(n.x+0.5, n.y+0.5), 
+      from:{x:n.x,y:n.y}, 
+      to: next, 
+      speed: 0.2 + rand()*0.15 
+    });
   }
   
   // Spawn simple items (pistol) on footpaths near player

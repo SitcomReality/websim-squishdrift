@@ -33,10 +33,8 @@ export class GameEngine {
     // Initialize EmergencyServices after state is created
     this.emergencyServices = new EmergencyServices(this.state);
     
-    // Enable debug overlay initially
-    if (debugEl) {
-      this.debugOverlay.enabled = true;
-    }
+    // Start with debug overlay disabled by default
+    this.debugOverlay.enabled = false;
     
     this.setupHUD();
   }

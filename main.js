@@ -14,13 +14,11 @@ const loop = createLoop({
 
 toggleBtn.addEventListener('click', () => {
   console.log('Debug button clicked');
-  const on = debugEl.hasAttribute('hidden');
-  debugEl.toggleAttribute('hidden', !on);
-  toggleBtn.setAttribute('aria-pressed', String(!on));
-  if (game.debugOverlay) {
-    game.debugOverlay.enabled = !on;
-  }
-  console.log('Debug overlay enabled:', !on);
+  const next = !game.debugOverlay.enabled;
+  game.debugOverlay.enabled = next;
+  debugEl.toggleAttribute('hidden', !next);
+  toggleBtn.setAttribute('aria-pressed', String(next));
+  console.log('Debug overlay enabled:', next);
 });
 
 window.addEventListener('resize', () => game.renderer && game.renderer.resizeToDisplay());

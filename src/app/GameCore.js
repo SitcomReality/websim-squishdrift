@@ -16,15 +16,21 @@ export class Game {
     this.debugOverlay = new DebugOverlaySystem(debugEl);
     this.state = createInitialState();
   }
+  
   update(dt) {
     this.input.update();
     const s = this.state;
     const player = s.entities.find(e => e.type === 'player');
     let dx = 0, dy = 0;
-    if (this.input.keys.has('KeyW') || this.input.keys.has('ArrowUp')) dy -= 1;
-    if (this.input.keys.has('KeyS') || this.input.keys.has('ArrowDown')) dy += 1;
-    if (this.input.keys.has('KeyA') || this.input.keys.has('ArrowLeft')) dx -= 1;
-    if (this.input.keys.has('KeyD') || this.input.keys.has('ArrowRight')) dx += 1;
+    
+    // Handle enter/exit vehicle
+    if (this.input.keys.has('KeyE') && !this.input.ePressed) {
+      this.handleVehicleInteraction(s, player);
+      this.input.ePressed = true;
+    } else if (!this.input.keys.has('KeyE')) {
+      this.input.ePressed = false;
+    }
+    
     if (dx || dy) {
       const inv = 1 / Math.hypot(dx, dy); dx *= inv; dy *= inv;
       const p = player.pos, map = s.world.map;
@@ -37,6 +43,7 @@ export class Game {
       const ny = p.y + dy * player.moveSpeed * dt; if (tryMove(p.x, ny)) p.y = ny;
       player.facing.x = dx; player.facing.y = dy;
     }
+    
     const cam = s.camera, p = player.pos;
     cam.x += (p.x - cam.x) * Math.min(1, dt * 6);
     cam.y += (p.y - cam.y) * Math.min(1, dt * 6);
@@ -47,8 +54,14 @@ export class Game {
     else cam.x = Math.min(Math.max(cam.x, halfX), map.width - halfX);
     if (map.height <= 2 * halfY) cam.y = map.height / 2;
     else cam.y = Math.min(Math.max(cam.y, halfY), map.height - halfY);
-    for (const veh of s.entities.filter(e => e.type === 'vehicle')) {
-      if (veh.next) {
+    
+    // Update vehicle movement only for controlled vehicle
+    const controlledVehicle = s.entities.find(e => e.type === 'vehicle' && e.controlled);
+    if (controlledVehicle) {
+      this.updateVehicleControl(controlledVehicle, dt);
+    } else {
+      // Update AI vehicles
+      for (const veh of s.entities.filter(e => e.type === 'vehicle' && !e.controlled)) {
         veh.t += (veh.speed * dt);
         while (veh.t >= 1 && veh.node) {
           veh.node = veh.next;
@@ -58,7 +71,7 @@ export class Game {
         }
       }
     }
-    const vehicle = s.entities.find(e => e.type === 'vehicle');
+    
     this.debugOverlay.update({
       fps: this.renderer.fps, dt: dt,
       player: { x: player.pos.x.toFixed(2), y: player.pos.y.toFixed(2) },
@@ -67,15 +80,78 @@ export class Game {
         nodes: s.world.map.roads.nodes.length,
         links: s.world.map.roads.nodes.reduce((a,n)=>a+n.next.length,0)
       },
-      vehicle: vehicle ? { at: [vehicle.node.x, vehicle.node.y], speed: vehicle.speed } : null
+      vehicle: controlledVehicle ? { at: [controlledVehicle.node.x, controlledVehicle.node.y], speed: controlledVehicle.speed } : null
     });
   }
+
+  handleVehicleInteraction(state, player) {
+    const vehicle = state.entities.find(e => 
+      e.type === 'vehicle' && 
+      !e.controlled && 
+      Math.hypot(e.pos.x - player.pos.x, e.pos.y - player.pos.y) < 2
+    );
+    
+    if (vehicle) {
+      // Enter vehicle
+      player.inVehicle = vehicle;
+      vehicle.controlled = true;
+      vehicle.player = player;
+      player.visible = false;
+      document.getElementById('vehicle-state').textContent = 'In vehicle';
+    } else if (player.inVehicle) {
+      // Exit vehicle
+      const v = player.inVehicle;
+      v.controlled = false;
+      v.player = null;
+      player.pos.x = v.pos.x;
+      player.pos.y = v.pos.y + 1;
+      player.visible = true;
+      player.inVehicle = null;
+      document.getElementById('vehicle-state').textContent = 'On foot';
+    }
+  }
+
+  updateVehicleControl(vehicle, dt) {
+    const s = this.state;
+    let dx = 0, dy = 0;
+    
+    if (this.input.keys.has('KeyW') || this.input.keys.has('ArrowUp')) dy -= 1;
+    if (this.input.keys.has('KeyS') || this.input.keys.has('ArrowDown')) dy += 1;
+    if (this.input.keys.has('KeyA') || this.input.keys.has('ArrowLeft')) dx -= 1;
+    if (this.input.keys.has('KeyD') || this.input.keys.has('ArrowRight')) dx += 1;
+    
+    if (dx || dy) {
+      const inv = 1 / Math.hypot(dx, dy);
+      dx *= inv * vehicle.speed * dt;
+      dy *= inv * vehicle.speed * dt;
+      
+      const newX = vehicle.pos.x + dx;
+      const newY = vehicle.pos.y + dy;
+      
+      // Check if new position is on road
+      const tx = Math.floor(newX + 0.5);
+      const ty = Math.floor(newY + 0.5);
+      const map = s.world.map;
+      
+      if (tx >= 0 && ty >= 0 && tx < map.width && ty < map.height) {
+        const tile = map.tiles[ty][tx];
+        if (tile >= 1 && tile <= 4) { // Road tiles
+          vehicle.pos.x = newX;
+          vehicle.pos.y = newY;
+        }
+      }
+    }
+  }
+  
   render() {
     const s = this.state;
     this.renderer.beginFrame(s);
     drawTiles(this.renderer, s, 'ground');
     drawTiles(this.renderer, s, 'floors');
-    const sorted = s.entities.slice().sort((a, b) => a.pos.y - b.pos.y);
+    
+    const visibleEntities = s.entities.filter(e => e.visible !== false);
+    const sorted = visibleEntities.slice().sort((a, b) => a.pos.y - b.pos.y);
+    
     for (const e of sorted) {
       if (e.type === 'player') drawPlayer(this.renderer, s, e);
       else if (e.type === 'vehicle') drawVehicle(this.renderer, s, e);

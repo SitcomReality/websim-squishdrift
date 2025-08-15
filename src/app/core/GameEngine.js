@@ -82,8 +82,9 @@ export class GameEngine {
     const player = this.state.entities.find(e => e.type === 'player');
     if (!player) return;
 
-    const spawnRadius = 10;  // Changed from 15 to 10
-    const despawnRadius = 20;  // Changed from 25 to 20
+    const innerSpawnRadius = 8;  // New inner radius
+    const outerSpawnRadius = 10;   // Changed from spawnRadius
+    const despawnRadius = 15;      // Reduced from 20
 
     // Despawn entities outside despawn radius
     for (let i = this.state.entities.length - 1; i >= 0; i--) {
@@ -96,11 +97,11 @@ export class GameEngine {
       }
     }
 
-    // Spawn new entities within spawn radius
-    this.spawnEntitiesNearPlayer(player, spawnRadius);
+    // Spawn new entities within spawn radius but outside inner radius
+    this.spawnEntitiesNearPlayer(player, innerSpawnRadius, outerSpawnRadius);
   }
 
-  spawnEntitiesNearPlayer(player, spawnRadius) {
+  spawnEntitiesNearPlayer(player, innerRadius, outerRadius) {
     const existingNPCs = this.state.entities.filter(e => e.type === 'npc').length;
     const existingVehicles = this.state.entities.filter(e => e.type === 'vehicle').length;
     
@@ -112,7 +113,7 @@ export class GameEngine {
       const pedNodes = this.state.world.map.peds?.list || [];
       const validSpawns = pedNodes.filter(node => {
         const distance = Math.hypot(node.x - player.pos.x, node.y - player.pos.y);
-        return distance <= spawnRadius && distance >= 5; // Don't spawn too close
+        return distance <= outerRadius && distance >= innerRadius;
       });
 
       if (validSpawns.length > 0) {
@@ -127,7 +128,7 @@ export class GameEngine {
           from: { x: spawnNode.x, y: spawnNode.y },
           to: next,
           t: 0,
-          speed: 2 + this.state.rand() * 1.5
+          speed: 0.2 + this.state.rand() * 0.15
         });
       }
     }
@@ -137,7 +138,7 @@ export class GameEngine {
       const roads = this.state.world.map.roads;
       const validSpawns = roads.nodes.filter(node => {
         const distance = Math.hypot(node.x - player.pos.x, node.y - player.pos.y);
-        return distance <= spawnRadius && distance >= 8 && node.next && node.next.length > 0;
+        return distance <= outerRadius && distance >= innerRadius && node.next && node.next.length > 0;
       });
 
       if (validSpawns.length > 0) {
@@ -150,7 +151,7 @@ export class GameEngine {
           node: spawnNode,
           next: next,
           t: 0,
-          speed: 6
+          speed: 1.5
         });
       }
     }

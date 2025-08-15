@@ -72,7 +72,88 @@ export class GameEngine {
     this.systems.camera.update(this.state);
     this.collisionSystem.update(this.state);
     this.emergencyServices.update(this.state, dt);
+    
+    // Update spawn/despawn system
+    this.updateSpawning(dt);
     this.updateDebugHUD();
+  }
+
+  updateSpawning(dt) {
+    const player = this.state.entities.find(e => e.type === 'player');
+    if (!player) return;
+
+    const spawnRadius = 15;
+    const despawnRadius = 25;
+
+    // Despawn entities outside despawn radius
+    for (let i = this.state.entities.length - 1; i >= 0; i--) {
+      const entity = this.state.entities[i];
+      if (entity.type === 'player') continue;
+      
+      const distance = Math.hypot(entity.pos.x - player.pos.x, entity.pos.y - player.pos.y);
+      if (distance > despawnRadius) {
+        this.state.entities.splice(i, 1);
+      }
+    }
+
+    // Spawn new entities within spawn radius
+    this.spawnEntitiesNearPlayer(player, spawnRadius);
+  }
+
+  spawnEntitiesNearPlayer(player, spawnRadius) {
+    const existingNPCs = this.state.entities.filter(e => e.type === 'npc').length;
+    const existingVehicles = this.state.entities.filter(e => e.type === 'vehicle').length;
+    
+    const maxNPCs = 20;
+    const maxVehicles = 10;
+
+    // Spawn NPCs
+    if (existingNPCs < maxNPCs) {
+      const pedNodes = this.state.world.map.peds?.list || [];
+      const validSpawns = pedNodes.filter(node => {
+        const distance = Math.hypot(node.x - player.pos.x, node.y - player.pos.y);
+        return distance <= spawnRadius && distance >= 5; // Don't spawn too close
+      });
+
+      if (validSpawns.length > 0) {
+        const spawnNode = validSpawns[Math.floor(this.state.rand() * validSpawns.length)];
+        const next = (spawnNode.neighbors && spawnNode.neighbors.length) 
+          ? spawnNode.neighbors[Math.floor(this.state.rand() * spawnNode.neighbors.length)]
+          : { x: spawnNode.x, y: spawnNode.y };
+        
+        this.state.entities.push({
+          type: 'npc',
+          pos: { x: spawnNode.x + 0.5, y: spawnNode.y + 0.5 },
+          from: { x: spawnNode.x, y: spawnNode.y },
+          to: next,
+          t: 0,
+          speed: 2 + this.state.rand() * 1.5
+        });
+      }
+    }
+
+    // Spawn vehicles
+    if (existingVehicles < maxVehicles) {
+      const roads = this.state.world.map.roads;
+      const validSpawns = roads.nodes.filter(node => {
+        const distance = Math.hypot(node.x - player.pos.x, node.y - player.pos.y);
+        return distance <= spawnRadius && distance >= 8 && node.next && node.next.length > 0;
+      });
+
+      if (validSpawns.length > 0) {
+        const spawnNode = validSpawns[Math.floor(this.state.rand() * validSpawns.length)];
+        const next = spawnNode.next[Math.floor(this.state.rand() * spawnNode.next.length)];
+        
+        this.state.entities.push({
+          type: 'vehicle',
+          pos: { x: spawnNode.x + 0.5, y: spawnNode.y + 0.5 },
+          node: spawnNode,
+          next: next,
+          t: 0,
+          speed: 6
+        });
+      }
+    }
   }
 
   render(interp) {

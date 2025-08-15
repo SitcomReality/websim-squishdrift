@@ -159,7 +159,8 @@ function buildRoadGraph(tiles, width, height, roundabouts){
   // link
   for (const n of nodes){
     const v = dirVec[n.dir], a1x = n.x+v.x, a1y = n.y+v.y, t1 = get(a1x,a1y);
-    if (tileDir(t1) === n.dir) { n.next.push({ x:a1x, y:a1y, dir:n.dir }); }
+    const td = tileDir(t1);
+    if (td) { n.next.push({ x:a1x, y:a1y, dir:td }); } // allow turning through corners
   }
   // augment exits for roundabouts (outer lanes provide optional exits)
   for (const {cx,cy} of roundabouts){

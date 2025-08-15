@@ -22,8 +22,6 @@ export function createInitialState() {
   const emptyVehicle = {
     type: 'vehicle',
     pos: new Vec2(spawnX + 1.5, spawnY + 0.5), // Right side of player
-    node: null,
-    next: null,
     t: 0,
     speed: 0,
     rot: 0,
@@ -31,41 +29,16 @@ export function createInitialState() {
     angularVel: 0,
     ctrl: { throttle: 0, brake: 0, steer: 0 },
     mass: 1200, maxSpeed: 4, engineForce: 900, brakeForce: 1600,
-    rollingRes: 20.0, drag: 0.25, grip: 40.0, steerRate: 2.5,
+    rollingRes: 1.0, drag: 0.25, grip: 6.0, steerRate: 2.5,
     health: { hp: 100, maxHp: 100, getPercent: () => 1, isAlive: () => true },
     controlled: false, // Make sure it's not controlled by player
     controlledByAI: false // Explicitly disable AI control
   };
   state.entities.push(emptyVehicle);
   
-  // Find nearest road node for the empty vehicle
-  const roads = state.world.map.roads;
-  let nearestNode = null;
-  let minDist = Infinity;
-  for (const node of roads.nodes) {
-    const dist = Math.hypot(node.x - emptyVehicle.pos.x, node.y - emptyVehicle.pos.y);
-    if (dist < minDist) {
-      minDist = dist;
-      nearestNode = node;
-    }
-  }
-  if (nearestNode) {
-    emptyVehicle.pos.x = nearestNode.x + 0.5;
-    emptyVehicle.pos.y = nearestNode.y + 0.5;
-    emptyVehicle.node = nearestNode;
-    emptyVehicle.next = nearestNode.next?.[0] || nearestNode;
-    
-    // Set rotation based on road direction
-    switch(nearestNode.dir) {
-      case 'N': emptyVehicle.rot = -Math.PI/2; break;
-      case 'E': emptyVehicle.rot = 0; break;
-      case 'S': emptyVehicle.rot = Math.PI/2; break;
-      case 'W': emptyVehicle.rot = Math.PI; break;
-    }
-  }
-  
   // Spawn simple vehicles on road graph
   const maxVehicles = 5; // Define maxVehicles
+  const roads = state.world.map.roads;
   const roadNodes = roads.nodes.filter(n => n.next && n.next.length > 0);
   const validSpawns = roadNodes.filter(node => {
     const distance = Math.hypot(node.x - spawnX, node.y - spawnY);

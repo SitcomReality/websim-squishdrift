@@ -37,19 +37,23 @@ export class RenderSystem {
     
     // Draw entities behind buildings
     const entitiesBehind = state.entities.filter(e => 
-      e.type === 'npc' || e.type === 'vehicle' || e.type === 'player' || 
+      e.type === 'npc' || e.type === 'player' || 
       e.type === 'item' || e.type === 'bullet' || e.type === 'emergency'
     );
     
     for (const entity of entitiesBehind) {
       switch (entity.type) {
         case 'player':
-          drawPlayer(renderer, state, entity);
-          drawHealthBar(renderer, entity);
+          if (!entity.hidden) {
+            drawPlayer(renderer, state, entity);
+            drawHealthBar(renderer, entity);
+          }
           break;
         case 'vehicle':
-          drawVehicle(renderer, state, entity);
-          drawHealthBar(renderer, entity);
+          if (!entity.controlled) {
+            drawVehicle(renderer, state, entity);
+            drawHealthBar(renderer, entity);
+          }
           break;
         case 'npc':
           drawNPC(renderer, state, entity);
@@ -69,6 +73,13 @@ export class RenderSystem {
           ctx.restore();
           break;
       }
+    }
+    
+    // Draw controlled vehicle separately (after buildings so it's not obscured)
+    if (state.control.inVehicle && state.control.vehicle) {
+      const vehicle = state.control.vehicle;
+      drawVehicle(renderer, state, vehicle);
+      drawHealthBar(renderer, vehicle);
     }
     
     // Draw buildings (walls and roofs) in front

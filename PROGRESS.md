@@ -7,6 +7,10 @@
 - 2025-08-15: Movement collision + camera clamp
   - Player blocked by non-walkable tiles (medians/out-of-bounds), camera clamped to map extents
 
+- 2025-08-15: Road lanes + directed graph (per DESIGN)
+  - Added directional road tiles (N/E/S/W) and intersections
+  - Assigned lane directions per block edge; built basic directed road graph with straight/left/right at intersections
+
 # Next Step
-- Implement lane direction assignment and scaffold a basic directed road graph per DESIGN.md (RoadN/E/S/W), updating MapGen and TileTypes accordingly.
+- Visual debug overlay to toggle and draw lane directions/arrows to verify graph correctness and counts (FPS + node/link totals).
 

@@ -71,8 +71,8 @@ function createInitialState() {
   const map = generateCity('alpha-seed', 2, 2);
   return {
     time: 0,
-    player: { pos: new Vec2(0,0), facing: new Vec2(1,0), moveSpeed: 6 },
-    camera: { x: 0, y: 0 },
+    player: { pos: new Vec2(map.width/2, map.height/2), facing: new Vec2(1,0), moveSpeed: 6 },
+    camera: { x: map.width/2, y: map.height/2 },
     world: { tileSize: 24, map }
   };
 }

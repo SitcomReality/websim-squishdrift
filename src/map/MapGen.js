@@ -203,6 +203,10 @@ function buildRoadGraph(tiles, width, height, roundabouts){
   const get = (x,y)=> (x>=0&&y>=0&&x<width&&y<height)?tiles[y][x]:255;
   const tileDir = (t)=> t===Tile.RoadN?'N':t===Tile.RoadE?'E':t===Tile.RoadS?'S':t===Tile.RoadW?'W':null;
   const keyOf = (x,y,d)=> `${x},${y},${d}`;
+  
+  // Define mapOffset here since it's used below
+  const mapOffset = 2;
+  
   // collect nodes
   for (let y=0;y<height;y++) for (let x=0;x<width;x++){
     const d = tileDir(get(x,y)); if (!d) continue;

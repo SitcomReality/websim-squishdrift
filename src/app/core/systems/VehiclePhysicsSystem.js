@@ -27,12 +27,14 @@ export class VehiclePhysicsSystem {
       Fy -= fwd.y * Math.abs(brakeForce);
 
       // Lateral grip to reduce side slip
-      Fx -= right.x * vLat * v.grip;
-      Fy -= right.y * vLat * v.grip;
+      const lateralGrip = v.grip * (1 + 2 * Math.abs(vLat)) * (1 + 2.5 * brake);
+      Fx -= right.x * vLat * lateralGrip;
+      Fy -= right.y * vLat * lateralGrip;
 
       // Rolling resistance + air drag
-      Fx -= v.vel.x * v.rollingRes - v.vel.x * Math.hypot(v.vel.x, v.vel.y) * v.drag;
-      Fy -= v.vel.y * v.rollingRes - v.vel.y * Math.hypot(v.vel.x, v.vel.y) * v.drag;
+      const spd = Math.hypot(v.vel.x, v.vel.y);
+      Fx -= v.vel.x * v.rollingRes + v.vel.x * spd * v.drag;
+      Fy -= v.vel.y * v.rollingRes + v.vel.y * spd * v.drag;
 
       // Integrate velocity
       v.vel.x += (Fx / v.mass) * dt;
@@ -40,6 +42,7 @@ export class VehiclePhysicsSystem {
 
       // Clamp max speed
       const speed = Math.hypot(v.vel.x, v.vel.y);
+      if (speed < 0.02 && throttle === 0 && brake > 0.5) { v.vel.x = 0; v.vel.y = 0; }
       if (speed > v.maxSpeed) {
         v.vel.x *= v.maxSpeed / speed;
         v.vel.y *= v.maxSpeed / speed;
@@ -49,6 +52,7 @@ export class VehiclePhysicsSystem {
       const speedFactor = Math.min(1, Math.abs(vLong) / (v.maxSpeed || 1));
       v.angularVel += steer * v.steerRate * speedFactor * dt;
       v.angularVel *= 0.9; // damping
+      if (Math.abs(v.angularVel) < 0.0005) v.angularVel = 0;
       v.rot += v.angularVel * dt;
 
       // Move

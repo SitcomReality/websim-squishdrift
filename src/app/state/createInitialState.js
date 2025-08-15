@@ -24,13 +24,14 @@ export function createInitialState() {
     pos: new Vec2(spawnX + 1.5, spawnY + 0.5), // Right side of player
     node: null,
     next: null,
+    ai: false, // do not let AI drive the starter car
     speed: 0,
     rot: 0,
     vel: { x: 0, y: 0 },
     angularVel: 0,
     ctrl: { throttle: 0, brake: 0, steer: 0 },
-    mass: 1200, maxSpeed: 4, engineForce: 900, brakeForce: 1600,
-    rollingRes: 1.0, drag: 0.25, grip: 6.0, steerRate: 2.5,
+    mass: 1200, maxSpeed: 4, engineForce: 900, brakeForce: 1800,
+    rollingRes: 1.6, drag: 0.4, grip: 8.0, steerRate: 2.5,
     health: { hp: 100, maxHp: 100, getPercent: () => 1, isAlive: () => true }
   };
   state.entities.push(emptyVehicle);
@@ -49,10 +50,7 @@ export function createInitialState() {
   if (nearestNode) {
     emptyVehicle.pos.x = nearestNode.x + 0.5;
     emptyVehicle.pos.y = nearestNode.y + 0.5;
-    emptyVehicle.node = nearestNode;
-    emptyVehicle.next = nearestNode.next?.[0] || nearestNode;
-    
-    // Set rotation based on road direction
+    // Orient to road but do NOT assign node/next to keep AI off
     switch(nearestNode.dir) {
       case 'N': emptyVehicle.rot = -Math.PI/2; break;
       case 'E': emptyVehicle.rot = 0; break;

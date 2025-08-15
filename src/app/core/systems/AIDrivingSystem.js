@@ -2,6 +2,7 @@ export class AIDrivingSystem {
   update(state, dt) {
     const roads = state.world.map.roads;
     for (const v of state.entities.filter(e => e.type === 'vehicle' && !e.controlled)) {
+      if (v.ai === false) continue;
       // Ensure control struct
       v.ctrl = v.ctrl || { throttle: 0, brake: 0, steer: 0 };
       v.aiTargetSpeed = v.aiTargetSpeed || 3.0;

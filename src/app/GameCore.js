@@ -27,10 +27,13 @@ export class Game {
     if (this.input.pressed.has('KeyE')) {
       if (!s.control.inVehicle) {
         const veh = s.entities.find(e => e.type === 'vehicle' && Math.hypot(e.pos.x - player.pos.x, e.pos.y - player.pos.y) < 1.25);
-        if (veh) { 
-          s.control.inVehicle = true; 
-          s.control.vehicle = veh; 
-          player.hidden = true; 
+        if (veh) {
+          s.control.inVehicle = true; s.control.vehicle = veh; player.hidden = true;
+          veh.controlled = true; // init physics params
+          const dir = (veh.next?.dir || veh.node?.dir || 'E');
+          veh.rot = dir==='N'?-Math.PI/2:dir==='E'?0:dir==='S'?Math.PI/2:Math.PI;
+          veh.speed = veh.speed || 0; veh.accel = 10; veh.maxSpeed = 12; veh.drag = 2.5; veh.turnRate = 2.4;
+          veh.pos.x = (veh.node?.x ?? veh.pos.x) + 0.5; veh.pos.y = (veh.node?.y ?? veh.pos.y) + 0.5;
         }
       } else {
         const v = s.control.vehicle;
@@ -44,6 +47,14 @@ export class Game {
             player.hidden = false;
             s.control.inVehicle = false; 
             s.control.vehicle = null; 
+            v.controlled = false;
+            // snap vehicle back to nearest road node and resume AI
+            const map = s.world.map; let best = null;
+            for (const n of map.roads.nodes) {
+              const dx = n.x + 0.5 - v.pos.x, dy = n.y + 0.5 - v.pos.y, d2 = dx*dx+dy*dy;
+              if (!best || d2 < best.d2) best = { n, d2 };
+            }
+            if (best) { v.node = best.n; v.next = v.node.next[0] || v.node; v.t = 0; }
             break;
           }
         }
@@ -68,6 +79,28 @@ export class Game {
         const ny = p.y + dy * player.moveSpeed * dt; if (tryMove(p.x, ny)) p.y = ny;
         player.facing.x = dx; player.facing.y = dy;
       }
+    } else {
+      // Player driving physics
+      const v = s.control.vehicle;
+      const throttle = (this.input.keys.has('KeyW') || this.input.keys.has('ArrowUp') ? 1 : 0) +
+                       (this.input.keys.has('KeyS') || this.input.keys.has('ArrowDown') ? -1 : 0);
+      const steer = (this.input.keys.has('KeyA') || this.input.keys.has('ArrowLeft') ? -1 : 0) +
+                    (this.input.keys.has('KeyD') || this.input.keys.has('ArrowRight') ? 1 : 0);
+      const brake = this.input.keys.has('Space') ? 1 : 0;
+
+      // Longitudinal
+      v.speed += throttle * v.accel * dt;
+      const drag = v.drag + (brake ? 8 : 0);
+      const sign = Math.sign(v.speed); v.speed -= sign * drag * dt; if (Math.sign(v.speed) !== sign) v.speed = 0;
+      v.speed = Math.max(-v.maxSpeed*0.4, Math.min(v.maxSpeed, v.speed));
+
+      // Yaw (scale by speed factor)
+      const speedFactor = Math.min(1, Math.abs(v.speed) / v.maxSpeed);
+      v.rot += steer * v.turnRate * (speedFactor || 0) * dt * (v.speed>=0 ? 1 : -1);
+
+      // Integrate position in tile units
+      v.pos.x += Math.cos(v.rot) * v.speed * dt;
+      v.pos.y += Math.sin(v.rot) * v.speed * dt;
     }
     
     const cam = s.camera, target = s.control.inVehicle ? s.control.vehicle.pos : player.pos;
@@ -81,6 +114,7 @@ export class Game {
     if (map.height <= 2 * halfY) cam.y = map.height / 2;
     else cam.y = Math.min(Math.max(cam.y, halfY), map.height - halfY);
     for (const veh of s.entities.filter(e => e.type === 'vehicle')) {
+      if (veh.controlled) continue;
       if (veh.next) {
         veh.t += (veh.speed * dt);
         while (veh.t >= 1 && veh.node) {
@@ -100,11 +134,11 @@ export class Game {
         nodes: s.world.map.roads.nodes.length,
         links: s.world.map.roads.nodes.reduce((a,n)=>a+n.next.length,0)
       },
-      vehicle: vehicle ? { at: [vehicle.node.x, vehicle.node.y], speed: vehicle.speed } : null,
+      vehicle: vehicle ? { at: vehicle.node ? [vehicle.node.x, vehicle.node.y] : [vehicle.pos.x, vehicle.pos.y], speed: Number((vehicle.speed||0).toFixed(2)) } : null,
       control: { inVehicle: s.control.inVehicle }
     });
     if (this.hud.vehicleStateEl) {
-      this.hud.vehicleStateEl.textContent = s.control.inVehicle ? 'In vehicle' : 'On foot';
+      this.hud.vehicleStateEl.textContent = s.control.inVehicle ? `In vehicle — ${Math.abs(s.control.vehicle.speed).toFixed(1)} u/s` : 'On foot';
     }
   }
   render() {

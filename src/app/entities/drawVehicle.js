@@ -1,5 +1,12 @@
 export function drawVehicle(r, state, v){
-  const { ctx } = r, ts = state.world.tileSize, a = v.t;
+  const { ctx } = r, ts = state.world.tileSize, a = v.t ?? 0;
+  if (v.controlled) {
+    const ang = v.rot || 0;
+    ctx.save(); ctx.translate(v.pos.x*ts, v.pos.y*ts); ctx.rotate(ang);
+    ctx.fillStyle = '#8A2BE2'; ctx.fillRect(-ts*0.45, -ts*0.25, ts*0.9, ts*0.5);
+    ctx.fillStyle = '#FFFFFF'; ctx.fillRect(ts*0.15, -2, ts*0.2, 4);
+    ctx.restore(); return;
+  }
   const x = (v.node.x + 0.5) * (1 - a) + (v.next.x + 0.5) * a;
   const y = (v.node.y + 0.5) * (1 - a) + (v.next.y + 0.5) * a;
   v.pos.x = x; v.pos.y = y;
@@ -10,4 +17,3 @@ export function drawVehicle(r, state, v){
   ctx.fillStyle = '#FFFFFF'; ctx.fillRect(ts*0.15, -2, ts*0.2, 4);
   ctx.restore();
 }
-

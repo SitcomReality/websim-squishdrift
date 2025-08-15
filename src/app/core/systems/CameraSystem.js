@@ -18,6 +18,9 @@ export class CameraSystem {
     }
     if (map.height > 2 * halfY) {
       cam.y = Math.min(Math.max(cam.y, halfY), map.height - halfY);
+    } else {
+      // Ensure camera stays centered vertically when map is smaller than viewport
+      cam.y = map.height / 2;
     }
   }
 }

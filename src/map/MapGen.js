@@ -10,6 +10,7 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
   const tiles = Array.from({ length: height }, () => new Uint8Array(width).fill(Tile.Grass));
   const buildings = [];
   const rand = rng(seed);
+  const roundabouts = []; // track centers for exit graph augmentation
 
   // Per-block generation
   for (let by = 0; by < blocksHigh; by++) {
@@ -115,29 +116,26 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
   // Inter-block corridors are now formed by block road rings + medians
   // The logic that carved corridors explicitly has been removed.
 
-  // Intersections: medians at crossings convert to road
+  // Intersections: build 2-lane anti-clockwise roundabouts (5x5 area)
   for (let gy = 0; gy <= blocksHigh; gy++) {
     for (let gx = 0; gx <= blocksWide; gx++) {
-      const y = gy * (W + MED), x = gx * (W + MED);
-      if (y < height && x < width) tiles[y][x] = Tile.Intersection;
-      // add plus-shaped roads extending 2 tiles in each direction for 5x5 intersection
-      const setIfMedian = (tx, ty, t) => {
-        if (tx >= 0 && ty >= 0 && tx < width && ty < height && tiles[ty][tx] === Tile.Median) tiles[ty][tx] = t;
-      };
-      // horizontal arms: left = RoadE (into center), right = RoadW (into center)
-      setIfMedian(x - 1, y, Tile.RoadE);
-      setIfMedian(x - 2, y, Tile.RoadE);
-      setIfMedian(x + 1, y, Tile.RoadW);
-      setIfMedian(x + 2, y, Tile.RoadW);
-      // vertical arms: up = RoadS (into center), down = RoadN (into center)
-      setIfMedian(x, y - 1, Tile.RoadS);
-      setIfMedian(x, y - 2, Tile.RoadS);
-      setIfMedian(x, y + 1, Tile.RoadN);
-      setIfMedian(x, y + 2, Tile.RoadN);
+      const cy = gy * (W + MED), cx = gx * (W + MED);
+      if (cy >= height || cx >= width) continue;
+      tiles[cy][cx] = Tile.Median; // central island
+      roundabouts.push({ cx, cy });
+      const set = (x,y,t)=>{ if (x>=0&&y>=0&&x<width&&y<height) tiles[y][x]=t; };
+      // top (leftward)
+      for (let x=cx-2; x<=cx+2; x++){ set(x, cy-2, Tile.RoadW); set(x, cy-1, Tile.RoadW); }
+      // bottom (rightward)
+      for (let x=cx-2; x<=cx+2; x++){ set(x, cy+2, Tile.RoadE); set(x, cy+1, Tile.RoadE); }
+      // left (downward)
+      for (let y=cy-2; y<=cy+2; y++){ set(cx-2, y, Tile.RoadS); set(cx-1, y, Tile.RoadS); }
+      // right (upward)
+      for (let y=cy-2; y<=cy+2; y++){ set(cx+1, y, Tile.RoadN); set(cx+2, y, Tile.RoadN); }
     }
   }
 
-  const roads = buildRoadGraph(tiles, width, height);
+  const roads = buildRoadGraph(tiles, width, height, roundabouts);
   const peds = buildPedGraph(tiles, width, height);
   return { tiles, width, height, W, MED, seed, roads, peds, buildings };
 }
@@ -146,7 +144,7 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
 function rectLine(tiles, x, y, len, type) { for (let i = 0; i < len; i++) tiles[y] && (tiles[y][x + i] = type); }
 function colLine(tiles, x, y, len, type) { for (let i = 0; i < len; i++) tiles[y + i] && (tiles[y + i][x] = type); }
 
-function buildRoadGraph(tiles, width, height){
+function buildRoadGraph(tiles, width, height, roundabouts){
   const dirVec = { N:{x:0,y:-1}, E:{x:1,y:0}, S:{x:0,y:1}, W:{x:-1,y:0} };
   const leftOf = { N:'W', E:'N', S:'E', W:'S' }, rightOf = { N:'E', E:'S', S:'W', W:'N' };
   const nodes = []; const byKey = new Map();
@@ -161,18 +159,22 @@ function buildRoadGraph(tiles, width, height){
   // link
   for (const n of nodes){
     const v = dirVec[n.dir], a1x = n.x+v.x, a1y = n.y+v.y, t1 = get(a1x,a1y);
-    if (tileDir(t1) === n.dir) { // straight lane continues
-      n.next.push({ x:a1x, y:a1y, dir:n.dir });
-    } else if (t1 === Tile.Intersection) {
-      // straight through intersection (two tiles ahead)
-      const a2x = a1x+v.x, a2y = a1y+v.y, t2 = get(a2x,a2y);
-      if (tileDir(t2) === n.dir) n.next.push({ x:a2x, y:a2y, dir:n.dir });
-      // left/right turns enter the first lane adjacent to intersection center
-      const ld = leftOf[n.dir], lv = dirVec[ld], lx=a1x+lv.x, ly=a1y+lv.y;
-      if (tileDir(get(lx,ly)) === ld) n.next.push({ x:lx, y:ly, dir:ld });
-      const rd = rightOf[n.dir], rv = dirVec[rd], rx=a1x+rv.x, ry=a1y+rv.y;
-      if (tileDir(get(rx,ry)) === rd) n.next.push({ x:rx, y:ry, dir:rd });
-    }
+    if (tileDir(t1) === n.dir) { n.next.push({ x:a1x, y:a1y, dir:n.dir }); }
+  }
+  // augment exits for roundabouts (outer lanes provide optional exits)
+  for (const {cx,cy} of roundabouts){
+    const addExit = (x,y,ex,ey)=>{
+      const from = byKey.get(keyOf(x,y,tileDir(get(x,y)))); const td = tileDir(get(ex,ey));
+      if (from && td) from.next.push({ x:ex, y:ey, dir:td });
+    };
+    // Right side bottom two: up (default) OR right -> exit to (x+1,y)
+    addExit(cx+2, cy+1, cx+3, cy+1); addExit(cx+1, cy+1, cx+2, cy+1);
+    // Top row right two: left (default) OR up -> exit to (x, y-1)
+    addExit(cx+1, cy-2, cx+1, cy-3); addExit(cx+2, cy-2, cx+2, cy-3);
+    // Left side top two: down (default) OR left -> exit to (x-1, y)
+    addExit(cx-2, cy-2, cx-3, cy-2); addExit(cx-2, cy-1, cx-3, cy-1);
+    // Bottom row left two: right (default) OR down -> exit to (x, y+1)
+    addExit(cx-2, cy+1, cx-2, cy+2); addExit(cx-1, cy+1, cx-1, cy+2);
   }
   return { nodes, byKey };
 }

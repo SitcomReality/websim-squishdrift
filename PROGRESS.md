@@ -65,9 +65,6 @@
   - Added pistol shooting with Space key (yellow bullets)
   - Bullets have 0.5 second lifetime
 
-- 2025-08-16: Fix debug overlay reference error
-  - Fixed undefined vehicle variable in debug overlay
-
 # Next Step
 - Add collision detection for bullets
 

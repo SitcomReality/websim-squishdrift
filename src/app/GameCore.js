@@ -8,6 +8,7 @@ import { drawRoadDebug } from '../render/drawRoadDebug.js';
 import { drawPlayer } from './entities/drawPlayer.js';
 import { drawVehicle } from './entities/drawVehicle.js';
 import { drawNPC } from './entities/drawNPC.js';
+import { drawItem } from './entities/drawItem.js';
 import { isWalkable } from '../map/TileTypes.js';
 
 export class Game {
@@ -16,17 +17,21 @@ export class Game {
     this.input = new InputSystem(canvas);
     this.debugOverlay = new DebugOverlaySystem(debugEl);
     this.state = createInitialState();
-    this.state.control = { inVehicle: false, vehicle: null };
-    this.hud = { vehicleStateEl: document.getElementById('vehicle-state') };
+    this.state.control = { inVehicle: false, vehicle: null, equipped: null };
+    this.hud = { 
+      vehicleStateEl: document.getElementById('vehicle-state'),
+      itemNameEl: document.getElementById('item-name')
+    };
   }
   update(dt) {
     this.input.update();
     const s = this.state;
     const player = s.entities.find(e => e.type === 'player');
     
-    // Enter/Exit vehicle (E)
+    // Interact (E) - enter/exit or pickup item
     if (this.input.pressed.has('KeyE')) {
       if (!s.control.inVehicle) {
+        // Check for vehicle first
         const veh = s.entities.find(e => e.type === 'vehicle' && Math.hypot(e.pos.x - player.pos.x, e.pos.y - player.pos.y) < 1.25);
         if (veh) {
           s.control.inVehicle = true; s.control.vehicle = veh; player.hidden = true;
@@ -35,6 +40,14 @@ export class Game {
           veh.rot = dir==='N'?-Math.PI/2:dir==='E'?0:dir==='S'?Math.PI/2:Math.PI;
           veh.speed = veh.speed || 0; veh.accel = 10; veh.maxSpeed = 12; veh.drag = 2.5; veh.turnRate = 2.4;
           veh.pos.x = (veh.node?.x ?? veh.pos.x) + 0.5; veh.pos.y = (veh.node?.y ?? veh.pos.y) + 0.5;
+        } else {
+          // Check for item pickup
+          const itemIndex = s.entities.findIndex(e => e.type === 'item' && Math.hypot(e.pos.x - player.pos.x, e.pos.y - player.pos.y) < 0.75);
+          if (itemIndex !== -1) {
+            const item = s.entities[itemIndex];
+            s.control.equipped = item;
+            s.entities.splice(itemIndex, 1);
+          }
         }
       } else {
         const v = s.control.vehicle;
@@ -59,6 +72,20 @@ export class Game {
             break;
           }
         }
+      }
+    }
+    
+    // Use item (Space)
+    if (this.input.pressed.has('Space') && s.control.equipped && !s.control.inVehicle) {
+      const weapon = s.control.equipped;
+      if (weapon.name === 'Pistol') {
+        const bullet = {
+          type: 'bullet',
+          pos: new Vec2(player.pos.x, player.pos.y),
+          vel: new Vec2(player.facing.x * 20, player.facing.y * 20),
+          life: 0.5
+        };
+        s.entities.push(bullet);
       }
     }
     
@@ -104,6 +131,17 @@ export class Game {
       v.pos.y += Math.sin(v.rot) * v.speed * dt;
     }
     
+    // Update bullets
+    for (let i = s.entities.length - 1; i >= 0; i--) {
+      const e = s.entities[i];
+      if (e.type === 'bullet') {
+        e.pos.x += e.vel.x * dt;
+        e.pos.y += e.vel.y * dt;
+        e.life -= dt;
+        if (e.life <= 0) s.entities.splice(i, 1);
+      }
+    }
+    
     const cam = s.camera, target = s.control.inVehicle ? s.control.vehicle.pos : player.pos;
     cam.x += (target.x - cam.x) * Math.min(1, dt * 6);
     cam.y += (target.y - cam.y) * Math.min(1, dt * 6);
@@ -143,7 +181,6 @@ export class Game {
       const bx = ped.to.x + 0.5, by = ped.to.y + 0.5;
       ped.pos.x = ax*(1-ped.t) + bx*ped.t; ped.pos.y = ay*(1-ped.t) + by*ped.t;
     }
-    const vehicle = s.entities.find(e => e.type === 'vehicle');
     this.debugOverlay.update({
       fps: this.renderer.fps, dt: dt,
       player: { x: player.pos.x.toFixed(2), y: player.pos.y.toFixed(2) },
@@ -154,10 +191,15 @@ export class Game {
       },
       vehicle: vehicle ? { at: vehicle.node ? [vehicle.node.x, vehicle.node.y] : [vehicle.pos.x, vehicle.pos.y], speed: Number((vehicle.speed||0).toFixed(2)) } : null,
       npcs: this.state.entities.filter(e=>e.type==='npc').length,
-      control: { inVehicle: s.control.inVehicle }
+      control: { inVehicle: s.control.inVehicle },
+      equipped: s.control.equipped ? s.control.equipped.name : null,
+      items: s.entities.filter(e => e.type === 'item').length
     });
     if (this.hud.vehicleStateEl) {
       this.hud.vehicleStateEl.textContent = s.control.inVehicle ? `In vehicle — ${Math.abs(s.control.vehicle.speed).toFixed(1)} u/s` : 'On foot';
+    }
+    if (this.hud.itemNameEl) {
+      this.hud.itemNameEl.textContent = s.control.equipped ? s.control.equipped.name : 'None';
     }
   }
   render() {
@@ -170,6 +212,16 @@ export class Game {
       if (e.type === 'player') drawPlayer(this.renderer, s, e);
       else if (e.type === 'npc') drawNPC(this.renderer, s, e);
       else if (e.type === 'vehicle') drawVehicle(this.renderer, s, e);
+      else if (e.type === 'item') drawItem(this.renderer, s, e);
+      else if (e.type === 'bullet') {
+        const { ctx } = this.renderer;
+        const ts = s.world.tileSize;
+        ctx.save();
+        ctx.translate(e.pos.x * ts, e.pos.y * ts);
+        ctx.fillStyle = '#FFFF00';
+        ctx.fillRect(-2, -2, 4, 4);
+        ctx.restore();
+      }
     }
     drawBuildings(this.renderer, s);
     if (this.debugOverlay.enabled) drawRoadDebug(this.renderer, s);

@@ -56,9 +56,15 @@
 - 2025-08-16: Fix intersections to be contiguous
   - Replaced adjacent median tiles around each intersection center with a plus-shaped cross of directed road tiles (extending 1 tile per direction), respecting map edges.
 
-- 2025-08-16: Make median strips passable
-  - Updated walkability rules to allow walking on median strips
+- 2025-08-16: Make median strips passable (can be walked on)
+
+- 2025-08-16: Basic item system (pistol)
+  - Added pistol items spawning on footpaths near player
+  - Player can pick up items with E key
+  - Equipped items show in HUD
+  - Added pistol shooting with Space key (yellow bullets)
+  - Bullets have 0.5 second lifetime
 
 # Next Step
-- Add basic item system (player can pick up and use items)
+- Add collision detection for bullets
 

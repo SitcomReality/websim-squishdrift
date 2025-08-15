@@ -5,17 +5,32 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
   const W = 11, MED = 1;
   const ROAD_RING = 2;      // 2-tile road ring
   const FOOTPATH_RING = 1;  // 1-tile footpath ring
-  const width = blocksWide * (W + MED) + MED;
-  const height = blocksHigh * (W + MED) + MED;
+  const OCEAN_BORDER = 10; // Add ocean border around entire map
+  const width = blocksWide * (W + MED) + MED + OCEAN_BORDER * 2;
+  const height = blocksHigh * (W + MED) + MED + OCEAN_BORDER * 2;
   const tiles = Array.from({ length: height }, () => new Uint8Array(width).fill(Tile.Grass));
   const buildings = [];
   const rand = rng(seed);
 
+  // Create ocean border around entire map
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      if (x < OCEAN_BORDER || x >= width - OCEAN_BORDER || 
+          y < OCEAN_BORDER || y >= height - OCEAN_BORDER) {
+        tiles[y][x] = Tile.Grass; // Use grass as ocean, will be rendered as ocean blue
+      }
+    }
+  }
+
+  // Adjust offset for actual city content
+  const cityOffsetX = OCEAN_BORDER;
+  const cityOffsetY = OCEAN_BORDER;
+  
   // Per-block generation
   for (let by = 0; by < blocksHigh; by++) {
     for (let bx = 0; bx < blocksWide; bx++) {
-      const ox = MED + bx * (W + MED);
-      const oy = MED + by * (W + MED);
+      const ox = MED + bx * (W + MED) + cityOffsetX;
+      const oy = MED + by * (W + MED) + cityOffsetY;
       
       // 2-tile road ring
       for (let t = 0; t < ROAD_RING; t++) {
@@ -104,11 +119,11 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
 
   // Medians between blocks
   for (let gy = 0; gy <= blocksHigh; gy++) {
-    const y = gy * (W + MED);
+    const y = gy * (W + MED) + cityOffsetY;
     if (y >= 0 && y < height) for (let x = 0; x < width; x++) tiles[y][x] = Tile.Median;
   }
   for (let gx = 0; gx <= blocksWide; gx++) {
-    const x = gx * (W + MED);
+    const x = gx * (W + MED) + cityOffsetX;
     if (x >= 0 && x < width) for (let y = 0; y < height; y++) tiles[y][x] = Tile.Median;
   }
   
@@ -118,7 +133,7 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
   // Intersections: medians at crossings convert to road
   for (let gy = 0; gy <= blocksHigh; gy++) {
     for (let gx = 0; gx <= blocksWide; gx++) {
-      const y = gy * (W + MED), x = gx * (W + MED);
+      const y = gy * (W + MED) + cityOffsetY, x = gx * (W + MED) + cityOffsetX;
       if (y < height && x < width) tiles[y][x] = Tile.Intersection;
       // add plus-shaped roads extending 1 tile in each direction (if median and in-bounds)
       const setIfMedian = (tx, ty, t) => {

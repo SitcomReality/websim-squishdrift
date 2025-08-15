@@ -1,4 +1,3 @@
-// ...existing code...
 import { Game } from './src/app/Game.js';
 import { createLoop } from './src/app/loop.js';
 
@@ -17,9 +16,14 @@ toggleBtn.addEventListener('click', () => {
   const on = debugEl.hasAttribute('hidden');
   debugEl.toggleAttribute('hidden', !on ? false : true);
   toggleBtn.setAttribute('aria-pressed', String(!on));
-  game.debugOverlay.enabled = !on;
+  if (game.engine && game.engine.debugOverlay) {
+    game.engine.debugOverlay.enabled = !on;
+  }
 });
 
-window.addEventListener('resize', () => game.renderer.resizeToDisplay());
-game.renderer.resizeToDisplay();
+window.addEventListener('resize', () => game.renderer && game.renderer.resizeToDisplay());
+if (game.renderer) {
+  game.renderer.resizeToDisplay();
+}
 loop.start();
+

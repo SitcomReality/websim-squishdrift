@@ -1,10 +1,8 @@
 # Progress Log (Concise)
 
 - 2025-08-16: Refactored GameCore.js into modular systems
-- 2025-08-16: Fixed import paths for CollisionSystem and EmergencyServices
-- 2025-08-16: Corrected import paths in PlayerSystem.js
-- 2025-08-16: Updated import paths in RenderSystem.js
-- 2025-08-16: Fixed RenderSystem export and EmergencyServices undefined errors
-- 2025-08-16: Migrated Game.js to use GameCore.js re-export pattern
-- 2025-08-16: Fixed EmergencyServices undefined property access with defensive checks
+- 2025-08-16: Fixed import paths and 404 errors
+- 2025-08-16: Completed M3: Peds/vehicles AI, spawning/culling, enter/exit vehicles
+- 2025-08-16: Fixed debug overlay undefined reference
+- Current: M4 - Adding random events + emergency services integration
 

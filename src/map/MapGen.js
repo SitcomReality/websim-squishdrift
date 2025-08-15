@@ -3,6 +3,8 @@ import { rng } from '../utils/RNG.js';
 
 export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4) {
   const W = 11, MED = 1;
+  const ROAD_RING = 2;      // 2-tile road ring
+  const FOOTPATH_RING = 1;  // 1-tile footpath ring
   const width = blocksWide * (W + MED) + MED;
   const height = blocksHigh * (W + MED) + MED;
   const tiles = Array.from({ length: height }, () => new Uint8Array(width).fill(Tile.Grass));

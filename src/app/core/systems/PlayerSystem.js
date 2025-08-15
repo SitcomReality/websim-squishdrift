@@ -1,6 +1,6 @@
-import { isWalkable } from '../../map/TileTypes.js';
-import { Vec2 } from '../../utils/Vec2.js';
-import { Health } from '../components/Health.js';
+import { isWalkable } from '../../../map/TileTypes.js';
+import { Vec2 } from '../../../utils/Vec2.js';
+import { Health } from '../../components/Health.js';
 
 export class PlayerSystem {
   update(state, input, dt) {

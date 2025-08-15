@@ -5,22 +5,37 @@ export function drawRoadDebug(r, state){
   const roads = map.roads;
   const wTiles = Math.ceil(canvas.width/ts)+2, hTiles = Math.ceil(canvas.height/ts)+2;
   const sx = Math.floor(state.camera.x - wTiles/2), sy = Math.floor(state.camera.y - hTiles/2);
+  const dirVec = { N:{x:0,y:-1}, E:{x:1,y:0}, S:{x:0,y:1}, W:{x:-1,y:0} };
+  
   ctx.save(); ctx.lineWidth = 1; ctx.strokeStyle = '#111'; ctx.fillStyle = '#111';
+  
   for (let y=0; y<hTiles; y++) for (let x=0; x<wTiles; x++){
-    const gx = sx + x, gy = sy + y; if (gy<0||gx<0||gy>=map.height||gx>=map.width) continue;
-    const d = roadDir(map.tiles[gy][gx]); if (!d) continue;
-    const node = roads.byKey.get(`${gx},${gy},${d}`); if (!node) { drawDirArrow(ctx, gx*ts+ts/2, gy*ts+ts/2, d, ts*0.28); continue; }
-    const cxp = gx*ts+ts/2, cyp = gy*ts+ts/2;
+    const gx = sx + x, gy = sy + y; 
+    if (gy<0||gx<0||gy>=map.height||gx>=map.width) continue;
+    
+    // Check for multiple directions at intersections
+    const t = map.tiles[gy][gx];
+    const d = roadDir(t);
+    if (!d) continue;
+    
+    const node = roads.byKey.get(`${gx},${gy},${d}`);
+    if (!node) {
+      drawDirArrow(ctx, gx*ts+ts/2, gy*ts+ts/2, d, ts*0.28);
+      continue;
+    }
+    
     const outs = node.next || [];
-    if (outs.length === 2) {
-      const v1 = { x:(outs[0].x - gx), y:(outs[0].y - gy) }, v2 = { x:(outs[1].x - gx), y:(outs[1].y - gy) };
-      const ax = v1.x + v2.x, ay = v1.y + v2.y; const ang = Math.atan2(ay, ax);
-      drawAngleArrow(ctx, cxp, cyp, ang, ts*0.28);
-    } else if (outs.length >= 1) {
-      const v = outs[0]; const ang = Math.atan2(v.y - gy, v.x - gx);
-      drawAngleArrow(ctx, cxp, cyp, ang, ts*0.28);
+    if (outs.length >= 2) {
+      // Draw diagonal arrow for multi-direction choices
+      const angles = outs.map(o => Math.atan2(o.y - gy, o.x - gx));
+      const avgAngle = angles.reduce((a,b) => a+b, 0) / angles.length;
+      drawAngleArrow(ctx, gx*ts+ts/2, gy*ts+ts/2, avgAngle, ts*0.28);
+    } else if (outs.length === 1) {
+      const v = outs[0];
+      const ang = Math.atan2(v.y - gy, v.x - gx);
+      drawAngleArrow(ctx, gx*ts+ts/2, gy*ts+ts/2, ang, ts*0.28);
     } else {
-      drawDirArrow(ctx, cxp, cyp, d, ts*0.28);
+      drawDirArrow(ctx, gx*ts+ts/2, gy*ts+ts/2, d, ts*0.28);
     }
   }
   ctx.restore();

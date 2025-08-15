@@ -28,8 +28,6 @@ export const TileColor = {
 
 export function isWalkable(t) { 
   return t !== Tile.Median && 
-         t !== Tile.RoadN && t !== Tile.RoadE && t !== Tile.RoadS && t !== Tile.RoadW && 
-         t !== Tile.Intersection && 
          t !== Tile.BuildingWall; 
 }
 

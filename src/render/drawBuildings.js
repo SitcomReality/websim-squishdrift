@@ -46,8 +46,8 @@ export function drawBuildings(r, state) {
       
       // Scale offset by distance and building height
       const offsetMagnitude = b.height * perspectiveScale * Math.min(1, distanceToBuilding * 0.1);
-      roofOffset.x = vCam.x * offsetMagnitude;
-      roofOffset.y = vCam.y * offsetMagnitude;
+      roofOffset.x = -vCam.x * offsetMagnitude;  // Negated for correct perspective
+      roofOffset.y = -vCam.y * offsetMagnitude;  // Negated for correct perspective
     }
     
     const roofRect = { 

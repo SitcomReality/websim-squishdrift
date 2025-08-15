@@ -24,6 +24,10 @@
   - Added `Footpath` tile type.
   - Refactored map generator to create proper 5x5 block interiors with lots and alleys, surrounded by footpaths, as per design spec.
 
+- 2025-08-16: Fix player spawn
+  - Player now spawns on walkable tiles (footpath/grass) instead of potentially spawning on roads/medians
+  - Added search algorithm to find nearest walkable tile to map center
+
 # Next Step
 - Implement buildings and parks in block lots.
 

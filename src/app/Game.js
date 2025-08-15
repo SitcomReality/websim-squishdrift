@@ -91,11 +91,36 @@ function createInitialState() {
   const rand = rng('alpha-seed');
   const state = {
     time: 0,
-    player: { pos: new Vec2(map.width/2, map.height/2), facing: new Vec2(1,0), moveSpeed: 6 },
+    player: { pos: new Vec2(), facing: new Vec2(1,0), moveSpeed: 6 },
     camera: { x: map.width/2, y: map.height/2 },
     world: { tileSize: 24, map },
     rand, veh: null
   };
+  
+  // Find a valid spawn position on footpath or grass
+  let spawnX = map.width / 2, spawnY = map.height / 2;
+  let bestDist = Infinity;
+  
+  // Search for nearest footpath or grass to center
+  for (let y = 0; y < map.height; y++) {
+    for (let x = 0; x < map.width; x++) {
+      const tile = map.tiles[y][x];
+      if (isWalkable(tile)) {
+        const dist = Math.abs(x - map.width/2) + Math.abs(y - map.height/2);
+        if (dist < bestDist) {
+          bestDist = dist;
+          spawnX = x + 0.5; // Center in tile
+          spawnY = y + 0.5;
+        }
+      }
+    }
+  }
+  
+  state.player.pos.x = spawnX;
+  state.player.pos.y = spawnY;
+  state.camera.x = spawnX;
+  state.camera.y = spawnY;
+  
   // spawn simple vehicle at nearest road node to player
   let best = null, bp = state.player.pos;
   for (const n of map.roads.nodes) {

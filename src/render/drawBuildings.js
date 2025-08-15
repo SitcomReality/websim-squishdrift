@@ -50,6 +50,7 @@ export function drawBuildings(r, state, mode = 'all') {
     
     // Draw walls connecting floor to roof
     if (mode === 'walls' || mode === 'all') {
+      // West wall
       ctx.fillStyle = sideWallColor;
       ctx.beginPath();
       ctx.moveTo(floorRect.x, floorRect.y);
@@ -59,6 +60,7 @@ export function drawBuildings(r, state, mode = 'all') {
       ctx.closePath();
       ctx.fill();
 
+      // East wall
       ctx.fillStyle = sideWallColor;
       ctx.beginPath();
       ctx.moveTo(floorRect.x + floorRect.w, floorRect.y);
@@ -68,6 +70,7 @@ export function drawBuildings(r, state, mode = 'all') {
       ctx.closePath();
       ctx.fill();
 
+      // North wall (top)
       ctx.fillStyle = topWallColor;
       ctx.beginPath();
       ctx.moveTo(floorRect.x, floorRect.y);
@@ -77,6 +80,8 @@ export function drawBuildings(r, state, mode = 'all') {
       ctx.closePath();
       ctx.fill();
 
+      // South wall (bottom)
+      ctx.fillStyle = topWallColor;
       ctx.beginPath();
       ctx.moveTo(floorRect.x, floorRect.y + floorRect.h);
       ctx.lineTo(roofRect.x, roofRect.y + roofRect.h);

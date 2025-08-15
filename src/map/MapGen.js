@@ -5,43 +5,12 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
   const W = 11, MED = 1;
   const ROAD_RING = 2;      // 2-tile road ring
   const FOOTPATH_RING = 1;  // 1-tile footpath ring
-  const width = blocksWide * (W + MED) + MED + 4; // Add 4 for outer lanes
-  const height = blocksHigh * (W + MED) + MED + 4;
+  const width = blocksWide * (W + MED) + MED;
+  const height = blocksHigh * (W + MED) + MED;
   const tiles = Array.from({ length: height }, () => new Uint8Array(width).fill(Tile.Grass));
   const buildings = [];
   const rand = rng(seed);
-  const roundabouts = [];
-
-  // Add outer clockwise lanes (2 tiles wide)
-  const outerOffset = 2;
-  
-  // Top outer lanes (West direction)
-  for (let x = 0; x < width; x++) {
-    for (let t = 0; t < 2; t++) {
-      tiles[t][x] = Tile.RoadW;
-    }
-  }
-  
-  // Bottom outer lanes (East direction)
-  for (let x = 0; x < width; x++) {
-    for (let t = 0; t < 2; t++) {
-      tiles[height - 1 - t][x] = Tile.RoadE;
-    }
-  }
-  
-  // Left outer lanes (South direction)
-  for (let y = 2; y < height - 2; y++) {
-    for (let t = 0; t < 2; t++) {
-      tiles[y][t] = Tile.RoadS;
-    }
-  }
-  
-  // Right outer lanes (North direction)
-  for (let y = 2; y < height - 2; y++) {
-    for (let t = 0; t < 2; t++) {
-      tiles[y][width - 1 - t] = Tile.RoadN;
-    }
-  }
+  const roundabouts = []; // track centers for exit graph augmentation
 
   // Per-block generation
   for (let by = 0; by < blocksHigh; by++) {
@@ -147,68 +116,37 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
   // Inter-block corridors are now formed by block road rings + medians
   // The logic that carved corridors explicitly has been removed.
 
-  // Intersections with ocean handling
+  // Intersections: build 2-lane anti-clockwise roundabouts (5x5 area)
   for (let gy = 0; gy <= blocksHigh; gy++) {
     for (let gx = 0; gx <= blocksWide; gx++) {
-      const cy = gy * (W + MED) + outerOffset;
-      const cx = gx * (W + MED) + outerOffset;
-      if (cy >= height - 2 || cx >= width - 2) continue; // Skip if too close to edge
-      
+      const cy = gy * (W + MED), cx = gx * (W + MED);
+      if (cy >= height || cx >= width) continue;
       tiles[cy][cx] = Tile.Median; // central island
-      
-      // Handle ocean-facing directions
-      const isTopEdge = gy === 0;
-      const isBottomEdge = gy === blocksHigh;
-      const isLeftEdge = gx === 0;
-      const isRightEdge = gx === blocksWide;
-      
-      // Top of intersection
-      for (let x=cx-2; x<=cx+2; x++) {
-        if (!isTopEdge) {
-          tiles[cy-2][x] = Tile.RoadW;
-          tiles[cy-1][x] = Tile.RoadW;
-        } else {
-          tiles[cy-2][x] = Tile.RoadW;
-          tiles[cy-1][x] = Tile.RoadW;
-        }
-      }
-      
-      // Bottom of intersection
-      for (let x=cx-2; x<=cx+2; x++) {
-        if (!isBottomEdge) {
-          tiles[cy+2][x] = Tile.RoadE;
-          tiles[cy+1][x] = Tile.RoadE;
-        } else {
-          tiles[cy+2][x] = Tile.RoadE;
-          tiles[cy+1][x] = Tile.RoadE;
-        }
-      }
-      
-      // Left of intersection
-      for (let y=cy-2; y<=cy+2; y++) {
-        if (!isLeftEdge) {
-          tiles[y][cx-2] = Tile.RoadS;
-          tiles[y][cx-1] = Tile.RoadS;
-        } else {
-          tiles[y][cx-2] = Tile.RoadS;
-          tiles[y][cx-1] = Tile.RoadS;
-        }
-      }
-      
-      // Right of intersection
-      for (let y=cy-2; y<=cy+2; y++) {
-        if (!isRightEdge) {
-          tiles[y][cx+1] = Tile.RoadN;
-          tiles[y][cx+2] = Tile.RoadN;
-        } else {
-          tiles[y][cx+1] = Tile.RoadN;
-          tiles[y][cx+2] = Tile.RoadN;
-        }
-      }
-      
       roundabouts.push({ cx, cy });
+      const set = (x,y,t)=>{ if (x>=0&&y>=0&&x<width&&y<height) tiles[y][x]=t; };
+      // top (leftward)
+      for (let x=cx-2; x<=cx+2; x++){ set(x, cy-2, Tile.RoadW); set(x, cy-1, Tile.RoadW); }
+      // bottom (rightward)
+      for (let x=cx-2; x<=cx+2; x++){ set(x, cy+2, Tile.RoadE); set(x, cy+1, Tile.RoadE); }
+      // left (downward)
+      for (let y=cy-2; y<=cy+2; y++){ set(cx-2, y, Tile.RoadS); set(cx-1, y, Tile.RoadS); }
+      // right (upward)
+      for (let y=cy-2; y<=cy+2; y++){ set(cx+1, y, Tile.RoadN); set(cx+2, y, Tile.RoadN); }
     }
   }
+
+  // Add a clockwise two-lane perimeter ring just inside map edges
+  // Top edge: two rows (y=1,2) go West; Bottom edge: (y=height-2,height-1) go East
+  // Left edge: two cols (x=1,2) go South; Right edge: (x=width-2,width-1) go North
+  const setP = (x,y,t)=>{ if (x>=0&&y>=0&&x<width&&y<height) tiles[y][x]=t; };
+  // Top
+  for (let x=1; x<width-1; x++){ setP(x,1,Tile.RoadW); setP(x,2,Tile.RoadW); }
+  // Bottom
+  for (let x=1; x<width-1; x++){ setP(x,height-2,Tile.RoadE); setP(x,height-1,Tile.RoadE); }
+  // Left
+  for (let y=1; y<height-1; y++){ setP(1,y,Tile.RoadS); setP(2,y,Tile.RoadS); }
+  // Right
+  for (let y=1; y<height-1; y++){ setP(width-2,y,Tile.RoadN); setP(width-1,y,Tile.RoadN); }
 
   const roads = buildRoadGraph(tiles, width, height, roundabouts);
   const peds = buildPedGraph(tiles, width, height);

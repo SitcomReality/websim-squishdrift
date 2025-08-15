@@ -6,6 +6,7 @@ export const Tile = {
   RoadW: 4,
   Median: 5,
   Intersection: 6,
+  Footpath: 7,
 };
 
 export const TileColor = {
@@ -16,9 +17,10 @@ export const TileColor = {
   [Tile.RoadW]: '#c9ccd1',
   [Tile.Median]: '#e6e8ec',
   [Tile.Intersection]: '#bfc3c8',
+  [Tile.Footpath]: '#e0e2e6',
 };
 
-export function isWalkable(t) { return t !== Tile.Median; }
+export function isWalkable(t) { return t !== Tile.Median && t !== Tile.RoadN && t !== Tile.RoadE && t !== Tile.RoadS && t !== Tile.RoadW && t !== Tile.Intersection; }
 export function isRoad(t){ return t===Tile.RoadN||t===Tile.RoadE||t===Tile.RoadS||t===Tile.RoadW; }
 export function roadDir(t){
   if (t===Tile.RoadN) return 'N';

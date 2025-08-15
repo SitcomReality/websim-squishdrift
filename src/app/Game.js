@@ -25,7 +25,7 @@ export class Game {
       dx *= inv; dy *= inv;
       const p = s.player.pos, map = s.world.map;
       const tryMove = (nx, ny) => {
-        const tx = Math.floor(nx), ty = Math.floor(ny);
+        const tx = Math.floor(nx + 0.5), ty = Math.floor(ny + 0.5);
         if (tx < 0 || ty < 0 || tx >= map.width || ty >= map.height) return false;
         return isWalkable(map.tiles[ty][tx]);
       };

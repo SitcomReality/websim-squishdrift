@@ -20,6 +20,10 @@
   - Corridors now have 4 lanes (2 each direction) with median divider
   - Added basic footpaths inside blocks (1-tile border around interior)
 
+- 2025-08-16: Implement block interiors
+  - Added `Footpath` tile type.
+  - Refactored map generator to create proper 5x5 block interiors with lots and alleys, surrounded by footpaths, as per design spec.
+
 # Next Step
-- Implement proper footpaths and pedestrian spawn points inside block interiors
+- Implement buildings and parks in block lots.
 

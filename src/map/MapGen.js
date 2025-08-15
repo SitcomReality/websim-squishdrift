@@ -1,29 +1,53 @@
 import { Tile } from './TileTypes.js';
 import { rng } from '../utils/RNG.js';
 
-export function generateCity(seed = 'alpha-seed', blocksWide = 2, blocksHigh = 2) {
-  const W = 11, MED = 1, RING = 2; // per DESIGN: 11 footprint, 1 median, 2-tile road ring
+export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4) {
+  const W = 11, MED = 1, RING = 4; // 4-tile road ring (2 lanes each way + median)
   const width = blocksWide * (W + MED) + MED;
   const height = blocksHigh * (W + MED) + MED;
   const tiles = Array.from({ length: height }, () => new Uint8Array(width).fill(Tile.Grass));
-  const rand = rng(seed); // reserved for future variability
+  const rand = rng(seed);
 
-  // Owned road rings per block
+  // Owned 4-lane road rings per block
   for (let by = 0; by < blocksHigh; by++) {
     for (let bx = 0; bx < blocksWide; bx++) {
       const ox = MED + bx * (W + MED);
       const oy = MED + by * (W + MED);
-      // 2-tile thick border around W x W block footprint
+      
+      // 4-tile thick border around W x W block footprint
       for (let t = 0; t < RING; t++) {
-        // top/bottom rows (E/W)
+        // top/bottom rows (E/W lanes)
         for (let i = 0; i < W - t * 2; i++) {
           tiles[oy + t][ox + t + i] = Tile.RoadE;
           tiles[oy + W - 1 - t][ox + t + i] = Tile.RoadW;
         }
-        // left/right cols (N/S)
+        // left/right cols (N/S lanes)
         for (let i = 0; i < W - t * 2; i++) {
           tiles[oy + t + i][ox + t] = Tile.RoadN;
           tiles[oy + t + i][ox + W - 1 - t] = Tile.RoadS;
+        }
+      }
+
+      // Footpaths inside the road ring (1-tile border)
+      for (let t = RING; t < RING + 1; t++) {
+        // top/bottom footpaths
+        for (let i = 0; i < W - t * 2; i++) {
+          tiles[oy + t][ox + t + i] = Tile.Grass; // Will be footpath when we add it
+          tiles[oy + W - 1 - t][ox + t + i] = Tile.Grass;
+        }
+        // left/right footpaths
+        for (let i = 0; i < W - t * 2; i++) {
+          tiles[oy + t + i][ox + t] = Tile.Grass;
+          tiles[oy + t + i][ox + W - 1 - t] = Tile.Grass;
+        }
+      }
+
+      // Interior blocks (5x5 footpaths and grass for now)
+      const interiorStart = RING + 1;
+      const interiorSize = W - 2 * interiorStart;
+      for (let y = interiorStart; y < interiorStart + interiorSize; y++) {
+        for (let x = interiorStart; x < interiorStart + interiorSize; x++) {
+          tiles[oy + y][ox + x] = Math.random() < 0.3 ? Tile.Grass : Tile.Grass; // Placeholder for footpaths
         }
       }
     }
@@ -39,21 +63,29 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 2, blocksHigh = 2
     if (x >= 0 && x < width) for (let y = 0; y < height; y++) tiles[y][x] = Tile.Median;
   }
 
-  // Carve 2-lane road corridors adjacent to each median (connect blocks)
+  // 4-lane road corridors adjacent to each median
   for (let gy = 0; gy <= blocksHigh; gy++) {
     const y = gy * (W + MED);
-    if (y > 0 && y < height - 0) {
-      const yNorth = y - 1, ySouth = y + 1;
-      if (yNorth >= 0) for (let x = 0; x < width; x++) tiles[yNorth][x] = Tile.RoadE;
-      if (ySouth < height) for (let x = 0; x < width; x++) tiles[ySouth][x] = Tile.RoadW;
+    if (y > 0 && y < height) {
+      for (let lane = 0; lane < 2; lane++) {
+        const yLane = y - 1 - lane;
+        if (yLane >= 0) for (let x = 0; x < width; x++) tiles[yLane][x] = Tile.RoadE;
+        
+        const yLane2 = y + 1 + lane;
+        if (yLane2 < height) for (let x = 0; x < width; x++) tiles[yLane2][x] = Tile.RoadW;
+      }
     }
   }
   for (let gx = 0; gx <= blocksWide; gx++) {
     const x = gx * (W + MED);
-    if (x > 0 && x < width - 0) {
-      const xWest = x - 1, xEast = x + 1;
-      if (xWest >= 0) for (let y = 0; y < height; y++) tiles[y][xWest] = Tile.RoadS;
-      if (xEast < width) for (let y = 0; y < height; y++) tiles[y][xEast] = Tile.RoadN;
+    if (x > 0 && x < width) {
+      for (let lane = 0; lane < 2; lane++) {
+        const xLane = x - 1 - lane;
+        if (xLane >= 0) for (let y = 0; y < height; y++) tiles[y][xLane] = Tile.RoadS;
+        
+        const xLane2 = x + 1 + lane;
+        if (xLane2 < width) for (let y = 0; y < height; y++) tiles[y][xLane2] = Tile.RoadN;
+      }
     }
   }
 

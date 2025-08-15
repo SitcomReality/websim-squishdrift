@@ -16,6 +16,10 @@
 - 2025-08-15: Inter-block corridors + larger map
   - Carved continuous 2-lane corridors adjacent to medians to connect blocks; doubled city to 4x4 blocks for better testing
 
+- 2025-08-15: Upgraded corridors to 4-lane + median
+  - Corridors now have 4 lanes (2 each direction) with median divider
+  - Added basic footpaths inside blocks (1-tile border around interior)
+
 # Next Step
-- Upgrade corridors to full 4-lane + median and refine intersection turn links; add simple footpaths inside blocks.
+- Implement proper footpaths and pedestrian spawn points inside block interiors
 

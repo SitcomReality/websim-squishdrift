@@ -43,6 +43,17 @@ export function drawPedestrianDebug(r, state) {
     ctx.fill();
   }
   
+  // Draw entity counts
+  ctx.fillStyle = 'rgba(255, 0, 0, 0.8)';
+  ctx.font = '12px monospace';
+  const npcs = state.entities.filter(e => e.type === 'npc').length;
+  const vehicles = state.entities.filter(e => e.type === 'vehicle').length;
+  const bullets = state.entities.filter(e => e.type === 'bullet').length;
+  
+  // Remove the on-canvas text display since it's now in HUD
+  // ctx.fillText(`NPCs: ${npcs}`, sx * ts + 10, sy * ts + 20);
+  // ctx.fillText(`Vehicles: ${vehicles}`, sx * ts + 10, sy * ts + 35);
+  // ctx.fillText(`Bullets: ${bullets}`, sx * ts + 10, sy * ts + 50);
+  
   ctx.restore();
 }
-

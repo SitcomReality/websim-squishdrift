@@ -45,11 +45,21 @@ export class GameEngine {
     wantedRow.innerHTML = '<span class="label">Wanted</span><span id="wanted-level">0</span>';
     document.getElementById('hud').appendChild(wantedRow);
     
+    // Add debug info row
+    const debugRow = document.createElement('div');
+    debugRow.className = 'row';
+    debugRow.id = 'debug-info';
+    debugRow.style.display = 'none';
+    debugRow.innerHTML = '<span class="label">Debug</span><span id="debug-text">-</span>';
+    document.getElementById('hud').appendChild(debugRow);
+    
     this.hud = {
       vehicleStateEl: document.getElementById('vehicle-state'),
       itemNameEl: document.getElementById('item-name'),
       hpBarEl: document.getElementById('hp-bar'),
-      wantedLevelEl: document.getElementById('wanted-level')
+      wantedLevelEl: document.getElementById('wanted-level'),
+      debugInfoEl: document.getElementById('debug-info'),
+      debugTextEl: document.getElementById('debug-text')
     };
   }
 
@@ -73,20 +83,25 @@ export class GameEngine {
 
   updateDebugHUD() {
     const player = this.state.entities.find(e => e.type === 'player');
-    this.debugOverlay.update({
+    const debugData = {
       fps: this.renderer.fps,
-      dt: 0,
       player: { x: player?.pos.x.toFixed(2), y: player?.pos.y.toFixed(2) },
       camera: { x: this.state.camera.x.toFixed(2), y: this.state.camera.y.toFixed(2) },
-      roads: {
-        nodes: this.state.world.map.roads.nodes.length,
-        links: this.state.world.map.roads.nodes.reduce((a,n)=>a+n.next.length,0)
-      },
       npcs: this.state.entities.filter(e=>e.type==='npc').length,
       vehicles: this.state.entities.filter(e=>e.type==='vehicle').length,
       wantedLevel: this.emergencyServices.wantedLevel,
       activeIncidents: this.emergencyServices.activeIncidents.length,
       emergencyVehicles: this.emergencyServices.emergencyVehicles.length
-    });
+    };
+    
+    this.debugOverlay.update(debugData);
+    
+    // Update HUD debug info
+    if (this.debugOverlay.enabled) {
+      this.hud.debugInfoEl.style.display = 'flex';
+      this.hud.debugTextEl.textContent = `FPS:${debugData.fps} NPCs:${debugData.npcs} Vehicles:${debugData.vehicles}`;
+    } else {
+      this.hud.debugInfoEl.style.display = 'none';
+    }
   }
 }

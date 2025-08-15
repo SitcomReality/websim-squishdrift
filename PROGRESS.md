@@ -75,3 +75,5 @@
   - Player takes damage when hit by vehicles
   - NPCs can now be damaged by both bullets and vehicle collisions
 
+- 2025-08-16: HUD health bar wiring
+  - Player health now updates the HUD bar in real time with a smooth transition; reflects damage from collisions/projectiles.

@@ -25,7 +25,8 @@ export class Game {
     this.state.control = { inVehicle: false, vehicle: null, equipped: null };
     this.hud = { 
       vehicleStateEl: document.getElementById('vehicle-state'),
-      itemNameEl: document.getElementById('item-name')
+      itemNameEl: document.getElementById('item-name'),
+      hpBarEl: document.getElementById('hp-bar')
     };
   }
   
@@ -42,6 +43,12 @@ export class Game {
         entity.health = new Health(maxHp);
       }
     });
+    
+    // Update HUD health bar
+    if (this.hud.hpBarEl && player?.health) {
+      const pct = Math.max(0, Math.min(1, player.health.getPercent()));
+      this.hud.hpBarEl.style.width = `${Math.round(pct * 100)}%`;
+    }
     
     // Interact (E) - enter/exit or pickup item
     if (this.input.pressed.has('KeyE')) {

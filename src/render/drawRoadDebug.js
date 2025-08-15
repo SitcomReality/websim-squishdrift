@@ -26,15 +26,13 @@ export function drawRoadDebug(r, state){
   ctx.restore();
 }
 
+function dirToAngle(dir) {
+    return dir==='N'? -Math.PI/2 : dir==='E'? 0 : dir==='S'? Math.PI/2 : Math.PI;
+}
+
 function drawDirArrow(ctx, cx, cy, dir, len){
-  const ang = dir==='N'? -Math.PI/2 : dir==='E'? 0 : dir==='S'? Math.PI/2 : Math.PI;
-  const tx = cx + Math.cos(ang)*len, ty = cy + Math.sin(ang)*len;
-  ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(tx, ty); ctx.stroke();
-  const ah = 6, a1 = ang + 2.6, a2 = ang - 2.6;
-  ctx.beginPath(); ctx.moveTo(tx, ty);
-  ctx.lineTo(tx + Math.cos(a1)*ah, ty + Math.sin(a1)*ah);
-  ctx.lineTo(tx + Math.cos(a2)*ah, ty + Math.sin(a2)*ah);
-  ctx.closePath(); ctx.fill();
+  const ang = dirToAngle(dir);
+  drawAngleArrow(ctx, cx, cy, ang, len);
 }
 
 function drawAngleArrow(ctx, cx, cy, ang, len){

@@ -5,8 +5,11 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
   const W = 11, MED = 1;
   const ROAD_RING = 2;      // 2-tile road ring
   const FOOTPATH_RING = 1;  // 1-tile footpath ring
-  const width = blocksWide * (W + MED) + MED;
-  const height = blocksHigh * (W + MED) + MED;
+  const mapOffset = 2; // space for new perimeter road
+  const cityWidth = blocksWide * (W + MED) + MED;
+  const cityHeight = blocksHigh * (W + MED) + MED;
+  const width = cityWidth + mapOffset * 2;
+  const height = cityHeight + mapOffset * 2;
   const tiles = Array.from({ length: height }, () => new Uint8Array(width).fill(Tile.Grass));
   const buildings = [];
   const rand = rng(seed);
@@ -15,8 +18,8 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
   // Per-block generation
   for (let by = 0; by < blocksHigh; by++) {
     for (let bx = 0; bx < blocksWide; bx++) {
-      const ox = MED + bx * (W + MED);
-      const oy = MED + by * (W + MED);
+      const ox = mapOffset + MED + bx * (W + MED);
+      const oy = mapOffset + MED + by * (W + MED);
       
       // 2-tile road ring
       for (let t = 0; t < ROAD_RING; t++) {
@@ -105,24 +108,42 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
 
   // Medians between blocks
   for (let gy = 0; gy <= blocksHigh; gy++) {
-    const y = gy * (W + MED);
+    const y = mapOffset + gy * (W + MED);
     if (y >= 0 && y < height) for (let x = 0; x < width; x++) tiles[y][x] = Tile.Median;
   }
   for (let gx = 0; gx <= blocksWide; gx++) {
-    const x = gx * (W + MED);
+    const x = mapOffset + gx * (W + MED);
     if (x >= 0 && x < width) for (let y = 0; y < height; y++) tiles[y][x] = Tile.Median;
   }
   
+  // Outer perimeter road (clockwise)
+  for (let i = 0; i < width; i++) {
+    tiles[0][i] = Tile.RoadE;
+    tiles[1][i] = Tile.RoadE;
+    tiles[height - 2][i] = Tile.RoadW;
+    tiles[height - 1][i] = Tile.RoadW;
+  }
+  for (let i = 0; i < height; i++) {
+    tiles[i][0] = Tile.RoadS;
+    tiles[i][1] = Tile.RoadS;
+    tiles[i][width - 2] = Tile.RoadN;
+    tiles[i][width - 1] = Tile.RoadN;
+  }
+
   // Inter-block corridors are now formed by block road rings + medians
   // The logic that carved corridors explicitly has been removed.
 
   // Intersections: build 2-lane anti-clockwise roundabouts (5x5 area)
   for (let gy = 0; gy <= blocksHigh; gy++) {
     for (let gx = 0; gx <= blocksWide; gx++) {
-      const cy = gy * (W + MED), cx = gx * (W + MED);
+      const cx = mapOffset + gx * (W + MED);
+      const cy = mapOffset + gy * (W + MED);
       if (cy >= height || cx >= width) continue;
+      
+      const isPerimeter = (gx === 0 || gx === blocksWide || gy === 0 || gy === blocksHigh);
+      
       tiles[cy][cx] = Tile.Median; // central island
-      roundabouts.push({ cx, cy });
+      roundabouts.push({ cx, cy, isPerimeter });
       const set = (x,y,t)=>{ if (x>=0&&y>=0&&x<width&&y<height) tiles[y][x]=t; };
       // top (leftward)
       for (let x=cx-2; x<=cx+2; x++){ set(x, cy-2, Tile.RoadW); set(x, cy-1, Tile.RoadW); }
@@ -132,38 +153,38 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
       for (let y=cy-2; y<=cy+2; y++){ set(cx-2, y, Tile.RoadS); set(cx-1, y, Tile.RoadS); }
       // right (upward)
       for (let y=cy-2; y<=cy+2; y++){ set(cx+1, y, Tile.RoadN); set(cx+2, y, Tile.RoadN); }
+      
+      if (isPerimeter) {
+        if (gy === 0) { // Top perimeter
+          for (let x=cx-2; x<=cx+2; x++) { set(x, cy-2, Tile.RoadW); set(x, cy-1, Tile.RoadW); } // Keep W
+          for (let y=cy-1; y<=cy+2; y++) {
+            if (gx > 0) { set(cx-2, y, Tile.RoadS); set(cx-1, y, Tile.RoadS); }
+            if (gx < blocksWide) { set(cx+1, y, Tile.RoadN); set(cx+2, y, Tile.RoadN); }
+          }
+        }
+        if (gy === blocksHigh) { // Bottom perimeter
+          for (let x=cx-2; x<=cx+2; x++) { set(x, cy+2, Tile.RoadE); set(x, cy+1, Tile.RoadE); } // Keep E
+          for (let y=cy-2; y<=cy+1; y++) {
+             if (gx > 0) { set(cx-2, y, Tile.RoadS); set(cx-1, y, Tile.RoadS); }
+             if (gx < blocksWide) { set(cx+1, y, Tile.RoadN); set(cx+2, y, Tile.RoadN); }
+          }
+        }
+        if (gx === 0) { // Left perimeter
+          for (let y=cy-2; y<=cy+2; y++) { set(cx-2, y, Tile.RoadS); set(cx-1, y, Tile.RoadS); } // Keep S
+          for (let x=cx-1; x<=cx+2; x++) {
+            if (gy > 0) { set(x, cy-2, Tile.RoadW); set(x, cy-1, Tile.RoadW); }
+            if (gy < blocksHigh) { set(x, cy+2, Tile.RoadE); set(x, cy+1, Tile.RoadE); }
+          }
+        }
+        if (gx === blocksWide) { // Right perimeter
+          for (let y=cy-2; y<=cy+2; y++) { set(cx+1, y, Tile.RoadN); set(cx+2, y, Tile.RoadN); } // Keep N
+          for (let x=cx-2; x<=cx+1; x++) {
+            if (gy > 0) { set(x, cy-2, Tile.RoadW); set(x, cy-1, Tile.RoadW); }
+            if (gy < blocksHigh) { set(x, cy+2, Tile.RoadE); set(x, cy+1, Tile.RoadE); }
+          }
+        }
+      }
     }
-  }
-
-  // Add a clockwise two-lane perimeter inside the outer median ring
-  // Top edge lanes travel West; Bottom edge lanes travel East
-  // Left edge lanes travel South; Right edge lanes travel North
-  const setIfEmpty = (x, y, t) => {
-    if (x<0||y<0||x>=width||y>=height) return;
-    const cur = tiles[y][x];
-    if (cur !== Tile.Median && cur !== Tile.RoadN && cur !== Tile.RoadE && cur !== Tile.RoadS && cur !== Tile.RoadW) {
-      tiles[y][x] = t;
-    }
-  };
-  // Top edge (inside outer median at y=0): place lanes at y=1 and y=2 to the West
-  for (let x = 1; x < width-1; x++) {
-    setIfEmpty(x, 1, Tile.RoadW);
-    setIfEmpty(x, 2, Tile.RoadW);
-  }
-  // Bottom edge (inside outer median at y=height-1): place lanes at y=height-2 and y=height-3 to the East
-  for (let x = 1; x < width-1; x++) {
-    setIfEmpty(x, height-2, Tile.RoadE);
-    setIfEmpty(x, height-3, Tile.RoadE);
-  }
-  // Left edge (inside outer median at x=0): place lanes at x=1 and x=2 to the South
-  for (let y = 1; y < height-1; y++) {
-    setIfEmpty(1, y, Tile.RoadS);
-    setIfEmpty(2, y, Tile.RoadS);
-  }
-  // Right edge (inside outer median at x=width-1): place lanes at x=width-2 and x=width-3 to the North
-  for (let y = 1; y < height-1; y++) {
-    setIfEmpty(width-2, y, Tile.RoadN);
-    setIfEmpty(width-3, y, Tile.RoadN);
   }
 
   const roads = buildRoadGraph(tiles, width, height, roundabouts);
@@ -194,19 +215,27 @@ function buildRoadGraph(tiles, width, height, roundabouts){
     if (td) { n.next.push({ x:a1x, y:a1y, dir:td }); } // allow turning through corners
   }
   // augment exits for roundabouts (outer lanes provide optional exits)
-  for (const {cx,cy} of roundabouts){
+  for (const {cx,cy, isPerimeter} of roundabouts){
     const addExit = (x,y,ex,ey)=>{
       const from = byKey.get(keyOf(x,y,tileDir(get(x,y)))); const td = tileDir(get(ex,ey));
       if (from && td) from.next.push({ x:ex, y:ey, dir:td });
     };
     // Right side bottom two: up (default) OR right -> exit to (x+1,y)
-    addExit(cx+2, cy+1, cx+3, cy+1); addExit(cx+1, cy+1, cx+2, cy+1);
+    if (!isPerimeter || (cx < width - mapOffset - 1)) {
+        addExit(cx+2, cy+1, cx+3, cy+1); addExit(cx+1, cy+1, cx+2, cy+1);
+    }
     // Top row right two: left (default) OR up -> exit to (x, y-1)
-    addExit(cx+1, cy-2, cx+1, cy-3); addExit(cx+2, cy-2, cx+2, cy-3);
+    if (!isPerimeter || cy > mapOffset) {
+        addExit(cx+1, cy-2, cx+1, cy-3); addExit(cx+2, cy-2, cx+2, cy-3);
+    }
     // Left side top two: down (default) OR left -> exit to (x-1, y)
-    addExit(cx-2, cy-2, cx-3, cy-2); addExit(cx-2, cy-1, cx-3, cy-1);
+    if (!isPerimeter || cx > mapOffset) {
+        addExit(cx-2, cy-2, cx-3, cy-2); addExit(cx-2, cy-1, cx-3, cy-1);
+    }
     // Bottom row left two: right (default) OR down -> exit to (x, y+1)
-    addExit(cx-2, cy+1, cx-2, cy+2); addExit(cx-1, cy+1, cx-1, cy+2);
+    if (!isPerimeter || cy < height - mapOffset -1) {
+        addExit(cx-2, cy+1, cx-2, cy+2); addExit(cx-1, cy+1, cx-1, cy+2);
+    }
   }
   return { nodes, byKey };
 }

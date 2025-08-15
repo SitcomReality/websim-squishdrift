@@ -13,17 +13,17 @@ export const Tile = {
 };
 
 export const TileColor = {
-  [Tile.Grass]: '#f7f7f7',
-  [Tile.RoadN]: '#c9ccd1',
-  [Tile.RoadE]: '#c9ccd1',
-  [Tile.RoadS]: '#c9ccd1',
-  [Tile.RoadW]: '#c9ccd1',
-  [Tile.Median]: '#e6e8ec',
-  [Tile.Intersection]: '#bfc3c8',
-  [Tile.Footpath]: '#e0e2e6',
+  [Tile.Grass]: '#90EE90', // light green for grass/gaps
+  [Tile.RoadN]: '#2F2F2F', // very dark grey
+  [Tile.RoadE]: '#2F2F2F',
+  [Tile.RoadS]: '#2F2F2F',
+  [Tile.RoadW]: '#2F2F2F',
+  [Tile.Median]: '#404040', // dark grey for medians
+  [Tile.Intersection]: '#2F2F2F', // same as roads
+  [Tile.Footpath]: '#D3D3D3', // light grey
   [Tile.BuildingFloor]: '#f8f9fa',
   [Tile.BuildingWall]: '#9ca3af',
-  [Tile.Park]: '#d1fae5',
+  [Tile.Park]: '#228B22', // dark green
 };
 
 export function isWalkable(t) { 

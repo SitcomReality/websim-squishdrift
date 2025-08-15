@@ -217,12 +217,12 @@ function drawPlayer(r, state){
   const ts = state.world.tileSize;
   const p = state.player.pos;
   ctx.save();
-  ctx.fillStyle = '#111';
+  ctx.fillStyle = '#FF0000'; // red player
   const size = ts * 0.8;
   ctx.translate(p.x*ts, p.y*ts);
   ctx.fillRect(-size/2, -size/2, size, size);
   // facing indicator
-  ctx.fillStyle = '#0ea5e9';
+  ctx.fillStyle = '#FFFFFF';
   ctx.beginPath();
   ctx.arc((state.player.facing.x)*ts*0.3, (state.player.facing.y)*ts*0.3, 3, 0, Math.PI*2);
   ctx.fill();
@@ -237,8 +237,10 @@ function drawVehicle(r, state, interp){
   const dir = v.next.dir || v.node.dir;
   const ang = dir==='N'?-Math.PI/2:dir==='E'?0:dir==='S'?Math.PI/2:Math.PI;
   ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
-  ctx.fillStyle = '#111'; ctx.fillRect(-ts*0.45, -ts*0.25, ts*0.9, ts*0.5);
-  ctx.fillStyle = '#0ea5e9'; ctx.fillRect(ts*0.15, -2, ts*0.2, 4); // heading indicator
+  ctx.fillStyle = '#8A2BE2'; // violet vehicles
+  ctx.fillRect(-ts*0.45, -ts*0.25, ts*0.9, ts*0.5);
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(ts*0.15, -2, ts*0.2, 4); // heading indicator
   ctx.restore();
 }
 

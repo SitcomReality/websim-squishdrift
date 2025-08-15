@@ -34,6 +34,11 @@
   - Added basic building wall shading in renderer
   - Updated walkability rules to exclude building walls
 
+- 2025-08-16: Color scheme update
+  - Updated tile colors for better visual distinction during testing
+  - Changed roads to very dark grey, footpaths to light grey, parks to dark green
+  - Updated player to red, vehicles to violet
+
 # Next Step
 - Implement basic 2.5D building rendering with height and roof offset based on camera position.
 

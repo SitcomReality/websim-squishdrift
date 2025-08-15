@@ -33,6 +33,11 @@ export class GameEngine {
     // Initialize EmergencyServices after state is created
     this.emergencyServices = new EmergencyServices(this.state);
     
+    // Enable debug overlay initially
+    if (debugEl) {
+      this.debugOverlay.enabled = true;
+    }
+    
     this.setupHUD();
   }
 
@@ -80,6 +85,7 @@ export class GameEngine {
         links: this.state.world.map.roads.nodes.reduce((a,n)=>a+n.next.length,0)
       },
       npcs: this.state.entities.filter(e=>e.type==='npc').length,
+      vehicles: this.state.entities.filter(e=>e.type==='vehicle').length,
       wantedLevel: this.emergencyServices.wantedLevel,
       activeIncidents: this.emergencyServices.activeIncidents.length,
       emergencyVehicles: this.emergencyServices.emergencyVehicles.length

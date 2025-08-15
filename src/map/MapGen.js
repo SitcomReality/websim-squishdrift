@@ -175,7 +175,7 @@ function buildRoadGraph(tiles, width, height){
 
 function buildPedGraph(tiles, width, height){
   const nodes = new Map(); const key=(x,y)=>`${x},${y}`;
-  const walkable = (t)=> t!==Tile.Median && t!==Tile.Intersection && t!==Tile.BuildingWall &&
+  const walkable = (t)=> t!==Tile.Median && t!==Tile.Intersection && t!==Tile.BuildingWall && t!==Tile.BuildingFloor &&
                         t!==Tile.RoadN && t!==Tile.RoadE && t!==Tile.RoadS && t!==Tile.RoadW;
   for (let y=0;y<height;y++) for (let x=0;x<width;x++){
     if (!walkable(tiles[y][x])) continue; nodes.set(key(x,y), { x, y, neighbors:[] });

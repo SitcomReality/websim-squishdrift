@@ -50,10 +50,9 @@ export class PlayerSystem {
   }
 
   isWalkableTile(state, x, y) {
-    const tx = Math.floor(x + 0.5);
-    const ty = Math.floor(y + 0.5);
+    const tx = Math.floor(x);
+    const ty = Math.floor(y);
     if (tx < 0 || ty < 0 || tx >= state.world.map.width || ty >= state.world.map.height) return false;
     return isWalkable(state.world.map.tiles[ty][tx]);
   }
 }
-

@@ -98,12 +98,13 @@ export class GameEngine {
     const player = this.state.entities.find(e => e.type === 'player');
     if (!player) return;
 
-    // Update interaction prompt
+    // Update interaction prompt with vehicle info
     if (!this.state.control.inVehicle) {
       const nearbyVehicle = this.findNearbyVehicle(player);
       if (nearbyVehicle) {
         this.hud.interactionPromptEl.style.display = 'flex';
-        this.hud.interactionActionEl.textContent = 'enter vehicle';
+        this.hud.interactionActionEl.textContent = `enter ${nearbyVehicle.type}`;
+        console.log('Nearby vehicle detected:', nearbyVehicle);
       } else {
         this.hud.interactionPromptEl.style.display = 'none';
       }

@@ -44,20 +44,27 @@ export class PlayerSystem {
 
   handleInteraction(state, player, input) {
     if (input.pressed.has('KeyE')) {
-      this.handleVehicleInteraction(state, player);
+      console.log('E key pressed - checking interaction');
+      this.handleVehicleInteraction(state, player, input);
       this.pickupItem(state, player);
     }
   }
 
-  handleVehicleInteraction(state, player) {
+  handleVehicleInteraction(state, player, input) {
+    console.log('handleVehicleInteraction called');
     if (state.control.inVehicle) {
+      console.log('Currently in vehicle, attempting to exit');
       // Exit vehicle
       this.exitVehicle(state, player);
     } else {
       // Enter vehicle
       const nearbyVehicle = this.findNearbyVehicle(state, player);
+      console.log('Looking for nearby vehicle... found:', nearbyVehicle);
       if (nearbyVehicle) {
+        console.log('Entering vehicle:', nearbyVehicle);
         this.enterVehicle(state, player, nearbyVehicle);
+      } else {
+        console.log('No nearby vehicle found');
       }
     }
   }
@@ -72,6 +79,7 @@ export class PlayerSystem {
   }
 
   enterVehicle(state, player, vehicle) {
+    console.log('enterVehicle called with:', vehicle);
     state.control.inVehicle = true;
     state.control.vehicle = vehicle;
     player.hidden = true;
@@ -82,9 +90,12 @@ export class PlayerSystem {
     delete vehicle.node;
     delete vehicle.next;
     delete vehicle.t;
+    
+    console.log('Successfully entered vehicle:', vehicle);
   }
 
   exitVehicle(state, player) {
+    console.log('exitVehicle called');
     if (!state.control.inVehicle) return;
     
     const vehicle = state.control.vehicle;
@@ -112,6 +123,7 @@ export class PlayerSystem {
     
     state.control.inVehicle = false;
     state.control.vehicle = null;
+    console.log('Successfully exited vehicle');
   }
 
   pickupItem(state, player) {

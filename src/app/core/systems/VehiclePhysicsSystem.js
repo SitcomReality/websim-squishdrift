@@ -26,26 +26,20 @@ export class VehiclePhysicsSystem {
       Fx -= fwd.x * Math.abs(brakeForce);
       Fy -= fwd.y * Math.abs(brakeForce);
 
-      // Lateral grip to reduce side slip - INCREASED for better friction
-      Fx -= right.x * vLat * v.grip * 2.5; // Increased multiplier for stronger lateral friction
-      Fy -= right.y * vLat * v.grip * 2.5;
+      // Lateral grip to reduce side slip
+      Fx -= right.x * vLat * v.grip;
+      Fy -= right.y * vLat * v.grip;
 
-      // Rolling resistance + air drag - INCREASED for faster stopping
-      Fx -= v.vel.x * (v.rollingRes * 2.5) - v.vel.x * Math.hypot(v.vel.x, v.vel.y) * v.drag;
-      Fy -= v.vel.y * (v.rollingRes * 2.5) - v.vel.y * Math.hypot(v.vel.x, v.vel.y) * v.drag;
-
-      // Add static friction when velocity is very low
-      const speed = Math.hypot(v.vel.x, v.vel.y);
-      if (speed < 0.1) {
-        v.vel.x *= 0.92; // Stronger damping at low speeds
-        v.vel.y *= 0.92;
-      }
+      // Rolling resistance + air drag
+      Fx -= v.vel.x * v.rollingRes - v.vel.x * Math.hypot(v.vel.x, v.vel.y) * v.drag;
+      Fy -= v.vel.y * v.rollingRes - v.vel.y * Math.hypot(v.vel.x, v.vel.y) * v.drag;
 
       // Integrate velocity
       v.vel.x += (Fx / v.mass) * dt;
       v.vel.y += (Fy / v.mass) * dt;
 
       // Clamp max speed
+      const speed = Math.hypot(v.vel.x, v.vel.y);
       if (speed > v.maxSpeed) {
         v.vel.x *= v.maxSpeed / speed;
         v.vel.y *= v.maxSpeed / speed;
@@ -143,9 +137,9 @@ export class VehiclePhysicsSystem {
     v.maxSpeed = v.maxSpeed || 6;
     v.engineForce = v.engineForce || 1200;
     v.brakeForce = v.brakeForce || 1800;
-    v.rollingRes = v.rollingRes || 3.0; // INCREASED from 1.2
-    v.drag = v.drag || 0.5; // INCREASED from 0.3
-    v.grip = v.grip || 8.0; // INCREASED from 6.0
+    v.rollingRes = v.rollingRes || 1.2;
+    v.drag = v.drag || 0.3;
+    v.grip = v.grip || 6.0;
     v.steerRate = v.steerRate || 2.5;
     v.ctrl = v.ctrl || { throttle: 0, brake: 0, steer: 0 };
     v.radius = v.radius || 0.6; // collision radius in world units (tiles)

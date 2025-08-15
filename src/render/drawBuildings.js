@@ -1,36 +1,124 @@
-      const floorRect = { 
-        x: b.rect.x * ts, 
-        y: b.rect.y * ts, 
-        w: b.rect.width * ts, 
-        h: b.rect.height * ts 
-      };
-      
-      // Calculate perspective-based roof scale
-      const distanceFromCamera = Math.hypot(
-        (b.rect.x + b.rect.width/2) - cam.x,
-        (b.rect.y + b.rect.height/2) - cam.y
-      );
-      const maxDistance = 20; // tiles
-      const perspectiveScale = 0.8 + (b.height / 200) * Math.max(0, 1 - distanceFromCamera / maxDistance);
-      const roofScale = 1 + (b.height / 400) * Math.max(0, 1 - distanceFromCamera / maxDistance);
-      
-      let roofOffset = { x: 0, y: 0 };
-      if (!isCamInside) {
-        const bx = b.rect.x + b.rect.width/2, by = b.rect.y + b.rect.height/2;
-        const dir = { x: bx - cam.x, y: by - cam.y };
-        const len = Math.hypot(dir.x, dir.y) || 1;
-        dir.x /= len; dir.y /= len;
-        const offsetMagnitude = b.height * perspectiveScale * Math.min(1, len / 20);
-        roofOffset.x = dir.x * offsetMagnitude;
-        roofOffset.y = dir.y * offsetMagnitude;
-      }
-      
-      const roofWidth = floorRect.w * roofScale;
-      const roofHeight = floorRect.h * roofScale;
-      const roofRect = { 
-        x: floorRect.x + roofOffset.x - (roofWidth - floorRect.w) / 2, 
-        y: floorRect.y + roofOffset.y - (roofHeight - floorRect.h) / 2, 
-        w: roofWidth, 
-        h: roofHeight 
-      };
+export function drawBuildings(r, state, mode = 'all') {
+  const { ctx } = r, ts = state.world.tileSize, map = state.world.map;
+  const cam = state.camera, perspectiveScale = 0.8;
+  
+  // Sort buildings by y-position + height for proper z-ordering
+  const sortedBuildings = [...map.buildings].sort((a, b) => {
+    const aY = a.rect.y + a.rect.height;
+    const bY = b.rect.y + b.rect.height;
+    const aZ = aY + (a.height / ts) * 0.1;
+    const bZ = bY + (b.height / ts) * 0.1;
+    return aZ - bZ;
+  });
 
+  for (const b of sortedBuildings) {
+    const floorRect = { 
+      x: b.rect.x * ts, 
+      y: b.rect.y * ts, 
+      w: b.rect.width * ts, 
+      h: b.rect.height * ts 
+    };
+    
+    // Check if camera is inside building
+    const isCamInside = (cam.x >= b.rect.x && 
+                        cam.x < b.rect.x + b.rect.width && 
+                        cam.y >= b.rect.y && 
+                        cam.y < b.rect.y + b.rect.height);
+    
+    // Calculate roof offset based on camera position
+    let roofOffset = { x: 0, y: 0 };
+    let roofScale = 1;
+    
+    if (!isCamInside) {
+      const bx = b.rect.x + b.rect.width/2, by = b.rect.y + b.rect.height/2;
+      const dir = { x: bx - cam.x, y: by - cam.y };
+      const len = Math.hypot(dir.x, dir.y) || 1;
+      dir.x /= len; dir.y /= len; // unit vector away from camera
+      const offsetMagnitude = b.height * perspectiveScale * Math.min(1, len / 20);
+      roofOffset.x = dir.x * offsetMagnitude;
+      roofOffset.y = dir.y * offsetMagnitude;
+      
+      // Perspective scale increases with building height
+      const heightFactor = Math.min(1.2, 1 + (b.height / 200) * 0.3);
+      roofScale = heightFactor;
+    }
+    
+    const scaledW = floorRect.w * roofScale;
+    const scaledH = floorRect.h * roofScale;
+    const roofRect = { 
+      x: floorRect.x + roofOffset.x - (scaledW - floorRect.w) / 2, 
+      y: floorRect.y + roofOffset.y - (scaledH - floorRect.h) / 2, 
+      w: scaledW, 
+      h: scaledH 
+    };
+    
+    const hue = 200;
+    const topWallColor = `hsl(${hue}, 20%, 75%)`;
+    const sideWallColor = `hsl(${hue}, 20%, 65%)`;
+    
+    // Draw walls connecting floor to roof
+    if (mode === 'walls' || mode === 'all') {
+      ctx.fillStyle = sideWallColor;
+      ctx.beginPath();
+      ctx.moveTo(floorRect.x, floorRect.y);
+      ctx.lineTo(roofRect.x, roofRect.y);
+      ctx.lineTo(roofRect.x, roofRect.y + roofRect.h);
+      ctx.lineTo(floorRect.x, floorRect.y + floorRect.h);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = sideWallColor;
+      ctx.beginPath();
+      ctx.moveTo(floorRect.x + floorRect.w, floorRect.y);
+      ctx.lineTo(roofRect.x + roofRect.w, roofRect.y);
+      ctx.lineTo(roofRect.x + roofRect.w, roofRect.y + roofRect.h);
+      ctx.lineTo(floorRect.x + floorRect.w, floorRect.y + floorRect.h);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = topWallColor;
+      ctx.beginPath();
+      ctx.moveTo(floorRect.x, floorRect.y);
+      ctx.lineTo(roofRect.x, roofRect.y);
+      ctx.lineTo(roofRect.x + roofRect.w, roofRect.y);
+      ctx.lineTo(floorRect.x + floorRect.w, floorRect.y);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(floorRect.x, floorRect.y + floorRect.h);
+      ctx.lineTo(roofRect.x, roofRect.y + roofRect.h);
+      ctx.lineTo(roofRect.x + roofRect.w, roofRect.y + roofRect.h);
+      ctx.lineTo(floorRect.x + floorRect.w, floorRect.y + floorRect.h);
+      ctx.closePath();
+      ctx.fill();
+
+      // Ensure West/East outer walls are drawn like North/South (visible from outside)
+      ctx.fillStyle = topWallColor;
+      ctx.beginPath();
+      ctx.moveTo(floorRect.x + floorRect.w, floorRect.y);
+      ctx.lineTo(roofRect.x + roofRect.w, roofRect.y);
+      ctx.lineTo(roofRect.x + roofRect.w, roofRect.y + roofRect.h);
+      ctx.lineTo(floorRect.x + floorRect.w, floorRect.y + floorRect.h);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(floorRect.x, floorRect.y);
+      ctx.lineTo(roofRect.x, roofRect.y);
+      ctx.lineTo(roofRect.x, roofRect.y + roofRect.h);
+      ctx.lineTo(floorRect.x, floorRect.y + floorRect.h);
+      ctx.closePath();
+      ctx.fill();
+    }
+    
+    // Draw roof
+    if (mode === 'roofs' || mode === 'all') {
+      ctx.fillStyle = b.color;
+      ctx.fillRect(roofRect.x, roofRect.y, roofRect.w, roofRect.h);
+      ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(roofRect.x, roofRect.y, roofRect.w, roofRect.h);
+    }
+  }
+}

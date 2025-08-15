@@ -7,6 +7,8 @@ import { drawNPC } from '../../entities/drawNPC.js';
 import { drawItem } from '../../entities/drawItem.js';
 import { drawEmergency } from '../../entities/drawEmergency.js';
 import { drawHealthBar } from '../../entities/drawHealthBar.js';
+import { drawPedestrianDebug } from '../../../render/drawPedestrianDebug.js';
+import { drawSpawnDebug } from '../../../render/drawSpawnDebug.js';
 
 export class RenderSystem {
   render(state, renderer, debugOverlay) {

@@ -1,3 +1,6 @@
+import { generateCity } from '../map/MapGen.js';
+import { Tile, TileColor } from '../map/TileTypes.js';
+
 export class Game {
   constructor(canvas, { debugEl } = {}) {
     this.renderer = new CanvasRenderer(canvas);
@@ -37,7 +40,7 @@ export class Game {
   }
   render(interp) {
     this.renderer.beginFrame(this.state);
-    drawGrid(this.renderer, this.state);
+    drawTiles(this.renderer, this.state);
     drawPlayer(this.renderer, this.state);
     this.renderer.endFrame();
   }
@@ -47,11 +50,12 @@ export class Game {
 class Vec2 { constructor(x=0,y=0){this.x=x;this.y=y;} copy(v){this.x=v.x;this.y=v.y;return this;} }
 
 function createInitialState() {
+  const map = generateCity('alpha-seed', 2, 2);
   return {
     time: 0,
-    player: { pos: new Vec2(0,0), facing: new Vec2(1,0), moveSpeed: 6 }, // tiles/sec
+    player: { pos: new Vec2(0,0), facing: new Vec2(1,0), moveSpeed: 6 },
     camera: { x: 0, y: 0 },
-    world: { tileSize: 24 }
+    world: { tileSize: 24, map }
   };
 }
 
@@ -118,28 +122,15 @@ class DebugOverlaySystem {
 }
 
 /* drawing helpers */
-function drawGrid(r, state){
-  const { ctx, canvas } = r;
-  const ts = state.world.tileSize;
-  const wTiles = Math.ceil(canvas.width/ts)+2;
-  const hTiles = Math.ceil(canvas.height/ts)+2;
-  const camX = state.camera.x, camY = state.camera.y;
-  const startX = Math.floor(camX - wTiles/2);
-  const startY = Math.floor(camY - hTiles/2);
-
-  ctx.save();
-  ctx.lineWidth = 1;
-  for (let y=0; y<hTiles; y++){
-    for (let x=0; x<wTiles; x++){
-      const wx = (startX + x) * ts;
-      const wy = (startY + y) * ts;
-      ctx.fillStyle = ( (x+y) & 1 ) ? '#fafafa' : '#f5f5f5';
-      ctx.fillRect(wx, wy, ts, ts);
-      ctx.strokeStyle = '#e5e7eb';
-      ctx.strokeRect(wx, wy, ts, ts);
-    }
+function drawTiles(r, state){
+  const { ctx, canvas } = r, ts = state.world.tileSize, map = state.world.map;
+  const wTiles = Math.ceil(canvas.width/ts)+2, hTiles = Math.ceil(canvas.height/ts)+2;
+  const sx = Math.floor(state.camera.x - wTiles/2), sy = Math.floor(state.camera.y - hTiles/2);
+  for (let y=0; y<hTiles; y++) for (let x=0; x<wTiles; x++){
+    const gx = sx + x, gy = sy + y; if (gy<0||gx<0||gy>=map.height||gx>=map.width) continue;
+    const t = map.tiles[gy][gx]; ctx.fillStyle = TileColor[t] || '#f5f5f5';
+    ctx.fillRect(gx*ts, gy*ts, ts, ts);
   }
-  ctx.restore();
 }
 
 function drawPlayer(r, state){

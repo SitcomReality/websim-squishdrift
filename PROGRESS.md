@@ -1,19 +1,10 @@
-__DELETE_ME__
-
 # Progress Log (Concise)
 
-- 2025-08-15: Fresh foundation initialized
-  - Replaced prior scaffold with a minimal, modular game core
-  - Implemented: Canvas renderer, fixed-timestep loop, WASD input, camera follow
-  - Added HUD placeholder and toggleable debug overlay
+- 2025-08-15: Map foundation
+  - Added deterministic RNG, Tile types, and simple road/median grid generator
+  - Replaced placeholder grid with tile renderer; camera/player retained
 
-# Current Status
+# Next Step
 
-- Running canvas with grid background and a controllable player marker
-- Stable update/render loop with FPS tracking
-- Structure ready to expand toward DESIGN.md systems
-
-# Next Step (Single, Concrete)
-
-- Introduce map module: stub tile types and a deterministic RNG seed; render a simple block/road ring per DESIGN.md to replace the placeholder grid.
+- Add basic passability and collision against non-walkable tiles (player blocked by medians/water later), and clamp camera to map bounds.
 

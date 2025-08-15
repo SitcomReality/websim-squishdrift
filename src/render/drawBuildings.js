@@ -2,13 +2,13 @@ export function drawBuildings(r, state, mode = 'all') {
   const { ctx } = r, ts = state.world.tileSize, map = state.world.map;
   const cam = state.camera, perspectiveScale = 0.8;
   
-  // Sort buildings by distance to camera for proper z-ordering
+  // Sort buildings by y-position + height for proper z-ordering
   const sortedBuildings = [...map.buildings].sort((a, b) => {
-    const aDist = Math.abs(a.rect.x + a.rect.width/2 - state.camera.x) + 
-                  Math.abs(a.rect.y + a.rect.height/2 - state.camera.y);
-    const bDist = Math.abs(b.rect.x + b.rect.width/2 - state.camera.x) + 
-                  Math.abs(b.rect.y + b.rect.height/2 - state.camera.y);
-    return aDist - bDist;
+    const aY = a.rect.y + a.rect.height;
+    const bY = b.rect.y + b.rect.height;
+    const aZ = aY + (a.height / ts) * 0.1; // Height contributes to z-order
+    const bZ = bY + (b.height / ts) * 0.1;
+    return aZ - bZ;
   });
 
   for (const b of sortedBuildings) {

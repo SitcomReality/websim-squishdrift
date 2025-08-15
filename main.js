@@ -26,4 +26,3 @@ if (game.renderer) {
   game.renderer.resizeToDisplay();
 }
 loop.start();
-

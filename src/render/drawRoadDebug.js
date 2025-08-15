@@ -22,4 +22,3 @@ function drawDirArrow(ctx, cx, cy, dir, len){
   ctx.lineTo(tx + Math.cos(a2)*ah, ty + Math.sin(a2)*ah);
   ctx.closePath(); ctx.fill();
 }
-

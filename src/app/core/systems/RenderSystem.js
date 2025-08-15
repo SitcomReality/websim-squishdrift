@@ -73,6 +73,8 @@ export class RenderSystem {
     // Draw debug overlay if enabled
     if (debugOverlay.enabled) {
       drawRoadDebug(renderer, state);
+      drawPedestrianDebug(renderer, state);
+      drawSpawnDebug(renderer, state);
     }
   }
 }

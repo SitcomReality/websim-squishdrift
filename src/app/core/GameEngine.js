@@ -12,7 +12,7 @@ import { RenderSystem } from './systems/RenderSystem.js';
 import { createInitialState } from '../state/createInitialState.js';
 
 export class GameEngine {
-  constructor(canvas, debugEl) {
+  constructor(canvas, { debugEl } = {}) {
     this.renderer = new CanvasRenderer(canvas);
     this.input = new InputSystem(canvas);
     this.debugOverlay = new DebugOverlaySystem(debugEl);

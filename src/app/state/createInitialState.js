@@ -33,7 +33,8 @@ export function createInitialState() {
     mass: 1200, maxSpeed: 4, engineForce: 900, brakeForce: 1600,
     rollingRes: 20.0, drag: 0.25, grip: 40.0, steerRate: 2.5,
     health: { hp: 100, maxHp: 100, getPercent: () => 1, isAlive: () => true },
-    controlled: false, // Make sure it's not controlled by AI
+    controlled: false, // Make sure it's not controlled by player
+    controlledByAI: false // Explicitly disable AI control
   };
   state.entities.push(emptyVehicle);
   

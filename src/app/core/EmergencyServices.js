@@ -9,8 +9,15 @@ export class EmergencyServices {
     this.activeIncidents = [];
     this.emergencyVehicles = [];
     this.lastIncidentCheck = 0;
-    this.roadGraph = state.world.map.roads;
-    this.map = state.world.map;
+    
+    // Safely handle missing state properties
+    if (state?.world?.map?.roads) {
+      this.roadGraph = state.world.map.roads;
+      this.map = state.world.map;
+    } else {
+      this.roadGraph = { nodes: [] };
+      this.map = { width: 100, height: 100 };
+    }
   }
 
   addIncident(type, position, severity = 1) {

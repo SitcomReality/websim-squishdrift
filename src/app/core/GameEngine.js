@@ -17,7 +17,6 @@ export class GameEngine {
     this.input = new InputSystem(canvas);
     this.debugOverlay = new DebugOverlaySystem(debugEl);
     this.collisionSystem = new CollisionSystem();
-    this.emergencyServices = new EmergencyServices(this.state);
     
     this.systems = {
       player: new PlayerSystem(),
@@ -30,6 +29,10 @@ export class GameEngine {
     
     this.state = createInitialState();
     this.state.control = { inVehicle: false, vehicle: null, equipped: null };
+    
+    // Initialize EmergencyServices after state is created
+    this.emergencyServices = new EmergencyServices(this.state);
+    
     this.setupHUD();
   }
 
@@ -83,4 +86,3 @@ export class GameEngine {
     });
   }
 }
-

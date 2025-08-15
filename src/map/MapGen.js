@@ -135,18 +135,36 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
     }
   }
 
-  // Add a clockwise two-lane perimeter ring just inside map edges
-  // Top edge: two rows (y=1,2) go West; Bottom edge: (y=height-2,height-1) go East
-  // Left edge: two cols (x=1,2) go South; Right edge: (x=width-2,width-1) go North
-  const setP = (x,y,t)=>{ if (x>=0&&y>=0&&x<width&&y<height) tiles[y][x]=t; };
-  // Top
-  for (let x=1; x<width-1; x++){ setP(x,1,Tile.RoadW); setP(x,2,Tile.RoadW); }
-  // Bottom
-  for (let x=1; x<width-1; x++){ setP(x,height-2,Tile.RoadE); setP(x,height-1,Tile.RoadE); }
-  // Left
-  for (let y=1; y<height-1; y++){ setP(1,y,Tile.RoadS); setP(2,y,Tile.RoadS); }
-  // Right
-  for (let y=1; y<height-1; y++){ setP(width-2,y,Tile.RoadN); setP(width-1,y,Tile.RoadN); }
+  // Add a clockwise two-lane perimeter inside the outer median ring
+  // Top edge lanes travel West; Bottom edge lanes travel East
+  // Left edge lanes travel South; Right edge lanes travel North
+  const setIfEmpty = (x, y, t) => {
+    if (x<0||y<0||x>=width||y>=height) return;
+    const cur = tiles[y][x];
+    if (cur !== Tile.Median && cur !== Tile.RoadN && cur !== Tile.RoadE && cur !== Tile.RoadS && cur !== Tile.RoadW) {
+      tiles[y][x] = t;
+    }
+  };
+  // Top edge (inside outer median at y=0): place lanes at y=1 and y=2 to the West
+  for (let x = 1; x < width-1; x++) {
+    setIfEmpty(x, 1, Tile.RoadW);
+    setIfEmpty(x, 2, Tile.RoadW);
+  }
+  // Bottom edge (inside outer median at y=height-1): place lanes at y=height-2 and y=height-3 to the East
+  for (let x = 1; x < width-1; x++) {
+    setIfEmpty(x, height-2, Tile.RoadE);
+    setIfEmpty(x, height-3, Tile.RoadE);
+  }
+  // Left edge (inside outer median at x=0): place lanes at x=1 and x=2 to the South
+  for (let y = 1; y < height-1; y++) {
+    setIfEmpty(1, y, Tile.RoadS);
+    setIfEmpty(2, y, Tile.RoadS);
+  }
+  // Right edge (inside outer median at x=width-1): place lanes at x=width-2 and x=width-3 to the North
+  for (let y = 1; y < height-1; y++) {
+    setIfEmpty(width-2, y, Tile.RoadN);
+    setIfEmpty(width-3, y, Tile.RoadN);
+  }
 
   const roads = buildRoadGraph(tiles, width, height, roundabouts);
   const peds = buildPedGraph(tiles, width, height);

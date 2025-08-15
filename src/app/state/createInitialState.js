@@ -23,7 +23,7 @@ export function createInitialState() {
     if (!best || d2 < best.d2) best = { n, d2 };
   }
   if (best) {
-    const vehicle = { type: 'vehicle', pos: new Vec2(best.n.x, best.n.y), node: best.n, next: best.n.next[0] || best.n, t: 0, speed: 6 };
+    const vehicle = { type: 'vehicle', pos: new Vec2(best.n.x, best.n.y), node: best.n, next: best.n.next[0] || best.n, t: 0, speed: 1.5 };
     state.entities.push(vehicle);
   }
   // Spawn simple NPC pedestrians on ped graph near player
@@ -33,7 +33,7 @@ export function createInitialState() {
   for (let i=0;i<spawnCount;i++){
     const n = sortedByDist[i];
     const next = (n.neighbors && n.neighbors.length) ? n.neighbors[Math.floor(rand()*n.neighbors.length)] : { x:n.x, y:n.y };
-    state.entities.push({ type:'npc', pos:new Vec2(n.x+0.5, n.y+0.5), from:{x:n.x,y:n.y}, to: next, t: 0, speed: 2 + rand()*1.5 });
+    state.entities.push({ type:'npc', pos:new Vec2(n.x+0.5, n.y+0.5), from:{x:n.x,y:n.y}, to: next, t: 0, speed: 0.2 + rand()*0.15 });
   }
   
   // Spawn simple items (pistol) on footpaths near player

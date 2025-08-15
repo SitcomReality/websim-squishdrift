@@ -1,13 +1,16 @@
 import { Vec2 } from '../../utils/Vec2.js';
 import { Health } from '../components/Health.js';
+import { findPath } from '../../utils/pathfinding.js';
 
 export class EmergencyServices {
-  constructor() {
+  constructor(state) {
     this.wantedLevel = 0;
     this.wantedDecay = 0;
     this.activeIncidents = [];
     this.emergencyVehicles = [];
     this.lastIncidentCheck = 0;
+    this.roadGraph = state.world.map.roads;
+    this.map = state.world.map;
   }
 
   addIncident(type, position, severity = 1) {
@@ -92,22 +95,42 @@ export class EmergencyServices {
       }
 
       const spawnPoints = [
-        new Vec2(0, state.rand() * state.world.map.height),
-        new Vec2(state.world.map.width - 1, state.rand() * state.world.map.height),
-        new Vec2(state.rand() * state.world.map.width, 0),
-        new Vec2(state.rand() * state.world.map.width, state.world.map.height - 1)
+        new Vec2(1, Math.floor(state.rand() * this.map.height)),
+        new Vec2(this.map.width - 2, Math.floor(state.rand() * this.map.height)),
+        new Vec2(Math.floor(state.rand() * this.map.width), 1),
+        new Vec2(Math.floor(state.rand() * this.map.width), this.map.height - 2)
       ];
       
-      const spawn = spawnPoints[Math.floor(state.rand() * spawnPoints.length)];
+      const spawnPos = spawnPoints[Math.floor(state.rand() * spawnPoints.length)];
+
+      const startNode = this.findNearestRoadNode(spawnPos);
+      const endNode = this.findNearestRoadNode(incident.position);
+      
+      if (!startNode || !endNode) {
+        console.warn("Could not find road nodes for emergency response.", { startPos: spawnPos, endPos: incident.position });
+        incident.responded = true; // prevent respawn loop
+        return;
+      }
+      
+      const path = findPath(this.roadGraph, startNode, endNode);
+
+      if (!path) {
+          console.warn("Could not find path for emergency vehicle.");
+          incident.responded = true; // prevent respawn loop
+          return;
+      }
+      
       const vehicle = {
         type: 'emergency',
         vehicleType,
-        pos: new Vec2(spawn.x, spawn.y),
+        pos: new Vec2(startNode.x + 0.5, startNode.y + 0.5),
         targetIncident: incident,
         color,
         health: new Health(100),
         speed: 8,
-        siren: true
+        siren: true,
+        path: path,
+        pathIndex: 0,
       };
       
       state.entities.push(vehicle);
@@ -120,30 +143,68 @@ export class EmergencyServices {
     for (let i = this.emergencyVehicles.length - 1; i >= 0; i--) {
       const vehicle = this.emergencyVehicles[i];
       
-      if (vehicle.targetIncident) {
-        const target = vehicle.targetIncident.position;
-        const dx = target.x - vehicle.pos.x;
-        const dy = target.y - vehicle.pos.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
+      if (!vehicle.path || vehicle.pathIndex >= vehicle.path.length) {
+         const distToTarget = Math.hypot(vehicle.pos.x - vehicle.targetIncident.position.x, vehicle.pos.y - vehicle.targetIncident.position.y);
         
-        if (dist < 1) {
+        if (distToTarget < 1.5) { // Arrived
           if (vehicle.vehicleType === 'police') {
             this.wantedLevel = Math.max(0, this.wantedLevel - 1);
           }
           
           this.activeIncidents = this.activeIncidents.filter(
-            i => i !== vehicle.targetIncident
+            inc => inc !== vehicle.targetIncident
           );
           const index = state.entities.indexOf(vehicle);
           if (index > -1) state.entities.splice(index, 1);
           this.emergencyVehicles.splice(i, 1);
         } else {
-          const moveX = (dx / dist) * vehicle.speed * dt;
-          const moveY = (dy / dist) * vehicle.speed * dt;
-          vehicle.pos.x += moveX;
-          vehicle.pos.y += moveY;
+            // No path or path finished, but not at target. Recalculate.
+            const startNode = this.findNearestRoadNode(vehicle.pos);
+            const endNode = this.findNearestRoadNode(vehicle.targetIncident.position);
+            if(startNode && endNode) {
+                vehicle.path = findPath(this.roadGraph, startNode, endNode);
+                vehicle.pathIndex = 0;
+            } else {
+                 // still can't find path, remove vehicle
+                 const index = state.entities.indexOf(vehicle);
+                 if (index > -1) state.entities.splice(index, 1);
+                 this.emergencyVehicles.splice(i, 1);
+            }
         }
+        continue;
+      }
+
+      const targetNode = vehicle.path[vehicle.pathIndex];
+      const targetPos = { x: targetNode.x + 0.5, y: targetNode.y + 0.5 };
+      
+      const dx = targetPos.x - vehicle.pos.x;
+      const dy = targetPos.y - vehicle.pos.y;
+      const dist = Math.hypot(dx, dy);
+      
+      if (dist < 0.1) {
+        vehicle.pathIndex++;
+      } else {
+        const moveX = (dx / dist) * vehicle.speed * dt;
+        const moveY = (dy / dist) * vehicle.speed * dt;
+        vehicle.pos.x += moveX;
+        vehicle.pos.y += moveY;
+        vehicle.rot = Math.atan2(dy, dx);
       }
     }
+  }
+  
+  findNearestRoadNode(pos) {
+    let bestNode = null;
+    let bestDistSq = Infinity;
+    for (const node of this.roadGraph.nodes) {
+        const dx = node.x - pos.x;
+        const dy = node.y - pos.y;
+        const distSq = dx * dx + dy * dy;
+        if (distSq < bestDistSq) {
+            bestDistSq = distSq;
+            bestNode = node;
+        }
+    }
+    return bestNode;
   }
 }

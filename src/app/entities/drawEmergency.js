@@ -2,6 +2,9 @@ export function drawEmergency(r, state, vehicle) {
   const { ctx } = r, ts = state.world.tileSize;
   ctx.save();
   ctx.translate(vehicle.pos.x * ts, vehicle.pos.y * ts);
+  if (vehicle.rot) {
+    ctx.rotate(vehicle.rot);
+  }
   
   // Base vehicle
   ctx.fillStyle = vehicle.color;

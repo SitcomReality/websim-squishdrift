@@ -23,8 +23,8 @@ export class Game {
     this.input = new InputSystem(canvas);
     this.debugOverlay = new DebugOverlaySystem(debugEl);
     this.collisionSystem = new CollisionSystem();
-    this.emergencyServices = new EmergencyServices();
     this.state = createInitialState();
+    this.emergencyServices = new EmergencyServices(this.state);
     this.state.control = { inVehicle: false, vehicle: null, equipped: null };
     this.hud = { 
       vehicleStateEl: document.getElementById('vehicle-state'),

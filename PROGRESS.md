@@ -81,7 +81,9 @@
 - 2025-08-16: Emergency Services System
   - Added police, ambulance, and fire truck emergency vehicles
   - Implemented wanted system with escalating response
-  - Added emergency services AI with pathfinding to incidents
   - Added random events (arson, car theft, gunshots)
   - Emergency vehicles spawn at map edges and respond to incidents
 
+- 2025-08-16: Emergency Vehicle Pathfinding
+  - Implemented A* pathfinding for emergency vehicles to navigate the road network.
+  - Emergency vehicles now follow road lanes to reach incidents instead of moving in a straight line.

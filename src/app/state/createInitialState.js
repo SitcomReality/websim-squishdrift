@@ -17,27 +17,49 @@ export function createInitialState() {
     }
   }
   player.pos.x = spawnX; player.pos.y = spawnY; state.camera.x = spawnX; state.camera.y = spawnY;
-  let best = null, bp = player.pos;
-  for (const n of map.roads.nodes) {
-    const dx = n.x - bp.x, dy = n.y - bp.y, d2 = dx*dx+dy*dy;
-    if (!best || d2 < best.d2) best = { n, d2 };
+  
+  // Spawn empty vehicle right next to player
+  const emptyVehicle = {
+    type: 'vehicle',
+    pos: new Vec2(spawnX + 1.5, spawnY + 0.5), // Right side of player
+    node: null,
+    next: null,
+    t: 0,
+    speed: 0,
+    rot: 0,
+    vel: { x: 0, y: 0 },
+    angularVel: 0,
+    ctrl: { throttle: 0, brake: 0, steer: 0 },
+    mass: 1200, maxSpeed: 4, engineForce: 900, brakeForce: 1600,
+    rollingRes: 1.0, drag: 0.25, grip: 6.0, steerRate: 2.5,
+    health: { hp: 100, maxHp: 100, getPercent: () => 1, isAlive: () => true }
+  };
+  state.entities.push(emptyVehicle);
+  
+  // Find nearest road node for the empty vehicle
+  const roads = state.world.map.roads;
+  let nearestNode = null;
+  let minDist = Infinity;
+  for (const node of roads.nodes) {
+    const dist = Math.hypot(node.x - emptyVehicle.pos.x, node.y - emptyVehicle.pos.y);
+    if (dist < minDist) {
+      minDist = dist;
+      nearestNode = node;
+    }
   }
-  if (best) {
-    const vehicle = { 
-      type: 'vehicle',
-      pos: new Vec2(best.n.x + 0.5, best.n.y + 0.5),
-      node: best.n,
-      next: best.n.next[0] || best.n,
-      t: 0,
-      speed: 1.5,
-      rot: 0,
-      vel: { x: 0, y: 0 },
-      angularVel: 0,
-      ctrl: { throttle: 0, brake: 0, steer: 0 },
-      mass: 1200, maxSpeed: 4, engineForce: 900, brakeForce: 1600,
-      rollingRes: 1.0, drag: 0.25, grip: 6.0, steerRate: 2.5
-    };
-    state.entities.push(vehicle);
+  if (nearestNode) {
+    emptyVehicle.pos.x = nearestNode.x + 0.5;
+    emptyVehicle.pos.y = nearestNode.y + 0.5;
+    emptyVehicle.node = nearestNode;
+    emptyVehicle.next = nearestNode.next?.[0] || nearestNode;
+    
+    // Set rotation based on road direction
+    switch(nearestNode.dir) {
+      case 'N': emptyVehicle.rot = -Math.PI/2; break;
+      case 'E': emptyVehicle.rot = 0; break;
+      case 'S': emptyVehicle.rot = Math.PI/2; break;
+      case 'W': emptyVehicle.rot = Math.PI; break;
+    }
   }
   
   // Spawn simple vehicles on road graph

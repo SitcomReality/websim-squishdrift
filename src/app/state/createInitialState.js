@@ -63,9 +63,8 @@ export function createInitialState() {
   }
   
   // Spawn simple vehicles on road graph
-  const roads = state.world.map.roads;
-  const roadNodes = roads.nodes.filter(n => n.next && n.next.length > 0);
   const maxVehicles = 5; // Define maxVehicles
+  const roadNodes = roads.nodes.filter(n => n.next && n.next.length > 0);
   const validSpawns = roadNodes.filter(node => {
     const distance = Math.hypot(node.x - spawnX, node.y - spawnY);
     return distance <= 15 && distance >= 8;

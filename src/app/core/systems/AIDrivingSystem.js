@@ -1,16 +1,10 @@
 export class AIDrivingSystem {
   update(state, dt) {
     const roads = state.world.map.roads;
-    for (const v of state.entities.filter(e => e.type === 'vehicle' && !e.controlled)) {
-      if (v.ai === false) continue;
+    for (const v of state.entities.filter(e => e.type === 'vehicle' && e.controlled !== true)) { // Exclude player controlled and explicitly uncontrolled vehicles
       // Ensure control struct
       v.ctrl = v.ctrl || { throttle: 0, brake: 0, steer: 0 };
       v.aiTargetSpeed = v.aiTargetSpeed || 3.0;
-
-      // Remove old position-based movement
-      delete v.t;
-      delete v.from;
-      delete v.to;
 
       // Waypoint following based on node/next graph
       if (v.next && v.node) {
@@ -18,15 +12,8 @@ export class AIDrivingSystem {
         const toT = { x: target.x - v.pos.x, y: target.y - v.pos.y };
         const dist = Math.hypot(toT.x, toT.y) || 1;
         const desired = Math.atan2(toT.y, toT.x);
-        
-        // Handle rotation properly
-        let currentRot = v.rot || 0;
-        let diff = wrapAngle(desired - currentRot);
-        
-        // Normalize rotation to 0-2PI
-        while (currentRot < 0) currentRot += Math.PI * 2;
-        while (currentRot > Math.PI * 2) currentRot -= Math.PI * 2;
-        
+        const diff = wrapAngle(desired - (v.rot || 0));
+
         // Steering: proportional
         const steerK = 1.5;
         v.ctrl.steer = clamp(diff * steerK, -1, 1);

@@ -7,7 +7,7 @@ export function createInitialState() {
   const map = generateCity('alpha-seed', 4, 4);
   const rand = rng('alpha-seed');
   const player = { type: 'player', pos: new Vec2(), facing: new Vec2(1,0), moveSpeed: 6 };
-  const state = { time: 0, entities: [player], camera: { x: map.width/2, y: map.height/2, zoom: 1.5 }, world: { tileSize: 24, map }, rand };
+  const state = { time: 0, entities: [player], camera: { x: map.width/2, y: map.height/2, zoom: 4 }, world: { tileSize: 24, map }, rand };
   let spawnX = map.width / 2, spawnY = map.height / 2, bestDist = Infinity;
   for (let y = 0; y < map.height; y++) for (let x = 0; x < map.width; x++) {
     const t = map.tiles[y][x];
@@ -24,15 +24,16 @@ export function createInitialState() {
     pos: new Vec2(spawnX + 1.5, spawnY + 0.5), // Right side of player
     node: null,
     next: null,
-    ai: false, // do not let AI drive the starter car
+    t: 0,
     speed: 0,
     rot: 0,
     vel: { x: 0, y: 0 },
     angularVel: 0,
     ctrl: { throttle: 0, brake: 0, steer: 0 },
-    mass: 1200, maxSpeed: 4, engineForce: 900, brakeForce: 1800,
-    rollingRes: 1.6, drag: 0.4, grip: 8.0, steerRate: 2.5,
-    health: { hp: 100, maxHp: 100, getPercent: () => 1, isAlive: () => true }
+    mass: 1200, maxSpeed: 4, engineForce: 900, brakeForce: 1600,
+    rollingRes: 20.0, drag: 0.25, grip: 40.0, steerRate: 2.5,
+    health: { hp: 100, maxHp: 100, getPercent: () => 1, isAlive: () => true },
+    controlled: false, // Make sure it's not controlled by AI
   };
   state.entities.push(emptyVehicle);
   
@@ -50,7 +51,10 @@ export function createInitialState() {
   if (nearestNode) {
     emptyVehicle.pos.x = nearestNode.x + 0.5;
     emptyVehicle.pos.y = nearestNode.y + 0.5;
-    // Orient to road but do NOT assign node/next to keep AI off
+    emptyVehicle.node = nearestNode;
+    emptyVehicle.next = nearestNode.next?.[0] || nearestNode;
+    
+    // Set rotation based on road direction
     switch(nearestNode.dir) {
       case 'N': emptyVehicle.rot = -Math.PI/2; break;
       case 'E': emptyVehicle.rot = 0; break;
@@ -85,6 +89,7 @@ export function createInitialState() {
       pos: new Vec2(spawnNode.x + 0.5, spawnNode.y + 0.5),
       node: spawnNode,
       next,
+      t: 0,
       speed: 0.25 * 1.5, // 25% of original speed
       rot,
       vel: { x: 0, y: 0 },
@@ -102,13 +107,7 @@ export function createInitialState() {
   for (let i=0;i<spawnCount;i++){
     const n = sortedByDist[i];
     const next = (n.neighbors && n.neighbors.length) ? n.neighbors[Math.floor(rand()*n.neighbors.length)] : { x:n.x, y:n.y };
-    state.entities.push({ 
-      type:'npc', 
-      pos:new Vec2(n.x+0.5, n.y+0.5), 
-      from:{x:n.x,y:n.y}, 
-      to: next, 
-      speed: 0.2 + rand()*0.15 
-    });
+    state.entities.push({ type:'npc', pos:new Vec2(n.x+0.5, n.y+0.5), from:{x:n.x,y:n.y}, to: next, t: 0, speed: 0.2 + rand()*0.15 });
   }
   
   // Spawn simple items (pistol) on footpaths near player

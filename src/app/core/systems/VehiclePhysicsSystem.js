@@ -23,36 +23,35 @@ export class VehiclePhysicsSystem {
 
       // Braking opposes longitudinal velocity
       const brakeForce = v.brakeForce * brake * Math.sign(vLong || 0);
-      Fx -= fwd.x * Math.abs(brakeForce);
-      Fy -= fwd.y * Math.abs(brakeForce);
+      Fx -= fwd.x * brakeForce;
+      Fy -= fwd.y * brakeForce;
 
       // Lateral grip to reduce side slip
-      const lateralGrip = v.grip * (1 + 2 * Math.abs(vLat)) * (1 + 2.5 * brake);
-      Fx -= right.x * vLat * lateralGrip;
-      Fy -= right.y * vLat * lateralGrip;
+      Fx -= right.x * vLat * v.grip;
+      Fy -= right.y * vLat * v.grip;
 
-      // Rolling resistance + air drag
-      const spd = Math.hypot(v.vel.x, v.vel.y);
-      Fx -= v.vel.x * v.rollingRes + v.vel.x * spd * v.drag;
-      Fy -= v.vel.y * v.rollingRes + v.vel.y * spd * v.drag;
+      // Rolling resistance + air drag + static friction
+      const speed = Math.hypot(v.vel.x, v.vel.y);
+      const staticFriction = Math.min(speed / (0.1 * dt), 1) * 35; // Stronger friction at very low speeds to stop
+      Fx -= v.vel.x * v.rollingRes + v.vel.x * staticFriction;
+      Fx -= v.vel.x * speed * v.drag;
+      Fy -= v.vel.y * v.rollingRes + v.vel.y * staticFriction;
+      Fy -= v.vel.y * speed * v.drag;
 
       // Integrate velocity
       v.vel.x += (Fx / v.mass) * dt;
       v.vel.y += (Fy / v.mass) * dt;
 
       // Clamp max speed
-      const speed = Math.hypot(v.vel.x, v.vel.y);
-      if (speed < 0.02 && throttle === 0 && brake > 0.5) { v.vel.x = 0; v.vel.y = 0; }
       if (speed > v.maxSpeed) {
         v.vel.x *= v.maxSpeed / speed;
         v.vel.y *= v.maxSpeed / speed;
       }
 
-      // Yaw/steer: stronger at speed
-      const speedFactor = Math.min(1, Math.abs(vLong) / (v.maxSpeed || 1));
+      // Yaw/steer: stronger at speed, but still effective at low speed
+      const speedFactor = Math.min(1, Math.abs(vLong) / v.maxSpeed) * 0.7 + 0.3;
       v.angularVel += steer * v.steerRate * speedFactor * dt;
       v.angularVel *= 0.9; // damping
-      if (Math.abs(v.angularVel) < 0.0005) v.angularVel = 0;
       v.rot += v.angularVel * dt;
 
       // Move
@@ -77,7 +76,7 @@ export class VehiclePhysicsSystem {
           // Exchange velocities along collision normal with restitution
           const relVel = (v.vel.x - other.vel.x) * nx + (v.vel.y - other.vel.y) * ny;
           const restitution = 0.35; // bounciness
-          if (relVel > 0) {
+          if (relVel < 0) { // check if moving towards each other
             const impulse = (1 + restitution) * relVel / (1 / v.mass + 1 / other.mass);
             v.vel.x -= (impulse / v.mass) * nx;
             v.vel.y -= (impulse / v.mass) * ny;
@@ -141,9 +140,9 @@ export class VehiclePhysicsSystem {
     v.maxSpeed = v.maxSpeed || 6;
     v.engineForce = v.engineForce || 1200;
     v.brakeForce = v.brakeForce || 1800;
-    v.rollingRes = v.rollingRes || 1.2;
+    v.rollingRes = v.rollingRes || 20; // Increased rolling resistance
     v.drag = v.drag || 0.3;
-    v.grip = v.grip || 6.0;
+    v.grip = v.grip || 40.0; // Increased grip
     v.steerRate = v.steerRate || 2.5;
     v.ctrl = v.ctrl || { throttle: 0, brake: 0, steer: 0 };
     v.radius = v.radius || 0.6; // collision radius in world units (tiles)

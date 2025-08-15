@@ -7,6 +7,7 @@ import { drawBuildings } from '../render/drawBuildings.js';
 import { drawRoadDebug } from '../render/drawRoadDebug.js';
 import { drawPlayer } from './entities/drawPlayer.js';
 import { drawVehicle } from './entities/drawVehicle.js';
+import { drawNPC } from './entities/drawNPC.js';
 import { isWalkable } from '../map/TileTypes.js';
 
 export class Game {
@@ -125,6 +126,23 @@ export class Game {
         }
       }
     }
+    // NPC pedestrian movement
+    for (const ped of s.entities.filter(e=>e.type==='npc')) {
+      ped.t += ped.speed * dt * (1/1); // 1 tile per unit time scaled by speed
+      if (ped.t >= 1) {
+        ped.from = { x: ped.to.x, y: ped.to.y };
+        const key = `${ped.from.x},${ped.from.y}`;
+        const node = s.world.map.peds.nodes.get(key);
+        const options = (node?.neighbors||[]).filter(n=> !(n.x===ped.from.x && n.y===ped.from.y && n.x===ped.to.x && n.y===ped.to.y));
+        const notBack = options.filter(n=> !(n.x===ped.to.x && n.y===ped.to.y));
+        const pool = (notBack.length?notBack:options.length?options:[{x:ped.from.x,y:ped.from.y}]);
+        ped.to = pool[Math.floor(s.rand()*pool.length)];
+        ped.t = 0;
+      }
+      const ax = ped.from.x + 0.5, ay = ped.from.y + 0.5;
+      const bx = ped.to.x + 0.5, by = ped.to.y + 0.5;
+      ped.pos.x = ax*(1-ped.t) + bx*ped.t; ped.pos.y = ay*(1-ped.t) + by*ped.t;
+    }
     const vehicle = s.entities.find(e => e.type === 'vehicle');
     this.debugOverlay.update({
       fps: this.renderer.fps, dt: dt,
@@ -135,6 +153,7 @@ export class Game {
         links: s.world.map.roads.nodes.reduce((a,n)=>a+n.next.length,0)
       },
       vehicle: vehicle ? { at: vehicle.node ? [vehicle.node.x, vehicle.node.y] : [vehicle.pos.x, vehicle.pos.y], speed: Number((vehicle.speed||0).toFixed(2)) } : null,
+      npcs: this.state.entities.filter(e=>e.type==='npc').length,
       control: { inVehicle: s.control.inVehicle }
     });
     if (this.hud.vehicleStateEl) {
@@ -149,6 +168,7 @@ export class Game {
     const sorted = s.entities.slice().sort((a, b) => a.pos.y - b.pos.y);
     for (const e of sorted) {
       if (e.type === 'player') drawPlayer(this.renderer, s, e);
+      else if (e.type === 'npc') drawNPC(this.renderer, s, e);
       else if (e.type === 'vehicle') drawVehicle(this.renderer, s, e);
     }
     drawBuildings(this.renderer, s);

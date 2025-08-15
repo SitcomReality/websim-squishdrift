@@ -124,7 +124,8 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
   }
 
   const roads = buildRoadGraph(tiles, width, height);
-  return { tiles, width, height, W, MED, seed, roads, buildings };
+  const peds = buildPedGraph(tiles, width, height);
+  return { tiles, width, height, W, MED, seed, roads, peds, buildings };
 }
 
 // helpers
@@ -160,4 +161,18 @@ function buildRoadGraph(tiles, width, height){
     }
   }
   return { nodes, byKey };
+}
+
+function buildPedGraph(tiles, width, height){
+  const nodes = new Map(); const key=(x,y)=>`${x},${y}`;
+  const walkable = (t)=> t!==Tile.Median && t!==Tile.Intersection && t!==Tile.BuildingWall &&
+                        t!==Tile.RoadN && t!==Tile.RoadE && t!==Tile.RoadS && t!==Tile.RoadW;
+  for (let y=0;y<height;y++) for (let x=0;x<width;x++){
+    if (!walkable(tiles[y][x])) continue; nodes.set(key(x,y), { x, y, neighbors:[] });
+  }
+  const dirs=[[1,0],[-1,0],[0,1],[0,-1]];
+  for (const n of nodes.values()) for (const [dx,dy] of dirs){
+    const k = key(n.x+dx, n.y+dy); const m = nodes.get(k); if (m) n.neighbors.push({ x:m.x, y:m.y });
+  }
+  return { nodes, list: Array.from(nodes.values()) };
 }

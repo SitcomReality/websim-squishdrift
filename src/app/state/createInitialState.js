@@ -26,5 +26,14 @@ export function createInitialState() {
     const vehicle = { type: 'vehicle', pos: new Vec2(best.n.x, best.n.y), node: best.n, next: best.n.next[0] || best.n, t: 0, speed: 6 };
     state.entities.push(vehicle);
   }
+  // Spawn simple NPC pedestrians on ped graph near player
+  const pedNodes = map.peds?.list || [];
+  const spawnCount = Math.min(30, pedNodes.length);
+  const sortedByDist = pedNodes.slice().sort((a,b)=> (Math.hypot(a.x+0.5-spawnX,a.y+0.5-spawnY) - Math.hypot(b.x+0.5-spawnX,b.y+0.5-spawnY)));
+  for (let i=0;i<spawnCount;i++){
+    const n = sortedByDist[i];
+    const next = (n.neighbors && n.neighbors.length) ? n.neighbors[Math.floor(rand()*n.neighbors.length)] : { x:n.x, y:n.y };
+    state.entities.push({ type:'npc', pos:new Vec2(n.x+0.5, n.y+0.5), from:{x:n.x,y:n.y}, to: next, t: 0, speed: 2 + rand()*1.5 });
+  }
   return state;
 }

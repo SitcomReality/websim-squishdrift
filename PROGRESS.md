@@ -48,10 +48,10 @@
   - Press E to enter nearest vehicle within ~1.25 tiles; player hidden and camera follows vehicle.
   - Press E again to exit to nearest safe walkable tile; HUD vehicle state updates.
 
-- 2025-08-16: Player vehicle driving physics
-  - Implemented WASD throttle/steer with simple top-down car model (accel, drag, turn rate).
-  - Disabled AI lane-follow while occupied; restored on exit by snapping to nearest road node.
-  - HUD vehicle state now shows live speed.
+- 2025-08-16: Pedestrian path graph + wandering NPCs
+  - Built undirected pedestrian graph over walkable tiles.
+  - Spawned ~30 NPC pedestrians near the player; they wander by choosing non-backtracking neighbors.
+  - Added NPC rendering (orange-yellow) and debug count.
 
 # Next Step
 - Build pedestrian path graph and basic pedestrian AI movement along footpaths (per DESIGN.md).

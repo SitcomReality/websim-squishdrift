@@ -53,5 +53,8 @@
   - Spawned ~30 NPC pedestrians near the player; they wander by choosing non-backtracking neighbors.
   - Added NPC rendering (orange-yellow) and debug count.
 
+- 2025-08-16: Fix intersections to be contiguous
+  - Replaced adjacent median tiles around each intersection center with a plus-shaped cross of directed road tiles (extending 1 tile per direction), respecting map edges.
+
 # Next Step
 - Build pedestrian path graph and basic pedestrian AI movement along footpaths (per DESIGN.md).

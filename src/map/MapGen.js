@@ -120,6 +120,16 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
     for (let gx = 0; gx <= blocksWide; gx++) {
       const y = gy * (W + MED), x = gx * (W + MED);
       if (y < height && x < width) tiles[y][x] = Tile.Intersection;
+      // add plus-shaped roads extending 1 tile in each direction (if median and in-bounds)
+      const setIfMedian = (tx, ty, t) => {
+        if (tx >= 0 && ty >= 0 && tx < width && ty < height && tiles[ty][tx] === Tile.Median) tiles[ty][tx] = t;
+      };
+      // horizontal arms: left = RoadE (into center), right = RoadW (into center)
+      setIfMedian(x - 1, y, Tile.RoadE);
+      setIfMedian(x + 1, y, Tile.RoadW);
+      // vertical arms: up = RoadS (into center), down = RoadN (into center)
+      setIfMedian(x, y - 1, Tile.RoadS);
+      setIfMedian(x, y + 1, Tile.RoadN);
     }
   }
 

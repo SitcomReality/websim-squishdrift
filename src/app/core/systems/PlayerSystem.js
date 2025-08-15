@@ -44,9 +44,78 @@ export class PlayerSystem {
 
   handleInteraction(state, player, input) {
     if (input.pressed.has('KeyE')) {
-      this.enterVehicle(state, player);
+      this.handleVehicleInteraction(state, player);
       this.pickupItem(state, player);
     }
+  }
+
+  handleVehicleInteraction(state, player) {
+    if (state.control.inVehicle) {
+      // Exit vehicle
+      this.exitVehicle(state, player);
+    } else {
+      // Enter vehicle
+      const nearbyVehicle = this.findNearbyVehicle(state, player);
+      if (nearbyVehicle) {
+        this.enterVehicle(state, player, nearbyVehicle);
+      }
+    }
+  }
+
+  findNearbyVehicle(state, player) {
+    const interactionDistance = 1.5; // tiles
+    return state.entities.find(e => 
+      e.type === 'vehicle' && 
+      !e.controlled && 
+      Math.hypot(e.pos.x - player.pos.x, e.pos.y - player.pos.y) < interactionDistance
+    );
+  }
+
+  enterVehicle(state, player, vehicle) {
+    state.control.inVehicle = true;
+    state.control.vehicle = vehicle;
+    player.hidden = true;
+    vehicle.controlled = true;
+    
+    // Remove AI properties if they exist
+    delete vehicle.aiTargetSpeed;
+    delete vehicle.node;
+    delete vehicle.next;
+    delete vehicle.t;
+  }
+
+  exitVehicle(state, player) {
+    if (!state.control.inVehicle) return;
+    
+    const vehicle = state.control.vehicle;
+    if (vehicle) {
+      vehicle.controlled = false;
+      
+      // Find a safe spot to spawn the player
+      const spawnOffset = 0.8;
+      const exitPos = new Vec2(
+        vehicle.pos.x + Math.cos(vehicle.rot) * spawnOffset,
+        vehicle.pos.y + Math.sin(vehicle.rot) * spawnOffset
+      );
+      
+      // Ensure the exit position is walkable
+      if (this.isWalkableTile(state, exitPos.x, exitPos.y)) {
+        player.pos.copy(exitPos);
+      } else {
+        // Fallback to vehicle position + small offset
+        player.pos.x = vehicle.pos.x + 1;
+        player.pos.y = vehicle.pos.y + 1;
+      }
+      
+      player.hidden = false;
+    }
+    
+    state.control.inVehicle = false;
+    state.control.vehicle = null;
+  }
+
+  pickupItem(state, player) {
+    // Existing item pickup logic...
   }
 
   isWalkableTile(state, x, y) {

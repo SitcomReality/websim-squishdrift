@@ -40,14 +40,22 @@ export class GameEngine {
     // Start with debug overlay disabled by default
     this.debugOverlay.enabled = false;
     
-    this.setupHUD();
+    this.updateHUD();
   }
 
-  setupHUD() {
+  updateHUD() {
     const wantedRow = document.createElement('div');
     wantedRow.className = 'row';
     wantedRow.innerHTML = '<span class="label">Wanted</span><span id="wanted-level">0</span>';
     document.getElementById('hud').appendChild(wantedRow);
+    
+    // Add interaction prompt
+    const interactionRow = document.createElement('div');
+    interactionRow.className = 'row';
+    interactionRow.id = 'interaction-prompt';
+    interactionRow.style.display = 'none';
+    interactionRow.innerHTML = '<span class="label">Press E to</span><span id="interaction-action">enter vehicle</span>';
+    document.getElementById('hud').appendChild(interactionRow);
     
     // Add debug info row
     const debugRow = document.createElement('div');
@@ -62,6 +70,8 @@ export class GameEngine {
       itemNameEl: document.getElementById('item-name'),
       hpBarEl: document.getElementById('hp-bar'),
       wantedLevelEl: document.getElementById('wanted-level'),
+      interactionPromptEl: document.getElementById('interaction-prompt'),
+      interactionActionEl: document.getElementById('interaction-action'),
       debugInfoEl: document.getElementById('debug-info'),
       debugTextEl: document.getElementById('debug-text')
     };
@@ -88,6 +98,20 @@ export class GameEngine {
     const player = this.state.entities.find(e => e.type === 'player');
     if (!player) return;
 
+    // Update interaction prompt
+    if (!this.state.control.inVehicle) {
+      const nearbyVehicle = this.findNearbyVehicle(player);
+      if (nearbyVehicle) {
+        this.hud.interactionPromptEl.style.display = 'flex';
+        this.hud.interactionActionEl.textContent = 'enter vehicle';
+      } else {
+        this.hud.interactionPromptEl.style.display = 'none';
+      }
+    } else {
+      this.hud.interactionPromptEl.style.display = 'flex';
+      this.hud.interactionActionEl.textContent = 'exit vehicle';
+    }
+
     const innerSpawnRadius = 8;  // New inner radius
     const outerSpawnRadius = 10;   // Changed from spawnRadius
     const despawnRadius = 15;      // Reduced from 20
@@ -105,6 +129,15 @@ export class GameEngine {
 
     // Spawn new entities within spawn radius but outside inner radius
     this.spawnEntitiesNearPlayer(player, innerSpawnRadius, outerSpawnRadius);
+  }
+
+  findNearbyVehicle(player) {
+    const interactionDistance = 1.5;
+    return this.state.entities.find(e => 
+      e.type === 'vehicle' && 
+      !e.controlled && 
+      Math.hypot(e.pos.x - player.pos.x, e.pos.y - player.pos.y) < interactionDistance
+    );
   }
 
   spawnEntitiesNearPlayer(player, innerRadius, outerRadius) {

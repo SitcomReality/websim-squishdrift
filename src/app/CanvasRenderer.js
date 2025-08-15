@@ -27,9 +27,8 @@ export class CanvasRenderer {
     const cx = Math.floor(canvas.width/2), cy = Math.floor(canvas.height/2);
     ctx.setTransform(1,0,0,1,0,0);
     ctx.translate(cx, cy);
-    ctx.scale(1,1);
+    ctx.scale(3,3); // Zoom in by 300%
     ctx.translate(Math.floor(-state.camera.x*ts), Math.floor(-state.camera.y*ts));
   }
   endFrame(){ /* no-op */ }
 }
-

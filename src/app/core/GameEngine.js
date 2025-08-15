@@ -133,12 +133,19 @@ export class GameEngine {
   }
 
   findNearbyVehicle(player) {
-    const interactionDistance = 1.5;
-    return this.state.entities.find(e => 
+    const interactionDistance = 1.5; // tiles
+    const nearbyVehicle = this.state.entities.find(e => 
       e.type === 'vehicle' && 
       !e.controlled && 
       Math.hypot(e.pos.x - player.pos.x, e.pos.y - player.pos.y) < interactionDistance
     );
+    
+    if (nearbyVehicle && this.lastLoggedVehicle !== nearbyVehicle.id) {
+      console.log('Nearby vehicle detected:', nearbyVehicle.id, nearbyVehicle);
+      this.lastLoggedVehicle = nearbyVehicle.id;
+    }
+    
+    return nearbyVehicle;
   }
 
   spawnEntitiesNearPlayer(player, innerRadius, outerRadius) {

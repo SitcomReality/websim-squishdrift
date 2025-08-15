@@ -25,8 +25,11 @@ export class RenderSystem {
     ctx.translate(Math.floor(-state.camera.x * ts), Math.floor(-state.camera.y * ts));
     
     // Draw layers
-    drawTiles(renderer, state);
-    drawBuildings(renderer, state);
+    // Floors must be behind any walls; roofs must be in front of any walls.
+    drawTiles(renderer, state, 'ground');
+    drawTiles(renderer, state, 'floors');
+    drawBuildings(renderer, state, 'walls');
+    drawBuildings(renderer, state, 'roofs');
     
     // Draw entities
     for (const entity of state.entities) {

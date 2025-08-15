@@ -27,21 +27,21 @@ export class RenderSystem {
     ctx.translate(Math.floor(-state.camera.x * ts), Math.floor(-state.camera.y * ts));
     
     // Draw layers
-    // Floors must be behind any walls; roofs must be in front of any walls.
-    // Ocean background (lowest z): fill entire visible world area to avoid "void" streaks
-    {
-      const wTiles = Math.ceil(canvas.width/ts)+2, hTiles = Math.ceil(canvas.height/ts)+2;
-      const sx = Math.floor(state.camera.x - wTiles/2), sy = Math.floor(state.camera.y - hTiles/2);
-      ctx.fillStyle = '#b7e3f8'; // ocean
-      ctx.fillRect(sx*ts, sy*ts, wTiles*ts, hTiles*ts);
-    }
+    const wTiles = Math.ceil(canvas.width/ts)+2, hTiles = Math.ceil(canvas.height/ts)+2;
+    const sx = Math.floor(state.camera.x - wTiles/2), sy = Math.floor(state.camera.y - hTiles/2);
+    ctx.fillStyle = '#b7e3f8'; // ocean
+    ctx.fillRect(sx*ts, sy*ts, wTiles*ts, hTiles*ts);
+    
     drawTiles(renderer, state, 'ground');
     drawTiles(renderer, state, 'floors');
-    drawBuildings(renderer, state, 'walls');
-    drawBuildings(renderer, state, 'roofs');
     
-    // Draw entities
-    for (const entity of state.entities) {
+    // Draw entities behind buildings
+    const entitiesBehind = state.entities.filter(e => 
+      e.type === 'npc' || e.type === 'vehicle' || e.type === 'player' || 
+      e.type === 'item' || e.type === 'bullet' || e.type === 'emergency'
+    );
+    
+    for (const entity of entitiesBehind) {
       switch (entity.type) {
         case 'player':
           drawPlayer(renderer, state, entity);
@@ -61,7 +61,6 @@ export class RenderSystem {
           drawEmergency(renderer, state, entity);
           break;
         case 'bullet':
-          // Simple bullet rendering
           ctx.save();
           ctx.fillStyle = '#FFD700';
           ctx.beginPath();
@@ -71,6 +70,10 @@ export class RenderSystem {
           break;
       }
     }
+    
+    // Draw buildings (walls and roofs) in front
+    drawBuildings(renderer, state, 'walls');
+    drawBuildings(renderer, state, 'roofs');
     
     // Draw debug overlay if enabled
     if (debugOverlay.enabled) {

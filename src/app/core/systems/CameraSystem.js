@@ -9,8 +9,11 @@ export class CameraSystem {
     cam.y += (target.y - cam.y) * 0.1;
 
     const ts = state.world.tileSize;
-    const halfX = (window.innerWidth / ts) / 2;
-    const halfY = (window.innerHeight / ts) / 2;
+    const canvas = document.getElementById('game');
+    const viewW = (canvas?.width ?? window.innerWidth);
+    const viewH = (canvas?.height ?? window.innerHeight);
+    const halfX = (viewW / ts) / 2;
+    const halfY = (viewH / ts) / 2;
     
     const map = state.world.map;
     if (map.width > 2 * halfX) {
@@ -18,10 +21,6 @@ export class CameraSystem {
     }
     if (map.height > 2 * halfY) {
       cam.y = Math.min(Math.max(cam.y, halfY), map.height - halfY);
-    } else {
-      // Ensure camera stays centered vertically when map is smaller than viewport
-      cam.y = map.height / 2;
     }
   }
 }
-

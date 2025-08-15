@@ -13,6 +13,9 @@
 - 2025-08-15: Simple autonomous vehicle
   - Spawns at nearest road node to player and follows directed lane graph, validating path continuity
 
+- 2025-08-15: Inter-block corridors + larger map
+  - Carved continuous 2-lane corridors adjacent to medians to connect blocks; doubled city to 4x4 blocks for better testing
+
 # Next Step
-- Implement enter/exit vehicles (E) and basic player driving with WASD while keeping at least one AI vehicle active.
+- Upgrade corridors to full 4-lane + median and refine intersection turn links; add simple footpaths inside blocks.
 

@@ -39,6 +39,24 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 2, blocksHigh = 2
     if (x >= 0 && x < width) for (let y = 0; y < height; y++) tiles[y][x] = Tile.Median;
   }
 
+  // Carve 2-lane road corridors adjacent to each median (connect blocks)
+  for (let gy = 0; gy <= blocksHigh; gy++) {
+    const y = gy * (W + MED);
+    if (y > 0 && y < height - 0) {
+      const yNorth = y - 1, ySouth = y + 1;
+      if (yNorth >= 0) for (let x = 0; x < width; x++) tiles[yNorth][x] = Tile.RoadE;
+      if (ySouth < height) for (let x = 0; x < width; x++) tiles[ySouth][x] = Tile.RoadW;
+    }
+  }
+  for (let gx = 0; gx <= blocksWide; gx++) {
+    const x = gx * (W + MED);
+    if (x > 0 && x < width - 0) {
+      const xWest = x - 1, xEast = x + 1;
+      if (xWest >= 0) for (let y = 0; y < height; y++) tiles[y][xWest] = Tile.RoadS;
+      if (xEast < width) for (let y = 0; y < height; y++) tiles[y][xEast] = Tile.RoadN;
+    }
+  }
+
   // Intersections: medians at crossings convert to road
   for (let gy = 0; gy <= blocksHigh; gy++) {
     for (let gx = 0; gx <= blocksWide; gx++) {

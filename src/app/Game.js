@@ -87,7 +87,7 @@ export class Game {
 class Vec2 { constructor(x=0,y=0){this.x=x;this.y=y;} copy(v){this.x=v.x;this.y=v.y;return this;} }
 
 function createInitialState() {
-  const map = generateCity('alpha-seed', 2, 2);
+  const map = generateCity('alpha-seed', 4, 4);
   const rand = rng('alpha-seed');
   const state = {
     time: 0,

@@ -2,17 +2,6 @@ export function drawBuildings(r, state) {
   const { ctx } = r, ts = state.world.tileSize, map = state.world.map;
   const cam = state.camera, perspectiveScale = 0.8;
   
-  // Calculate camera direction vector for roof offset
-  const vCam = {
-    x: state.camera.x - r.canvas.width / (2 * ts),
-    y: state.camera.y - r.canvas.height / (2 * ts)
-  };
-  const camLen = Math.sqrt(vCam.x * vCam.x + vCam.y * vCam.y);
-  if (camLen > 0) {
-    vCam.x /= camLen;
-    vCam.y /= camLen;
-  }
-  
   // Sort buildings by distance to camera for proper z-ordering
   const sortedBuildings = [...map.buildings].sort((a, b) => {
     const aDist = Math.abs(a.rect.x + a.rect.width/2 - state.camera.x) + 
@@ -39,15 +28,13 @@ export function drawBuildings(r, state) {
     // Calculate roof offset based on camera position
     let roofOffset = { x: 0, y: 0 };
     if (!isCamInside) {
-      const distanceToBuilding = Math.sqrt(
-        Math.pow(cam.x - (b.rect.x + b.rect.width/2), 2) + 
-        Math.pow(cam.y - (b.rect.y + b.rect.height/2), 2)
-      );
-      
-      // Scale offset by distance and building height
-      const offsetMagnitude = b.height * perspectiveScale * Math.min(1, distanceToBuilding * 0.1);
-      roofOffset.x = -vCam.x * offsetMagnitude;  // Negated for correct perspective
-      roofOffset.y = -vCam.y * offsetMagnitude;  // Negated for correct perspective
+      const bx = b.rect.x + b.rect.width/2, by = b.rect.y + b.rect.height/2;
+      const dir = { x: bx - cam.x, y: by - cam.y };
+      const len = Math.hypot(dir.x, dir.y) || 1;
+      dir.x /= len; dir.y /= len; // unit vector away from camera
+      const offsetMagnitude = b.height * perspectiveScale * Math.min(1, len / 20);
+      roofOffset.x = dir.x * offsetMagnitude;
+      roofOffset.y = dir.y * offsetMagnitude;
     }
     
     const roofRect = { 

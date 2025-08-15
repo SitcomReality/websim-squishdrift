@@ -44,6 +44,8 @@
   - Map generator now creates building data structures (footprint, height).
   - Renderer updated to use painter's algorithm for correct z-ordering of tiles, entities, and building layers.
 
+- 2025-08-16: Refactor Game into modules
+  - Split Game.js into CanvasRenderer, InputSystem, DebugOverlaySystem, createInitialState, and render/entity helpers.
+
 # Next Step
 - Implement player entering/exiting vehicles. Player character should be hidden and control transferred to the vehicle.
-

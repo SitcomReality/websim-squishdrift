@@ -16,20 +16,8 @@ export class CameraSystem {
     const halfY = (viewH / ts) / 2;
     
     const map = state.world.map;
-    
-    // Allow camera to view ocean borders by not clamping to map edges
-    // Only clamp if the map is smaller than the view
-    if (map.width > 2 * halfX) {
-      cam.x = Math.min(Math.max(cam.x, halfX), map.width - halfX);
-    } else {
-      // Center the map if it's smaller than the view
-      cam.x = map.width / 2;
-    }
-    
-    if (map.height > 2 * halfY) {
-      cam.y = Math.min(Math.max(cam.y, halfY), map.height - halfY);
-    } else {
-      cam.y = map.height / 2;
-    }
+    const pad = 30; // tiles of ocean padding beyond city edges
+    cam.x = Math.min(Math.max(cam.x, halfX - pad), map.width - halfX + pad);
+    cam.y = Math.min(Math.max(cam.y, halfY - pad), map.height - halfY + pad);
   }
 }

@@ -10,6 +10,8 @@ import { NPCSystem } from './systems/NPCSystem.js';
 import { CameraSystem } from './systems/CameraSystem.js';
 import { RenderSystem } from './systems/RenderSystem.js';
 import { createInitialState } from '../state/createInitialState.js';
+import { VehiclePhysicsSystem } from './systems/VehiclePhysicsSystem.js';
+import { AIDrivingSystem } from './systems/AIDrivingSystem.js';
 
 export class GameEngine {
   constructor(canvas, { debugEl } = {}) {
@@ -24,7 +26,9 @@ export class GameEngine {
       bullet: new BulletSystem(),
       npc: new NPCSystem(),
       camera: new CameraSystem(),
-      render: new RenderSystem()
+      render: new RenderSystem(),
+      physics: new VehiclePhysicsSystem(),
+      aiDrive: new AIDrivingSystem(),
     };
     
     this.state = createInitialState();
@@ -69,6 +73,8 @@ export class GameEngine {
     this.systems.vehicle.update(this.state, this.input, dt);
     this.systems.bullet.update(this.state, dt);
     this.systems.npc.update(this.state, dt);
+    this.systems.aiDrive.update(this.state, dt);
+    this.systems.physics.update(this.state, dt);
     this.systems.camera.update(this.state, this.input);
     this.collisionSystem.update(this.state);
     this.emergencyServices.update(this.state, dt);
@@ -149,9 +155,15 @@ export class GameEngine {
           type: 'vehicle',
           pos: { x: spawnNode.x + 0.5, y: spawnNode.y + 0.5 },
           node: spawnNode,
-          next: next,
+          next,
           t: 0,
-          speed: 1.5
+          speed: 1.5,
+          rot: 0,
+          vel: { x: 0, y: 0 },
+          angularVel: 0,
+          ctrl: { throttle: 0, brake: 0, steer: 0 },
+          mass: 1200, maxSpeed: 4, engineForce: 900, brakeForce: 1600,
+          rollingRes: 1.0, drag: 0.25, grip: 6.0, steerRate: 2.5
         });
       }
     }

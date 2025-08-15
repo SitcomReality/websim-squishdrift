@@ -1,19 +1,24 @@
 export function drawVehicle(r, state, v){
-  const { ctx } = r, ts = state.world.tileSize, a = v.t ?? 0;
-  if (v.controlled) {
-    const ang = v.rot || 0;
-    ctx.save(); ctx.translate(v.pos.x*ts, v.pos.y*ts); ctx.rotate(ang);
-    ctx.fillStyle = '#8A2BE2'; ctx.fillRect(-ts*0.45, -ts*0.25, ts*0.9, ts*0.5);
-    ctx.fillStyle = '#FFFFFF'; ctx.fillRect(ts*0.15, -2, ts*0.2, 4);
-    ctx.restore(); return;
-  }
-  const x = (v.node.x + 0.5) * (1 - a) + (v.next.x + 0.5) * a;
-  const y = (v.node.y + 0.5) * (1 - a) + (v.next.y + 0.5) * a;
-  v.pos.x = x; v.pos.y = y;
-  const dir = v.next.dir || v.node.dir;
-  const ang = dir==='N'?-Math.PI/2:dir==='E'?0:dir==='S'?Math.PI/2:Math.PI;
-  ctx.save(); ctx.translate(x*ts, y*ts); ctx.rotate(ang);
-  ctx.fillStyle = '#8A2BE2'; ctx.fillRect(-ts*0.45, -ts*0.25, ts*0.9, ts*0.5);
-  ctx.fillStyle = '#FFFFFF'; ctx.fillRect(ts*0.15, -2, ts*0.2, 4);
+  const { ctx } = r, ts = state.world.tileSize;
+  const w = ts * 0.9, h = ts * 0.5;
+
+  ctx.save();
+  ctx.translate(v.pos.x * ts, v.pos.y * ts);
+  ctx.rotate(v.rot || 0);
+
+  // Body
+  ctx.fillStyle = '#555'; // neutral body color
+  ctx.fillRect(-w*0.5, -h*0.5, w, h);
+
+  // Headlights (front)
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(w*0.25, -2, ts*0.18, 4);
+
+  // Brake lights (rear)
+  ctx.fillStyle = v.brakeLight ? '#ff2d2d' : '#aa3333';
+  ctx.fillRect(-w*0.5, -h*0.5, 4, h*0.3);
+  ctx.fillRect(-w*0.5, h*0.2, 4, h*0.3);
+
   ctx.restore();
 }
+

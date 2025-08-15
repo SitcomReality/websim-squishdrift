@@ -84,9 +84,15 @@ canvas.addEventListener('click', (e) => {
         type: 'vehicle',
         pos: new Vec2(worldX, worldY),
         node: nearestNode,
-        next: next,
+        next,
         t: 0,
-        speed: 6
+        speed: 6,
+        rot: 0,
+        vel: { x: 0, y: 0 },
+        angularVel: 0,
+        ctrl: { throttle: 0, brake: 0, steer: 0 },
+        mass: 1200, maxSpeed: 4, engineForce: 900, brakeForce: 1600,
+        rollingRes: 1.0, drag: 0.25, grip: 6.0, steerRate: 2.5
       });
     }
   }

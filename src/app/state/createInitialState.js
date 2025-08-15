@@ -23,7 +23,20 @@ export function createInitialState() {
     if (!best || d2 < best.d2) best = { n, d2 };
   }
   if (best) {
-    const vehicle = { type: 'vehicle', pos: new Vec2(best.n.x, best.n.y), node: best.n, next: best.n.next[0] || best.n, t: 0, speed: 1.5 };
+    const vehicle = { 
+      type: 'vehicle',
+      pos: new Vec2(best.n.x + 0.5, best.n.y + 0.5),
+      node: best.n,
+      next: best.n.next[0] || best.n,
+      t: 0,
+      speed: 1.5,
+      rot: 0,
+      vel: { x: 0, y: 0 },
+      angularVel: 0,
+      ctrl: { throttle: 0, brake: 0, steer: 0 },
+      mass: 1200, maxSpeed: 4, engineForce: 900, brakeForce: 1600,
+      rollingRes: 1.0, drag: 0.25, grip: 6.0, steerRate: 2.5
+    };
     state.entities.push(vehicle);
   }
   // Spawn simple NPC pedestrians on ped graph near player

@@ -14,6 +14,8 @@ import { Vec2 } from '../utils/Vec2.js';
 import { Health } from './components/Health.js';
 import { CollisionSystem } from './systems/CollisionSystem.js';
 import { drawHealthBar } from './entities/drawHealthBar.js';
+import { EmergencyServices } from './systems/EmergencyServices.js';
+import { drawEmergency } from './entities/drawEmergency.js';
 
 export class Game {
   constructor(canvas, { debugEl } = {}) {
@@ -21,13 +23,22 @@ export class Game {
     this.input = new InputSystem(canvas);
     this.debugOverlay = new DebugOverlaySystem(debugEl);
     this.collisionSystem = new CollisionSystem();
+    this.emergencyServices = new EmergencyServices();
     this.state = createInitialState();
     this.state.control = { inVehicle: false, vehicle: null, equipped: null };
     this.hud = { 
       vehicleStateEl: document.getElementById('vehicle-state'),
       itemNameEl: document.getElementById('item-name'),
-      hpBarEl: document.getElementById('hp-bar')
+      hpBarEl: document.getElementById('hp-bar'),
+      wantedLevelEl: document.createElement('span')
     };
+
+    // Add wanted level display
+    const wantedRow = document.createElement('div');
+    wantedRow.className = 'row';
+    wantedRow.innerHTML = '<span class="label">Wanted</span><span id="wanted-level">0</span>';
+    document.getElementById('hud').appendChild(wantedRow);
+    this.hud.wantedLevelEl = document.getElementById('wanted-level');
   }
   
   update(dt) {
@@ -49,6 +60,9 @@ export class Game {
       const pct = Math.max(0, Math.min(1, player.health.getPercent()));
       this.hud.hpBarEl.style.width = `${Math.round(pct * 100)}%`;
     }
+    
+    // Update emergency services
+    this.emergencyServices.update(s, dt);
     
     // Interact (E) - enter/exit or pickup item
     if (this.input.pressed.has('KeyE')) {
@@ -101,6 +115,8 @@ export class Game {
     if (this.input.pressed.has('Space') && s.control.equipped && !s.control.inVehicle) {
       const weapon = s.control.equipped;
       if (weapon.name === 'Pistol') {
+        this.emergencyServices.addIncident('gunshot', player.pos, 1);
+        
         const bullet = {
           type: 'bullet',
           pos: new Vec2(player.pos.x, player.pos.y),
@@ -213,6 +229,8 @@ export class Game {
       const bx = ped.to.x + 0.5, by = ped.to.y + 0.5;
       ped.pos.x = ax*(1-ped.t) + bx*ped.t; ped.pos.y = ay*(1-ped.t) + by*ped.t;
     }
+    
+    // Update debug info
     this.debugOverlay.update({
       fps: this.renderer.fps, dt: dt,
       player: { x: player.pos.x.toFixed(2), y: player.pos.y.toFixed(2) },
@@ -225,8 +243,17 @@ export class Game {
       npcs: this.state.entities.filter(e=>e.type==='npc').length,
       control: { inVehicle: s.control.inVehicle },
       equipped: s.control.equipped ? s.control.equipped.name : null,
-      items: s.entities.filter(e => e.type === 'item').length
+      items: s.entities.filter(e => e.type === 'item').length,
+      wantedLevel: this.emergencyServices.wantedLevel,
+      activeIncidents: this.emergencyServices.activeIncidents.length,
+      emergencyVehicles: this.emergencyServices.emergencyVehicles.length
     });
+    
+    // Update HUD
+    if (this.hud.wantedLevelEl) {
+      this.hud.wantedLevelEl.textContent = this.emergencyServices.wantedLevel;
+    }
+    
     if (this.hud.vehicleStateEl) {
       this.hud.vehicleStateEl.textContent = s.control.inVehicle ? `In vehicle — ${Math.abs(s.control.vehicle.speed).toFixed(1)} u/s` : 'On foot';
     }
@@ -257,6 +284,9 @@ export class Game {
         drawHealthBar(this.renderer, e, -1.2);
       } else if (e.type === 'item') {
         drawItem(this.renderer, s, e);
+      } else if (e.type === 'emergency') {
+        drawEmergency(this.renderer, s, e);
+        drawHealthBar(this.renderer, e, -1.2);
       } else if (e.type === 'bullet') {
         const { ctx } = this.renderer;
         const ts = s.world.tileSize;

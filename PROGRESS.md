@@ -77,3 +77,11 @@
 
 - 2025-08-16: HUD health bar wiring
   - Player health now updates the HUD bar in real time with a smooth transition; reflects damage from collisions/projectiles.
+
+- 2025-08-16: Emergency Services System
+  - Added police, ambulance, and fire truck emergency vehicles
+  - Implemented wanted system with escalating response
+  - Added emergency services AI with pathfinding to incidents
+  - Added random events (arson, car theft, gunshots)
+  - Emergency vehicles spawn at map edges and respond to incidents
+

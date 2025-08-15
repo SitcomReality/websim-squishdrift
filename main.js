@@ -13,6 +13,7 @@ const loop = createLoop({
 });
 
 toggleBtn.addEventListener('click', () => {
+  console.log('Debug button clicked');
   const on = debugEl.hasAttribute('hidden');
   debugEl.toggleAttribute('hidden', !on ? false : true);
   toggleBtn.setAttribute('aria-pressed', String(!on));

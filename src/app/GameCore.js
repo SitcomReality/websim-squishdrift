@@ -10,6 +10,7 @@ import { drawVehicle } from './entities/drawVehicle.js';
 import { drawNPC } from './entities/drawNPC.js';
 import { drawItem } from './entities/drawItem.js';
 import { isWalkable } from '../map/TileTypes.js';
+import { Vec2 } from '../utils/Vec2.js';
 
 export class Game {
   constructor(canvas, { debugEl } = {}) {
@@ -140,6 +141,13 @@ export class Game {
         e.life -= dt;
         if (e.life <= 0) s.entities.splice(i, 1);
       }
+    }
+    
+    // Bullet collision (bullets hit NPCs)
+    for (let i = s.entities.length - 1; i >= 0; i--) {
+      const b = s.entities[i]; if (b.type !== 'bullet') continue;
+      const hitIdx = s.entities.findIndex(e => e.type === 'npc' && Math.hypot(e.pos.x - b.pos.x, e.pos.y - b.pos.y) < 0.35);
+      if (hitIdx !== -1) { s.entities.splice(hitIdx, 1); s.entities.splice(i, 1); }
     }
     
     const cam = s.camera, target = s.control.inVehicle ? s.control.vehicle.pos : player.pos;

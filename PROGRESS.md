@@ -65,6 +65,8 @@
   - Added pistol shooting with Space key (yellow bullets)
   - Bullets have 0.5 second lifetime
 
-# Next Step
-- Add collision detection for bullets
+- 2025-08-16: Bullet collision vs pedestrians
+  - Bullets now detect and remove nearby NPCs on impact (simple radius check).
 
+# Next Step
+- Add collisions with vehicles and basic Health component for damage handling

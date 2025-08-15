@@ -2,7 +2,8 @@ import { Tile, TileColor } from '../map/TileTypes.js';
 
 export function drawTiles(r, state, layer = 'all'){
   const { ctx, canvas } = r, ts = state.world.tileSize, map = state.world.map;
-  const wTiles = Math.ceil(canvas.width/ts)+2, hTiles = Math.ceil(canvas.height/ts)+2;
+  const z = state.camera.zoom || 1;
+  const wTiles = Math.ceil(canvas.width/(ts*z))+2, hTiles = Math.ceil(canvas.height/(ts*z))+2;
   const sx = Math.floor(state.camera.x - wTiles/2), sy = Math.floor(state.camera.y - hTiles/2);
   const floorTypes = new Set([Tile.BuildingFloor]);
   for (let y=0; y<hTiles; y++) for (let x=0; x<wTiles; x++){

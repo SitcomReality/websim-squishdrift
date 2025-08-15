@@ -24,10 +24,12 @@ export class RenderSystem {
     const cy = Math.floor(canvas.height / 2);
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.translate(cx, cy);
+    ctx.scale(state.camera.zoom || 1, state.camera.zoom || 1);
     ctx.translate(Math.floor(-state.camera.x * ts), Math.floor(-state.camera.y * ts));
     
     // Draw layers
-    const wTiles = Math.ceil(canvas.width/ts)+2, hTiles = Math.ceil(canvas.height/ts)+2;
+    const z = state.camera.zoom || 1;
+    const wTiles = Math.ceil(canvas.width/(ts*z))+2, hTiles = Math.ceil(canvas.height/(ts*z))+2;
     const sx = Math.floor(state.camera.x - wTiles/2), sy = Math.floor(state.camera.y - hTiles/2);
     ctx.fillStyle = '#b7e3f8'; // ocean
     ctx.fillRect(sx*ts, sy*ts, wTiles*ts, hTiles*ts);

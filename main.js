@@ -92,6 +92,13 @@ canvas.addEventListener('click', (e) => {
   }
 });
 
+// Show zoom indicator (optional unobtrusive)
+const zoomEl = document.getElementById('zoom-indicator');
+function updateZoomUI(){
+  if (zoomEl) zoomEl.textContent = `Zoom: ${game.state.camera.zoom?.toFixed(1)}x`;
+}
+setInterval(updateZoomUI, 200);
+
 window.addEventListener('resize', () => game.renderer && game.renderer.resizeToDisplay());
 if (game.renderer) {
   game.renderer.resizeToDisplay();

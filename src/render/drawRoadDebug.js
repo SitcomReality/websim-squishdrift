@@ -3,7 +3,8 @@ import { roadDir } from '../map/TileTypes.js';
 export function drawRoadDebug(r, state){
   const { ctx, canvas } = r, ts = state.world.tileSize, map = state.world.map;
   const roads = map.roads;
-  const wTiles = Math.ceil(canvas.width/ts)+2, hTiles = Math.ceil(canvas.height/ts)+2;
+  const z = state.camera.zoom || 1;
+  const wTiles = Math.ceil(canvas.width/(ts*z))+2, hTiles = Math.ceil(canvas.height/(ts*z))+2;
   const sx = Math.floor(state.camera.x - wTiles/2), sy = Math.floor(state.camera.y - hTiles/2);
   ctx.save(); ctx.lineWidth = 1; ctx.strokeStyle = '#111'; ctx.fillStyle = '#111';
   for (let y=0; y<hTiles; y++) for (let x=0; x<wTiles; x++){

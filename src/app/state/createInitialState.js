@@ -7,7 +7,7 @@ export function createInitialState() {
   const map = generateCity('alpha-seed', 4, 4);
   const rand = rng('alpha-seed');
   const player = { type: 'player', pos: new Vec2(), facing: new Vec2(1,0), moveSpeed: 6 };
-  const state = { time: 0, entities: [player], camera: { x: map.width/2, y: map.height/2 }, world: { tileSize: 24, map }, rand };
+  const state = { time: 0, entities: [player], camera: { x: map.width/2, y: map.height/2, zoom: 4 }, world: { tileSize: 24, map }, rand };
   let spawnX = map.width / 2, spawnY = map.height / 2, bestDist = Infinity;
   for (let y = 0; y < map.height; y++) for (let x = 0; x < map.width; x++) {
     const t = map.tiles[y][x];

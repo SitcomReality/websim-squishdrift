@@ -69,7 +69,7 @@ export class GameEngine {
     this.systems.vehicle.update(this.state, this.input, dt);
     this.systems.bullet.update(this.state, dt);
     this.systems.npc.update(this.state, dt);
-    this.systems.camera.update(this.state);
+    this.systems.camera.update(this.state, this.input);
     this.collisionSystem.update(this.state);
     this.emergencyServices.update(this.state, dt);
     

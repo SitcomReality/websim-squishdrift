@@ -2,7 +2,8 @@ import { isWalkable } from '../map/TileTypes.js';
 
 export function drawPedestrianDebug(r, state) {
   const { ctx, canvas } = r, ts = state.world.tileSize, map = state.world.map;
-  const wTiles = Math.ceil(canvas.width/ts)+2, hTiles = Math.ceil(canvas.height/ts)+2;
+  const z = state.camera.zoom || 1;
+  const wTiles = Math.ceil(canvas.width/(ts*z))+2, hTiles = Math.ceil(canvas.height/(ts*z))+2;
   const sx = Math.floor(state.camera.x - wTiles/2), sy = Math.floor(state.camera.y - hTiles/2);
   
   ctx.save();

@@ -28,6 +28,12 @@
   - Player now spawns on walkable tiles (footpath/grass) instead of potentially spawning on roads/medians
   - Added search algorithm to find nearest walkable tile to map center
 
+- 2025-08-16: Buildings and parks in lots
+  - Added BuildingFloor, BuildingWall, and Park tile types
+  - Implemented lot-based building/park generation (70% buildings, 30% parks)
+  - Added basic building wall shading in renderer
+  - Updated walkability rules to exclude building walls
+
 # Next Step
-- Implement buildings and parks in block lots.
+- Implement basic 2.5D building rendering with height and roof offset based on camera position.
 

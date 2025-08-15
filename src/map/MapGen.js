@@ -42,11 +42,51 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
       // 5x5 Interior: lots and alleys
       const interiorStart = ROAD_RING + FOOTPATH_RING; // 3
       const interiorSize = W - 2 * interiorStart; // 11 - 6 = 5
+      
+      // Generate 4 lots (2x2 each) with alleys between
+      const lots = [
+        { x: 0, y: 0 }, { x: 3, y: 0 },
+        { x: 0, y: 3 }, { x: 3, y: 3 }
+      ];
+      
+      // First fill with alleys (cross pattern)
       for (let y = 0; y < interiorSize; y++) {
         for (let x = 0; x < interiorSize; x++) {
           const isAlley = (x === 2 || y === 2);
           const tile = isAlley ? Tile.Footpath : Tile.Grass;
           tiles[oy + interiorStart + y][ox + interiorStart + x] = tile;
+        }
+      }
+      
+      // Then fill lots with buildings or parks
+      for (const lot of lots) {
+        const isBuilding = rand() < 0.7; // 70% buildings, 30% parks
+        
+        if (isBuilding) {
+          // Create a building with floor and walls
+          for (let ly = 0; ly < 2; ly++) {
+            for (let lx = 0; lx < 2; lx++) {
+              const tx = ox + interiorStart + lot.x + lx;
+              const ty = oy + interiorStart + lot.y + ly;
+              
+              // Outer edge is walls, inner is floor
+              const isWall = (lx === 0 || lx === 1 && lot.x + lx === interiorStart + lot.x + 1) ||
+                           (ly === 0 || ly === 1 && lot.y + ly === interiorStart + lot.y + 1);
+              
+              // Simple wall pattern - walls on edges
+              const isEdge = lx === 0 || lx === 1 || ly === 0 || ly === 1;
+              tiles[ty][tx] = isEdge && rand() < 0.6 ? Tile.BuildingWall : Tile.BuildingFloor;
+            }
+          }
+        } else {
+          // Create a park
+          for (let ly = 0; ly < 2; ly++) {
+            for (let lx = 0; lx < 2; lx++) {
+              const tx = ox + interiorStart + lot.x + lx;
+              const ty = oy + interiorStart + lot.y + ly;
+              tiles[ty][tx] = Tile.Park;
+            }
+          }
         }
       }
     }

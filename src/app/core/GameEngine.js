@@ -82,8 +82,8 @@ export class GameEngine {
     const player = this.state.entities.find(e => e.type === 'player');
     if (!player) return;
 
-    const spawnRadius = 15;
-    const despawnRadius = 25;
+    const spawnRadius = 10;  // Changed from 15 to 10
+    const despawnRadius = 20;  // Changed from 25 to 20
 
     // Despawn entities outside despawn radius
     for (let i = this.state.entities.length - 1; i >= 0; i--) {

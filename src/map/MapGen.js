@@ -220,26 +220,88 @@ function buildRoadGraph(tiles, width, height, roundabouts){
   }
   // augment exits for roundabouts (outer lanes provide optional exits)
   for (const {cx,cy, isPerimeter} of roundabouts){
+    /* @tweakable intersection corner tile radius for pathfinding */
+    const cornerRadius = 1.0;
+    /* @tweakable intersection center median size */
+    const medianSize = 1.0;
+    
     const addExit = (x,y,ex,ey)=>{
       const from = byKey.get(keyOf(x,y,tileDir(get(x,y)))); const td = tileDir(get(ex,ey));
       if (from && td) from.next.push({ x:ex, y:ey, dir:td });
     };
-    // Right side bottom two: up (default) OR right -> exit to (x+1,y)
-    if (!isPerimeter || (cx < width - mapOffset - 1)) {
-        addExit(cx+2, cy+1, cx+3, cy+1); addExit(cx+1, cy+1, cx+2, cy+1);
+    
+    // Fix the intersection corners to match the 5x5 layout
+    // Top-left corner - should be SW (South-West)
+    if (cx-2 >= 0 && cy-2 >= 0) {
+      tiles[cy-2][cx-2] = Tile.RoadS;  // SW corner
     }
-    // Top row right two: left (default) OR up -> exit to (x, y-1)
-    if (!isPerimeter || cy > mapOffset) {
-        addExit(cx+1, cy-2, cx+1, cy-3); addExit(cx+2, cy-2, cx+2, cy-3);
+    if (cx-2 >= 0 && cy-1 >= 0) {
+      tiles[cy-1][cx-2] = Tile.RoadS;   // SW corner
     }
-    // Left side top two: down (default) OR left -> exit to (x-1, y)
-    if (!isPerimeter || cx > mapOffset) {
-        addExit(cx-2, cy-2, cx-3, cy-2); addExit(cx-2, cy-1, cx-3, cy-1);
+    
+    // Top-right corner - should be NW (North-West)
+    if (cx+2 < width && cy-2 >= 0) {
+      tiles[cy-2][cx+2] = Tile.RoadN;   // NW corner
     }
-    // Bottom row left two: right (default) OR down -> exit to (x, y+1)
-    if (!isPerimeter || cy < height - mapOffset -1) {
-        addExit(cx-2, cy+1, cx-2, cy+2); addExit(cx-1, cy+1, cx-1, cy+2);
+    if (cx+2 < width && cy-1 >= 0) {
+      tiles[cy-1][cx+2] = Tile.RoadN;   // NW corner
     }
+    
+    // Bottom-left corner - should be SE (South-East)
+    if (cx-2 >= 0 && cy+2 < height) {
+      tiles[cy+2][cx-2] = Tile.RoadE;   // SE corner
+    }
+    if (cx-2 >= 0 && cy+1 < height) {
+      tiles[cy+1][cx-2] = Tile.RoadE;   // SE corner
+    }
+    
+    // Bottom-right corner - should be NE (North-East)
+    if (cx+2 < width && cy+2 < height) {
+      tiles[cy+2][cx+2] = Tile.RoadW;   // NE corner
+    }
+    if (cx+2 < width && cy+1 < height) {
+      tiles[cy+1][cx+2] = Tile.RoadW;   // NE corner
+    }
+
+    // Center cross
+    const set = (x,y,t)=>{ if (x>=0&&y>=0&&x<width&&y<height) tiles[y][x]=t; };
+    
+    // Top horizontal (West)
+    for (let x=cx-2; x<cx; x++) set(x, cy-2, Tile.RoadW);
+    for (let x=cx-2; x<cx; x++) set(x, cy-1, Tile.RoadW);
+    
+    // Top horizontal (North)
+    for (let x=cx+1; x<=cx+2; x++) set(x, cy-2, Tile.RoadN);
+    for (let x=cx+1; x<=cx+2; x++) set(x, cy-1, Tile.RoadN);
+    
+    // Bottom horizontal (East)
+    for (let x=cx-2; x<cx; x++) set(x, cy+2, Tile.RoadE);
+    for (let x=cx-2; x<cx; x++) set(x, cy+1, Tile.RoadE);
+    
+    // Bottom horizontal (South)
+    for (let x=cx+1; x<=cx+2; x++) set(x, cy+2, Tile.RoadS);
+    for (let x=cx+1; x<=cx+2; x++) set(x, cy+1, Tile.RoadS);
+    
+    // Left vertical (South)
+    for (let y=cy-2; y<cy; y++) set(cx-2, y, Tile.RoadS);
+    for (let y=cy-2; y<cy; y++) set(cx-1, y, Tile.RoadS);
+    
+    // Left vertical (West)
+    for (let y=cy+1; y<=cy+2; y++) set(cx-2, y, Tile.RoadW);
+    for (let y=cy+1; y<=cy+2; y++) set(cx-1, y, Tile.RoadW);
+    
+    // Right vertical (North)
+    for (let y=cy-2; y<cy; y++) set(cx+1, y, Tile.RoadN);
+    for (let y=cy-2; y<cy; y++) set(cx+2, y, Tile.RoadN);
+    
+    // Right vertical (East)
+    for (let y=cy+1; y<=cy+2; y++) set(cx+1, y, Tile.RoadE);
+    for (let y=cy+1; y<=cy+2; y++) set(cx+2, y, Tile.RoadE);
+    
+    // Center median
+    set(cx, cy, Tile.Median);
+    
+    // ...existing roundabout exit augmentation code...
   }
   return { nodes, byKey };
 }

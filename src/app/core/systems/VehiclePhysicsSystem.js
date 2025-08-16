@@ -1,11 +1,5 @@
 import { Tile } from '../../../map/TileTypes.js'; // added for building tile checks
 
-function wrapAngle(a) {
-  while (a > Math.PI) a -= 2*Math.PI;
-  while (a < -Math.PI) a += 2*Math.PI;
-  return a;
-}
-
 const maxSpeed = 5;
 
 const engineForceMultiplier = 1400;
@@ -37,8 +31,9 @@ const vehicleWidth = 0.9;
 /* @tweakable vehicle height for collision detection */
 const vehicleHeight = 0.5;
 
-/* @tweakable self-aligning force strength */
-const selfAlignForce = 3.0;
+// add gentle heading auto-alignment when moving forward
+const autoAlignStrength = 6;
+const autoAlignMax = 1.5;
 
 export class VehiclePhysicsSystem {
   update(state, dt) {
@@ -87,19 +82,6 @@ export class VehiclePhysicsSystem {
       // Braking damps all motion, not just longitudinal
       if (brake > 0.01) { Fx -= v.vel.x * (brakeForceMultiplier * brake); Fy -= v.vel.y * (brakeForceMultiplier * brake); }
 
-      // Self-aligning force when moving forward
-      if (speed > 0.1 && throttle > 0.05) {
-        const velAngle = Math.atan2(v.vel.y, v.vel.x);
-        const angleDiff = wrapAngle(velAngle - v.rot);
-        
-        // Only apply alignment when moving forward (not reversing)
-        const forwardDot = Math.cos(velAngle - v.rot);
-        if (forwardDot > 0.3) { // Only align when mostly moving forward
-          const alignStrength = Math.min(1, speed / maxSpeed) * selfAlignForce;
-          v.angularVel += angleDiff * alignStrength * dt;
-        }
-      }
-
       // Integrate velocity
       v.vel.x += (Fx / vehicleMass) * dt;
       v.vel.y += (Fy / vehicleMass) * dt;
@@ -115,6 +97,13 @@ export class VehiclePhysicsSystem {
       // Yaw/steer: stronger at speed, but still effective at low speed
       const speedFactor = Math.min(1, Math.abs(vLong) / maxSpeed) * 0.7 + 0.3;
       v.angularVel += steer * v.steerRate * speedFactor * dt;
+      // Auto-align heading toward velocity when accelerating forward (reduce drift)
+      if (speed > 0.1 && throttle > 0.01 && vLong > 0.05) {
+        const desired = Math.atan2(v.vel.y, v.vel.x);
+        let diff = desired - v.rot; while (diff > Math.PI) diff -= 2*Math.PI; while (diff < -Math.PI) diff += 2*Math.PI;
+        const alignTorque = Math.max(-autoAlignMax, Math.min(autoAlignMax, diff * autoAlignStrength * throttle * speedFactor));
+        v.angularVel += alignTorque * dt;
+      }
       v.angularVel *= 0.9; // damping
       v.rot += v.angularVel * dt;
 

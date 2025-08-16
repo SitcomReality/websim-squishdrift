@@ -1,8 +1,7 @@
 import { Vec2 } from '../../utils/Vec2.js';
 
 export class CollisionSystem {
-  /* @tweakable collision detection radius */
-  constructor() {
+    constructor() {
     this.collisionPairs = [];
     this.collisionRadius = 0.35;
     this.playerVehicleCollisionRadius = 0.75;

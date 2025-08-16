@@ -186,31 +186,67 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
       
       if (isPerimeter) {
         if (gy === 0) { // Top perimeter
-          for (let x=cx-2; x<=cx+2; x++) { set(x, cy-2, Tile.RoadW); set(x, cy-1, Tile.RoadW); } // Keep W
+          for (let x=cx-2; x<=cx+2; x++) { 
+            tiles[cy-2][x] = Tile.RoadW; 
+            tiles[cy-1][x] = Tile.RoadW; 
+          }
           for (let y=cy-1; y<=cy+2; y++) {
-            if (gx > 0) { set(cx-2, y, Tile.RoadS); set(cx-1, y, Tile.RoadS); }
-            if (gx < blocksWide) { set(cx+1, y, Tile.RoadN); set(cx+2, y, Tile.RoadN); }
+            if (gx > 0) { 
+              tiles[y][cx-2] = Tile.RoadS; 
+              tiles[y][cx-1] = Tile.RoadS; 
+            }
+            if (gx < blocksWide) { 
+              tiles[y][cx+1] = Tile.RoadN; 
+              tiles[y][cx+2] = Tile.RoadN; 
+            }
           }
         }
         if (gy === blocksHigh) { // Bottom perimeter
-          for (let x=cx-2; x<=cx+2; x++) { set(x, cy+2, Tile.RoadE); set(x, cy+1, Tile.RoadE); } // Keep E
+          for (let x=cx-2; x<=cx+2; x++) { 
+            tiles[cy+2][x] = Tile.RoadE; 
+            tiles[cy+1][x] = Tile.RoadE; 
+          }
           for (let y=cy-2; y<=cy+1; y++) {
-             if (gx > 0) { set(cx-2, y, Tile.RoadS); set(cx-1, y, Tile.RoadS); }
-             if (gx < blocksWide) { set(cx+1, y, Tile.RoadN); set(cx+2, y, Tile.RoadN); }
+             if (gx > 0) { 
+               tiles[y][cx-2] = Tile.RoadS; 
+               tiles[y][cx-1] = Tile.RoadS; 
+             }
+             if (gx < blocksWide) { 
+               tiles[y][cx+1] = Tile.RoadN; 
+               tiles[y][cx+2] = Tile.RoadN; 
+             }
           }
         }
         if (gx === 0) { // Left perimeter
-          for (let y=cy-2; y<=cy+2; y++) { set(cx-2, y, Tile.RoadS); set(cx-1, y, Tile.RoadS); } // Keep S
+          for (let y=cy-2; y<=cy+2; y++) { 
+            tiles[y][cx-2] = Tile.RoadS; 
+            tiles[y][cx-1] = Tile.RoadS; 
+          }
           for (let x=cx-1; x<=cx+2; x++) {
-            if (gy > 0) { set(x, cy-2, Tile.RoadW); set(x, cy-1, Tile.RoadW); }
-            if (gy < blocksHigh) { set(x, cy+2, Tile.RoadE); set(x, cy+1, Tile.RoadE); }
+            if (gy > 0) { 
+              tiles[cy-2][x] = Tile.RoadW; 
+              tiles[cy-1][x] = Tile.RoadW; 
+            }
+            if (gy < blocksHigh) { 
+              tiles[cy+2][x] = Tile.RoadE; 
+              tiles[cy+1][x] = Tile.RoadE; 
+            }
           }
         }
         if (gx === blocksWide) { // Right perimeter
-          for (let y=cy-2; y<=cy+2; y++) { set(cx+1, y, Tile.RoadN); set(cx+2, y, Tile.RoadN); } // Keep N
+          for (let y=cy-2; y<=cy+2; y++) { 
+            tiles[y][cx+1] = Tile.RoadN; 
+            tiles[y][cx+2] = Tile.RoadN; 
+          }
           for (let x=cx-2; x<=cx+1; x++) {
-            if (gy > 0) { set(x, cy-2, Tile.RoadW); set(x, cy-1, Tile.RoadW); }
-            if (gy < blocksHigh) { set(x, cy+2, Tile.RoadE); set(x, cy+1, Tile.RoadE); }
+            if (gy > 0) { 
+              tiles[cy-2][x] = Tile.RoadW; 
+              tiles[cy-1][x] = Tile.RoadW; 
+            }
+            if (gy < blocksHigh) { 
+              tiles[cy+2][x] = Tile.RoadE; 
+              tiles[cy+1][x] = Tile.RoadE; 
+            }
           }
         }
       }

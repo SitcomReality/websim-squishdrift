@@ -1,7 +1,5 @@
-import { Tweaks } from '../../core/Tweaks.js';
-
 export class AIDrivingSystem {
-  async update(state, dt) {
+  update(state, dt) {
     const roads = state.world.map.roads;
     for (const v of state.entities.filter(e => e.type === 'vehicle' && e.controlled !== true)) {
       // Ensure control struct
@@ -13,7 +11,7 @@ export class AIDrivingSystem {
         const target = { x: v.next.x + 0.5, y: v.next.y + 0.5 };
         
         // Predictive steering: aim ahead based on velocity
-        const PREDICTION_TIME = Tweaks.aiPredictionTime; // seconds ahead to predict
+        const PREDICTION_TIME = 0.5; // seconds ahead to predict
         const currentSpeed = Math.hypot(v.vel?.x || 0, v.vel?.y || 0);
         const futureTarget = {
           x: target.x + (v.vel?.x || 0) * PREDICTION_TIME,
@@ -26,13 +24,13 @@ export class AIDrivingSystem {
         const diff = wrapAngle(desired - (v.rot || 0));
 
         // Steering: proportional with velocity-based damping
-        const steerK = Tweaks.aiSteerK;
+        const steerK = 6.0;
         const velocityDamping = Math.min(1, currentSpeed / 4.0); // Reduce steering at high speeds
         v.ctrl.steer = clamp(diff * steerK * (1 - velocityDamping * 0.3), -1, 1);
 
         // Speed control: slow for sharp turns
         const turnSlow = 1 / (1 + 2 * Math.abs(diff));
-        const targetSpeed = (v.aiTargetSpeed || 1.5) * turnSlow; // 50% of player max
+        const targetSpeed = (v.aiTargetSpeed) * turnSlow;
 
         // Current forward speed
         const fwd = { x: Math.cos(v.rot || 0), y: Math.sin(v.rot || 0) };
@@ -52,7 +50,7 @@ export class AIDrivingSystem {
         }
 
         // Increased pathfinding tolerance - check if within 0.75 tiles instead of 0.35
-        const ARRIVAL_TOLERANCE = Tweaks.aiArrivalTolerance;
+        const ARRIVAL_TOLERANCE = 0.75;
         if (dist < ARRIVAL_TOLERANCE) {
           const key = `${v.next.x},${v.next.y},${v.next.dir}`;
           v.node = roads.byKey.get(key) || v.node;

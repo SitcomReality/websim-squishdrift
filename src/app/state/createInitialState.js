@@ -64,7 +64,7 @@ export function createInitialState() {
       node: spawnNode,
       next,
       t: 0,
-      speed: 0.25 * 0.75, // 50% of original speed (was 1.5, now 0.75)
+      speed: 0.25 * 1.5, // 25% of original speed
       rot,
       vel: { x: 0, y: 0 },
       angularVel: 0,

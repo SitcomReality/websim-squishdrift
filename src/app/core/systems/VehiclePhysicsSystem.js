@@ -1,4 +1,5 @@
 import { Tile } from '../../../map/TileTypes.js'; // added for building tile checks
+import { Tweaks } from '../../core/Tweaks.js';
 
 const maxSpeed = 5;
 
@@ -20,20 +21,7 @@ const staticFriction = 20;
 
 const vehicleMass = 1000;
 
-/* @tweakable how fast the vehicle can turn - lower values require more speed to turn */
-const steerRate = 12;
-
-/* @tweakable strength of the force that aligns vehicle to its movement direction */
-const alignmentForce = 8;
-
-/* @tweakable minimum speed needed for effective steering */
-const minSteerSpeed = 0.5;
-
-/* @tweakable how much the vehicle resists sideways sliding */
-const sidewaysResistance = 15;
-
-/* @tweakable wheelbase length - affects turning radius */
-const wheelbase = 0.8;
+const steerRate = 15;
 
 /* @tweakable vehicle collision radius in tiles */
 const vehicleCollisionRadius = 0.35;
@@ -71,35 +59,23 @@ export class VehiclePhysicsSystem {
       Fx -= fwd.x * brakeForce;
       Fy -= fwd.y * brakeForce;
 
-      // Enhanced lateral grip with sideways resistance
-      const lateralForce = vLat * (gripMultiplier + sidewaysResistance);
-      Fx -= right.x * lateralForce;
-      Fy -= right.y * lateralForce;
-      
+      // Lateral grip to reduce side slip
+      const speedForGrip = Math.hypot(v.vel.x, v.vel.y);
+      const tGrip = Math.max(0, Math.min(1, 1 - (speedForGrip / Tweaks.driftSlipSpeed)));
+      const dynamicGrip = Tweaks.lateralGripLow + (Tweaks.lateralGripHigh - Tweaks.lateralGripLow) * tGrip;
+      Fx -= right.x * vLat * dynamicGrip;
+      Fy -= right.y * vLat * dynamicGrip;
       // Extra skid damping: more friction the more sideways we move
       const misalign = Math.min(1, Math.abs(vLat) / (Math.abs(vLong) + 1e-3));
       Fx -= v.vel.x * skidDamp * misalign;
       Fy -= v.vel.y * skidDamp * misalign;
 
-      // Alignment force: try to align vehicle with velocity direction
-      const speed = Math.hypot(v.vel.x, v.vel.y);
-      if (speed > 0.1) {
-        const velocityAngle = Math.atan2(v.vel.y, v.vel.x);
-        let angleDiff = velocityAngle - v.rot;
-        // Normalize angle difference
-        while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
-        while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
-        
-        // Apply alignment torque proportional to speed and angle difference
-        const alignTorque = angleDiff * alignmentForce * Math.min(1, speed / maxSpeed);
-        v.angularVel += alignTorque * dt;
-      }
-
       // Rolling resistance + air drag + static friction
+      const speed = Math.hypot(v.vel.x, v.vel.y);
       Fx -= v.vel.x * rollingResistance + v.vel.x * staticFriction;
-      Fx -= v.vel.x * speed * airDrag;
+      Fx -= v.vel.x * speed * Tweaks.airDrag;
       Fy -= v.vel.y * rollingResistance + v.vel.y * staticFriction;
-      Fy -= v.vel.y * speed * airDrag;
+      Fy -= v.vel.y * speed * Tweaks.airDrag;
       // Coasting friction (no input) to prevent endless glide
       const coasting = (throttle < 0.05 && brake < 0.05);
       if (coasting) { Fx -= v.vel.x * coastingFriction; Fy -= v.vel.y * coastingFriction; }
@@ -118,21 +94,18 @@ export class VehiclePhysicsSystem {
       // Kill tiny velocities to avoid perpetual micro-sliding
       if (Math.hypot(v.vel.x, v.vel.y) < 0.02) { v.vel.x = 0; v.vel.y = 0; }
 
-      // Realistic steering: requires forward motion and uses bicycle model
-      const currentSpeed = Math.abs(vLong);
-      const speedFactor = Math.min(1, currentSpeed / minSteerSpeed);
-      
-      // Bicycle model steering - calculate turning radius
-      if (Math.abs(steer) > 0.01 && speedFactor > 0.1) {
-        const steerAngle = steer * 0.5; // Max steer angle in radians
-        const turningRadius = wheelbase / Math.tan(Math.abs(steerAngle));
-        const angularVelocity = currentSpeed / turningRadius * Math.sign(steerAngle) * Math.sign(vLong);
-        v.angularVel += angularVelocity * speedFactor * dt * v.steerRate;
+      // Yaw/steer: stronger at speed, but still effective at low speed
+      const forwardSpeed = Math.abs(vLong);
+      const steerScale = Math.min(1, forwardSpeed / Tweaks.minSteerSpeed);
+      const steerAngle = (steer * Tweaks.maxSteerAngle) * steerScale;
+      const yawRate = (vLong / Tweaks.wheelBase) * Math.tan(steerAngle);
+      v.rot += yawRate * dt;
+      // Self-align heading toward velocity to "track straight" when moving
+      if (speed > 0.05) {
+        const velAng = Math.atan2(v.vel.y, v.vel.x);
+        let angErr = velAng - v.rot; while (angErr > Math.PI) angErr -= 2*Math.PI; while (angErr < -Math.PI) angErr += 2*Math.PI;
+        v.rot += angErr * (Tweaks.alignToVelocityTorque * Math.min(1, forwardSpeed / maxSpeed)) * dt;
       }
-      
-      // Angular velocity damping
-      v.angularVel *= 0.85;
-      v.rot += v.angularVel * dt;
 
       // Move
       v.pos.x += v.vel.x * dt;

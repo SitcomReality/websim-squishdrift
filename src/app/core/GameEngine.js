@@ -124,14 +124,22 @@ export class GameEngine {
       const entity = this.state.entities[i];
       if (entity.type === 'player') continue;
       
-      const distance = Math.hypot(entity.pos.x - player.pos.x, entity.pos.y - player.pos.y);
+      // Use vehicle position if controlling vehicle, otherwise use player position
+      const referencePos = this.state.control.inVehicle 
+        ? this.state.control.vehicle.pos 
+        : player.pos;
+      
+      const distance = Math.hypot(entity.pos.x - referencePos.x, entity.pos.y - referencePos.y);
       if (distance > despawnRadius) {
         this.state.entities.splice(i, 1);
       }
     }
 
     // Spawn new entities within spawn radius but outside inner radius
-    this.spawnEntitiesNearPlayer(player, innerSpawnRadius, outerSpawnRadius);
+    const referencePos = this.state.control.inVehicle 
+      ? this.state.control.vehicle.pos 
+      : player.pos;
+    this.spawnEntitiesNearPlayer(referencePos, innerSpawnRadius, outerSpawnRadius);
   }
 
   findNearbyVehicle(player) {
@@ -143,7 +151,7 @@ export class GameEngine {
     );
   }
 
-  spawnEntitiesNearPlayer(player, innerRadius, outerRadius) {
+  spawnEntitiesNearPlayer(referencePos, innerRadius, outerRadius) {
     const existingNPCs = this.state.entities.filter(e => e.type === 'npc').length;
     const existingVehicles = this.state.entities.filter(e => e.type === 'vehicle').length;
     
@@ -154,7 +162,7 @@ export class GameEngine {
     if (existingNPCs < maxNPCs) {
       const pedNodes = this.state.world.map.peds?.list || [];
       const validSpawns = pedNodes.filter(node => {
-        const distance = Math.hypot(node.x - player.pos.x, node.y - player.pos.y);
+        const distance = Math.hypot(node.x - referencePos.x, node.y - referencePos.y);
         return distance <= outerRadius && distance >= innerRadius;
       });
 
@@ -179,7 +187,7 @@ export class GameEngine {
     if (existingVehicles < maxVehicles) {
       const roads = this.state.world.map.roads;
       const validSpawns = roads.nodes.filter(node => {
-        const distance = Math.hypot(node.x - player.pos.x, node.y - player.pos.y);
+        const distance = Math.hypot(node.x - referencePos.x, node.y - referencePos.y);
         return distance <= outerRadius && distance >= innerRadius && node.next && node.next.length > 0;
       });
 

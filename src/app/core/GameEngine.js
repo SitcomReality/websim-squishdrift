@@ -30,7 +30,8 @@ export class GameEngine {
       render: new RenderSystem(),
       aiDrive: new AIDrivingSystem(),
       vehicleMovement: new VehicleMovementSystem(),
-      vehicleCollision: new VehicleCollisionSystem()
+      vehicleCollision: new VehicleCollisionSystem(),
+      skidmark: new (await import('./systems/SkidmarkSystem.js')).SkidmarkSystem()
     };
     
     this.state = createInitialState();

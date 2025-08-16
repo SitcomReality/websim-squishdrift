@@ -19,6 +19,10 @@ export class SkidmarkSystem {
   skidMaxAge = 18;
   /* @tweakable world radius beyond which marks are despawned relative to player/vehicle (tiles) */
   skidDespawnRadius = 15;
+  /* @tweakable the length of a single skidmark segment (tiles) */
+  skidSegmentLength = 0.2;
+  /* @tweakable approximate offset of rear wheels from vehicle center along longitudinal axis (tiles, negative for rear) */
+  rearWheelOffset = -0.5;
 
   update(state, dt) {
     if (!state.skidmarks) state.skidmarks = [];
@@ -33,27 +37,50 @@ export class SkidmarkSystem {
       const drifting = lateralSlip >= this.skidLateralSlipThreshold;
 
       if ((drifting || hardBrake) && speed > 0.05) {
-        // spacing against last drop
+        // spacing against last drop using vehicle's center position
         if (!v._lastSkidPos) v._lastSkidPos = new Vec2(v.pos.x, v.pos.y);
         const moved = Math.hypot(v.pos.x - v._lastSkidPos.x, v.pos.y - v._lastSkidPos.y);
-        if (moved >= this.skidMinSegmentSpacing) {
-          // left/right contact points (projected sideways from body)
-          const sideX = -Math.sin(v.rot || 0);
-          const sideY =  Math.cos(v.rot || 0);
-          const lw = this.skidTrackHalfWidth;
-          const left = { x: v.pos.x + sideX * lw, y: v.pos.y + sideY * lw };
-          const right = { x: v.pos.x - sideX * lw, y: v.pos.y - sideY * lw };
 
+        if (moved >= this.skidMinSegmentSpacing) {
+          const alpha = Math.min(1, this.skidAlpha + (drifting ? (lateralSlip * 0.25) : 0));
+          const segmentHalfLength = this.skidSegmentLength / 2;
+
+          // Forward vector of the car (along its rotation)
+          const fwdX = Math.cos(v.rot || 0);
+          const fwdY = Math.sin(v.rot || 0);
+
+          // Perpendicular vector to the car's forward direction (pointing to the right of the car)
+          const perpX = Math.sin(v.rot || 0);
+          const perpY = -Math.cos(v.rot || 0);
+          
+          const lw = this.skidTrackHalfWidth;
+
+          // Calculate approximate rear wheel positions by offsetting from vehicle center
+          const rearX = v.pos.x + fwdX * this.rearWheelOffset;
+          const rearY = v.pos.y + fwdY * this.rearWheelOffset;
+
+          // Left wheel track segment: segment is aligned with car's rotation
           state.skidmarks.push({
-            left, right,
+            left: { x: rearX - perpX * lw - fwdX * segmentHalfLength, y: rearY - perpY * lw - fwdY * segmentHalfLength },
+            right: { x: rearX - perpX * lw + fwdX * segmentHalfLength, y: rearY - perpY * lw + fwdY * segmentHalfLength },
             age: 0,
             widthPx: this.skidLineWidthPx,
-            alpha: Math.min(1, this.skidAlpha + (drifting ? (lateralSlip * 0.25) : 0)),
+            alpha: alpha,
           });
+
+          // Right wheel track segment: segment is aligned with car's rotation
+          state.skidmarks.push({
+            left: { x: rearX + perpX * lw - fwdX * segmentHalfLength, y: rearY + perpY * lw - fwdY * segmentHalfLength },
+            right: { x: rearX + perpX * lw + fwdX * segmentHalfLength, y: rearY + perpY * lw + fwdY * segmentHalfLength },
+            age: 0,
+            widthPx: this.skidLineWidthPx,
+            alpha: alpha,
+          });
+          
           v._lastSkidPos.x = v.pos.x; v._lastSkidPos.y = v.pos.y;
         }
       } else {
-        // reset spacing anchor so next skid starts fresh
+        // If not skidding/braking, reset the last position to current pos to start a fresh line next time
         v._lastSkidPos = new Vec2(v.pos.x, v.pos.y);
       }
     }

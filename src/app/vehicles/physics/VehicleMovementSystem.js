@@ -3,25 +3,26 @@ import { Tile } from '../../../map/TileTypes.js';
 
 export class VehicleMovementSystem {
   constructor() {
-        this.maxEngineForce = 3000;
-    
-        this.maxBrakeForce = 5000;
-    
-        this.maxReverseForce = 1500;
-    
-        this.airDrag = 0.45;
-    
-        this.rollingResistance = 200;
-    
-        this.maxLateralFriction = 5000;
-    
-        this.corneringStiffness = 5000;
-    
-        this.maxSteerAngle = Math.PI / 4;
-    
-        this.lowSpeedSteerFactor = 1.1;
-    
-        this.wheelBase = 2.5;
+    /* @tweakable maximum engine force in Newtons */
+    this.maxEngineForce = 3000;
+    /* @tweakable maximum braking force in Newtons */
+    this.maxBrakeForce = 5000;
+    /* @tweakable maximum reverse force in Newtons */
+    this.maxReverseForce = 1500;
+    /* @tweakable air drag coefficient */
+    this.airDrag = 0.45;
+    /* @tweakable rolling resistance force */
+    this.rollingResistance = 200;
+    /* @tweakable maximum lateral friction force */
+    this.maxLateralFriction = 5000;
+    /* @tweakable tire cornering stiffness */
+    this.corneringStiffness = 5000;
+    /* @tweakable maximum steering angle in radians */
+    this.maxSteerAngle = Math.PI / 4;
+    /* @tweakable extra steering factor at low speeds */
+    this.lowSpeedSteerFactor = 1.1;
+    /* @tweakable distance between front and rear wheels in meters */
+    this.wheelBase = 2.5;
   }
 
   update(state, dt) {
@@ -135,8 +136,9 @@ export class VehicleMovementSystem {
     const wheelAngle = v.rot;
     const lateralSlip = Math.abs(Math.sin(velocityAngle - wheelAngle));
     
-    v.isSkidding = longitudinalSlip > 0.8 || lateralSlip > 0.5;
+    // Calculate combined skid intensity
     v.skidIntensity = Math.max(longitudinalSlip, lateralSlip);
+    v.isSkidding = v.skidIntensity > 0.2;
   }
 
   ensurePhysics(v) {
@@ -147,6 +149,10 @@ export class VehicleMovementSystem {
     v.rot = typeof v.rot === 'number' ? v.rot : 0;
     v.angularVelocity = v.angularVelocity || 0;
     v.ctrl = v.ctrl || { throttle: 0, brake: 0, steer: 0 };
+    
+    // Initialize skidding properties
+    v.isSkidding = false;
+    v.skidIntensity = 0;
     
     v._physInit = true;
   }

@@ -2,13 +2,16 @@ export class SkidmarkSystem {
   constructor() {
     this.skidmarks = [];
     this.maxSkidmarks = 1000;
-    this.skidIntensityThreshold = 0.5;
-    this.debug = false; // Set to true for console logging
+    /* @tweakable the minimum skid intensity to trigger a skidmark */
+    this.skidIntensityThreshold = 0.2;
+    /* @tweakable how sensitive the skidding detection is */
+    this.skidSensitivity = 0.5;
+    /* @tweakable cooldown between skidmark creation (in seconds) */
+    this.skidCooldown = 0.1;
+    this.lastSkidTime = 0;
   }
 
   update(state, dt) {
-    if (this.debug) console.log('SkidmarkSystem update start');
-    
     // Update existing skidmarks (fade out)
     for (let i = this.skidmarks.length - 1; i >= 0; i--) {
       const mark = this.skidmarks[i];
@@ -26,18 +29,33 @@ export class SkidmarkSystem {
 
     // Create new skidmarks from vehicles
     const vehicles = state.entities.filter(e => e.type === 'vehicle');
-    if (this.debug) console.log(`Found ${vehicles.length} vehicles`);
-    
     for (const vehicle of vehicles) {
-      if (this.debug) {
-        console.log(`Vehicle skidding: ${vehicle.isSkidding}, intensity: ${vehicle.skidIntensity}, threshold: ${this.skidIntensityThreshold}`);
-      }
+      const isSkidding = this.checkSkidding(vehicle);
       
-      if (vehicle.isSkidding && vehicle.skidIntensity > this.skidIntensityThreshold) {
-        if (this.debug) console.log('Creating skidmark!');
+      if (isSkidding && (state.time - this.lastSkidTime) > this.skidCooldown) {
+        console.log('SKIDDING DETECTED:', {
+          skidIntensity: vehicle.skidIntensity,
+          speed: Math.hypot(vehicle.vel?.x || 0, vehicle.vel?.y || 0),
+          threshold: this.skidIntensityThreshold
+        });
         this.createSkidmark(vehicle);
+        this.lastSkidTime = state.time;
       }
     }
+  }
+
+  checkSkidding(vehicle) {
+    if (!vehicle.vel) return false;
+    
+    const speed = Math.hypot(vehicle.vel.x || 0, vehicle.vel.y || 0);
+    const isMoving = speed > 0.5;
+    
+    // Check for skidding based on multiple conditions
+    const isSkiddingFromIntensity = (vehicle.skidIntensity || 0) > this.skidIntensityThreshold;
+    const isBrakingHard = (vehicle.ctrl?.brake || 0) > 0.8 && speed > 2.0;
+    const isTurningSharp = Math.abs(vehicle.ctrl?.steer || 0) > 0.7 && speed > 1.5;
+    
+    return isMoving && (isSkiddingFromIntensity || isBrakingHard || isTurningSharp);
   }
 
   createSkidmark(vehicle) {
@@ -46,11 +64,11 @@ export class SkidmarkSystem {
       this.skidmarks.shift();
     }
 
-    const intensity = Math.min(1, vehicle.skidIntensity * 2);
+    const intensity = Math.min(1, Math.max(0.3, (vehicle.skidIntensity || 0) * 2));
     this.skidmarks.push({
       x: vehicle.pos.x,
       y: vehicle.pos.y,
-      rot: vehicle.rot,
+      rot: vehicle.rot || 0,
       intensity,
       life: 10, // seconds
       alpha: 1
@@ -60,8 +78,6 @@ export class SkidmarkSystem {
   render(renderer, state) {
     const { ctx } = renderer;
     const ts = state.world.tileSize;
-    
-    if (this.skidmarks.length === 0) return;
 
     ctx.save();
     

@@ -128,11 +128,7 @@ export class VehicleMovementSystem {
 
   calculateWheelSlip(v) {
     const speed = Math.hypot(v.vel.x, v.vel.y);
-    if (speed < 0.1) {
-      v.isSkidding = false;
-      v.skidIntensity = 0;
-      return;
-    }
+    if (speed < 0.1) return;
     
     const longitudinalSlip = Math.abs(v.longitudinalForce) / this.maxLateralFriction;
     const velocityAngle = Math.atan2(v.vel.y, v.vel.x);
@@ -141,11 +137,6 @@ export class VehicleMovementSystem {
     
     v.isSkidding = longitudinalSlip > 0.8 || lateralSlip > 0.5;
     v.skidIntensity = Math.max(longitudinalSlip, lateralSlip);
-    
-    // Debug logging for slip values
-    if (Math.random() < 0.01) { // Only log occasionally
-      console.log(`Slip - Long: ${longitudinalSlip.toFixed(2)}, Lat: ${lateralSlip.toFixed(2)}, Skidding: ${v.isSkidding}`);
-    }
   }
 
   ensurePhysics(v) {

@@ -41,24 +41,20 @@ export class VehicleCollisionSystem {
       
       const contact = obbOverlap(obb, aabbForTile(gx,gy)); if (!contact) continue;
       
-      // For buildings, use velocity direction for bounce with reduced energy
+      // For buildings, use velocity direction for bounce
       const velocityDir = this.getVelocityDirection(v);
       const bounceNormal = this.calculateBounceNormal(velocityDir, contact.normal);
       
-      // Create corrected contact - use lower restitution for buildings to reduce bounce
+      // Create corrected contact
       const correctedContact = { ...contact, normal: bounceNormal };
-      resolveDynamicStatic(v, correctedContact, 0.3); // Reduced from 0.85
-      
-      // Apply additional energy dissipation
-      const speed = Math.hypot(v.vel.x, v.vel.y);
-      if (speed > 0) {
-        // Reduce velocity by 60% on collision with buildings
-        v.vel.x *= 0.4;
-        v.vel.y *= 0.4;
+      // Use a low restitution for building impacts and heavily damp linear/angular velocity
+      resolveDynamicStatic(v, correctedContact, 0.2);
+      // Immediately bleed off most of the vehicle's inertia to avoid excessive bouncing
+      if (v.vel) {
+        v.vel.x *= 0.25;
+        v.vel.y *= 0.25;
       }
-      
-      // Also reduce angular velocity
-      v.angularVelocity *= 0.4;
+      if (typeof v.angularVelocity === 'number') v.angularVelocity *= 0.3;
     }
   }
 

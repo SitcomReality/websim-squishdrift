@@ -1,4 +1,4 @@
-import { Vec2 } from '../../utils/Vec2.js';
+import { Vec2 } from '../../../utils/Vec2.js';
 
 export class SkidmarkSystem {
   /* @tweakable lateral slip threshold at/above which we leave marks */

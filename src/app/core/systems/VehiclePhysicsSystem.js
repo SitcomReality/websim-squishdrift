@@ -29,6 +29,11 @@ export class VehiclePhysicsSystem {
       // Lateral grip to reduce side slip
       Fx -= right.x * vLat * v.grip;
       Fy -= right.y * vLat * v.grip;
+      // Extra skid damping: more friction the more sideways we move
+      const misalign = Math.min(1, Math.abs(vLat) / (Math.abs(vLong) + 1e-3));
+      const skidDamp = 45;
+      Fx -= v.vel.x * skidDamp * misalign;
+      Fy -= v.vel.y * skidDamp * misalign;
 
       // Rolling resistance + air drag + static friction
       const speed = Math.hypot(v.vel.x, v.vel.y);
@@ -37,6 +42,11 @@ export class VehiclePhysicsSystem {
       Fx -= v.vel.x * speed * v.drag;
       Fy -= v.vel.y * v.rollingRes + v.vel.y * staticFriction;
       Fy -= v.vel.y * speed * v.drag;
+      // Coasting friction (no input) to prevent endless glide
+      const coasting = (throttle < 0.05 && brake < 0.05);
+      if (coasting) { Fx -= v.vel.x * 12; Fy -= v.vel.y * 12; }
+      // Braking damps all motion, not just longitudinal
+      if (brake > 0.01) { Fx -= v.vel.x * (30 * brake); Fy -= v.vel.y * (30 * brake); }
 
       // Integrate velocity
       v.vel.x += (Fx / v.mass) * dt;
@@ -47,6 +57,8 @@ export class VehiclePhysicsSystem {
         v.vel.x *= v.maxSpeed / speed;
         v.vel.y *= v.maxSpeed / speed;
       }
+      // Kill tiny velocities to avoid perpetual micro-sliding
+      if (Math.hypot(v.vel.x, v.vel.y) < 0.02) { v.vel.x = 0; v.vel.y = 0; }
 
       // Yaw/steer: stronger at speed, but still effective at low speed
       const speedFactor = Math.min(1, Math.abs(vLong) / v.maxSpeed) * 0.7 + 0.3;

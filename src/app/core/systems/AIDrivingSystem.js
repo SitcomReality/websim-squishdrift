@@ -37,12 +37,16 @@ export class AIDrivingSystem {
         const vLong = (v.vel?.x || 0) * fwd.x + (v.vel?.y || 0) * fwd.y;
 
         const accelBand = 0.2;
-        if (vLong < targetSpeed - accelBand) {
-          v.ctrl.throttle = 1; v.ctrl.brake = 0;
+        if (Math.abs(vLong - targetSpeed) < accelBand) {
+          v.ctrl.throttle = 0; v.ctrl.reverse = 0; v.ctrl.brake = 0;
+        } else if (vLong < targetSpeed - accelBand) {
+          v.ctrl.throttle = 1; v.ctrl.reverse = 0; v.ctrl.brake = 0;
         } else if (vLong > targetSpeed + accelBand) {
-          v.ctrl.throttle = 0; v.ctrl.brake = clamp((vLong - targetSpeed) / 2, 0, 1);
-        } else {
-          v.ctrl.throttle = 0.3; v.ctrl.brake = 0;
+          v.ctrl.throttle = 0; v.ctrl.reverse = 0; v.ctrl.brake = 0.5;
+          // Use reverse for stronger braking
+          if (vLong > targetSpeed + accelBand * 2) {
+            v.ctrl.reverse = -0.5;
+          }
         }
 
         // Increased pathfinding tolerance - check if within 0.75 tiles instead of 0.35

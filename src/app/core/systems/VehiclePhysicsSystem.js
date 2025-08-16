@@ -44,12 +44,13 @@ export class VehiclePhysicsSystem {
       const throttle = v.ctrl?.throttle || 0;
       const brake = v.ctrl?.brake || 0;
       const steer = v.ctrl?.steer || 0;
+      const reverse = v.ctrl?.reverse || 0;
 
       // Forces
       let Fx = 0, Fy = 0;
 
       // Engine drive (forward/back)
-      const engine = engineForceMultiplier * throttle;
+      const engine = engineForceMultiplier * (throttle + reverse);
       Fx += fwd.x * engine; Fy += fwd.y * engine;
 
       // Braking opposes longitudinal velocity

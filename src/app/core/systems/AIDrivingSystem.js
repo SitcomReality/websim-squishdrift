@@ -5,65 +5,164 @@ export class AIDrivingSystem {
       // Ensure control struct
       v.ctrl = v.ctrl || { throttle: 0, brake: 0, steer: 0 };
       v.aiTargetSpeed = v.aiTargetSpeed || 3.0;
+      
+      // Initialize planned route if not exists
+      if (!v.plannedRoute || !v.plannedRoute.length) {
+        this.initializeRoute(v, roads);
+      }
 
-      // Waypoint following based on node/next graph
-      if (v.next && v.node) {
-        const target = { x: v.next.x + 0.5, y: v.next.y + 0.5 };
-        
-        // Predictive steering: aim ahead based on velocity
-        const PREDICTION_TIME = 0.5; // seconds ahead to predict
-        const currentSpeed = Math.hypot(v.vel?.x || 0, v.vel?.y || 0);
-        const futureTarget = {
-          x: target.x + (v.vel?.x || 0) * PREDICTION_TIME,
-          y: target.y + (v.vel?.y || 0) * PREDICTION_TIME
-        };
-        
-        const toT = { x: futureTarget.x - v.pos.x, y: futureTarget.y - v.pos.y };
-        const dist = Math.hypot(toT.x, toT.y) || 1;
-        const desired = Math.atan2(toT.y, toT.x);
-        const diff = wrapAngle(desired - (v.rot || 0));
+      this.updateRouteFollowing(state, v, roads, dt);
+      this.updateMovement(v, dt);
+    }
+  }
 
-        // Steering: proportional with velocity-based damping
-        const steerK = 6.0;
-        const velocityDamping = Math.min(1, currentSpeed / 4.0); // Reduce steering at high speeds
-        v.ctrl.steer = clamp(diff * steerK * (1 - velocityDamping * 0.3), -1, 1);
+  initializeRoute(v, roads) {
+    if (!v.node) return;
+    
+    // Build initial path of 4 nodes ahead
+    v.plannedRoute = this.buildPathAhead(v.node, 4, roads);
+    v.currentPathIndex = 0;
+  }
 
-        // Speed control: slow for sharp turns
-        const turnSlow = 1 / (1 + 2 * Math.abs(diff));
-        const targetSpeed = (v.aiTargetSpeed) * turnSlow;
+  buildPathAhead(startNode, depth, roads) {
+    const path = [startNode];
+    let current = startNode;
+    
+    for (let i = 0; i < depth; i++) {
+      if (!current.next || !current.next.length) break;
+      
+      // Choose next node (prefer straight, avoid immediate backtracking)
+      let nextChoice;
+      if (current.next.length === 1) {
+        nextChoice = current.next[0];
+      } else {
+        // Filter out immediate backtracking
+        const validChoices = current.next.filter(n => 
+          !path[path.length - 2] || 
+          !(n.x === path[path.length - 2].x && n.y === path[path.length - 2].y)
+        );
+        nextChoice = validChoices.length > 0 
+          ? validChoices[Math.floor(Math.random() * validChoices.length)]
+          : current.next[Math.floor(Math.random() * current.next.length)];
+      }
+      
+      const nextNode = roads.byKey.get(`${nextChoice.x},${nextChoice.y},${nextChoice.dir}`);
+      if (!nextNode) break;
+      
+      path.push(nextNode);
+      current = nextNode;
+    }
+    
+    return path;
+  }
 
-        // Current forward speed
-        const fwd = { x: Math.cos(v.rot || 0), y: Math.sin(v.rot || 0) };
-        const vLong = (v.vel?.x || 0) * fwd.x + (v.vel?.y || 0) * fwd.y;
-
-        const accelBand = 0.2;
-        if (Math.abs(vLong - targetSpeed) < accelBand) {
-          v.ctrl.throttle = 0; v.ctrl.reverse = 0; v.ctrl.brake = 0;
-        } else if (vLong < targetSpeed - accelBand) {
-          v.ctrl.throttle = 1; v.ctrl.reverse = 0; v.ctrl.brake = 0;
-        } else if (vLong > targetSpeed + accelBand) {
-          v.ctrl.throttle = 0; v.ctrl.reverse = 0; v.ctrl.brake = 0.5;
-          // Use reverse for stronger braking
-          if (vLong > targetSpeed + accelBand * 2) {
-            v.ctrl.reverse = -0.5;
-          }
-        }
-
-        // Increased pathfinding tolerance - check if within 0.75 tiles instead of 0.35
-        const ARRIVAL_TOLERANCE = 0.75;
-        if (dist < ARRIVAL_TOLERANCE) {
-          const key = `${v.next.x},${v.next.y},${v.next.dir}`;
-          v.node = roads.byKey.get(key) || v.node;
-          const choices = v.node.next;
-          v.next = (choices && choices.length)
-            ? choices[Math.floor(state.rand() * choices.length)]
-            : { x: v.node.x, y: v.node.y, dir: v.node.dir };
-        }
-      } else if (v.next && !v.node && roads?.byKey) {
-        const key = `${v.next.x},${v.next.y},${v.next.dir}`;
-        v.node = roads.byKey.get(key) || null;
+  updateRouteFollowing(state, v, roads, dt) {
+    if (!v.plannedRoute || !v.plannedRoute.length) return;
+    
+    const currentTarget = v.plannedRoute[v.currentPathIndex];
+    if (!currentTarget) return;
+    
+    const targetPos = { x: currentTarget.x + 0.5, y: currentTarget.y + 0.5 };
+    const distanceToTarget = Math.hypot(
+      v.pos.x - targetPos.x, 
+      v.pos.y - targetPos.y
+    );
+    
+    // Check if we're closer to a later node in the path
+    let newTargetIndex = v.currentPathIndex;
+    for (let i = v.currentPathIndex + 1; i < v.plannedRoute.length; i++) {
+      const laterNode = v.plannedRoute[i];
+      const laterPos = { x: laterNode.x + 0.5, y: laterNode.y + 0.5 };
+      const distToLater = Math.hypot(v.pos.x - laterPos.x, v.pos.y - laterPos.y);
+      
+      if (distToLater < distanceToTarget) {
+        newTargetIndex = i;
+        break;
       }
     }
+    
+    // If we found a closer node, skip to it and rebuild path
+    if (newTargetIndex !== v.currentPathIndex) {
+      v.currentPathIndex = newTargetIndex;
+      
+      // Rebuild remaining path
+      const remainingPath = v.plannedRoute.slice(v.currentPathIndex);
+      const additionalNodes = this.buildPathAhead(
+        remainingPath[remainingPath.length - 1], 
+        4 - remainingPath.length + 1, 
+        roads
+      );
+      
+      v.plannedRoute = [...remainingPath, ...additionalNodes.slice(1)];
+      v.currentPathIndex = 0;
+    }
+    
+    // If we've reached the target node
+    const ARRIVAL_TOLERANCE = 0.75;
+    if (distanceToTarget < ARRIVAL_TOLERANCE) {
+      v.currentPathIndex++;
+      
+      // If we've reached the end of planned route or need more nodes
+      if (v.currentPathIndex >= v.plannedRoute.length || 
+          v.plannedRoute.length < 4) {
+        
+        // Get last node in path
+        const lastNode = v.plannedRoute[v.plannedRoute.length - 1];
+        const newNodes = this.buildPathAhead(lastNode, 4, roads);
+        
+        // Replace current path with new extended path
+        v.plannedRoute = newNodes;
+        v.currentPathIndex = 0;
+      }
+    }
+    
+    // Update waypoint following based on current target
+    const currentNode = v.plannedRoute[v.currentPathIndex];
+    if (currentNode) {
+      const currentPos = { x: currentNode.x + 0.5, y: currentNode.y + 0.5 };
+      
+      // Predictive steering
+      const PREDICTION_TIME = 0.5;
+      const currentSpeed = Math.hypot(v.vel?.x || 0, v.vel?.y || 0);
+      const futureTarget = {
+        x: currentPos.x + (v.vel?.x || 0) * PREDICTION_TIME,
+        y: currentPos.y + (v.vel?.y || 0) * PREDICTION_TIME
+      };
+      
+      const toT = { x: futureTarget.x - v.pos.x, y: futureTarget.y - v.pos.y };
+      const dist = Math.hypot(toT.x, toT.y) || 1;
+      const desired = Math.atan2(toT.y, toT.x);
+      const diff = wrapAngle(desired - (v.rot || 0));
+      
+      // Steering with velocity damping
+      const steerK = 6.0;
+      const velocityDamping = Math.min(1, currentSpeed / 4.0);
+      v.ctrl.steer = clamp(diff * steerK * (1 - velocityDamping * 0.3), -1, 1);
+      
+      // Speed control
+      const turnSlow = 1 / (1 + 2 * Math.abs(diff));
+      const targetSpeed = v.aiTargetSpeed * turnSlow;
+      
+      const fwd = { x: Math.cos(v.rot || 0), y: Math.sin(v.rot || 0) };
+      const vLong = (v.vel?.x || 0) * fwd.x + (v.vel?.y || 0) * fwd.y;
+      
+      const accelBand = 0.2;
+      if (Math.abs(vLong - targetSpeed) < accelBand) {
+        v.ctrl.throttle = 0; v.ctrl.brake = 0;
+      } else if (vLong < targetSpeed - accelBand) {
+        v.ctrl.throttle = 1; v.ctrl.brake = 0;
+      } else if (vLong > targetSpeed + accelBand) {
+        v.ctrl.throttle = 0; v.ctrl.brake = 0.5;
+      }
+    }
+  }
+
+  updateMovement(v, dt) {
+    // Ensure basic physics properties exist
+    v.vel = v.vel || { x: 0, y: 0 };
+    v.rot = v.rot || 0;
+    v.angularVelocity = v.angularVelocity || 0;
+    v.mass = v.mass || 1200;
   }
 }
 

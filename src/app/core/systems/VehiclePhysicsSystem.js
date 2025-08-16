@@ -1,34 +1,24 @@
 import { Tile } from '../../../map/TileTypes.js'; // added for building tile checks
 
-/* @tweakable overall grip multiplier for lateral movement */
-const gripMultiplier = 40.0;
+const gripMultiplier = 20;
 
-/* @tweakable how quickly vehicles stop when coasting */
-const coastingFriction = 12;
+const coastingFriction = 20;
 
-/* @tweakable base rolling resistance */
-const rollingResistance = 20;
+const rollingResistance = 10;
 
-/* @tweakable air drag coefficient */
 const airDrag = 0.3;
 
-/* @tweakable static friction at very low speeds */
-const staticFriction = 35;
+const staticFriction = 20;
 
-/* @tweakable how much extra friction when sliding sideways */
-const skidDamp = 45;
+const skidDamp = 500;
 
-/* @tweakable brake force multiplier */
-const brakeForceMultiplier = 30;
+const brakeForceMultiplier = 20;
 
-/* @tweakable engine force applied when throttle is 1.0 */
 const engineForceMultiplier = 1200;
 
-/* @tweakable maximum vehicle speed */
 const maxSpeed = 6;
 
-/* @tweakable vehicle mass in kg */
-const vehicleMass = 1200;
+const vehicleMass = 1000;
 
 export class VehiclePhysicsSystem {
   update(state, dt) {

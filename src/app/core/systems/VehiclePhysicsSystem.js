@@ -22,6 +22,15 @@ const vehicleMass = 1000;
 
 const steerRate = 15;
 
+/* @tweakable vehicle collision radius in tiles */
+const vehicleCollisionRadius = 0.35;
+
+/* @tweakable vehicle width for collision detection */
+const vehicleWidth = 0.9;
+
+/* @tweakable vehicle height for collision detection */
+const vehicleHeight = 0.5;
+
 export class VehiclePhysicsSystem {
   update(state, dt) {
     for (const v of state.entities.filter(e => e.type === 'vehicle')) {
@@ -177,7 +186,7 @@ export class VehiclePhysicsSystem {
     v.grip = gripMultiplier;
     v.steerRate = steerRate;
     v.ctrl = v.ctrl || { throttle: 0, brake: 0, steer: 0 };
-    v.radius = 0.6;
+    v.radius = vehicleCollisionRadius;
     v._physInit = true;
   }
 }

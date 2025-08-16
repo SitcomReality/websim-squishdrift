@@ -1,7 +1,7 @@
 export class AIDrivingSystem {
   update(state, dt) {
     const roads = state.world.map.roads;
-    for (const v of state.entities.filter(e => e.type === 'vehicle' && e.controlled !== true)) { // Exclude player controlled and explicitly uncontrolled vehicles
+    for (const v of state.entities.filter(e => e.type === 'vehicle' && e.controlled !== true)) {
       // Ensure control struct
       v.ctrl = v.ctrl || { throttle: 0, brake: 0, steer: 0 };
       v.aiTargetSpeed = v.aiTargetSpeed || 3.0;
@@ -9,14 +9,24 @@ export class AIDrivingSystem {
       // Waypoint following based on node/next graph
       if (v.next && v.node) {
         const target = { x: v.next.x + 0.5, y: v.next.y + 0.5 };
-        const toT = { x: target.x - v.pos.x, y: target.y - v.pos.y };
+        
+        // Predictive steering: aim ahead based on velocity
+        const PREDICTION_TIME = 0.5; // seconds ahead to predict
+        const currentSpeed = Math.hypot(v.vel?.x || 0, v.vel?.y || 0);
+        const futureTarget = {
+          x: target.x + (v.vel?.x || 0) * PREDICTION_TIME,
+          y: target.y + (v.vel?.y || 0) * PREDICTION_TIME
+        };
+        
+        const toT = { x: futureTarget.x - v.pos.x, y: futureTarget.y - v.pos.y };
         const dist = Math.hypot(toT.x, toT.y) || 1;
         const desired = Math.atan2(toT.y, toT.x);
         const diff = wrapAngle(desired - (v.rot || 0));
 
-        // Steering: proportional
-        const steerK = 6.0; 
-        v.ctrl.steer = clamp(diff * steerK, -1, 1);
+        // Steering: proportional with velocity-based damping
+        const steerK = 6.0;
+        const velocityDamping = Math.min(1, currentSpeed / 4.0); // Reduce steering at high speeds
+        v.ctrl.steer = clamp(diff * steerK * (1 - velocityDamping * 0.3), -1, 1);
 
         // Speed control: slow for sharp turns
         const turnSlow = 1 / (1 + 2 * Math.abs(diff));
@@ -35,8 +45,9 @@ export class AIDrivingSystem {
           v.ctrl.throttle = 0.3; v.ctrl.brake = 0;
         }
 
-        // Advance to next node
-        if (dist < 0.35) {
+        // Increased pathfinding tolerance - check if within 0.75 tiles instead of 0.35
+        const ARRIVAL_TOLERANCE = 0.75;
+        if (dist < ARRIVAL_TOLERANCE) {
           const key = `${v.next.x},${v.next.y},${v.next.dir}`;
           v.node = roads.byKey.get(key) || v.node;
           const choices = v.node.next;

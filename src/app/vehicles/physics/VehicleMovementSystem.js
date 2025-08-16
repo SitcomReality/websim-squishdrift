@@ -12,105 +12,162 @@ export class VehicleMovementSystem {
   }
 
   updateMovement(state, v, dt) {
-    const fwd = { x: Math.cos(v.rot), y: Math.sin(v.rot) };
-    const right = { x: -fwd.y, y: fwd.x };
-    const vLong = v.vel.x * fwd.x + v.vel.y * fwd.y;
-    const vLat = v.vel.x * right.x + v.vel.y * right.y;
-
-    // Controls (default to 0)
+    // Ensure physics properties exist
+    v.longitudinalForce = v.longitudinalForce || 0;
+    v.lateralForce = v.lateralForce || 0;
+    v.angularVelocity = v.angularVelocity || 0;
+    
+    // Get inputs
     const throttle = v.ctrl?.throttle || 0;
     const brake = v.ctrl?.brake || 0;
     const steer = v.ctrl?.steer || 0;
-    const reverse = v.ctrl?.reverse || 0;
-
-    // Forces
-    let Fx = 0, Fy = 0;
-
-    // Engine drive (forward/back)
-    const engine = VehiclePhysicsConstants.engineForceMultiplier * (throttle + reverse);
-    Fx += fwd.x * engine; Fy += fwd.y * engine;
-
-    // Braking opposes longitudinal velocity
-    const brakeForce = v.brakeForce * brake * Math.sign(vLong || 0);
-    Fx -= fwd.x * brakeForce;
-    Fy -= fwd.y * brakeForce;
-
-    // Lateral grip to reduce side slip
-    Fx -= right.x * vLat * VehiclePhysicsConstants.gripMultiplier;
-    Fy -= right.y * vLat * VehiclePhysicsConstants.gripMultiplier;
     
-    // Extra skid damping: more friction the more sideways we move
-    const misalign = Math.min(1, Math.abs(vLat) / (Math.abs(vLong) + 1e-3));
-    Fx -= v.vel.x * VehiclePhysicsConstants.skidDamp * misalign;
-    Fy -= v.vel.y * VehiclePhysicsConstants.skidDamp * misalign;
-
-    // Rolling resistance + air drag + static friction
+    // Calculate longitudinal force (forward/backward)
+    const longitudinalForce = this.calculateLongitudinalForce(v, throttle, brake);
+    v.longitudinalForce = longitudinalForce;
+    
+    // Calculate lateral force (sideways)
+    const lateralForce = this.calculateLateralForce(v);
+    v.lateralForce = lateralForce;
+    
+    // Apply forces to get acceleration
+    const longAccel = longitudinalForce / v.mass;
+    const latAccel = lateralForce / v.mass;
+    
+    // Convert to world coordinates
+    const cosRot = Math.cos(v.rot);
+    const sinRot = Math.sin(v.rot);
+    
+    const ax = longAccel * cosRot - latAccel * sinRot;
+    const ay = longAccel * sinRot + latAccel * cosRot;
+    
+    // Update velocity
+    v.vel.x += ax * dt;
+    v.vel.y += ay * dt;
+    
+    // Apply drag
     const speed = Math.hypot(v.vel.x, v.vel.y);
-    Fx -= v.vel.x * VehiclePhysicsConstants.rollingResistance + 
-          v.vel.x * VehiclePhysicsConstants.staticFriction;
-    Fx -= v.vel.x * speed * VehiclePhysicsConstants.airDrag;
-    Fy -= v.vel.y * VehiclePhysicsConstants.rollingResistance + 
-          v.vel.y * VehiclePhysicsConstants.staticFriction;
-    Fy -= v.vel.y * speed * VehiclePhysicsConstants.airDrag;
+    const dragForce = VehiclePhysicsConstants.airDrag * speed * speed;
+    const dragAccel = dragForce / v.mass;
     
-    // Coasting friction (no input) to prevent endless glide
-    const coasting = (throttle < 0.05 && brake < 0.05);
-    if (coasting) {
-      Fx -= v.vel.x * VehiclePhysicsConstants.coastingFriction;
-      Fy -= v.vel.y * VehiclePhysicsConstants.coastingFriction;
+    if (speed > 0) {
+      v.vel.x -= (v.vel.x / speed) * dragAccel * dt;
+      v.vel.y -= (v.vel.y / speed) * dragAccel * dt;
     }
     
-    // Braking damps all motion, not just longitudinal
-    if (brake > 0.01) {
-      Fx -= v.vel.x * (VehiclePhysicsConstants.brakeForceMultiplier * brake);
-      Fy -= v.vel.y * (VehiclePhysicsConstants.brakeForceMultiplier * brake);
-    }
-
-    // Integrate velocity
-    v.vel.x += (Fx / VehiclePhysicsConstants.vehicleMass) * dt;
-    v.vel.y += (Fy / VehiclePhysicsConstants.vehicleMass) * dt;
-
-    // Clamp max speed
-    if (speed > VehiclePhysicsConstants.maxSpeed) {
-      v.vel.x *= VehiclePhysicsConstants.maxSpeed / speed;
-      v.vel.y *= VehiclePhysicsConstants.maxSpeed / speed;
+    // Apply rolling resistance
+    const rollingForce = VehiclePhysicsConstants.rollingResistance * speed;
+    const rollingAccel = rollingForce / v.mass;
+    
+    if (speed > 0) {
+      v.vel.x -= (v.vel.x / speed) * rollingAccel * dt;
+      v.vel.y -= (v.vel.y / speed) * rollingAccel * dt;
     }
     
-    // Kill tiny velocities to avoid perpetual micro-sliding
-    if (Math.hypot(v.vel.x, v.vel.y) < 0.02) {
-      v.vel.x = 0; v.vel.y = 0;
+    // Calculate angular velocity from steering
+    if (speed > 0.1) {
+      const steerAngle = steer * VehiclePhysicsConstants.maxSteerAngle;
+      const turningRadius = VehiclePhysicsConstants.wheelBase / Math.tan(steerAngle);
+      v.angularVelocity = speed / turningRadius;
+    } else {
+      // Low speed steering
+      const steerAngle = steer * VehiclePhysicsConstants.maxSteerAngle;
+      v.angularVelocity = steerAngle * VehiclePhysicsConstants.lowSpeedSteerFactor;
     }
-
-    // Yaw/steer: stronger at speed, but still effective at low speed
-    const speedFactor = Math.min(1, Math.abs(vLong) / VehiclePhysicsConstants.maxSpeed) * 0.7 + 0.3;
-    v.angularVel += steer * VehiclePhysicsConstants.steerRate * speedFactor * dt;
-    v.angularVel *= 0.9; // damping
-    v.rot += v.angularVel * dt;
-
-    // Move
+    
+    // Update rotation
+    v.rot += v.angularVelocity * dt;
+    
+    // Update position
     v.pos.x += v.vel.x * dt;
     v.pos.y += v.vel.y * dt;
+    
+    // Calculate wheel slip for skidding effects
+    this.calculateWheelSlip(v);
+    
+    // Update brake light
+    v.brakeLight = brake > 0.1;
+  }
 
-    // Brake light heuristic
-    v.brakeLight = (brake > 0.05);
+  calculateLongitudinalForce(v, throttle, brake) {
+    let force = 0;
+    
+    // Engine force
+    if (throttle > 0) {
+      force = VehiclePhysicsConstants.maxEngineForce * throttle;
+    }
+    
+    // Braking force
+    if (brake > 0) {
+      const speed = Math.hypot(v.vel.x, v.vel.y);
+      if (speed > 0.1) {
+        force -= VehiclePhysicsConstants.maxBrakeForce * brake;
+      }
+    }
+    
+    // Reverse force (when reversing)
+    if (throttle < 0) {
+      force = VehiclePhysicsConstants.maxReverseForce * throttle;
+    }
+    
+    return force;
+  }
+
+  calculateLateralForce(v) {
+    const speed = Math.hypot(v.vel.x, v.vel.y);
+    if (speed < 0.1) return 0;
+    
+    // Calculate slip angle based on wheel direction vs velocity direction
+    const velocityAngle = Math.atan2(v.vel.y, v.vel.x);
+    const wheelAngle = v.rot;
+    const slipAngle = velocityAngle - wheelAngle;
+    
+    // Calculate lateral force based on slip angle
+    const lateralForce = -VehiclePhysicsConstants.corneringStiffness * Math.sin(slipAngle);
+    
+    // Limit by maximum friction
+    const maxLateralForce = VehiclePhysicsConstants.maxLateralFriction;
+    return Math.max(-maxLateralForce, Math.min(maxLateralForce, lateralForce));
+  }
+
+  calculateWheelSlip(v) {
+    const speed = Math.hypot(v.vel.x, v.vel.y);
+    if (speed < 0.1) return;
+    
+    // Calculate longitudinal slip
+    const wheelSpeed = speed;
+    const longitudinalSlip = Math.abs(v.longitudinalForce) / VehiclePhysicsConstants.maxLateralFriction;
+    
+    // Calculate lateral slip
+    const velocityAngle = Math.atan2(v.vel.y, v.vel.x);
+    const wheelAngle = v.rot;
+    const lateralSlip = Math.abs(Math.sin(velocityAngle - wheelAngle));
+    
+    // Determine if skidding
+    v.isSkidding = longitudinalSlip > 0.8 || lateralSlip > 0.5;
+    v.skidIntensity = Math.max(longitudinalSlip, lateralSlip);
   }
 
   ensurePhysics(v) {
     if (v._physInit) return;
-    v.pos = v.pos || { x: 0, y: 0 };
-    v.rot = typeof v.rot === 'number' ? v.rot : 0;
-    v.vel = v.vel || { x: 0, y: 0 };
-    v.angularVel = v.angularVel || 0;
+    
+    // Physical properties
     v.mass = VehiclePhysicsConstants.vehicleMass;
-    v.maxSpeed = VehiclePhysicsConstants.maxSpeed;
-    v.engineForce = VehiclePhysicsConstants.engineForceMultiplier;
-    v.brakeForce = 1800;
-    v.rollingRes = VehiclePhysicsConstants.rollingResistance;
-    v.drag = VehiclePhysicsConstants.airDrag;
-    v.grip = VehiclePhysicsConstants.gripMultiplier;
-    v.steerRate = VehiclePhysicsConstants.steerRate;
-    v.ctrl = v.ctrl || { throttle: 0, brake: 0, steer: 0, reverse: 0 };
-    v.radius = VehiclePhysicsConstants.vehicleCollisionRadius;
+    v.maxEngineForce = VehiclePhysicsConstants.maxEngineForce;
+    v.maxBrakeForce = VehiclePhysicsConstants.maxBrakeForce;
+    v.maxReverseForce = VehiclePhysicsConstants.maxReverseForce;
+    v.maxLateralFriction = VehiclePhysicsConstants.maxLateralFriction;
+    v.corneringStiffness = VehiclePhysicsConstants.corneringStiffness;
+    v.wheelBase = VehiclePhysicsConstants.wheelBase;
+    v.maxSteerAngle = VehiclePhysicsConstants.maxSteerAngle;
+    v.lowSpeedSteerFactor = VehiclePhysicsConstants.lowSpeedSteerFactor;
+    
+    // State variables
+    v.vel = v.vel || { x: 0, y: 0 };
+    v.rot = typeof v.rot === 'number' ? v.rot : 0;
+    v.angularVelocity = v.angularVelocity || 0;
+    v.ctrl = v.ctrl || { throttle: 0, brake: 0, steer: 0 };
+    
     v._physInit = true;
   }
 }

@@ -1,6 +1,14 @@
 import { Tile } from './TileTypes.js';
 import { rng } from '../utils/RNG.js';
 
+// Add these tweakable parameters for intersection configuration
+/* @tweakable size of roundabout intersection in tiles */
+const intersectionSize = 5;
+/* @tweakable whether to enable dual-direction roads at intersections */
+const enableDualDirections = true;
+/* @tweakable strength of diagonal bias for choice tiles (0.0 = orthogonal, 1.0 = full diagonal) */
+const diagonalBias = 0.8;
+
 export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4) {
   const W = 11, MED = 1;
   const ROAD_RING = 2;      // 2-tile road ring
@@ -130,10 +138,7 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
     tiles[i][width - 1] = Tile.RoadN;
   }
 
-  // Inter-block corridors are now formed by block road rings + medians
-  // The logic that carved corridors explicitly has been removed.
-
-  // Intersections: build 2-lane anti-clockwise roundabouts (5x5 area)
+  // Inter-block intersections: build proper roundabout layout
   for (let gy = 0; gy <= blocksHigh; gy++) {
     for (let gx = 0; gx <= blocksWide; gx++) {
       const cx = mapOffset + gx * (W + MED);
@@ -142,46 +147,83 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
       
       const isPerimeter = (gx === 0 || gx === blocksWide || gy === 0 || gy === blocksHigh);
       
-      tiles[cy][cx] = Tile.Median; // central island
+      // Central median
+      tiles[cy][cx] = Tile.Median;
       roundabouts.push({ cx, cy, isPerimeter });
-      const set = (x,y,t)=>{ if (x>=0&&y>=0&&x<width&&y<height) tiles[y][x]=t; };
-      // top (leftward)
-      for (let x=cx-2; x<=cx+2; x++){ set(x, cy-2, Tile.RoadW); set(x, cy-1, Tile.RoadW); }
-      // bottom (rightward)
-      for (let x=cx-2; x<=cx+2; x++){ set(x, cy+2, Tile.RoadE); set(x, cy+1, Tile.RoadE); }
-      // left (downward)
-      for (let y=cy-2; y<=cy+2; y++){ set(cx-2, y, Tile.RoadS); set(cx-1, y, Tile.RoadS); }
-      // right (upward)
-      for (let y=cy-2; y<=cy+2; y++){ set(cx+1, y, Tile.RoadN); set(cx+2, y, Tile.RoadN); }
       
+      // Helper to set tile with direction
+      const setDir = (x, y, dir) => {
+        if (x >= 0 && y >= 0 && x < width && y < height) {
+          tiles[y][x] = dir === 'N' ? Tile.RoadN : 
+                       dir === 'E' ? Tile.RoadE : 
+                       dir === 'S' ? Tile.RoadS : 
+                       dir === 'W' ? Tile.RoadW : 
+                       dir === 'NE' ? Tile.RoadE : 
+                       dir === 'NW' ? Tile.RoadW : 
+                       dir === 'SE' ? Tile.RoadE : 
+                       dir === 'SW' ? Tile.RoadW : Tile.RoadE;
+        }
+      };
+      
+      // Top quadrant (NW) - dual direction: West + North
+      setDir(cx-2, cy-2, 'W');  // Top-left corner - dual W/N
+      setDir(cx-1, cy-2, 'W');  // Top-center - dual W/N
+      setDir(cx-2, cy-1, 'W');  // Left-center - dual W/N
+      setDir(cx-1, cy-1, 'W');   // Center-left - dual W/N
+      
+      // Top quadrant (NE) - dual direction: East + North  
+      setDir(cx+1, cy-2, 'E');  // Top-right corner - dual E/N
+      setDir(cx+2, cy-2, 'E');  // Top-far-right - dual E/N
+      setDir(cx+1, cy-1, 'E');  // Right-center - dual E/N
+      setDir(cx+2, cy-1, 'E');  // Far-right center - dual E/N
+      
+      // Bottom quadrant (SW) - dual direction: West + South
+      setDir(cx-2, cy+1, 'W');  // Bottom-left corner - dual W/S
+      setDir(cx-1, cy+1, 'W');  // Bottom-center-left - dual W/S
+      setDir(cx-2, cy+2, 'W');  // Far-bottom-left - dual W/S
+      setDir(cx-1, cy+2, 'W');  // Bottom-left corner - dual W/S
+      
+      // Bottom quadrant (SE) - dual direction: East + South
+      setDir(cx+1, cy+1, 'E');  // Bottom-right corner - dual E/S
+      setDir(cx+2, cy+1, 'E');  // Bottom-center-right - dual E/S
+      setDir(cx+1, cy+2, 'E');  // Bottom-right corner - dual E/S
+      setDir(cx+2, cy+2, 'E');  // Far-bottom-right - dual E/S
+      
+      // Central cross roads
+      setDir(cx-1, cy, 'S');   // Left arm - South
+      setDir(cx+1, cy, 'N');   // Right arm - North
+      setDir(cx, cy-1, 'W');   // Top arm - West
+      setDir(cx, cy+1, 'E');   // Bottom arm - East
+      
+      // Handle perimeter connections
       if (isPerimeter) {
         if (gy === 0) { // Top perimeter
-          for (let x=cx-2; x<=cx+2; x++) { set(x, cy-2, Tile.RoadW); set(x, cy-1, Tile.RoadW); } // Keep W
-          for (let y=cy-1; y<=cy+2; y++) {
-            if (gx > 0) { set(cx-2, y, Tile.RoadS); set(cx-1, y, Tile.RoadS); }
-            if (gx < blocksWide) { set(cx+1, y, Tile.RoadN); set(cx+2, y, Tile.RoadN); }
-          }
+          // Keep existing W direction for top
+          setDir(cx-2, cy-2, 'W');
+          setDir(cx-1, cy-2, 'W');
+          setDir(cx+1, cy-2, 'E');
+          setDir(cx+2, cy-2, 'E');
         }
         if (gy === blocksHigh) { // Bottom perimeter
-          for (let x=cx-2; x<=cx+2; x++) { set(x, cy+2, Tile.RoadE); set(x, cy+1, Tile.RoadE); } // Keep E
-          for (let y=cy-2; y<=cy+1; y++) {
-             if (gx > 0) { set(cx-2, y, Tile.RoadS); set(cx-1, y, Tile.RoadS); }
-             if (gx < blocksWide) { set(cx+1, y, Tile.RoadN); set(cx+2, y, Tile.RoadN); }
-          }
+          // Keep existing E direction for bottom
+          setDir(cx-2, cy+2, 'W');
+          setDir(cx-1, cy+2, 'W');
+          setDir(cx+1, cy+2, 'E');
+          setDir(cx+2, cy+2, 'E');
         }
         if (gx === 0) { // Left perimeter
-          for (let y=cy-2; y<=cy+2; y++) { set(cx-2, y, Tile.RoadS); set(cx-1, y, Tile.RoadS); } // Keep S
-          for (let x=cx-1; x<=cx+2; x++) {
-            if (gy > 0) { set(x, cy-2, Tile.RoadW); set(x, cy-1, Tile.RoadW); }
-            if (gy < blocksHigh) { set(x, cy+2, Tile.RoadE); set(x, cy+1, Tile.RoadE); }
-          }
+          // Keep existing S direction for left
+          setDir(cx-2, cy-2, 'S');
+          setDir(cx-2, cy-1, 'S');
+          setDir(cx-2, cy+1, 'S');
+          setDir(cx-2, cy+2, 'S');
         }
         if (gx === blocksWide) { // Right perimeter
-          for (let y=cy-2; y<=cy+2; y++) { set(cx+1, y, Tile.RoadN); set(cx+2, y, Tile.RoadN); } // Keep N
-          for (let x=cx-2; x<=cx+1; x++) {
-            if (gy > 0) { set(x, cy-2, Tile.RoadW); set(x, cy-1, Tile.RoadW); }
-            if (gy < blocksHigh) { set(x, cy+2, Tile.RoadE); set(x, cy+1, Tile.RoadE); }
-          }
+          // Keep existing N direction for right
+          setDir(cx+2, cy-2, 'N');
+          setDir(cx+2, cy-1, 'N');
+          setDir(cx+2, cy+1, 'N');
+          setDir(cx+2, cy+2, 'N');
         }
       }
     }
@@ -212,73 +254,12 @@ function buildRoadGraph(tiles, width, height, roundabouts){
     const d = tileDir(get(x,y)); if (!d) continue;
     const node = { x, y, dir:d, next:[] }; nodes.push(node); byKey.set(keyOf(x,y,d), node);
   }
-  
   // link
   for (const n of nodes){
     const v = dirVec[n.dir], a1x = n.x+v.x, a1y = n.y+v.y, t1 = get(a1x,a1y);
     const td = tileDir(t1);
     if (td) { n.next.push({ x:a1x, y:a1y, dir:td }); } // allow turning through corners
   }
-  
-  // Fix intersection directions to match roundabout pattern
-  for (const {cx,cy} of roundabouts){
-    // Top-left quadrant (should be SW diagonal)
-    for (let dy = -2; dy <= -1; dy++) {
-      for (let dx = -2; dx <= -1; dx++) {
-        const x = cx + dx;
-        const y = cy + dy;
-        if (x >= 0 && y >= 0 && x < width && y < height) {
-          const key = keyOf(x, y, 'SW');
-          if (byKey.has(key)) {
-            byKey.get(key).dir = 'SW';
-          }
-        }
-      }
-    }
-    
-    // Top-right quadrant (should be NW diagonal)
-    for (let dy = -2; dy <= -1; dy++) {
-      for (let dx = 1; dx <= 2; dx++) {
-        const x = cx + dx;
-        const y = cy + dy;
-        if (x >= 0 && y >= 0 && x < width && y < height) {
-          const key = keyOf(x, y, 'NW');
-          if (byKey.has(key)) {
-            byKey.get(key).dir = 'NW';
-          }
-        }
-      }
-    }
-    
-    // Bottom-left quadrant (should be SE diagonal)
-    for (let dy = 1; dy <= 2; dy++) {
-      for (let dx = -2; dx <= -1; dx++) {
-        const x = cx + dx;
-        const y = cy + dy;
-        if (x >= 0 && y >= 0 && x < width && y < height) {
-          const key = keyOf(x, y, 'SE');
-          if (byKey.has(key)) {
-            byKey.get(key).dir = 'SE';
-          }
-        }
-      }
-    }
-    
-    // Bottom-right quadrant (should be NE diagonal)
-    for (let dy = 1; dy <= 2; dy++) {
-      for (let dx = 1; dx <= 2; dx++) {
-        const x = cx + dx;
-        const y = cy + dy;
-        if (x >= 0 && y >= 0 && x < width && y < height) {
-          const key = keyOf(x, y, 'NE');
-          if (byKey.has(key)) {
-            byKey.get(key).dir = 'NE';
-          }
-        }
-      }
-    }
-  }
-  
   // augment exits for roundabouts (outer lanes provide optional exits)
   for (const {cx,cy, isPerimeter} of roundabouts){
     const addExit = (x,y,ex,ey)=>{

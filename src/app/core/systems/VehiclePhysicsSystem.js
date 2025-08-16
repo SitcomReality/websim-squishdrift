@@ -31,6 +31,18 @@ const vehicleWidth = 0.9;
 /* @tweakable vehicle height for collision detection */
 const vehicleHeight = 0.5;
 
+/* @tweakable how strongly the vehicle aligns with its velocity vector */
+const straighteningForce = 2.5;
+
+/* @tweakable maximum steering angle in radians */
+const maxSteeringAngle = 0.6;
+
+/* @tweakable how much steering effectiveness depends on forward speed */
+const speedSteeringFactor = 1.2;
+
+/* @tweakable minimum speed required for steering to be effective */
+const minSteeringSpeed = 0.5;
+
 export class VehiclePhysicsSystem {
   update(state, dt) {
     for (const v of state.entities.filter(e => e.type === 'vehicle')) {
@@ -51,7 +63,10 @@ export class VehiclePhysicsSystem {
 
       // Engine drive (forward/back)
       const engine = engineForceMultiplier * (throttle + reverse);
-      Fx += fwd.x * engine; Fy += fwd.y * engine;
+      
+      // More realistic: apply force at rear wheels (fwd direction)
+      Fx += fwd.x * engine; 
+      Fy += fwd.y * engine;
 
       // Braking opposes longitudinal velocity
       const brakeForce = v.brakeForce * brake * Math.sign(vLong || 0);
@@ -59,10 +74,9 @@ export class VehiclePhysicsSystem {
       Fy -= fwd.y * brakeForce;
 
       // Lateral grip to reduce side slip
-      const grip = v.grip * gripMultiplier;
-      Fx -= right.x * vLat * grip;
-      Fy -= right.y * vLat * grip;
-
+      Fx -= right.x * vLat * gripMultiplier;
+      Fy -= right.y * vLat * gripMultiplier;
+      
       // Extra skid damping: more friction the more sideways we move
       const misalign = Math.min(1, Math.abs(vLat) / (Math.abs(vLong) + 1e-3));
       Fx -= v.vel.x * skidDamp * misalign;
@@ -74,11 +88,39 @@ export class VehiclePhysicsSystem {
       Fx -= v.vel.x * speed * airDrag;
       Fy -= v.vel.y * rollingResistance + v.vel.y * staticFriction;
       Fy -= v.vel.y * speed * airDrag;
+      
       // Coasting friction (no input) to prevent endless glide
       const coasting = (throttle < 0.05 && brake < 0.05);
       if (coasting) { Fx -= v.vel.x * coastingFriction; Fy -= v.vel.y * coastingFriction; }
+      
       // Braking damps all motion, not just longitudinal
       if (brake > 0.01) { Fx -= v.vel.x * (brakeForceMultiplier * brake); Fy -= v.vel.y * (brakeForceMultiplier * brake); }
+
+      // NATURAL STRAIGHTENING: Align vehicle with velocity vector
+      if (speed > 0.1) {
+        const velocityAngle = Math.atan2(v.vel.y, v.vel.x);
+        const angleDiff = velocityAngle - v.rot;
+        const normalizedDiff = Math.atan2(Math.sin(angleDiff), Math.cos(angleDiff));
+        
+        // Apply gentle straightening torque proportional to angle difference
+        const straightening = normalizedDiff * straighteningForce * (speed / maxSpeed);
+        v.angularVel += straightening * dt;
+      }
+
+      // STEERING: Ackermann-style steering based on forward velocity
+      if (Math.abs(vLong) > minSteeringSpeed) {
+        // Steering effectiveness increases with speed
+        const steeringEffectiveness = Math.min(1, Math.abs(vLong) / (maxSpeed * speedSteeringFactor));
+        
+        // Convert steering input to wheel angle (limited by max steering angle)
+        const wheelAngle = steer * maxSteeringAngle * steeringEffectiveness;
+        
+        // Calculate turning radius based on wheel angle
+        const turnRadius = wheelAngle !== 0 ? 1 / wheelAngle : Infinity;
+        
+        // Angular velocity based on forward speed and turning radius
+        v.angularVel = vLong / turnRadius;
+      }
 
       // Integrate velocity
       v.vel.x += (Fx / vehicleMass) * dt;
@@ -89,14 +131,14 @@ export class VehiclePhysicsSystem {
         v.vel.x *= maxSpeed / speed;
         v.vel.y *= maxSpeed / speed;
       }
+      
       // Kill tiny velocities to avoid perpetual micro-sliding
       if (Math.hypot(v.vel.x, v.vel.y) < 0.02) { v.vel.x = 0; v.vel.y = 0; }
 
-      // Yaw/steer: turning depends on forward speed.
-      const turnPower = Math.tanh(Math.abs(vLong) / 2.0); // tanh gives a nice curve, approaching 1 at speed
-      v.angularVel += steer * v.steerRate * turnPower * dt;
-
-      v.angularVel *= 0.9; // damping
+      // Angular damping
+      v.angularVel *= 0.95;
+      
+      // Update rotation
       v.rot += v.angularVel * dt;
 
       // Move
@@ -187,7 +229,7 @@ export class VehiclePhysicsSystem {
     v.brakeForce = 1800;
     v.rollingRes = rollingResistance;
     v.drag = airDrag;
-    v.grip = 8.0; // Increased base grip from 1.0 to 8.0
+    v.grip = gripMultiplier;
     v.steerRate = steerRate;
     v.ctrl = v.ctrl || { throttle: 0, brake: 0, steer: 0 };
     v.radius = vehicleCollisionRadius;

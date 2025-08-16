@@ -2,16 +2,6 @@ export function drawVehicle(r, state, v){
   const { ctx } = r, ts = state.world.tileSize;
   const w = ts * 0.9, h = ts * 0.5;
 
-  // Ensure hitbox is properly sized
-  if (!v.hitbox) {
-    v.hitbox = {
-      x: v.pos.x - 0.45,
-      y: v.pos.y - 0.25,
-      width: 0.9,
-      height: 0.5
-    };
-  }
-
   ctx.save();
   ctx.translate(v.pos.x * ts, v.pos.y * ts);
   ctx.rotate(v.rot || 0);

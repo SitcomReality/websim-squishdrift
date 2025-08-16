@@ -17,6 +17,7 @@ export function createInitialState() {
     }
   }
   player.pos.x = spawnX; player.pos.y = spawnY; state.camera.x = spawnX; state.camera.y = spawnY;
+  player.vel = { x: 0, y: 0 }; player.mass = 80; player.hitboxW = 0.6; player.hitboxH = 0.6;
   
   // Spawn empty vehicle right next to player
   const emptyVehicle = {

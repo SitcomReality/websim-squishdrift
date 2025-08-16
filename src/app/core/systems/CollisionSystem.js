@@ -42,33 +42,7 @@ export class CollisionSystem {
     }
   }
 
-  // Check collisions between player and vehicles
-  checkPlayerVehicleCollisions(state) {
-    const player = state.entities.find(e => e.type === 'player');
-    const vehicles = state.entities.filter(e => e.type === 'vehicle');
-    
-    if (!player || !player.health) return;
-    
-    for (const vehicle of vehicles) {
-      if (vehicle.controlled) continue; // Skip player-controlled vehicle
-      
-      if (this.checkCollision(player, vehicle, this.playerVehicleCollisionRadius)) {
-        player.health.takeDamage(10);
-        
-        // Simple knockback
-        const dx = player.pos.x - vehicle.pos.x;
-        const dy = player.pos.y - vehicle.pos.y;
-        const len = Math.sqrt(dx * dx + dy * dy);
-        if (len > 0) {
-          player.pos.x += (dx / len) * 0.2;
-          player.pos.y += (dy / len) * 0.2;
-        }
-      }
-    }
-  }
-
   update(state) {
     this.checkBulletCollisions(state);
-    this.checkPlayerVehicleCollisions(state);
   }
 }

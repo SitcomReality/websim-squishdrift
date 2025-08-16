@@ -19,7 +19,14 @@ export class VehicleCollisionSystem {
     const obbA = entityOBB(v);
     for (const o of others) {
       const contact = obbOverlap(obbA, entityOBB(o)); if (!contact) continue;
-      resolveDynamicDynamic(v, o, contact, 0.85);
+      
+      // Use velocity-based bounce direction instead of contact normal
+      const velocityDir = this.getVelocityDirection(v);
+      const bounceNormal = this.calculateBounceNormal(velocityDir, contact.normal);
+      
+      // Create new contact with corrected normal
+      const correctedContact = { ...contact, normal: bounceNormal };
+      resolveDynamicDynamic(v, o, correctedContact, 0.85);
     }
   }
 
@@ -27,11 +34,20 @@ export class VehicleCollisionSystem {
     const map = state.world?.map; if (!map) return;
     const r = Math.ceil(Math.max(v.hitboxW||0.9, v.hitboxH||0.5)) + 1, tx=Math.floor(v.pos.x), ty=Math.floor(v.pos.y);
     const obb = entityOBB(v);
+    
     for (let oy=-r; oy<=r; oy++) for (let ox=-r; ox<=r; ox++) {
       const gx=tx+ox, gy=ty+oy; if (gx<0||gy<0||gx>=map.width||gy>=map.height) continue;
       const t = map.tiles[gy][gx]; if (t !== 8 && t !== 9) continue; // BuildingFloor/Wall as solid
+      
       const contact = obbOverlap(obb, aabbForTile(gx,gy)); if (!contact) continue;
-      resolveDynamicStatic(v, contact, 0.85);
+      
+      // For buildings, use velocity direction for bounce
+      const velocityDir = this.getVelocityDirection(v);
+      const bounceNormal = this.calculateBounceNormal(velocityDir, contact.normal);
+      
+      // Create corrected contact
+      const correctedContact = { ...contact, normal: bounceNormal };
+      resolveDynamicStatic(v, correctedContact, 0.85);
     }
   }
 
@@ -40,6 +56,35 @@ export class VehicleCollisionSystem {
     player.mass = player.mass || 80; player.vel = player.vel || {x:0,y:0}; player.hitboxW = player.hitboxW ?? 0.6; player.hitboxH = player.hitboxH ?? 0.6; player.rot = 0;
     const contact = obbOverlap(entityOBB(v), entityOBB(player,{w:player.hitboxW,h:player.hitboxH}));
     if (!contact) return;
-    resolveDynamicDynamic(v, player, contact, 0.85);
+    
+    const velocityDir = this.getVelocityDirection(v);
+    const bounceNormal = this.calculateBounceNormal(velocityDir, contact.normal);
+    const correctedContact = { ...contact, normal: bounceNormal };
+    resolveDynamicDynamic(v, player, correctedContact, 0.85);
+  }
+
+  getVelocityDirection(entity) {
+    const speed = Math.hypot(entity.vel.x, entity.vel.y);
+    if (speed < 0.01) return { x: 0, y: 0 };
+    return { x: entity.vel.x / speed, y: entity.vel.y / speed };
+  }
+
+  calculateBounceNormal(velocityDir, contactNormal) {
+    if (velocityDir.x === 0 && velocityDir.y === 0) {
+      return contactNormal; // Fallback if no velocity
+    }
+
+    // Calculate reflection vector: r = d - 2(d·n)n
+    const dot = velocityDir.x * contactNormal.x + velocityDir.y * contactNormal.y;
+    const reflected = {
+      x: velocityDir.x - 2 * dot * contactNormal.x,
+      y: velocityDir.y - 2 * dot * contactNormal.y
+    };
+
+    // Normalize the reflected vector
+    const length = Math.hypot(reflected.x, reflected.y);
+    if (length < 0.01) return contactNormal;
+
+    return { x: reflected.x / length, y: reflected.y / length };
   }
 }

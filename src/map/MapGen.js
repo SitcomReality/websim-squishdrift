@@ -206,8 +206,6 @@ function buildRoadGraph(tiles, width, height, roundabouts){
   
   // Define mapOffset here since it's used below
   const mapOffset = 2;
-  /* @tweakable enable enhanced corner exits in intersections */
-  const ENHANCE_CORNER_EXITS = true;
   
   // collect nodes
   for (let y=0;y<height;y++) for (let x=0;x<width;x++){
@@ -223,28 +221,46 @@ function buildRoadGraph(tiles, width, height, roundabouts){
   // augment exits for roundabouts (outer lanes provide optional exits)
   for (const {cx,cy, isPerimeter} of roundabouts){
     const addExit = (x,y,ex,ey)=>{
-      const from = byKey.get(keyOf(x,y,tileDir(get(x,y)))); const td = tileDir(get(ex,ey));
-      if (from && td) from.next.push({ x:ex, y:ey, dir:td });
+      const fromNode = byKey.get(keyOf(x,y,tileDir(get(x,y))));
+      const toDir = tileDir(get(ex,ey));
+      if (fromNode && toDir) {
+        const alreadyExists = fromNode.next.some(n => n.x === ex && n.y === ey);
+        if (!alreadyExists) {
+            fromNode.next.push({ x:ex, y:ey, dir:toDir });
+        }
+      }
     };
-    // Right side bottom two: up (default) OR right -> exit to (x+1,y)
-    if (!isPerimeter || (cx < width - mapOffset - 1)) {
-        addExit(cx+2, cy+1, cx+3, cy+1); addExit(cx+1, cy+1, cx+2, cy+1);
+
+    // Add turning links for all four quadrants
+    // Top-left (S/W)
+    for (let x = cx - 2; x <= cx - 1; x++) {
+      for (let y = cy - 2; y <= cy - 1; y++) {
+        addExit(x, y, x, y + 1); // Go South
+        addExit(x, y, x - 1, y); // Go West
+      }
     }
-    // Top row right two: left (default) OR up -> exit to (x, y-1)
-    if (!isPerimeter || cy > mapOffset) {
-        addExit(cx+1, cy-2, cx+1, cy-3); addExit(cx+2, cy-2, cx+2, cy-3);
+    // Top-right (N/W)
+    for (let x = cx + 1; x <= cx + 2; x++) {
+      for (let y = cy - 2; y <= cy - 1; y++) {
+        addExit(x, y, x - 1, y); // Go West
+        addExit(x, y, x, y - 1); // Go North
+      }
     }
-    // Left side top two: down (default) OR left -> exit to (x-1, y)
-    if (!isPerimeter || cx > mapOffset) {
-        addExit(cx-2, cy-2, cx-3, cy-2); addExit(cx-2, cy-1, cx-3, cy-1);
+    // Bottom-left (S/E)
+    for (let x = cx - 2; x <= cx - 1; x++) {
+      for (let y = cy + 1; y <= cy + 2; y++) {
+        addExit(x, y, x + 1, y); // Go East
+        addExit(x, y, x, y + 1); // Go South
+      }
     }
-    // Bottom row left two: right (default) OR down -> exit to (x, y+1)
-    if (!isPerimeter || cy < height - mapOffset -1) {
-        addExit(cx-2, cy+1, cx-2, cy+2); addExit(cx-1, cy+1, cx-1, cy+2);
+    // Bottom-right (N/E)
+    for (let x = cx + 1; x <= cx + 2; x++) {
+      for (let y = cy + 1; y <= cy + 2; y++) {
+        addExit(x, y, x, y - 1); // Go North
+        addExit(x, y, x + 1, y); // Go East
+      }
     }
   }
-  // Ensure dual-direction exits in 2x2 corner quadrants of each 5x5 intersection
-  if (ENHANCE_CORNER_EXITS){ const ensure=(x,y,tx,ty)=>{const from=byKey.get(keyOf(x,y,tileDir(get(x,y)))); const n=byKey.get(keyOf(tx,ty,tileDir(get(tx,ty)))); if(from&&n&&!from.next.some(k=>k.x===tx&&k.y===ty)) from.next.push({x:tx,y:ty,dir:n.dir});}; for (const {cx,cy} of roundabouts){ const TL=[[cx-2,cy-2],[cx-1,cy-2],[cx-2,cy-1],[cx-1,cy-1]], TR=[[cx+1,cy-2],[cx+2,cy-2],[cx+1,cy-1],[cx+2,cy-1]], BL=[[cx-2,cy+1],[cx-1,cy+1],[cx-2,cy+2],[cx-1,cy+2]], BR=[[cx+1,cy+1],[cx+2,cy+1],[cx+1,cy+2],[cx+2,cy+2]]; TL.forEach(([x,y])=>{ensure(x,y,x-1,y);ensure(x,y,x,y+1);}); TR.forEach(([x,y])=>{ensure(x,y,x-1,y);ensure(x,y,x,y-1);}); BL.forEach(([x,y])=>{ensure(x,y,x+1,y);ensure(x,y,x,y+1);}); BR.forEach(([x,y])=>{ensure(x,y,x+1,y);ensure(x,y,x,y-1);}); }
   return { nodes, byKey };
 }
 

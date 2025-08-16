@@ -144,109 +144,43 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
       
       tiles[cy][cx] = Tile.Median; // central island
       roundabouts.push({ cx, cy, isPerimeter });
-      
-      // Top-left corner (SW direction)
-      tiles[cy-2][cx-2] = Tile.RoadSW;
-      tiles[cy-2][cx-1] = Tile.RoadSW;
-      tiles[cy-1][cx-2] = Tile.RoadSW;
-      tiles[cy-1][cx-1] = Tile.RoadSW;
-      
-      // Top-right corner (SE direction)  
-      tiles[cy-2][cx+2] = Tile.RoadSE;
-      tiles[cy-2][cx+1] = Tile.RoadSE;
-      tiles[cy-1][cx+2] = Tile.RoadSE;
-      tiles[cy-1][cx+1] = Tile.RoadSE;
-      
-      // Bottom-left corner (NW direction)
-      tiles[cy+2][cx-2] = Tile.RoadNW;
-      tiles[cy+2][cx-1] = Tile.RoadNW;
-      tiles[cy+1][cx-2] = Tile.RoadNW;
-      tiles[cy+1][cx-1] = Tile.RoadNW;
-      
-      // Bottom-right corner (NE direction)
-      tiles[cy+2][cx+2] = Tile.RoadNE;
-      tiles[cy+2][cx+1] = Tile.RoadNE;
-      tiles[cy+1][cx+2] = Tile.RoadNE;
-      tiles[cy+1][cx+1] = Tile.RoadNE;
-      
-      // Straight roads
-      for (let x = cx-2; x <= cx+2; x++) {
-        if (x !== cx) { // Skip median
-          tiles[cy-2][x] = Tile.RoadW; // Top row westbound
-          tiles[cy+2][x] = Tile.RoadE; // Bottom row eastbound
-        }
-      }
-      
-      for (let y = cy-2; y <= cy+2; y++) {
-        if (y !== cy) { // Skip median
-          tiles[y][cx-2] = Tile.RoadS; // Left column southbound
-          tiles[y][cx+2] = Tile.RoadN; // Right column northbound
-        }
-      }
+      const set = (x,y,t)=>{ if (x>=0&&y>=0&&x<width&&y<height) tiles[y][x]=t; };
+      // top (leftward)
+      for (let x=cx-2; x<=cx+2; x++){ set(x, cy-2, Tile.RoadW); set(x, cy-1, Tile.RoadW); }
+      // bottom (rightward)
+      for (let x=cx-2; x<=cx+2; x++){ set(x, cy+2, Tile.RoadE); set(x, cy+1, Tile.RoadE); }
+      // left (downward)
+      for (let y=cy-2; y<=cy+2; y++){ set(cx-2, y, Tile.RoadS); set(cx-1, y, Tile.RoadS); }
+      // right (upward)
+      for (let y=cy-2; y<=cy+2; y++){ set(cx+1, y, Tile.RoadN); set(cx+2, y, Tile.RoadN); }
       
       if (isPerimeter) {
         if (gy === 0) { // Top perimeter
-          for (let x=cx-2; x<=cx+2; x++) { 
-            tiles[cy-2][x] = Tile.RoadW; 
-            tiles[cy-1][x] = Tile.RoadW; 
-          }
+          for (let x=cx-2; x<=cx+2; x++) { set(x, cy-2, Tile.RoadW); set(x, cy-1, Tile.RoadW); } // Keep W
           for (let y=cy-1; y<=cy+2; y++) {
-            if (gx > 0) { 
-              tiles[y][cx-2] = Tile.RoadS; 
-              tiles[y][cx-1] = Tile.RoadS; 
-            }
-            if (gx < blocksWide) { 
-              tiles[y][cx+1] = Tile.RoadN; 
-              tiles[y][cx+2] = Tile.RoadN; 
-            }
+            if (gx > 0) { set(cx-2, y, Tile.RoadS); set(cx-1, y, Tile.RoadS); }
+            if (gx < blocksWide) { set(cx+1, y, Tile.RoadN); set(cx+2, y, Tile.RoadN); }
           }
         }
         if (gy === blocksHigh) { // Bottom perimeter
-          for (let x=cx-2; x<=cx+2; x++) { 
-            tiles[cy+2][x] = Tile.RoadE; 
-            tiles[cy+1][x] = Tile.RoadE; 
-          }
+          for (let x=cx-2; x<=cx+2; x++) { set(x, cy+2, Tile.RoadE); set(x, cy+1, Tile.RoadE); } // Keep E
           for (let y=cy-2; y<=cy+1; y++) {
-             if (gx > 0) { 
-               tiles[y][cx-2] = Tile.RoadS; 
-               tiles[y][cx-1] = Tile.RoadS; 
-             }
-             if (gx < blocksWide) { 
-               tiles[y][cx+1] = Tile.RoadN; 
-               tiles[y][cx+2] = Tile.RoadN; 
-             }
+             if (gx > 0) { set(cx-2, y, Tile.RoadS); set(cx-1, y, Tile.RoadS); }
+             if (gx < blocksWide) { set(cx+1, y, Tile.RoadN); set(cx+2, y, Tile.RoadN); }
           }
         }
         if (gx === 0) { // Left perimeter
-          for (let y=cy-2; y<=cy+2; y++) { 
-            tiles[y][cx-2] = Tile.RoadS; 
-            tiles[y][cx-1] = Tile.RoadS; 
-          }
+          for (let y=cy-2; y<=cy+2; y++) { set(cx-2, y, Tile.RoadS); set(cx-1, y, Tile.RoadS); } // Keep S
           for (let x=cx-1; x<=cx+2; x++) {
-            if (gy > 0) { 
-              tiles[cy-2][x] = Tile.RoadW; 
-              tiles[cy-1][x] = Tile.RoadW; 
-            }
-            if (gy < blocksHigh) { 
-              tiles[cy+2][x] = Tile.RoadE; 
-              tiles[cy+1][x] = Tile.RoadE; 
-            }
+            if (gy > 0) { set(x, cy-2, Tile.RoadW); set(x, cy-1, Tile.RoadW); }
+            if (gy < blocksHigh) { set(x, cy+2, Tile.RoadE); set(x, cy+1, Tile.RoadE); }
           }
         }
         if (gx === blocksWide) { // Right perimeter
-          for (let y=cy-2; y<=cy+2; y++) { 
-            tiles[y][cx+1] = Tile.RoadN; 
-            tiles[y][cx+2] = Tile.RoadN; 
-          }
+          for (let y=cy-2; y<=cy+2; y++) { set(cx+1, y, Tile.RoadN); set(cx+2, y, Tile.RoadN); } // Keep N
           for (let x=cx-2; x<=cx+1; x++) {
-            if (gy > 0) { 
-              tiles[cy-2][x] = Tile.RoadW; 
-              tiles[cy-1][x] = Tile.RoadW; 
-            }
-            if (gy < blocksHigh) { 
-              tiles[cy+2][x] = Tile.RoadE; 
-              tiles[cy+1][x] = Tile.RoadE; 
-            }
+            if (gy > 0) { set(x, cy-2, Tile.RoadW); set(x, cy-1, Tile.RoadW); }
+            if (gy < blocksHigh) { set(x, cy+2, Tile.RoadE); set(x, cy+1, Tile.RoadE); }
           }
         }
       }
@@ -267,70 +201,19 @@ function buildRoadGraph(tiles, width, height, roundabouts){
   const leftOf = { N:'W', E:'N', S:'E', W:'S' }, rightOf = { N:'E', E:'S', S:'W', W:'N' };
   const nodes = []; const byKey = new Map();
   const get = (x,y)=> (x>=0&&y>=0&&x<width&&y<height)?tiles[y][x]:255;
+  const tileDir = (t)=> t===Tile.RoadN?'N':t===Tile.RoadE?'E':t===Tile.RoadS?'S':t===Tile.RoadW?'W':null;
+  const keyOf = (x,y,d)=> `${x},${y},${d}`;
   
-  // collect nodes - add support for multi-directional roads
+  // Define mapOffset here since it's used below
+  const mapOffset = 2;
+  /* @tweakable enable enhanced corner exits in intersections */
+  const ENHANCE_CORNER_EXITS = true;
+  
+  // collect nodes
   for (let y=0;y<height;y++) for (let x=0;x<width;x++){
-    const tileType = get(x,y);
-    let dirs = [];
-    
-    // Handle intersection special cases
-    if (tileType === Tile.RoadN || tileType === Tile.RoadE || tileType === Tile.RoadS || tileType === Tile.RoadW) {
-      // Check if this is part of an intersection
-      let isIntersection = false;
-      for (const {cx, cy} of roundabouts) {
-        const dx = Math.abs(x - cx);
-        const dy = Math.abs(y - cy);
-        if (dx <= 2 && dy <= 2) {
-          isIntersection = true;
-          break;
-        }
-      }
-      
-      if (isIntersection) {
-        // Determine correct direction based on position relative to intersection center
-        const center = roundabouts.find(r => Math.abs(x - r.cx) <= 2 && Math.abs(y - r.cy) <= 2);
-        if (center) {
-          const relX = x - center.cx;
-          const relY = y - center.cy;
-          
-          // Corner quadrants
-          if (relX === -2 && relY === -2) dirs = ['S', 'W']; // Top-left corner
-          else if (relX === 2 && relY === -2) dirs = ['S', 'E']; // Top-right corner
-          else if (relX === -2 && relY === 2) dirs = ['N', 'W']; // Bottom-left corner
-          else if (relX === 2 && relY === 2) dirs = ['N', 'E']; // Bottom-right corner
-          
-          // Edge cases
-          else if (relX === -2 && relY === -1) dirs = ['S', 'W'];
-          else if (relX === -1 && relY === -2) dirs = ['S', 'W'];
-          else if (relX === 2 && relY === -1) dirs = ['S', 'E'];
-          else if (relX === 1 && relY === -2) dirs = ['S', 'E'];
-          else if (relX === -2 && relY === 1) dirs = ['N', 'W'];
-          else if (relX === -1 && relY === 2) dirs = ['N', 'W'];
-          else if (relX === 2 && relY === 1) dirs = ['N', 'E'];
-          else if (relX === 1 && relY === 2) dirs = ['N', 'E'];
-          
-          // Single direction for straight paths
-          else if (relY === -2) dirs = ['W'];
-          else if (relY === 2) dirs = ['E'];
-          else if (relX === -2) dirs = ['S'];
-          else if (relX === 2) dirs = ['N'];
-          else dirs = [roadDir(tileType)];
-        } else {
-          dirs = [roadDir(tileType)];
-        }
-      } else {
-        dirs = [roadDir(tileType)];
-      }
-    }
-    
-    // Create nodes for each direction
-    for (const dir of dirs) {
-      const node = { x, y, dir, next: [] };
-      nodes.push(node);
-      byKey.set(`${x},${y},${dir}`, node);
-    }
+    const d = tileDir(get(x,y)); if (!d) continue;
+    const node = { x, y, dir:d, next:[] }; nodes.push(node); byKey.set(keyOf(x,y,d), node);
   }
-  
   // link
   for (const n of nodes){
     const v = dirVec[n.dir], a1x = n.x+v.x, a1y = n.y+v.y, t1 = get(a1x,a1y);
@@ -360,6 +243,8 @@ function buildRoadGraph(tiles, width, height, roundabouts){
         addExit(cx-2, cy+1, cx-2, cy+2); addExit(cx-1, cy+1, cx-1, cy+2);
     }
   }
+  // Ensure dual-direction exits in 2x2 corner quadrants of each 5x5 intersection
+  if (ENHANCE_CORNER_EXITS){ const ensure=(x,y,tx,ty)=>{const from=byKey.get(keyOf(x,y,tileDir(get(x,y)))); const n=byKey.get(keyOf(tx,ty,tileDir(get(tx,ty)))); if(from&&n&&!from.next.some(k=>k.x===tx&&k.y===ty)) from.next.push({x:tx,y:ty,dir:n.dir});}; for (const {cx,cy} of roundabouts){ const TL=[[cx-2,cy-2],[cx-1,cy-2],[cx-2,cy-1],[cx-1,cy-1]], TR=[[cx+1,cy-2],[cx+2,cy-2],[cx+1,cy-1],[cx+2,cy-1]], BL=[[cx-2,cy+1],[cx-1,cy+1],[cx-2,cy+2],[cx-1,cy+2]], BR=[[cx+1,cy+1],[cx+2,cy+1],[cx+1,cy+2],[cx+2,cy+2]]; TL.forEach(([x,y])=>{ensure(x,y,x-1,y);ensure(x,y,x,y+1);}); TR.forEach(([x,y])=>{ensure(x,y,x-1,y);ensure(x,y,x,y-1);}); BL.forEach(([x,y])=>{ensure(x,y,x+1,y);ensure(x,y,x,y+1);}); BR.forEach(([x,y])=>{ensure(x,y,x+1,y);ensure(x,y,x,y-1);}); }
   return { nodes, byKey };
 }
 

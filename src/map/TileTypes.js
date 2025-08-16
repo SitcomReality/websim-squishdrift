@@ -10,10 +10,6 @@ export const Tile = {
   BuildingFloor: 8,
   BuildingWall: 9,
   Park: 10,
-  RoadSW: 11, // Southwest diagonal
-  RoadSE: 12, // Southeast diagonal
-  RoadNW: 13, // Northwest diagonal
-  RoadNE: 14, // Northeast diagonal
 };
 
 export const TileColor = {
@@ -28,10 +24,6 @@ export const TileColor = {
   [Tile.BuildingFloor]: '#f8f9fa',
   [Tile.BuildingWall]: '#9ca3af',
   [Tile.Park]: '#228B22', // dark green
-  [Tile.RoadSW]: '#2F2F2F',
-  [Tile.RoadSE]: '#2F2F2F', 
-  [Tile.RoadNW]: '#2F2F2F',
-  [Tile.RoadNE]: '#2F2F2F',
 };
 
 export function isWalkable(t) { 
@@ -39,15 +31,10 @@ export function isWalkable(t) {
 }
 
 export function isRoad(t){ return t===Tile.RoadN||t===Tile.RoadE||t===Tile.RoadS||t===Tile.RoadW; }
-
-export function roadDir(t) {
-  if (t === Tile.RoadN) return 'N';
-  if (t === Tile.RoadE) return 'E';
-  if (t === Tile.RoadS) return 'S';
-  if (t === Tile.RoadW) return 'W';
-  if (t === Tile.RoadSW) return 'SW';
-  if (t === Tile.RoadSE) return 'SE';
-  if (t === Tile.RoadNW) return 'NW';
-  if (t === Tile.RoadNE) return 'NE';
+export function roadDir(t){
+  if (t===Tile.RoadN) return 'N';
+  if (t===Tile.RoadE) return 'E';
+  if (t===Tile.RoadS) return 'S';
+  if (t===Tile.RoadW) return 'W';
   return null;
 }

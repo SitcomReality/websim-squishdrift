@@ -35,6 +35,9 @@ export class GameEngine {
       skidmark: new SkidmarkSystem()
     };
     
+    // Enable skidmark debug logging temporarily
+    this.systems.skidmark.debug = true;
+    
     this.state = createInitialState();
     this.state.control = { inVehicle: false, vehicle: null, equipped: null };
     

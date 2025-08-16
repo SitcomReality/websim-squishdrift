@@ -3,9 +3,12 @@ export class SkidmarkSystem {
     this.skidmarks = [];
     this.maxSkidmarks = 1000;
     this.skidIntensityThreshold = 0.5;
+    this.debug = false; // Set to true for console logging
   }
 
   update(state, dt) {
+    if (this.debug) console.log('SkidmarkSystem update start');
+    
     // Update existing skidmarks (fade out)
     for (let i = this.skidmarks.length - 1; i >= 0; i--) {
       const mark = this.skidmarks[i];
@@ -23,8 +26,15 @@ export class SkidmarkSystem {
 
     // Create new skidmarks from vehicles
     const vehicles = state.entities.filter(e => e.type === 'vehicle');
+    if (this.debug) console.log(`Found ${vehicles.length} vehicles`);
+    
     for (const vehicle of vehicles) {
+      if (this.debug) {
+        console.log(`Vehicle skidding: ${vehicle.isSkidding}, intensity: ${vehicle.skidIntensity}, threshold: ${this.skidIntensityThreshold}`);
+      }
+      
       if (vehicle.isSkidding && vehicle.skidIntensity > this.skidIntensityThreshold) {
+        if (this.debug) console.log('Creating skidmark!');
         this.createSkidmark(vehicle);
       }
     }
@@ -50,6 +60,8 @@ export class SkidmarkSystem {
   render(renderer, state) {
     const { ctx } = renderer;
     const ts = state.world.tileSize;
+    
+    if (this.skidmarks.length === 0) return;
 
     ctx.save();
     

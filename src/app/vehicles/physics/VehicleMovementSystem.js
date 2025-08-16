@@ -3,16 +3,28 @@ import { Tile } from '../../../map/TileTypes.js';
 
 export class VehicleMovementSystem {
   constructor() {
+        /* @tweakable maximum engine force in Newtons */
         this.maxEngineForce = 2500;
+        /* @tweakable maximum brake force in Newtons */
         this.maxBrakeForce = 3500;
+        /* @tweakable maximum reverse force in Newtons */
         this.maxReverseForce = 1500;
+        /* @tweakable air drag coefficient */
         this.airDrag = 0.45;
+        /* @tweakable rolling resistance in Newtons */
         this.rollingResistance = 400;
+        /* @tweakable maximum lateral friction force */
         this.maxLateralFriction = 6000;
+        /* @tweakable tire cornering stiffness */
         this.corneringStiffness = 1500;
+        /* @tweakable maximum steering angle in radians */
         this.maxSteerAngle = Math.PI / 3.5;
+        /* @tweakable low speed steering multiplier */
         this.lowSpeedSteerFactor = 0.2;
+        /* @tweakable distance between front and rear wheels */
         this.wheelBase = 2.5;
+        /* @tweakable threshold for skidding detection */
+        this.skidThreshold = 0.2;
   }
 
   update(state, dt) {
@@ -119,7 +131,11 @@ export class VehicleMovementSystem {
 
   calculateWheelSlip(v) {
     const speed = Math.hypot(v.vel.x, v.vel.y);
-    if (speed < 0.1) return;
+    if (speed < 0.1) {
+      v.isSkidding = false;
+      v.skidIntensity = 0;
+      return;
+    }
     
     const longitudinalSlip = Math.abs(v.longitudinalForce) / this.maxLateralFriction;
     const velocityAngle = Math.atan2(v.vel.y, v.vel.x);
@@ -128,7 +144,7 @@ export class VehicleMovementSystem {
     
     // Calculate combined skid intensity
     v.skidIntensity = Math.max(longitudinalSlip, lateralSlip);
-    v.isSkidding = v.skidIntensity > 0.2;
+    v.isSkidding = v.skidIntensity > this.skidThreshold;
   }
 
   ensurePhysics(v) {

@@ -2,9 +2,12 @@ export class SkidmarkSystem {
   constructor() {
     this.skidmarks = [];
     this.maxSkidmarks = 1000;
-        this.skidIntensityThreshold = 0.1;
-        this.skidSensitivity = 1;
-        this.skidCooldown = 0.1;
+    /* @tweakable minimum skid intensity required to create a skidmark */
+    this.skidIntensityThreshold = 0.05;
+    /* @tweakable multiplier for skid sensitivity */
+    this.skidSensitivity = 1.0;
+    /* @tweakable cooldown between skidmarks in seconds */
+    this.skidCooldown = 0.1;
     this.lastSkidTime = 0;
   }
 
@@ -31,9 +34,12 @@ export class SkidmarkSystem {
       
       if (isSkidding && (state.time - this.lastSkidTime) > this.skidCooldown) {
         console.log('SKIDDING DETECTED:', {
-          skidIntensity: vehicle.skidIntensity,
+          skidIntensity: vehicle.skidIntensity || 0,
           speed: Math.hypot(vehicle.vel?.x || 0, vehicle.vel?.y || 0),
-          threshold: this.skidIntensityThreshold
+          threshold: this.skidIntensityThreshold,
+          isSkidding: vehicle.isSkidding,
+          lateralForce: vehicle.lateralForce || 0,
+          longitudinalForce: vehicle.longitudinalForce || 0
         });
         this.createSkidmark(vehicle);
         this.lastSkidTime = state.time;
@@ -52,7 +58,10 @@ export class SkidmarkSystem {
     const isBrakingHard = (vehicle.ctrl?.brake || 0) > 0.8 && speed > 2.0;
     const isTurningSharp = Math.abs(vehicle.ctrl?.steer || 0) > 0.7 && speed > 1.5;
     
-    return isMoving && (isSkiddingFromIntensity || isBrakingHard || isTurningSharp);
+    // Also check if the vehicle has explicit skidding flag
+    const hasSkidFlag = vehicle.isSkidding === true;
+    
+    return isMoving && (isSkiddingFromIntensity || isBrakingHard || isTurningSharp || hasSkidFlag);
   }
 
   createSkidmark(vehicle) {

@@ -10,7 +10,8 @@ import { NPCSystem } from './systems/NPCSystem.js';
 import { CameraSystem } from './systems/CameraSystem.js';
 import { RenderSystem } from './systems/RenderSystem.js';
 import { createInitialState } from '../state/createInitialState.js';
-import { VehiclePhysicsSystem } from './systems/VehiclePhysicsSystem.js';
+import { VehicleMovementSystem } from '../vehicles/physics/VehicleMovementSystem.js';
+import { VehicleCollisionSystem } from '../vehicles/physics/VehicleCollisionSystem.js';
 import { AIDrivingSystem } from './systems/AIDrivingSystem.js';
 
 export class GameEngine {
@@ -27,8 +28,9 @@ export class GameEngine {
       npc: new NPCSystem(),
       camera: new CameraSystem(),
       render: new RenderSystem(),
-      physics: new VehiclePhysicsSystem(),
       aiDrive: new AIDrivingSystem(),
+      vehicleMovement: new VehicleMovementSystem(),
+      vehicleCollision: new VehicleCollisionSystem()
     };
     
     this.state = createInitialState();

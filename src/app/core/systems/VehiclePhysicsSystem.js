@@ -31,6 +31,9 @@ const vehicleWidth = 0.9;
 /* @tweakable vehicle height for collision detection */
 const vehicleHeight = 0.5;
 
+/* @tweakable self-aligning force strength */
+const selfAlignForce = 3.0;
+
 export class VehiclePhysicsSystem {
   update(state, dt) {
     for (const v of state.entities.filter(e => e.type === 'vehicle')) {
@@ -77,6 +80,19 @@ export class VehiclePhysicsSystem {
       if (coasting) { Fx -= v.vel.x * coastingFriction; Fy -= v.vel.y * coastingFriction; }
       // Braking damps all motion, not just longitudinal
       if (brake > 0.01) { Fx -= v.vel.x * (brakeForceMultiplier * brake); Fy -= v.vel.y * (brakeForceMultiplier * brake); }
+
+      // Self-aligning force when moving forward
+      if (speed > 0.1 && throttle > 0.05) {
+        const velAngle = Math.atan2(v.vel.y, v.vel.x);
+        const angleDiff = wrapAngle(velAngle - v.rot);
+        
+        // Only apply alignment when moving forward (not reversing)
+        const forwardDot = Math.cos(velAngle - v.rot);
+        if (forwardDot > 0.3) { // Only align when mostly moving forward
+          const alignStrength = Math.min(1, speed / maxSpeed) * selfAlignForce;
+          v.angularVel += angleDiff * alignStrength * dt;
+        }
+      }
 
       // Integrate velocity
       v.vel.x += (Fx / vehicleMass) * dt;

@@ -8,3 +8,4 @@ export function drawPlayer(r, state, player){
   ctx.arc((player.facing.x)*ts*0.3, (player.facing.y)*ts*0.3, 3, 0, Math.PI*2);
   ctx.fill(); ctx.restore();
 }
+

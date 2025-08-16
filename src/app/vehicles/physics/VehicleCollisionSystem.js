@@ -4,11 +4,13 @@ import { Tile } from '../../../map/TileTypes.js';
 export class VehicleCollisionSystem {
   constructor() {
     /* @tweakable how bouncy vehicles are when colliding (0 = no bounce, 1 = full bounce) */
-    this.bounciness = 0.7;
+    this.bounciness = 0.4;
     /* @tweakable how much velocity is retained after collision (0 = full stop, 1 = no loss) */
-    this.velocityRetention = 0.8;
+    this.velocityRetention = 0.85;
     /* @tweakable how far vehicles can overlap before collision resolution */
     this.collisionTolerance = 0.1;
+    /* @tweakable mass multiplier for static objects (effectively infinite mass) */
+    this.staticMassMultiplier = 1000;
   }
 
   update(state, dt) {
@@ -26,7 +28,7 @@ export class VehicleCollisionSystem {
       const collision = this.checkRectCollision(v, other);
       if (collision) {
         this.resolveRectCollision(v, other, collision);
-        this.applyBounce(v, other, collision.normal);
+        this.applyCollisionForces(v, other, collision);
       }
     }
   }
@@ -45,7 +47,7 @@ export class VehicleCollisionSystem {
         const gy = ty + oy;
         if (gx < 0 || gy < 0 || gx >= map.width || gy >= map.height) continue;
         
-        const t = map.tiles[gy][gx];
+        const t = map.tiles[gy]?.[gx];
         if (t === Tile.BuildingFloor || t === Tile.BuildingWall) {
           const buildingRect = {
             x: gx,
@@ -56,22 +58,60 @@ export class VehicleCollisionSystem {
           
           const collision = this.checkRectCollision(v, buildingRect, true);
           if (collision) {
-            this.resolveRectCollision(v, buildingRect, collision);
-            this.applyBounce(v, buildingRect, collision.normal);
+            this.resolveRectCollision(v, buildingRect, collision, true);
+            this.applyCollisionForces(v, buildingRect, collision, true);
           }
         }
       }
     }
   }
 
-  handlePlayerCollision(state, vehicle) {
+  handlePlayerCollision(state, v) {
     const player = state.entities.find(e => e.type === 'player');
     if (!player || state.control.inVehicle) return;
 
-    const collision = this.checkRectCollision(vehicle, player);
+    const collision = this.checkRectCollision(v, player);
     if (collision) {
-      this.resolveRectCollision(vehicle, player, collision);
-      this.applyBounce(vehicle, player, collision.normal);
+      this.resolveRectCollision(v, player, collision);
+      this.applyCollisionForces(v, player, collision);
+    }
+  }
+
+  applyCollisionForces(entityA, entityB, collision, isStatic = false) {
+    const massA = entityA.mass || 1200; // Default vehicle mass
+    const massB = isStatic ? massA * this.staticMassMultiplier : (entityB.mass || 70);
+    
+    const totalMass = massA + massB;
+    const massRatioA = massB / totalMass;
+    const massRatioB = massA / totalMass;
+    
+    // Calculate relative velocity
+    const relVelX = (entityA.vel?.x || 0) - (entityB.vel?.x || 0);
+    const relVelY = (entityA.vel?.y || 0) - (entityB.vel?.y || 0);
+    
+    // Calculate impulse magnitude
+    const normalSpeed = relVelX * collision.normal.x + relVelY * collision.normal.y;
+    if (normalSpeed >= 0) return; // Separating
+    
+    const impulse = -(1 + this.bounciness) * normalSpeed / (1/massA + 1/massB);
+    
+    // Apply forces based on mass ratios
+    if (!isStatic || entityB.type === 'player') {
+      entityA.vel.x += impulse * collision.normal.x * massRatioA / massA;
+      entityA.vel.y += impulse * collision.normal.y * massRatioA / massA;
+    }
+    
+    if (!isStatic) {
+      entityB.vel.x -= impulse * collision.normal.x * massRatioB / massB;
+      entityB.vel.y -= impulse * collision.normal.y * massRatioB / massB;
+    }
+    
+    // Apply velocity retention
+    if (!isStatic) {
+      entityA.vel.x *= this.velocityRetention;
+      entityA.vel.y *= this.velocityRetention;
+      entityB.vel.x *= this.velocityRetention;
+      entityB.vel.y *= this.velocityRetention;
     }
   }
 
@@ -84,12 +124,11 @@ export class VehicleCollisionSystem {
 
     if (overlapX <= 0 || overlapY <= 0) return null;
 
-    // Determine collision normal and penetration
     const centerAX = a.x + a.width / 2;
     const centerAY = a.y + a.height / 2;
     const centerBX = b.x + b.width / 2;
     const centerBY = b.y + b.height / 2;
-    
+
     const dx = centerBX - centerAX;
     const dy = centerBY - centerAY;
 
@@ -105,69 +144,30 @@ export class VehicleCollisionSystem {
     return { normal, penetration };
   }
 
-  resolveRectCollision(entityA, entityB, collision) {
-    const isStatic = !entityB.type || entityB.type === 'building';
+  resolveRectCollision(entityA, entityB, collision, isStatic = false) {
+    const separationX = collision.normal.x * collision.penetration;
+    const separationY = collision.normal.y * collision.penetration;
     
-    if (isStatic) {
-      // Static collision - only move entityA
-      const moveX = collision.normal.x * collision.penetration * (1 + this.collisionTolerance);
-      const moveY = collision.normal.y * collision.penetration * (1 + this.collisionTolerance);
-      entityA.pos.x += moveX;
-      entityA.pos.y += moveY;
-    } else {
-      // Dynamic collision - move both entities
-      const totalMass = entityA.mass + entityB.mass;
-      const massA = entityA.mass / totalMass;
-      const massB = entityB.mass / totalMass;
-      
-      const moveA = collision.penetration * massB * (1 + this.collisionTolerance);
-      const moveB = collision.penetration * massA * (1 + this.collisionTolerance);
-      
-      entityA.pos.x += collision.normal.x * moveA;
-      entityA.pos.y += collision.normal.y * moveA;
-      entityB.pos.x -= collision.normal.x * moveB;
-      entityB.pos.y -= collision.normal.y * moveB;
+    if (!isStatic || entityB.type === 'player') {
+      entityA.pos.x += separationX / 2;
+      entityA.pos.y += separationY / 2;
     }
-  }
-
-  applyBounce(entityA, entityB, normal) {
-    const isStatic = !entityB.type || entityB.type === 'building';
     
-    if (isStatic) {
-      // Static bounce
-      const dot = entityA.vel.x * normal.x + entityA.vel.y * normal.y;
-      entityA.vel.x = (entityA.vel.x - 2 * dot * normal.x) * this.bounciness * this.velocityRetention;
-      entityA.vel.y = (entityA.vel.y - 2 * dot * normal.y) * this.bounciness * this.velocityRetention;
-    } else {
-      // Dynamic bounce between vehicles
-      const relativeVel = {
-        x: entityA.vel.x - entityB.vel.x,
-        y: entityA.vel.y - entityB.vel.y
-      };
-      
-      const dot = relativeVel.x * normal.x + relativeVel.y * normal.y;
-      
-      const impulse = 2 * dot / (entityA.mass + entityB.mass);
-      
-      entityA.vel.x -= impulse * entityB.mass * normal.x * this.bounciness * this.velocityRetention;
-      entityA.vel.y -= impulse * entityB.mass * normal.y * this.bounciness * this.velocityRetention;
-      
-      entityB.vel.x += impulse * entityA.mass * normal.x * this.bounciness * this.velocityRetention;
-      entityB.vel.y += impulse * entityA.mass * normal.y * this.bounciness * this.velocityRetention;
+    if (!isStatic) {
+      entityB.pos.x -= separationX / 2;
+      entityB.pos.y -= separationY / 2;
     }
   }
 
   getHitbox(entity) {
     if (!entity.hitbox) {
-      // Default hitbox based on sprite dimensions
       entity.hitbox = {
-        x: entity.pos.x - 0.45, // Centered on position
+        x: entity.pos.x - 0.45,
         y: entity.pos.y - 0.25,
         width: 0.9,
         height: 0.5
       };
     } else {
-      // Update hitbox position to match entity position
       entity.hitbox.x = entity.pos.x - entity.hitbox.width / 2;
       entity.hitbox.y = entity.pos.y - entity.hitbox.height / 2;
     }

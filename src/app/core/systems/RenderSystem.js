@@ -9,10 +9,11 @@ import { drawEmergency } from '../../entities/drawEmergency.js';
 import { drawHealthBar } from '../../entities/drawHealthBar.js';
 import { drawPedestrianDebug } from '../../../render/drawPedestrianDebug.js';
 import { drawSpawnDebug } from '../../../render/drawSpawnDebug.js';
+import { SkidmarkSystem } from './SkidmarkSystem.js'; // Direct import
 
 export class RenderSystem {
   constructor() {
-    this.skidmarkSystem = new (await import('./SkidmarkSystem.js')).SkidmarkSystem();
+    this.skidmarkSystem = new SkidmarkSystem();
   }
 
   render(state, renderer, debugOverlay) {

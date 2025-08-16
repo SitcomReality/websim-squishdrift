@@ -3,26 +3,16 @@ import { Tile } from '../../../map/TileTypes.js';
 
 export class VehicleMovementSystem {
   constructor() {
-    /* @tweakable maximum engine force in Newtons */
-    this.maxEngineForce = 3000;
-    /* @tweakable maximum braking force in Newtons */
-    this.maxBrakeForce = 5000;
-    /* @tweakable maximum reverse force in Newtons */
-    this.maxReverseForce = 1500;
-    /* @tweakable air drag coefficient */
-    this.airDrag = 0.45;
-    /* @tweakable rolling resistance force */
-    this.rollingResistance = 200;
-    /* @tweakable maximum lateral friction force */
-    this.maxLateralFriction = 5000;
-    /* @tweakable tire cornering stiffness */
-    this.corneringStiffness = 5000;
-    /* @tweakable maximum steering angle in radians */
-    this.maxSteerAngle = Math.PI / 4;
-    /* @tweakable extra steering factor at low speeds */
-    this.lowSpeedSteerFactor = 1.1;
-    /* @tweakable distance between front and rear wheels in meters */
-    this.wheelBase = 2.5;
+        this.maxEngineForce = 2500;
+        this.maxBrakeForce = 3500;
+        this.maxReverseForce = 1500;
+        this.airDrag = 0.45;
+        this.rollingResistance = 400;
+        this.maxLateralFriction = 6000;
+        this.corneringStiffness = 1500;
+        this.maxSteerAngle = Math.PI / 3.5;
+        this.lowSpeedSteerFactor = 0.2;
+        this.wheelBase = 2.5;
   }
 
   update(state, dt) {

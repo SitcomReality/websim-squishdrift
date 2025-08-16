@@ -2,12 +2,9 @@ export class SkidmarkSystem {
   constructor() {
     this.skidmarks = [];
     this.maxSkidmarks = 1000;
-    /* @tweakable the minimum skid intensity to trigger a skidmark */
-    this.skidIntensityThreshold = 0.2;
-    /* @tweakable how sensitive the skidding detection is */
-    this.skidSensitivity = 0.5;
-    /* @tweakable cooldown between skidmark creation (in seconds) */
-    this.skidCooldown = 0.1;
+        this.skidIntensityThreshold = 0.1;
+        this.skidSensitivity = 1;
+        this.skidCooldown = 0.1;
     this.lastSkidTime = 0;
   }
 

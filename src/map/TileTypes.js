@@ -1,9 +1,16 @@
+/* @tweakable enable diagonal road directions for intersections */
+const enableDiagonalRoads = true;
+
 export const Tile = {
   Grass: 0,
   RoadN: 1,
   RoadE: 2,
   RoadS: 3,
   RoadW: 4,
+  RoadNE: 11, // Added diagonal road types
+  RoadNW: 12,
+  RoadSE: 13,
+  RoadSW: 14,
   Median: 5,
   Intersection: 6,
   Footpath: 7,
@@ -18,6 +25,10 @@ export const TileColor = {
   [Tile.RoadE]: '#2F2F2F',
   [Tile.RoadS]: '#2F2F2F',
   [Tile.RoadW]: '#2F2F2F',
+  [Tile.RoadNE]: '#2F2F2F',
+  [Tile.RoadNW]: '#2F2F2F',
+  [Tile.RoadSE]: '#2F2F2F',
+  [Tile.RoadSW]: '#2F2F2F',
   [Tile.Median]: '#404040', // dark grey for medians
   [Tile.Intersection]: '#2F2F2F', // same as roads
   [Tile.Footpath]: '#D3D3D3', // light grey
@@ -30,11 +41,19 @@ export function isWalkable(t) {
   return t !== Tile.BuildingWall && t !== Tile.BuildingFloor;
 }
 
-export function isRoad(t){ return t===Tile.RoadN||t===Tile.RoadE||t===Tile.RoadS||t===Tile.RoadW; }
+export function isRoad(t){ 
+  return t===Tile.RoadN||t===Tile.RoadE||t===Tile.RoadS||t===Tile.RoadW
+    || t===Tile.RoadNE || t===Tile.RoadNW || t===Tile.RoadSE || t===Tile.RoadSW;
+}
+
 export function roadDir(t){
   if (t===Tile.RoadN) return 'N';
   if (t===Tile.RoadE) return 'E';
   if (t===Tile.RoadS) return 'S';
   if (t===Tile.RoadW) return 'W';
+  if (t===Tile.RoadNE) return 'NE';
+  if (t===Tile.RoadNW) return 'NW';
+  if (t===Tile.RoadSE) return 'SE';
+  if (t===Tile.RoadSW) return 'SW';
   return null;
 }

@@ -31,10 +31,6 @@ const vehicleWidth = 0.9;
 /* @tweakable vehicle height for collision detection */
 const vehicleHeight = 0.5;
 
-// add gentle heading auto-alignment when moving forward
-const autoAlignStrength = 6;
-const autoAlignMax = 1.5;
-
 export class VehiclePhysicsSystem {
   update(state, dt) {
     for (const v of state.entities.filter(e => e.type === 'vehicle')) {
@@ -63,8 +59,10 @@ export class VehiclePhysicsSystem {
       Fy -= fwd.y * brakeForce;
 
       // Lateral grip to reduce side slip
-      Fx -= right.x * vLat * gripMultiplier;
-      Fy -= right.y * vLat * gripMultiplier;
+      const grip = v.grip * gripMultiplier;
+      Fx -= right.x * vLat * grip;
+      Fy -= right.y * vLat * grip;
+
       // Extra skid damping: more friction the more sideways we move
       const misalign = Math.min(1, Math.abs(vLat) / (Math.abs(vLong) + 1e-3));
       Fx -= v.vel.x * skidDamp * misalign;
@@ -94,16 +92,10 @@ export class VehiclePhysicsSystem {
       // Kill tiny velocities to avoid perpetual micro-sliding
       if (Math.hypot(v.vel.x, v.vel.y) < 0.02) { v.vel.x = 0; v.vel.y = 0; }
 
-      // Yaw/steer: stronger at speed, but still effective at low speed
-      const speedFactor = Math.min(1, Math.abs(vLong) / maxSpeed) * 0.7 + 0.3;
-      v.angularVel += steer * v.steerRate * speedFactor * dt;
-      // Auto-align heading toward velocity when accelerating forward (reduce drift)
-      if (speed > 0.1 && throttle > 0.01 && vLong > 0.05) {
-        const desired = Math.atan2(v.vel.y, v.vel.x);
-        let diff = desired - v.rot; while (diff > Math.PI) diff -= 2*Math.PI; while (diff < -Math.PI) diff += 2*Math.PI;
-        const alignTorque = Math.max(-autoAlignMax, Math.min(autoAlignMax, diff * autoAlignStrength * throttle * speedFactor));
-        v.angularVel += alignTorque * dt;
-      }
+      // Yaw/steer: turning depends on forward speed.
+      const turnPower = Math.tanh(Math.abs(vLong) / 2.0); // tanh gives a nice curve, approaching 1 at speed
+      v.angularVel += steer * v.steerRate * turnPower * dt;
+
       v.angularVel *= 0.9; // damping
       v.rot += v.angularVel * dt;
 
@@ -195,7 +187,7 @@ export class VehiclePhysicsSystem {
     v.brakeForce = 1800;
     v.rollingRes = rollingResistance;
     v.drag = airDrag;
-    v.grip = gripMultiplier;
+    v.grip = 8.0; // Increased base grip from 1.0 to 8.0
     v.steerRate = steerRate;
     v.ctrl = v.ctrl || { throttle: 0, brake: 0, steer: 0 };
     v.radius = vehicleCollisionRadius;

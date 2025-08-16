@@ -9,13 +9,9 @@ import { drawEmergency } from '../../entities/drawEmergency.js';
 import { drawHealthBar } from '../../entities/drawHealthBar.js';
 import { drawPedestrianDebug } from '../../../render/drawPedestrianDebug.js';
 import { drawSpawnDebug } from '../../../render/drawSpawnDebug.js';
-import { SkidmarkSystem } from './SkidmarkSystem.js'; // Direct import
+import { drawSkidmarks } from '../../../render/drawSkidmarks.js';
 
 export class RenderSystem {
-  constructor() {
-    this.skidmarkSystem = new SkidmarkSystem();
-  }
-
   render(state, renderer, debugOverlay) {
     const { ctx, canvas } = renderer;
     
@@ -32,19 +28,16 @@ export class RenderSystem {
     ctx.scale(state.camera.zoom || 1, state.camera.zoom || 1);
     ctx.translate(Math.floor(-state.camera.x * ts), Math.floor(-state.camera.y * ts));
     
-    // Draw layers in correct order
+    // Draw layers
     const z = state.camera.zoom || 1;
     const wTiles = Math.ceil(canvas.width/(ts*z))+2, hTiles = Math.ceil(canvas.height/(ts*z))+2;
     const sx = Math.floor(state.camera.x - wTiles/2), sy = Math.floor(state.camera.y - hTiles/2);
     ctx.fillStyle = '#b7e3f8'; // ocean
     ctx.fillRect(sx*ts, sy*ts, wTiles*ts, hTiles*ts);
     
-    // Draw ground layer first
     drawTiles(renderer, state, 'ground');
     drawTiles(renderer, state, 'floors');
-    
-    // Draw skidmarks on top of ground but below entities
-    this.skidmarkSystem.render(renderer, state);
+    drawSkidmarks(renderer, state);
     
     // Draw entities behind buildings
     const entitiesBehind = state.entities.filter(e => 

@@ -1,104 +1,85 @@
 import { Vec2 } from '../../utils/Vec2.js';
 
 export class SkidmarkSystem {
-  constructor() {
-    this.skidmarks = [];
-    /* @tweakable max number of skidmarks to maintain */
-    this.maxSkidmarks = 500;
-    /* @tweakable fade out time in seconds */
-    this.fadeTime = 8;
-    /* @tweakable minimum lateral slip to trigger skidmarks */
-    this.minLateralSlip = 0.3;
-    /* @tweakable minimum longitudinal slip to trigger skidmarks */
-    this.minLongitudinalSlip = 0.8;
-    /* @tweakable max distance between skidmarks before creating new segment */
-    this.maxSegmentDistance = 0.5;
-  }
+  /* @tweakable lateral slip threshold at/above which we leave marks */
+  skidLateralSlipThreshold = 0.35;
+  /* @tweakable minimum speed to draw braking skidmarks (tiles/sec) */
+  skidMinSpeedForBraking = 3.0;
+  /* @tweakable braking input threshold to consider "hard brake" */
+  skidBrakeThreshold = 0.7;
+  /* @tweakable minimum distance moved between marks to place a new segment (tiles) */
+  skidMinSegmentSpacing = 0.25;
+  /* @tweakable half the distance between wheel tracks (tiles) */
+  skidTrackHalfWidth = 0.35;
+  /* @tweakable visual width of a single skid line in pixels (screen space) */
+  skidLineWidthPx = 2;
+  /* @tweakable base alpha of skidmarks (0..1) */
+  skidAlpha = 0.35;
+  /* @tweakable seconds until skidmarks fade out (if not culled by distance) */
+  skidMaxAge = 18;
+  /* @tweakable world radius beyond which marks are despawned relative to player/vehicle (tiles) */
+  skidDespawnRadius = 15;
 
   update(state, dt) {
-    // Update existing skidmarks
-    for (let i = this.skidmarks.length - 1; i >= 0; i--) {
-      const mark = this.skidmarks[i];
-      mark.age += dt;
-      
-      // Remove aged skidmarks or those outside despawn radius
-      const player = state.entities.find(e => e.type === 'player');
-      const referencePos = state.control.inVehicle 
-        ? state.control.vehicle.pos 
-        : player?.pos;
-      
-      if (referencePos) {
-        const distance = Math.hypot(mark.x - referencePos.x, mark.y - referencePos.y);
-        if (mark.age > this.fadeTime || distance > 15) {
-          this.skidmarks.splice(i, 1);
-          continue;
+    if (!state.skidmarks) state.skidmarks = [];
+    const ref = state.control.inVehicle ? state.control.vehicle?.pos : state.entities.find(e=>e.type==='player')?.pos;
+    if (!ref) return;
+
+    // Emit new segments from vehicles
+    for (const v of state.entities.filter(e => e.type === 'vehicle')) {
+      const speed = Math.hypot(v.vel?.x||0, v.vel?.y||0);
+      const lateralSlip = this.computeLateralSlip(v);
+      const hardBrake = (v.ctrl?.brake || 0) >= this.skidBrakeThreshold && speed >= this.skidMinSpeedForBraking;
+      const drifting = lateralSlip >= this.skidLateralSlipThreshold;
+
+      if ((drifting || hardBrake) && speed > 0.05) {
+        // spacing against last drop
+        if (!v._lastSkidPos) v._lastSkidPos = new Vec2(v.pos.x, v.pos.y);
+        const moved = Math.hypot(v.pos.x - v._lastSkidPos.x, v.pos.y - v._lastSkidPos.y);
+        if (moved >= this.skidMinSegmentSpacing) {
+          // left/right contact points (projected sideways from body)
+          const sideX = -Math.sin(v.rot || 0);
+          const sideY =  Math.cos(v.rot || 0);
+          const lw = this.skidTrackHalfWidth;
+          const left = { x: v.pos.x + sideX * lw, y: v.pos.y + sideY * lw };
+          const right = { x: v.pos.x - sideX * lw, y: v.pos.y - sideY * lw };
+
+          state.skidmarks.push({
+            left, right,
+            age: 0,
+            widthPx: this.skidLineWidthPx,
+            alpha: Math.min(1, this.skidAlpha + (drifting ? (lateralSlip * 0.25) : 0)),
+          });
+          v._lastSkidPos.x = v.pos.x; v._lastSkidPos.y = v.pos.y;
         }
-      }
-      
-      // Fade out
-      mark.alpha = Math.max(0, 1 - (mark.age / this.fadeTime));
-    }
-    
-    // Add new skidmarks from vehicles
-    for (const vehicle of state.entities.filter(e => e.type === 'vehicle')) {
-      if (vehicle.isSkidding && vehicle.skidIntensity > 0) {
-        const currentPos = new Vec2(vehicle.pos.x, vehicle.pos.y);
-        
-        // Check if we should create a new skidmark
-        const shouldCreateMark = vehicle.skidIntensity > this.minLateralSlip ||
-                                (vehicle.longitudinalForce && 
-                                 Math.abs(vehicle.longitudinalForce) > this.minLongitudinalSlip * 1000);
-        
-        if (shouldCreateMark) {
-          // Check distance from last mark
-          const lastMark = this.skidmarks.filter(m => m.vehicleId === vehicle.id).pop();
-          const shouldAdd = !lastMark || 
-                          Math.hypot(lastMark.x - currentPos.x, lastMark.y - currentPos.y) > this.maxSegmentDistance;
-          
-          if (shouldAdd) {
-            this.skidmarks.push({
-              x: currentPos.x,
-              y: currentPos.y,
-              rot: vehicle.rot,
-              intensity: vehicle.skidIntensity,
-              age: 0,
-              alpha: 1,
-              vehicleId: vehicle.id
-            });
-          }
-        }
+      } else {
+        // reset spacing anchor so next skid starts fresh
+        v._lastSkidPos = new Vec2(v.pos.x, v.pos.y);
       }
     }
-    
-    // Limit max skidmarks
-    while (this.skidmarks.length > this.maxSkidmarks) {
-      this.skidmarks.shift();
+
+    // Age and cull by age and distance
+    for (let i = state.skidmarks.length - 1; i >= 0; i--) {
+      const m = state.skidmarks[i];
+      m.age += dt;
+      if (m.age > this.skidMaxAge) { state.skidmarks.splice(i, 1); continue; }
+      // distance check vs reference
+      const mx = (m.left.x + m.right.x) * 0.5;
+      const my = (m.left.y + m.right.y) * 0.5;
+      if (Math.hypot(mx - ref.x, my - ref.y) > this.skidDespawnRadius) {
+        state.skidmarks.splice(i, 1);
+      }
     }
   }
 
-  render(r, state) {
-    const { ctx } = r;
-    const ts = state.world.tileSize;
-    
-    ctx.save();
-    ctx.globalAlpha = 1;
-    
-    for (const mark of this.skidmarks) {
-      ctx.save();
-      ctx.globalAlpha = mark.alpha;
-      ctx.translate(mark.x * ts, mark.y * ts);
-      ctx.rotate(mark.rot);
-      
-      // Draw skidmark as a thin black line
-      const width = ts * 0.1 * Math.min(1, mark.intensity * 2);
-      const length = ts * 0.3;
-      
-      ctx.fillStyle = '#000000';
-      ctx.fillRect(-length/2, -width/2, length, width);
-      
-      ctx.restore();
-    }
-    
-    ctx.restore();
+  computeLateralSlip(v) {
+    // component of velocity perpendicular to car forward axis
+    const vx = v.vel?.x || 0, vy = v.vel?.y || 0;
+    const fwdX = Math.cos(v.rot || 0), fwdY = Math.sin(v.rot || 0);
+    const speed = Math.hypot(vx, vy);
+    if (speed < 0.001) return 0;
+    const vDotF = (vx * fwdX + vy * fwdY) / speed;           // cos between vel and forward
+    const vCrossF = (vx * fwdY - vy * fwdX) / speed;         // sin between vel and forward
+    return Math.abs(vCrossF); // normalized lateral slip in [0..1]
   }
 }

@@ -32,7 +32,7 @@ export class GameEngine {
       aiDrive: new AIDrivingSystem(),
       vehicleMovement: new VehicleMovementSystem(),
       vehicleCollision: new VehicleCollisionSystem(),
-      skidmark: new SkidmarkSystem()
+      skidmarks: new SkidmarkSystem()
     };
     
     this.state = createInitialState();
@@ -82,6 +82,7 @@ export class GameEngine {
   }
 
   update(dt) {
+    // this.input.update() moved to end so 'pressed' keys are available this frame
     this.systems.player.update(this.state, this.input, dt);
     this.systems.vehicle.update(this.state, this.input, dt);
     this.systems.bullet.update(this.state, dt);
@@ -89,15 +90,16 @@ export class GameEngine {
     this.systems.aiDrive.update(this.state, dt);
     this.systems.vehicleMovement.update(this.state, dt);
     this.systems.vehicleCollision.update(this.state, dt);
-    this.systems.skidmark.update(this.state, dt);
     this.systems.camera.update(this.state, this.input);
     this.collisionSystem.update(this.state);
     this.emergencyServices.update(this.state, dt);
+    this.systems.skidmarks.update(this.state, dt);
     
     // Update spawn/despawn system
     this.updateSpawning(dt);
     this.updateDebugHUD();
     
+    // Now clear one-shot inputs (pressed) after systems consumed them
     this.input.update();
   }
 

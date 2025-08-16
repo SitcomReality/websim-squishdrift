@@ -1,24 +1,37 @@
 import { Tile } from '../../../map/TileTypes.js'; // added for building tile checks
 
-const gripMultiplier = 20;
-
-const coastingFriction = 20;
-
-const rollingResistance = 10;
-
-const airDrag = 0.3;
-
-const staticFriction = 20;
-
-const skidDamp = 500;
-
-const brakeForceMultiplier = 20;
-
-const engineForceMultiplier = 1200;
-
+/* @tweakable maximum speed for vehicles */
 const maxSpeed = 6;
 
+/* @tweakable engine force multiplier - how strong the acceleration is */
+const engineForceMultiplier = 1200;
+
+/* @tweakable brake force multiplier - how strong the braking is */
+const brakeForceMultiplier = 20;
+
+/* @tweakable grip multiplier - how much traction vehicles have */
+const gripMultiplier = 20;
+
+/* @tweakable skid damping - how quickly sideways movement is reduced */
+const skidDamp = 500;
+
+/* @tweakable coasting friction - how quickly vehicles slow down when not accelerating */
+const coastingFriction = 20;
+
+/* @tweakable rolling resistance - baseline friction against movement */
+const rollingResistance = 10;
+
+/* @tweakable air drag - how much air resistance slows vehicles */
+const airDrag = 0.3;
+
+/* @tweakable static friction - friction when stationary */
+const staticFriction = 20;
+
+/* @tweakable vehicle mass - affects acceleration and stopping distance */
 const vehicleMass = 1000;
+
+/* @tweakable steering rate - how quickly vehicles can turn */
+const steerRate = 10.0;
 
 export class VehiclePhysicsSystem {
   update(state, dt) {
@@ -173,7 +186,7 @@ export class VehiclePhysicsSystem {
     v.rollingRes = rollingResistance;
     v.drag = airDrag;
     v.grip = gripMultiplier;
-    v.steerRate = 10.0;
+    v.steerRate = steerRate;
     v.ctrl = v.ctrl || { throttle: 0, brake: 0, steer: 0 };
     v.radius = 0.6;
     v._physInit = true;

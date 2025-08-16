@@ -1,28 +1,17 @@
 import { Vec2 } from '../../../utils/Vec2.js';
 
 export class SkidmarkSystem {
-  /* @tweakable lateral slip threshold at/above which we leave marks */
-  skidLateralSlipThreshold = 0.35;
-  /* @tweakable minimum speed to draw braking skidmarks (tiles/sec) */
-  skidMinSpeedForBraking = 3.0;
-  /* @tweakable braking input threshold to consider "hard brake" */
-  skidBrakeThreshold = 0.7;
-  /* @tweakable minimum distance moved between marks to place a new segment (tiles) */
-  skidMinSegmentSpacing = 0.25;
-  /* @tweakable half the distance between wheel tracks (tiles) */
-  skidTrackHalfWidth = 0.35;
-  /* @tweakable visual width of a single skid line in pixels (screen space) */
-  skidLineWidthPx = 2;
-  /* @tweakable base alpha of skidmarks (0..1) */
-  skidAlpha = 0.35;
-  /* @tweakable seconds until skidmarks fade out (if not culled by distance) */
-  skidMaxAge = 18;
-  /* @tweakable world radius beyond which marks are despawned relative to player/vehicle (tiles) */
-  skidDespawnRadius = 15;
-  /* @tweakable the length of a single skidmark segment (tiles) */
-  skidSegmentLength = 0.2;
-  /* @tweakable approximate offset of rear wheels from vehicle center along longitudinal axis (tiles, negative for rear) */
-  rearWheelOffset = -0.5;
+    skidLateralSlipThreshold = 0.35;
+    skidMinSpeedForBraking = 3.0;
+    skidBrakeThreshold = 0.7;
+    skidMinSegmentSpacing = 0.05;
+    skidTrackHalfWidth = 0.23;
+    skidLineWidthPx = 2;
+    skidAlpha = 0.35;
+    skidMaxAge = 18;
+    skidDespawnRadius = 15;
+    skidSegmentLength = 0.05;
+    rearWheelOffset = -0.3;
 
   update(state, dt) {
     if (!state.skidmarks) state.skidmarks = [];

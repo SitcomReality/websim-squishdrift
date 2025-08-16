@@ -1,37 +1,26 @@
 import { Tile } from '../../../map/TileTypes.js'; // added for building tile checks
 
-/* @tweakable maximum speed for vehicles */
-const maxSpeed = 6;
+const maxSpeed = 5;
 
-/* @tweakable engine force multiplier - how strong the acceleration is */
-const engineForceMultiplier = 1200;
+const engineForceMultiplier = 1400;
 
-/* @tweakable brake force multiplier - how strong the braking is */
 const brakeForceMultiplier = 20;
 
-/* @tweakable grip multiplier - how much traction vehicles have */
 const gripMultiplier = 20;
 
-/* @tweakable skid damping - how quickly sideways movement is reduced */
-const skidDamp = 500;
+const skidDamp = 1000;
 
-/* @tweakable coasting friction - how quickly vehicles slow down when not accelerating */
 const coastingFriction = 20;
 
-/* @tweakable rolling resistance - baseline friction against movement */
 const rollingResistance = 10;
 
-/* @tweakable air drag - how much air resistance slows vehicles */
 const airDrag = 0.3;
 
-/* @tweakable static friction - friction when stationary */
 const staticFriction = 20;
 
-/* @tweakable vehicle mass - affects acceleration and stopping distance */
 const vehicleMass = 1000;
 
-/* @tweakable steering rate - how quickly vehicles can turn */
-const steerRate = 10.0;
+const steerRate = 15;
 
 export class VehiclePhysicsSystem {
   update(state, dt) {

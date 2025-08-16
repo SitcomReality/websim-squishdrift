@@ -1,5 +1,35 @@
 import { Tile } from '../../../map/TileTypes.js'; // added for building tile checks
 
+/* @tweakable overall grip multiplier for lateral movement */
+const gripMultiplier = 40.0;
+
+/* @tweakable how quickly vehicles stop when coasting */
+const coastingFriction = 12;
+
+/* @tweakable base rolling resistance */
+const rollingResistance = 20;
+
+/* @tweakable air drag coefficient */
+const airDrag = 0.3;
+
+/* @tweakable static friction at very low speeds */
+const staticFriction = 35;
+
+/* @tweakable how much extra friction when sliding sideways */
+const skidDamp = 45;
+
+/* @tweakable brake force multiplier */
+const brakeForceMultiplier = 30;
+
+/* @tweakable engine force applied when throttle is 1.0 */
+const engineForceMultiplier = 1200;
+
+/* @tweakable maximum vehicle speed */
+const maxSpeed = 6;
+
+/* @tweakable vehicle mass in kg */
+const vehicleMass = 1200;
+
 export class VehiclePhysicsSystem {
   update(state, dt) {
     for (const v of state.entities.filter(e => e.type === 'vehicle')) {
@@ -18,7 +48,7 @@ export class VehiclePhysicsSystem {
       let Fx = 0, Fy = 0;
 
       // Engine drive (forward/back)
-      const engine = v.engineForce * throttle;
+      const engine = engineForceMultiplier * throttle;
       Fx += fwd.x * engine; Fy += fwd.y * engine;
 
       // Braking opposes longitudinal velocity
@@ -27,41 +57,39 @@ export class VehiclePhysicsSystem {
       Fy -= fwd.y * brakeForce;
 
       // Lateral grip to reduce side slip
-      Fx -= right.x * vLat * v.grip;
-      Fy -= right.y * vLat * v.grip;
+      Fx -= right.x * vLat * gripMultiplier;
+      Fy -= right.y * vLat * gripMultiplier;
       // Extra skid damping: more friction the more sideways we move
       const misalign = Math.min(1, Math.abs(vLat) / (Math.abs(vLong) + 1e-3));
-      const skidDamp = 45;
       Fx -= v.vel.x * skidDamp * misalign;
       Fy -= v.vel.y * skidDamp * misalign;
 
       // Rolling resistance + air drag + static friction
       const speed = Math.hypot(v.vel.x, v.vel.y);
-      const staticFriction = Math.min(speed / (0.1 * dt), 1) * 35; // Stronger friction at very low speeds to stop
-      Fx -= v.vel.x * v.rollingRes + v.vel.x * staticFriction;
-      Fx -= v.vel.x * speed * v.drag;
-      Fy -= v.vel.y * v.rollingRes + v.vel.y * staticFriction;
-      Fy -= v.vel.y * speed * v.drag;
+      Fx -= v.vel.x * rollingResistance + v.vel.x * staticFriction;
+      Fx -= v.vel.x * speed * airDrag;
+      Fy -= v.vel.y * rollingResistance + v.vel.y * staticFriction;
+      Fy -= v.vel.y * speed * airDrag;
       // Coasting friction (no input) to prevent endless glide
       const coasting = (throttle < 0.05 && brake < 0.05);
-      if (coasting) { Fx -= v.vel.x * 12; Fy -= v.vel.y * 12; }
+      if (coasting) { Fx -= v.vel.x * coastingFriction; Fy -= v.vel.y * coastingFriction; }
       // Braking damps all motion, not just longitudinal
-      if (brake > 0.01) { Fx -= v.vel.x * (30 * brake); Fy -= v.vel.y * (30 * brake); }
+      if (brake > 0.01) { Fx -= v.vel.x * (brakeForceMultiplier * brake); Fy -= v.vel.y * (brakeForceMultiplier * brake); }
 
       // Integrate velocity
-      v.vel.x += (Fx / v.mass) * dt;
-      v.vel.y += (Fy / v.mass) * dt;
+      v.vel.x += (Fx / vehicleMass) * dt;
+      v.vel.y += (Fy / vehicleMass) * dt;
 
       // Clamp max speed
-      if (speed > v.maxSpeed) {
-        v.vel.x *= v.maxSpeed / speed;
-        v.vel.y *= v.maxSpeed / speed;
+      if (speed > maxSpeed) {
+        v.vel.x *= maxSpeed / speed;
+        v.vel.y *= maxSpeed / speed;
       }
       // Kill tiny velocities to avoid perpetual micro-sliding
       if (Math.hypot(v.vel.x, v.vel.y) < 0.02) { v.vel.x = 0; v.vel.y = 0; }
 
       // Yaw/steer: stronger at speed, but still effective at low speed
-      const speedFactor = Math.min(1, Math.abs(vLong) / v.maxSpeed) * 0.7 + 0.3;
+      const speedFactor = Math.min(1, Math.abs(vLong) / maxSpeed) * 0.7 + 0.3;
       v.angularVel += steer * v.steerRate * speedFactor * dt;
       v.angularVel *= 0.9; // damping
       v.rot += v.angularVel * dt;
@@ -148,16 +176,16 @@ export class VehiclePhysicsSystem {
     v.rot = typeof v.rot === 'number' ? v.rot : 0;
     v.vel = v.vel || { x: 0, y: 0 };
     v.angularVel = v.angularVel || 0;
-    v.mass = v.mass || 1200;
-    v.maxSpeed = v.maxSpeed || 6;
-    v.engineForce = v.engineForce || 1200;
-    v.brakeForce = v.brakeForce || 1800;
-    v.rollingRes = v.rollingRes || 20; // Increased rolling resistance
-    v.drag = v.drag || 0.3;
-    v.grip = v.grip || 40.0; // Increased grip
-    v.steerRate = v.steerRate || 10.0; // Increased from 2.5 to 10.0 (4x faster turning)
+    v.mass = vehicleMass;
+    v.maxSpeed = maxSpeed;
+    v.engineForce = engineForceMultiplier;
+    v.brakeForce = 1800;
+    v.rollingRes = rollingResistance;
+    v.drag = airDrag;
+    v.grip = gripMultiplier;
+    v.steerRate = 10.0;
     v.ctrl = v.ctrl || { throttle: 0, brake: 0, steer: 0 };
-    v.radius = v.radius || 0.6; // collision radius in world units (tiles)
+    v.radius = 0.6;
     v._physInit = true;
   }
 }

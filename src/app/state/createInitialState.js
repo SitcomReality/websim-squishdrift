@@ -29,7 +29,7 @@ export function createInitialState() {
     angularVel: 0,
     ctrl: { throttle: 0, brake: 0, steer: 0 },
     mass: 1200, maxSpeed: 4, engineForce: 900, brakeForce: 1600,
-    rollingRes: 1.0, drag: 0.25, grip: 6.0, steerRate: 2.5,
+    rollingRes: 1.0, drag: 0.25, grip: 6.0, steerRate: 10.0,
     health: { hp: 100, maxHp: 100, getPercent: () => 1, isAlive: () => true },
     controlled: false, // Make sure it's not controlled by player
     controlledByAI: false // Explicitly disable AI control
@@ -70,7 +70,7 @@ export function createInitialState() {
       angularVel: 0,
       ctrl: { throttle: 0, brake: 0, steer: 0 },
       mass: 1200, maxSpeed: 4, engineForce: 900, brakeForce: 1600,
-      rollingRes: 1.0, drag: 0.25, grip: 6.0, steerRate: 2.5
+      rollingRes: 1.0, drag: 0.25, grip: 6.0, steerRate: 10.0
     });
   }
   

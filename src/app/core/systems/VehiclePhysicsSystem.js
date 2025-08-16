@@ -143,7 +143,7 @@ export class VehiclePhysicsSystem {
     v.rollingRes = v.rollingRes || 20; // Increased rolling resistance
     v.drag = v.drag || 0.3;
     v.grip = v.grip || 40.0; // Increased grip
-    v.steerRate = v.steerRate || 2.5;
+    v.steerRate = v.steerRate || 10.0; // Increased from 2.5 to 10.0 (4x faster turning)
     v.ctrl = v.ctrl || { throttle: 0, brake: 0, steer: 0 };
     v.radius = v.radius || 0.6; // collision radius in world units (tiles)
     v._physInit = true;

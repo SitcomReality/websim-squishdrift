@@ -15,7 +15,7 @@ export class AIDrivingSystem {
         const diff = wrapAngle(desired - (v.rot || 0));
 
         // Steering: proportional
-        const steerK = 1.5;
+        const steerK = 6.0; 
         v.ctrl.steer = clamp(diff * steerK, -1, 1);
 
         // Speed control: slow for sharp turns

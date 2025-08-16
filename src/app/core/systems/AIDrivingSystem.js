@@ -1,6 +1,7 @@
+import { Tweaks } from '../../core/Tweaks.js';
+
 export class AIDrivingSystem {
-  update(state, dt) {
-    const { Tweaks } = await import('../../core/Tweaks.js');
+  async update(state, dt) {
     const roads = state.world.map.roads;
     for (const v of state.entities.filter(e => e.type === 'vehicle' && e.controlled !== true)) {
       // Ensure control struct

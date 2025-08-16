@@ -30,7 +30,7 @@ export class AIDrivingSystem {
 
         // Speed control: slow for sharp turns
         const turnSlow = 1 / (1 + 2 * Math.abs(diff));
-        const targetSpeed = (v.aiTargetSpeed) * turnSlow;
+        const targetSpeed = (v.aiTargetSpeed || 1.5) * turnSlow; // 50% of player max
 
         // Current forward speed
         const fwd = { x: Math.cos(v.rot || 0), y: Math.sin(v.rot || 0) };

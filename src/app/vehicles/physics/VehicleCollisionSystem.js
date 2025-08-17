@@ -106,13 +106,14 @@ export class VehicleCollisionSystem {
   }
 
   applyBuildingDamping(v) {
-    // Heavily damp vehicle velocity when hitting buildings
+    // Reduce damping for buildings to allow more bounce
+    const dampingFactor = 0.5; // Changed from 0.3 to 0.5
     if (v.vel) {
-      v.vel.x *= 0.3;
-      v.vel.y *= 0.3;
+      v.vel.x *= dampingFactor;
+      v.vel.y *= dampingFactor;
     }
     if (typeof v.angularVelocity === 'number') {
-      v.angularVelocity *= 0.5;
+      v.angularVelocity *= 0.6; // Reduced from 0.5 to 0.6
     }
   }
 

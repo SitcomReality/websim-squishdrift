@@ -103,16 +103,24 @@ export class AIDrivingSystem {
       v.currentPathIndex++;
       
       // If we've reached the end of planned route or need more nodes
-      if (v.currentPathIndex >= v.plannedRoute.length || 
-          v.plannedRoute.length < 4) {
+      if (v.currentPathIndex >= v.plannedRoute.length) {
+        // Remove consumed nodes and add new ones to maintain 4-node buffer
+        const remainingNodes = v.plannedRoute.slice(v.currentPathIndex);
+        const newNodes = this.buildPathAhead(
+          remainingNodes[0] || v.plannedRoute[v.plannedRoute.length - 1], 
+          4, 
+          roads
+        );
         
-        // Get last node in path
-        const lastNode = v.plannedRoute[v.plannedRoute.length - 1];
-        const newNodes = this.buildPathAhead(lastNode, 4, roads);
-        
-        // Replace current path with new extended path
-        v.plannedRoute = newNodes;
+        v.plannedRoute = [...remainingNodes, ...newNodes.slice(remainingNodes.length)];
         v.currentPathIndex = 0;
+      }
+      
+      // Ensure we always have at least 4 nodes in path
+      if (v.plannedRoute.length < 4) {
+        const lastNode = v.plannedRoute[v.plannedRoute.length - 1];
+        const additionalNodes = this.buildPathAhead(lastNode, 4 - v.plannedRoute.length, roads);
+        v.plannedRoute = [...v.plannedRoute, ...additionalNodes.slice(1)];
       }
     }
     

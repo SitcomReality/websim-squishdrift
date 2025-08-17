@@ -61,7 +61,7 @@ export class RoadGenerator {
     };
 
     if (!isPerimeter) {
-      // Standard 5x5 roundabout
+      // Standard 5x5 roundabout with correct corner directions
       this.createStandardRoundabout(tiles, cx, cy, set);
     } else {
       // Perimeter roundabout with adjusted connections
@@ -104,26 +104,51 @@ export class RoadGenerator {
   }
 
   createStandardRoundabout(tiles, cx, cy, set) {
-    // Top (leftward)
+    // Top (leftward) - central lanes
     for (let x = cx - 2; x <= cx + 2; x++) {
       set(x, cy - 2, Tile.RoadW);
       set(x, cy - 1, Tile.RoadW);
     }
-    // Bottom (rightward)
+    // Bottom (rightward) - central lanes
     for (let x = cx - 2; x <= cx + 2; x++) {
       set(x, cy + 2, Tile.RoadE);
       set(x, cy + 1, Tile.RoadE);
     }
-    // Left (downward)
+    // Left (downward) - central lanes
     for (let y = cy - 2; y <= cy + 2; y++) {
       set(cx - 2, y, Tile.RoadS);
       set(cx - 1, y, Tile.RoadS);
     }
-    // Right (upward)
+    // Right (upward) - central lanes
     for (let y = cy - 2; y <= cy + 2; y++) {
       set(cx + 1, y, Tile.RoadN);
       set(cx + 2, y, Tile.RoadN);
     }
+
+    // Corner quadrants with bi-directional paths
+    // Top-left quadrant (S/W directions)
+    set(cx - 2, cy - 2, Tile.Intersection); // S/W
+    set(cx - 1, cy - 2, Tile.Intersection); // S/W
+    set(cx - 2, cy - 1, Tile.Intersection); // S/W
+    set(cx - 1, cy - 1, Tile.Intersection); // S/W
+
+    // Top-right quadrant (N/W directions)
+    set(cx + 1, cy - 2, Tile.Intersection); // N/W
+    set(cx + 2, cy - 2, Tile.Intersection); // N/W
+    set(cx + 1, cy - 1, Tile.Intersection); // N/W
+    set(cx + 2, cy - 1, Tile.Intersection); // N/W
+
+    // Bottom-left quadrant (S/E directions)
+    set(cx - 2, cy + 1, Tile.Intersection); // S/E
+    set(cx - 1, cy + 1, Tile.Intersection); // S/E
+    set(cx - 2, cy + 2, Tile.Intersection); // S/E
+    set(cx - 1, cy + 2, Tile.Intersection); // S/E
+
+    // Bottom-right quadrant (N/E directions)
+    set(cx + 1, cy + 1, Tile.Intersection); // N/E
+    set(cx + 2, cy + 1, Tile.Intersection); // N/E
+    set(cx + 1, cy + 2, Tile.Intersection); // N/E
+    set(cx + 2, cy + 2, Tile.Intersection); // N/E
   }
 
   createPerimeterRoundabout(tiles, cx, cy, set, isPerimeter) {

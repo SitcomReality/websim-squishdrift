@@ -46,6 +46,7 @@ export class CollisionSystem {
     const vehicles = state.entities.filter(e => e.type === 'vehicle');
     
     if (!player || !player.health) return;
+    if (state.control?.inVehicle) return; // disable player collisions while inside a vehicle
     
     for (const vehicle of vehicles) {
       if (vehicle.controlled) continue; // Skip player-controlled vehicle
@@ -70,4 +71,3 @@ export class CollisionSystem {
     this.checkPlayerVehicleCollisions(state);
   }
 }
-

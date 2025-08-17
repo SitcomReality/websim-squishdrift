@@ -44,7 +44,7 @@ export class RenderSystem {
     drawSkidmarks(renderer, state);
     
     // Sort entities by y-position for proper z-ordering
-    const entities = [...state.entities].filter(e => !e.hidden).sort((a, b) => {
+    const entities = [...state.entities].sort((a, b) => {
       // Blood stains should be drawn behind everything
       if (a.type === 'blood' && b.type !== 'blood') return -1;
       if (b.type === 'blood' && a.type !== 'blood') return 1;

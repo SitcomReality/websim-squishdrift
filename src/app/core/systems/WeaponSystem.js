@@ -129,7 +129,13 @@ export class WeaponSystem {
       return;
     }
     
-    const isFiring = input.mousePos && (input.keys.has('MouseLeft') || input.pressed.has('MouseLeft'));
+    if (input.pressed.has('KeyR') && weapon.ammo < weapon.maxAmmo && !debugEnabled) {
+      weapon.isReloading = true;
+      weapon.reloadStartTime = now;
+      return;
+    }
+    
+    const isFiring = input.mousePos && input.keys.has('MouseLeft');
     if (isFiring && now - weapon.lastFireTime >= weapon.fireRate) {
       if (weapon.ammo <= 0 && !debugEnabled) {
         weapon.isReloading = true;
@@ -137,15 +143,11 @@ export class WeaponSystem {
         return;
       }
       
-      // Find the actual player entity (not hidden)
-      const actualPlayer = state.entities.find(e => e.type === 'player');
-      if (actualPlayer && !actualPlayer.hidden) {
-        this.fireProjectile(state, actualPlayer);
-        weapon.lastFireTime = now;
-        
-        if (!debugEnabled) {
-          weapon.ammo--;
-        }
+      this.fireProjectile(state, player);
+      weapon.lastFireTime = now;
+      
+      if (!debugEnabled) {
+        weapon.ammo--;
       }
     }
   }
@@ -153,10 +155,11 @@ export class WeaponSystem {
   fireProjectile(state, player) {
     const weapon = player.equippedWeapon;
     const angle = player.facingAngle || Math.atan2(player.facing.y, player.facing.x);
+    const origin = (state.control?.inVehicle && state.control.vehicle?.pos) ? state.control.vehicle.pos : player.pos;
     
     const projectile = {
       type: 'projectile',
-      pos: new Vec2(player.pos.x, player.pos.y),
+      pos: new Vec2(origin.x, origin.y),
       vel: new Vec2(
         Math.cos(angle) * weapon.projectileSpeed,
         Math.sin(angle) * weapon.projectileSpeed

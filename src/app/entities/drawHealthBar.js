@@ -20,4 +20,3 @@ export function drawHealthBar(r, entity, offsetY = -0.8) {
   
   ctx.restore();
 }
-

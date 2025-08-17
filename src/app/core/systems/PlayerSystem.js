@@ -9,10 +9,22 @@ export class PlayerSystem {
     
     this.ensureHealth(player);
     
+    // Always update facing from mouse (even in vehicle for aiming)
+    this.updateFacingFromMouse(state, player, input);
+    
+    // Always handle interaction so E can exit vehicles
+    this.handleInteraction(state, player, input);
+    
     if (!state.control.inVehicle) {
       this.handlePlayerMovement(state, player, input, dt);
-      this.handleInteraction(state, player, input);
-      this.updateFacingFromMouse(state, player, input);
+    } else {
+      // Keep player "attached" to vehicle while inside
+      const v = state.control.vehicle;
+      if (v && v.pos) {
+        player.pos.x = v.pos.x;
+        player.pos.y = v.pos.y;
+        player.hidden = true;
+      }
     }
   }
 

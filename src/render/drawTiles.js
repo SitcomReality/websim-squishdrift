@@ -13,8 +13,10 @@ export function drawTiles(r, state, layer = 'all'){
     if (layer === 'ground' && floorTypes.has(t)) continue;
     if (layer === 'floors' && !floorTypes.has(t)) continue;
     
-    // Handle zebra crossings with special rendering
-    if (isZebraCrossing(t)) {
+    // Handle special rendering for roundabout centers (grass with circular pattern)
+    if (isRoundaboutCenter(map, gx, gy)) {
+      drawRoundaboutCenter(r, gx, gy, ts);
+    } else if (isZebraCrossing(t)) {
       drawZebraCrossing(r, gx, gy, ts, t);
     } else {
       r.ctx.fillStyle = TileColor[t] || '#f5f5f5';
@@ -26,6 +28,38 @@ export function drawTiles(r, state, layer = 'all'){
       r.ctx.fillRect(gx*ts, gy*ts + ts*0.7, ts, ts*0.3);
     }
   }
+}
+
+function isRoundaboutCenter(map, x, y) {
+  // Check if this is the center of a roundabout
+  const centerTiles = map.roads?.roundabouts?.map(r => ({x: r.cx, y: r.cy})) || [];
+  return centerTiles.some(center => center.x === x && center.y === y);
+}
+
+function drawRoundaboutCenter(r, gx, gy, ts) {
+  const { ctx } = r;
+  
+  // Base grass color
+  ctx.fillStyle = TileColor[Tile.Grass];
+  ctx.fillRect(gx*ts, gy*ts, ts, ts);
+  
+  // Draw circular grass pattern
+  ctx.fillStyle = TileColor[Tile.Grass];
+  ctx.beginPath();
+  ctx.arc(gx*ts + ts/2, gy*ts + ts/2, ts * 0.4, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Draw road color around the circle
+  ctx.fillStyle = TileColor[Tile.RoadN];
+  ctx.fillRect(gx*ts, gy*ts, ts, ts);
+  
+  // Draw grass circle on top
+  ctx.globalCompositeOperation = 'destination-over';
+  ctx.fillStyle = TileColor[Tile.Grass];
+  ctx.beginPath();
+  ctx.arc(gx*ts + ts/2, gy*ts + ts/2, ts * 0.35, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalCompositeOperation = 'source-over';
 }
 
 function isZebraCrossing(tile) {

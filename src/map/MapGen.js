@@ -1,9 +1,7 @@
-import { rng } from '../utils/RNG.js';
-import { CityLayout } from './generation/CityLayout.js';
-import { BlockGenerator } from './generation/BlockGenerator.js';
-import { RoadGenerator } from './generation/RoadGenerator.js';
-import { BuildingGenerator } from './generation/BuildingGenerator.js';
-import { GraphBuilder } from './generation/GraphBuilder.js';
+import { generateCity } from '../../map/MapGen.js';
+import { isWalkable, Tile } from '../../map/TileTypes.js';
+import { rng } from '../../utils/RNG.js';
+import { Vec2 } from '../../utils/Vec2.js';
 
 export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4) {
   const rand = rng(seed);
@@ -22,11 +20,10 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
   const buildingGenerator = new BuildingGenerator(cityLayout, rand);
   const buildings = buildingGenerator.generateBuildings(tiles);
   
-  // Add roundabout trees from road generator
-  buildingGenerator.addRoundaboutTrees(roadGenerator);
-  
-  // Get trees from building generator
-  const trees = buildingGenerator.getTrees();
+  // Get trees from both building generator and road generator
+  const buildingTrees = buildingGenerator.getTrees();
+  const roadTrees = roadGenerator.getTrees();
+  const trees = [...buildingTrees, ...roadTrees];
   
   // Build road and pedestrian graphs
   const graphBuilder = new GraphBuilder();

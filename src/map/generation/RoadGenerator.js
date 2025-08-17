@@ -5,6 +5,7 @@ export class RoadGenerator {
     this.cityLayout = cityLayout;
     this.rand = rand;
     this.roundabouts = [];
+    this.trees = [];
   }
 
   generateRoads(tiles) {
@@ -52,7 +53,23 @@ export class RoadGenerator {
   }
 
   createRoundabout(tiles, cx, cy, isPerimeter) {
-    tiles[cy][cx] = Tile.Median; // Will be overwritten
+    // Change the center median to grass
+    tiles[cy][cx] = Tile.Grass;
+    
+    // Create a tree on the center grass tile
+    const treeHeight = 30 + this.rand() * 50; // Random height between 30-80
+    const treeSize = 0.6 + this.rand() * 0.4; // Random size variation
+    
+    // Add tree to the map's trees array
+    if (!this.trees) this.trees = [];
+    this.trees.push({
+      pos: { x: cx + 0.5, y: cy + 0.5 },
+      trunkHeight: treeHeight,
+      leafHeight: treeHeight * 0.6,
+      leafWidth: 1.2 + this.rand() * 0.3,
+      leafColor: `hsl(${100 + this.rand() * 40}, 60%, ${35 + this.rand() * 20}%)`,
+      trunkColor: `hsl(${30 + this.rand() * 20}, 40%, ${25 + this.rand() * 15}%)`
+    });
     
     const set = (x, y, t) => {
       if (x >= 0 && y >= 0 && x < this.cityLayout.width && y < this.cityLayout.height) {
@@ -68,61 +85,7 @@ export class RoadGenerator {
       this.createPerimeterRoundabout(tiles, cx, cy, set, isPerimeter);
     }
 
-    // Create circular grass median with tree
-    this.createCircularMedian(tiles, cx, cy);
-    
     this.createZebraCrossings(tiles, cx, cy);
-  }
-
-  createCircularMedian(tiles, cx, cy) {
-    // Create circular grass in the center
-    const radius = 0.4; // 40% of tile size
-    const centerX = cx + 0.5;
-    const centerY = cy + 0.5;
-    
-    // Fill with road color first
-    for (let y = cy - 2; y <= cy + 2; y++) {
-      for (let x = cx - 2; x <= cx + 2; x++) {
-        if (x >= 0 && x < this.cityLayout.width && y >= 0 && y < this.cityLayout.height) {
-          // Check if this tile is within the roundabout center
-          if (Math.abs(x - cx) <= 2 && Math.abs(y - cy) <= 2) {
-            tiles[y][x] = Tile.RoadN; // Use road color
-          }
-        }
-      }
-    }
-    
-    // Create circular grass in the very center
-    for (let y = cy - 1; y <= cy + 1; y++) {
-      for (let x = cx - 1; x <= cx + 1; x++) {
-        if (x >= 0 && x < this.cityLayout.width && y >= 0 && y < this.cityLayout.height) {
-          // Check if this tile is the center 3x3
-          if (Math.abs(x - cx) <= 1 && Math.abs(y - cy) <= 1) {
-            tiles[y][x] = Tile.Grass;
-          }
-        }
-      }
-    }
-    
-    // The very center tile gets a tree
-    if (cx >= 0 && cx < this.cityLayout.width && cy >= 0 && cy < this.cityLayout.height) {
-      // Add tree data to be processed by BuildingGenerator
-      if (!this.trees) this.trees = [];
-      
-      // Random tree size for this roundabout
-      const trunkHeight = 15 + this.rand() * 10;
-      const leafSize = (0.5 + this.rand() * 0.3) * 0.5; // 50-80% of base, then 50% reduction
-      
-      this.trees.push({
-        pos: { x: cx + 0.5, y: cy + 0.5 },
-        trunkHeight: trunkHeight,
-        leafHeight: (10 + this.rand() * 5) * leafSize,
-        leafWidth: (1.0 + this.rand() * 0.5) * leafSize,
-        leafColor: `hsl(${100 + this.rand() * 40}, 60%, ${35 + this.rand() * 20}%)`,
-        trunkColor: `hsl(${30 + this.rand() * 20}, 40%, ${25 + this.rand() * 15}%)`,
-        isRoundaboutTree: true // Flag for special handling
-      });
-    }
   }
 
   createZebraCrossings(tiles, cx, cy) {
@@ -210,5 +173,9 @@ export class RoadGenerator {
 
   getRoundabouts() {
     return this.roundabouts;
+  }
+
+  getTrees() {
+    return this.trees || [];
   }
 }

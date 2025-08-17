@@ -90,6 +90,10 @@ export class VehicleCollisionSystem {
   handlePlayerCollision(state, v) {
     const player = state.entities.find(e=>e.type==='player'); if (!player) return;
     player.mass = player.mass || 80; player.vel = player.vel || {x:0,y:0}; player.hitboxW = player.hitboxW ?? 0.6; player.hitboxH = player.hitboxH ?? 0.6; player.rot = 0;
+    
+    // Add collisionDisabled check here
+    if (player.collisionDisabled) return;
+    
     const contact = obbOverlap(entityOBB(v), entityOBB(player,{w:player.hitboxW,h:player.hitboxH}));
     if (!contact) return;
     

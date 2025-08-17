@@ -14,15 +14,8 @@ export class GraphBuilder {
     const byKey = new Map();
     
     const get = (x, y) => (x >= 0 && y >= 0 && x < width && y < height) ? tiles[y][x] : 255;
-    const tileDir = (t) => {
-      switch (t) {
-        case Tile.RoadN: return 'N';
-        case Tile.RoadE: return 'E';
-        case Tile.RoadS: return 'S';
-        case Tile.RoadW: return 'W';
-        default: return null;
-      }
-    };
+    // Use shared roadDir so zebra crossings are included as directed road nodes
+    const tileDir = (t) => roadDir(t);
     const keyOf = (x, y, d) => `${x},${y},${d}`;
     
     // Collect nodes
@@ -94,13 +87,8 @@ export class GraphBuilder {
   }
 
   tileDirFor(t) {
-    switch (t) {
-      case 1: return 'N';
-      case 2: return 'E';
-      case 3: return 'S';
-      case 4: return 'W';
-      default: return null;
-    }
+    // Delegate to shared roadDir so both roads and zebra crossings resolve
+    return roadDir(t);
   }
 
   buildPedGraph(tiles, width, height) {

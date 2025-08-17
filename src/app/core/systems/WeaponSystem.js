@@ -71,8 +71,9 @@ export class WeaponSystem {
       return;
     }
     
-    // Fire on mouse click
-    if (input.keys.has('MouseLeft') && now - weapon.lastFireTime >= weapon.fireRate) {
+    // Fire on mouse click - changed from MouseLeft to check mousePos and click
+    const isFiring = input.mousePos && input.keys.has('MouseLeft');
+    if (isFiring && now - weapon.lastFireTime >= weapon.fireRate) {
       if (weapon.ammo <= 0 && !debugEnabled) {
         // Auto-reload
         weapon.isReloading = true;

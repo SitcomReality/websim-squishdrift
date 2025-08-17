@@ -18,6 +18,20 @@ export class InputSystem {
       target.addEventListener('mouseleave', () => {
         this.mousePos = null;
       });
+      
+      // Add mouse click handling
+      target.addEventListener('mousedown', (e) => {
+        if (e.button === 0) { // Left click
+          this.keys.add('MouseLeft');
+          this.pressed.add('MouseLeft');
+        }
+      });
+      
+      target.addEventListener('mouseup', (e) => {
+        if (e.button === 0) {
+          this.keys.delete('MouseLeft');
+        }
+      });
     }
     
     // Keyboard events

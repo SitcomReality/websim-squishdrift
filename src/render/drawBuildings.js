@@ -258,7 +258,8 @@ function drawTree(r, state, tree) {
     h: leafWidth
   };
   
-  // Draw leaves with 3D effect
+  // Draw leaves with 75% opacity
+  ctx.globalAlpha = 0.75;
   ctx.fillStyle = tree.leafColor;
   
   // Front and back walls
@@ -295,10 +296,13 @@ function drawTree(r, state, tree) {
   ctx.closePath();
   ctx.fill();
   
-  // Draw leaves top
+  // Draw leaves top with 75% opacity
   ctx.fillStyle = tree.leafColor;
   ctx.fillRect(leafRoofRect.x, leafRoofRect.y, leafRoofRect.w, leafRoofRect.h);
   ctx.strokeStyle = 'rgba(0,0,0,0.2)';
   ctx.lineWidth = 1;
   ctx.strokeRect(leafRoofRect.x, leafRoofRect.y, leafRoofRect.w, leafRoofRect.h);
+  
+  // Reset opacity
+  ctx.globalAlpha = 1.0;
 }

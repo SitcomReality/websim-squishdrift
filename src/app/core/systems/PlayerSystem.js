@@ -12,6 +12,7 @@ export class PlayerSystem {
     if (!state.control.inVehicle) {
       this.handlePlayerMovement(state, player, input, dt);
       this.handleInteraction(state, player, input);
+      this.updateFacingFromMouse(state, player, input);
     }
   }
 
@@ -22,24 +23,64 @@ export class PlayerSystem {
   }
 
   handlePlayerMovement(state, player, input, dt) {
-    let dx = 0, dy = 0;
-    if (input.keys.has('KeyW') || input.keys.has('ArrowUp')) dy -= 1;
-    if (input.keys.has('KeyS') || input.keys.has('ArrowDown')) dy += 1;
-    if (input.keys.has('KeyA') || input.keys.has('ArrowLeft')) dx -= 1;
-    if (input.keys.has('KeyD') || input.keys.has('ArrowRight')) dx += 1;
+    // Get movement input relative to player facing
+    let forward = 0, strafe = 0;
+    if (input.keys.has('KeyW') || input.keys.has('ArrowUp')) forward += 1;
+    if (input.keys.has('KeyS') || input.keys.has('ArrowDown')) forward -= 1;
+    if (input.keys.has('KeyA') || input.keys.has('ArrowLeft')) strafe -= 1;
+    if (input.keys.has('KeyD') || input.keys.has('ArrowRight')) strafe += 1;
     
-    if (dx || dy) {
-      const inv = 1 / Math.hypot(dx, dy);
-      dx *= inv; dy *= inv;
+    if (forward || strafe) {
+      // Calculate movement in world space based on player facing
+      const facingAngle = player.facingAngle || 0;
+      const cos = Math.cos(facingAngle);
+      const sin = Math.sin(facingAngle);
       
-      const nx = player.pos.x + dx * player.moveSpeed * dt;
-      const ny = player.pos.y + dy * player.moveSpeed * dt;
+      // Forward/backward movement
+      const dx = forward * cos + strafe * -sin;
+      const dy = forward * sin + strafe * cos;
       
-      if (this.isWalkableTile(state, nx, player.pos.y)) player.pos.x = nx;
-      if (this.isWalkableTile(state, player.pos.x, ny)) player.pos.y = ny;
-      
-      player.facing.x = dx; player.facing.y = dy;
+      // Normalize diagonal movement
+      const len = Math.hypot(dx, dy);
+      if (len > 0) {
+        const normalizedDx = dx / len;
+        const normalizedDy = dy / len;
+        
+        const nx = player.pos.x + normalizedDx * player.moveSpeed * dt;
+        const ny = player.pos.y + normalizedDy * player.moveSpeed * dt;
+        
+        if (this.isWalkableTile(state, nx, player.pos.y)) player.pos.x = nx;
+        if (this.isWalkableTile(state, player.pos.x, ny)) player.pos.y = ny;
+      }
     }
+  }
+
+  updateFacingFromMouse(state, player, input) {
+    // Skip if no canvas or mouse position
+    if (!state.canvas || !input.mousePos) return;
+    
+    const canvas = state.canvas;
+    const ts = state.world.tileSize;
+    
+    // Convert mouse position to world coordinates
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = input.mousePos.x - rect.left;
+    const mouseY = input.mousePos.y - rect.top;
+    
+    // Apply camera transform to get world coordinates
+    const cx = Math.floor(canvas.width / 2);
+    const cy = Math.floor(canvas.height / 2);
+    const worldX = (mouseX - cx) / (state.camera.zoom || 1) + state.camera.x * ts;
+    const worldY = (mouseY - cy) / (state.camera.zoom || 1) + state.camera.y * ts;
+    
+    // Calculate angle from player to mouse
+    const dx = worldX / ts - player.pos.x;
+    const dy = worldY / ts - player.pos.y;
+    player.facingAngle = Math.atan2(dy, dx);
+    
+    // Update facing vector
+    player.facing.x = Math.cos(player.facingAngle);
+    player.facing.y = Math.sin(player.facingAngle);
   }
 
   handleInteraction(state, player, input) {

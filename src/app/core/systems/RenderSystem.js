@@ -18,7 +18,7 @@ export class RenderSystem {
     
     // Clear canvas
     ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, canvas.width, canvas.width);
     
     // Setup camera transform
     const ts = state.world.tileSize;
@@ -98,5 +98,40 @@ export class RenderSystem {
       drawPedestrianDebug(renderer, state);
       drawSpawnDebug(renderer, state);
     }
+    
+    // Draw mouse reticule
+    this.drawMouseReticule(state, renderer);
+  }
+
+  drawMouseReticule(state, renderer) {
+    if (!state.input || !state.input.mousePos || !state.canvas) return;
+    
+    const { ctx } = renderer;
+    const ts = state.world.tileSize;
+    const canvas = state.canvas;
+    
+    // Save current transform
+    ctx.save();
+    
+    // Reset to screen coordinates for reticule
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    
+    // Get mouse position
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = state.input.mousePos.x - rect.left;
+    const mouseY = state.input.mousePos.y - rect.top;
+    
+    // Draw reticule
+    ctx.strokeStyle = '#FF0000';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(mouseX, mouseY, 10, 0, Math.PI * 2);
+    ctx.moveTo(mouseX - 15, mouseY);
+    ctx.lineTo(mouseX + 15, mouseY);
+    ctx.moveTo(mouseX, mouseY - 15);
+    ctx.lineTo(mouseX, mouseY + 15);
+    ctx.stroke();
+    
+    ctx.restore();
   }
 }

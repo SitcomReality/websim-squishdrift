@@ -39,6 +39,7 @@ export class GameEngine {
     
     this.state = createInitialState();
     this.state.control = { inVehicle: false, vehicle: null, equipped: null };
+    this.state.canvas = canvas; // Store canvas reference for mouse tracking
     
     // Initialize EmergencyServices after state is created
     this.emergencyServices = new EmergencyServices(this.state);

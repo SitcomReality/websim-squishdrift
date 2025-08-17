@@ -10,6 +10,7 @@ import { drawHealthBar } from '../../entities/drawHealthBar.js';
 import { drawPedestrianDebug } from '../../../render/drawPedestrianDebug.js';
 import { drawSpawnDebug } from '../../../render/drawSpawnDebug.js';
 import { drawSkidmarks } from '../../../render/drawSkidmarks.js';
+import { drawBlood } from '../../entities/drawBlood.js';
 
 export class RenderSystem {
   render(state, renderer, debugOverlay) {
@@ -39,13 +40,22 @@ export class RenderSystem {
     drawTiles(renderer, state, 'floors');
     drawSkidmarks(renderer, state);
     
-    // Draw entities behind buildings
-    const entitiesBehind = state.entities.filter(e => 
-      e.type === 'npc' || e.type === 'vehicle' || e.type === 'player' || 
-      e.type === 'item' || e.type === 'bullet' || e.type === 'emergency'
-    );
+    // Sort entities by y-position for proper z-ordering
+    // Vehicles and blood stains should be drawn on top
+    const entities = [...state.entities].sort((a, b) => {
+      // Blood stains should be drawn on top of everything
+      if (a.type === 'blood' && b.type !== 'blood') return 1;
+      if (b.type === 'blood' && a.type !== 'blood') return -1;
+      
+      // Vehicles should be drawn on top of other entities
+      if (a.type === 'vehicle' && b.type !== 'vehicle') return 1;
+      if (b.type === 'vehicle' && a.type !== 'vehicle') return -1;
+      
+      // Otherwise sort by y-position for depth
+      return (a.pos.y || 0) - (b.pos.y || 0);
+    });
     
-    for (const entity of entitiesBehind) {
+    for (const entity of entities) {
       switch (entity.type) {
         case 'player':
           drawPlayer(renderer, state, entity);
@@ -63,6 +73,9 @@ export class RenderSystem {
           break;
         case 'emergency':
           drawEmergency(renderer, state, entity);
+          break;
+        case 'blood':
+          drawBlood(renderer, state, entity);
           break;
         case 'bullet':
           ctx.save();

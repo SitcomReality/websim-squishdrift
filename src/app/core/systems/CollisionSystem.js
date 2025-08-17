@@ -3,12 +3,10 @@ import { Vec2 } from '../../utils/Vec2.js';
 export class CollisionSystem {
   constructor() {
     this.collisionPairs = [];
-    this.collisionRadius = 0.35;
-    this.playerVehicleCollisionRadius = 0.75;
   }
 
   // Simple radius-based collision detection
-  checkCollision(entityA, entityB, radius = this.collisionRadius) {
+  checkCollision(entityA, entityB, radius = 0.5) {
     const dx = entityA.pos.x - entityB.pos.x;
     const dy = entityA.pos.y - entityB.pos.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
@@ -25,7 +23,7 @@ export class CollisionSystem {
 
     for (const bullet of bullets) {
       for (const target of targets) {
-        if (this.checkCollision(bullet, target, this.collisionRadius)) {
+        if (this.checkCollision(bullet, target, 0.35)) {
           target.health.takeDamage(25);
           
           // Remove bullet on hit
@@ -48,41 +46,26 @@ export class CollisionSystem {
     const pedestrians = state.entities.filter(e => e.type === 'npc');
 
     for (const vehicle of vehicles) {
-      for (const pedestrian of pedestrians) {
-        if (this.checkCollision(vehicle, pedestrian, 0.6)) {
-          // Pedestrian gets squished - remove from game
-          const pedIndex = state.entities.indexOf(pedestrian);
-          if (pedIndex > -1) {
-            state.entities.splice(pedIndex, 1);
-          }
-          
-          // Add a small visual effect (blood splatter) - for now just log it
-          console.log('Pedestrian squished by vehicle at', pedestrian.pos.x, pedestrian.pos.y);
-        }
-      }
-    }
-  }
-
-  // Check collisions between player and vehicles
-  checkPlayerVehicleCollisions(state) {
-    const player = state.entities.find(e => e.type === 'player');
-    const vehicles = state.entities.filter(e => e.type === 'vehicle');
-    
-    if (!player || !player.health) return;
-    
-    for (const vehicle of vehicles) {
-      if (vehicle.controlled) continue; // Skip player-controlled vehicle
-      
-      if (this.checkCollision(player, vehicle, 0.75)) {
-        player.health.takeDamage(10);
+      for (let i = pedestrians.length - 1; i >= 0; i--) {
+        const pedestrian = pedestrians[i];
         
-        // Simple knockback
-        const dx = player.pos.x - vehicle.pos.x;
-        const dy = player.pos.y - vehicle.pos.y;
-        const len = Math.sqrt(dx * dx + dy * dy);
-        if (len > 0) {
-          player.pos.x += (dx / len) * 0.2;
-          player.pos.y += (dy / len) * 0.2;
+        if (this.checkCollision(vehicle, pedestrian, 0.45)) {
+          // Pedestrian gets squished - create blood stain
+          const bloodStain = {
+            type: 'blood',
+            pos: new Vec2(pedestrian.pos.x, pedestrian.pos.y),
+            size: 0.6 + Math.random() * 0.4,
+            color: `hsl(0, 70%, ${30 + Math.random() * 20}%)`,
+            rotation: Math.random() * Math.PI * 2
+          };
+          
+          state.entities.push(bloodStain);
+          
+          // Remove the pedestrian
+          const pedestrianIndex = state.entities.indexOf(pedestrian);
+          if (pedestrianIndex > -1) {
+            state.entities.splice(pedestrianIndex, 1);
+          }
         }
       }
     }
@@ -91,6 +74,5 @@ export class CollisionSystem {
   update(state) {
     this.checkBulletCollisions(state);
     this.checkVehiclePedestrianCollisions(state);
-    this.checkPlayerVehicleCollisions(state);
   }
 }

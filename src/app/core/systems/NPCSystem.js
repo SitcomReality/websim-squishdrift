@@ -30,7 +30,17 @@ export class NPCSystem {
   updateNPCPosition(ped) {
     const ax = ped.from.x + 0.5, ay = ped.from.y + 0.5;
     const bx = ped.to.x + 0.5, by = ped.to.y + 0.5;
-    ped.pos.x = ax*(1-ped.t) + bx*ped.t;
-    ped.pos.y = ay*(1-ped.t) + by*ped.t;
+    
+    // Add random offset from path center
+    if (!ped.pathOffset) {
+      const maxOffset = 0.075; // About 1/4 of pedestrian width
+      ped.pathOffset = {
+        x: (Math.random() - 0.5) * 2 * maxOffset,
+        y: (Math.random() - 0.5) * 2 * maxOffset
+      };
+    }
+    
+    ped.pos.x = ax*(1-ped.t) + bx*ped.t + ped.pathOffset.x;
+    ped.pos.y = ay*(1-ped.t) + by*ped.t + ped.pathOffset.y;
   }
 }

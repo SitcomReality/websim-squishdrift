@@ -225,6 +225,14 @@ export class GameEngine {
     if (existingVehicles < maxVehicles) {
       const roads = this.state.world.map.roads;
       const validSpawns = roads.nodes.filter(node => {
+        // Check distance to existing vehicles
+        const tooCloseToVehicle = this.state.entities.some(e => 
+          e.type === 'vehicle' && 
+          Math.hypot(e.pos.x - (node.x + 0.5), e.pos.y - (node.y + 0.5)) < 1.5
+        );
+        
+        if (tooCloseToVehicle) return false;
+        
         const distance = Math.hypot(node.x - referencePos.x, node.y - referencePos.y);
         return distance <= outerSpawnRadius && distance >= innerSpawnRadius && node.next && node.next.length > 0;
       });

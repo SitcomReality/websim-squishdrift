@@ -37,36 +37,35 @@ export class BuildingGenerator {
       const buildingRect = {
         x: ox + interiorStart + lot.x,
         y: oy + interiorStart + lot.y,
-        width: 2 + 2,
+        width: 2,
         height: 2,
       };
 
       if (isBuilding) {
-        // 30% chance for octagonal building
-        const isOctagon = this.rand() < 0.3;
-        
-        this.createBuilding(tiles, buildingRect, isOctagon);
+        this.createBuilding(tiles, buildingRect);
       } else {
         this.createPark(tiles, buildingRect);
       }
     }
   }
 
-  createBuilding(tiles, rect, isOctagon = false) {
+  createBuilding(tiles, rect) {
     const building = {
       rect,
       height: 40 + this.rand() * 80,
-      color: `hsl(${Math.floor(this.rand() * 40 + 190)}, 20%, ${Math.floor(this.rand() * 20 + 55)}%)`,
-      shape: isOctagon ? 'octagon' : 'rectangle'
+      color: `hsl(${Math.floor(this.rand() * 40 + 190)}, 20%, ${Math.floor(this.rand() * 20 + 55)}%)`
     };
     this.buildings.push(building);
 
-    // Create building floor
+    // Create building with floor and walls
     for (let ly = 0; ly < rect.height; ly++) {
       for (let lx = 0; lx < rect.width; lx++) {
         const tx = rect.x + lx;
         const ty = rect.y + ly;
-        tiles[ty][tx] = Tile.BuildingFloor;
+        
+        const isWall = (lx === 0 || lx === rect.width - 1 || 
+                       ly === 0 || ly === rect.height - 1);
+        tiles[ty][tx] = isWall ? Tile.BuildingWall : Tile.BuildingFloor;
       }
     }
   }

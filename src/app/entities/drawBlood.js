@@ -10,7 +10,7 @@ export function drawBlood(r, state, blood) {
   ctx.beginPath();
   
   // Create an irregular blood stain shape - use fixed random values
-  const size = ts * (blood.size || 0.5) * 0.25; // Reduced to 25% size
+  const size = ts * (blood.size || 0.5) * 0.375; // Increased from 0.25 to 0.375 (50% increase)
   const segments = 8;
   const random = blood.random || [];
   

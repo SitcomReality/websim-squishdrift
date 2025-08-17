@@ -11,8 +11,27 @@ export class AIDrivingSystem {
         this.initializeRoute(v, roads);
       }
 
+      // Ensure we always have nodes in our path
+      this.ensurePathContinues(v, roads);
+      
       this.updateRouteFollowing(state, v, roads, dt);
       this.updateMovement(v, dt);
+    }
+  }
+
+  ensurePathContinues(v, roads) {
+    // Always maintain at least 4 nodes ahead
+    const MIN_PATH_LENGTH = 4;
+    
+    if (v.plannedRoute.length < MIN_PATH_LENGTH) {
+      const lastNode = v.plannedRoute[v.plannedRoute.length - 1];
+      if (lastNode) {
+        const newNodes = this.buildPathAhead(lastNode, MIN_PATH_LENGTH - v.plannedRoute.length + 1, roads);
+        if (newNodes.length > 1) {
+          // Add new nodes except the first one (which is duplicate of lastNode)
+          v.plannedRoute.push(...newNodes.slice(1));
+        }
+      }
     }
   }
 
@@ -68,59 +87,17 @@ export class AIDrivingSystem {
       v.pos.y - targetPos.y
     );
     
-    // Check if we're closer to a later node in the path
-    let newTargetIndex = v.currentPathIndex;
-    for (let i = v.currentPathIndex + 1; i < v.plannedRoute.length; i++) {
-      const laterNode = v.plannedRoute[i];
-      const laterPos = { x: laterNode.x + 0.5, y: laterNode.y + 0.5 };
-      const distToLater = Math.hypot(v.pos.x - laterPos.x, v.pos.y - laterPos.y);
-      
-      if (distToLater < distanceToTarget) {
-        newTargetIndex = i;
-        break;
-      }
-    }
-    
-    // If we found a closer node, skip to it and rebuild path
-    if (newTargetIndex !== v.currentPathIndex) {
-      v.currentPathIndex = newTargetIndex;
-      
-      // Rebuild remaining path
-      const remainingPath = v.plannedRoute.slice(v.currentPathIndex);
-      const additionalNodes = this.buildPathAhead(
-        remainingPath[remainingPath.length - 1], 
-        4 - remainingPath.length + 1, 
-        roads
-      );
-      
-      v.plannedRoute = [...remainingPath, ...additionalNodes.slice(1)];
-      v.currentPathIndex = 0;
-    }
-    
-    // If we've reached the target node
+    // Check if we've reached the target node
     const ARRIVAL_TOLERANCE = 0.75;
     if (distanceToTarget < ARRIVAL_TOLERANCE) {
       v.currentPathIndex++;
       
-      // If we've reached the end of planned route or need more nodes
+      // If we've reached the end of current path, extend it
       if (v.currentPathIndex >= v.plannedRoute.length) {
-        // Remove consumed nodes and add new ones to maintain 4-node buffer
-        const remainingNodes = v.plannedRoute.slice(v.currentPathIndex);
-        const newNodes = this.buildPathAhead(
-          remainingNodes[0] || v.plannedRoute[v.plannedRoute.length - 1], 
-          4, 
-          roads
-        );
-        
-        v.plannedRoute = [...remainingNodes, ...newNodes.slice(remainingNodes.length)];
-        v.currentPathIndex = 0;
-      }
-      
-      // Ensure we always have at least 4 nodes in path
-      if (v.plannedRoute.length < 4) {
         const lastNode = v.plannedRoute[v.plannedRoute.length - 1];
-        const additionalNodes = this.buildPathAhead(lastNode, 4 - v.plannedRoute.length, roads);
-        v.plannedRoute = [...v.plannedRoute, ...additionalNodes.slice(1)];
+        const newNodes = this.buildPathAhead(lastNode, 4, roads);
+        v.plannedRoute = newNodes;
+        v.currentPathIndex = 0;
       }
     }
     

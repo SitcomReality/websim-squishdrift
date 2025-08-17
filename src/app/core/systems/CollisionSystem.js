@@ -53,15 +53,21 @@ export class CollisionSystem {
           // Pedestrian gets squished - create blood stain
           const bloodStain = {
             type: 'blood',
-            pos: new Vec2(pedestrian.pos.x, pedestrian.pos.y),
+            pos: new (require('../../utils/Vec2.js').Vec2 || Object) (pedestrian.pos.x, pedestrian.pos.y),
             size: 0.6 + Math.random() * 0.4,
             color: `hsl(0, 70%, ${30 + Math.random() * 20}%)`,
             rotation: Math.random() * Math.PI * 2
           };
           
-          state.entities.push(bloodStain);
+          // push blood and remove pedestrian entity
+          state.entities.push({
+            type: 'blood',
+            pos: { x: pedestrian.pos.x, y: pedestrian.pos.y },
+            size: bloodStain.size,
+            color: bloodStain.color,
+            rotation: bloodStain.rotation
+          });
           
-          // Remove the pedestrian
           const pedestrianIndex = state.entities.indexOf(pedestrian);
           if (pedestrianIndex > -1) {
             state.entities.splice(pedestrianIndex, 1);

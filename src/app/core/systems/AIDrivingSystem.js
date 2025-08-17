@@ -103,8 +103,8 @@ export class AIDrivingSystem {
       const currentPos = { x: currentNode.x + 0.5, y: currentNode.y + 0.5 };
       
       // Predictive steering with look-ahead
-      const PREDICTION_TIME = 0.8; // Increased from 0.5 for better prediction
-      const LOOK_AHEAD_DISTANCE = 2.0; // Look ahead 2 tiles
+      const PREDICTION_TIME = 0.8;
+      const LOOK_AHEAD_DISTANCE = 2.0;
       
       // Calculate look-ahead target based on velocity
       const currentSpeed = Math.hypot(v.vel?.x || 0, v.vel?.y || 0);
@@ -143,7 +143,7 @@ export class AIDrivingSystem {
       const diff = wrapAngle(desired - (v.rot || 0));
       
       // Improved steering with velocity-based damping
-      const steerK = 4.0; // Reduced from 6.0 for smoother turns
+      const steerK = 4.0;
       const velocityDamping = Math.min(1, currentSpeed / 4.0);
       const steering = clamp(diff * steerK * (1 - velocityDamping * 0.2), -1, 1);
       
@@ -158,14 +158,13 @@ export class AIDrivingSystem {
       
       if (zebraCrossingDistance !== null) {
         // Reduce speed based on distance to zebra crossing
-        const minDistance = 2; // nodes
-        const maxDistance = 5; // nodes
+        const minDistance = 2;
+        const maxDistance = 5;
         let speedMultiplier = 1.0;
         
         if (zebraCrossingDistance <= minDistance) {
-          speedMultiplier = 0.3; // Slow down significantly
+          speedMultiplier = 0.3;
         } else if (zebraCrossingDistance <= maxDistance) {
-          // Gradually reduce speed as we get closer
           const factor = (zebraCrossingDistance - minDistance) / (maxDistance - minDistance);
           speedMultiplier = 0.3 + (factor * 0.7);
         }
@@ -237,14 +236,12 @@ export class AIDrivingSystem {
   }
 
   calculatePathOffset(v, currentNode) {
-    // Calculate how far the vehicle is from the ideal path center
     const pathCenter = { x: currentNode.x + 0.5, y: currentNode.y + 0.5 };
     const offset = {
       x: v.pos.x - pathCenter.x,
       y: v.pos.y - pathCenter.y
     };
     
-    // Project offset onto perpendicular to path direction
     const pathAngle = this.getPathAngle(currentNode);
     const perpX = -Math.sin(pathAngle);
     const perpY = Math.cos(pathAngle);
@@ -265,14 +262,14 @@ export class AIDrivingSystem {
   findZebraCrossingDistance(v) {
     if (!v.plannedRoute || v.currentPathIndex === undefined) return null;
     
-    const zebraCrossingTypes = [11, 12, 13, 14]; // Zebra crossing tile types
+    const zebraCrossingTypes = [11, 12, 13, 14];
     
     for (let i = v.currentPathIndex; i < v.plannedRoute.length; i++) {
       const node = v.plannedRoute[i];
       const tileType = window.state?.world?.map?.tiles[node.y]?.[node.x];
       
       if (zebraCrossingTypes.includes(tileType)) {
-        return i - v.currentPathIndex; // Distance in nodes
+        return i - v.currentPathIndex;
       }
     }
     
@@ -280,7 +277,6 @@ export class AIDrivingSystem {
   }
 
   updateMovement(v, dt) {
-    // Ensure basic physics properties exist
     v.vel = v.vel || { x: 0, y: 0 };
     v.rot = v.rot || 0;
     v.angularVelocity = v.angularVelocity || 0;

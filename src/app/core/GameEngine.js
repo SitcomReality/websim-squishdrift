@@ -15,6 +15,7 @@ import { VehicleCollisionSystem } from '../vehicles/physics/VehicleCollisionSyst
 import { AIDrivingSystem } from './systems/AIDrivingSystem.js';
 import { SkidmarkSystem } from './systems/SkidmarkSystem.js';
 import { Tile } from '../../map/TileTypes.js';
+import { BloodManager } from '../entities/drawBlood.js';
 
 export class GameEngine {
   constructor(canvas, { debugEl } = {}) {
@@ -41,6 +42,9 @@ export class GameEngine {
     
     // Initialize EmergencyServices after state is created
     this.emergencyServices = new EmergencyServices(this.state);
+    
+    // Initialize BloodManager
+    this.state.bloodManager = new BloodManager(20); // 20 blood puddles max
     
     // Start with debug overlay disabled by default
     this.debugOverlay.enabled = false;

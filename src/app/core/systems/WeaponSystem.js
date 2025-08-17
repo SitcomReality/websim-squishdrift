@@ -85,6 +85,9 @@ export class WeaponSystem {
         player.equippedWeapon.lastFireTime = 0;
         player.equippedWeapon.isReloading = false;
         
+        // Show pickup text
+        this.damageTextSystem.addPickupText(state, weapon.pos, weapon.weaponType.toUpperCase());
+        
         state.entities.splice(state.entities.indexOf(weapon), 1);
         
         // Create ammo bar if it doesn't exist

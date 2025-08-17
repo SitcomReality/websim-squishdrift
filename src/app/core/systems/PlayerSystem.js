@@ -178,7 +178,26 @@ export class PlayerSystem {
   }
 
   pickupItem(state, player) {
-    // Existing item pickup logic...
+    const items = state.entities.filter(e => e.type === 'item');
+    for (let i = items.length - 1; i >= 0; i--) {
+      const item = items[i];
+      if (Math.hypot(player.pos.x - item.pos.x, player.pos.y - item.pos.y) < 1) {
+        // Show pickup text using the damage text system
+        if (state.damageTexts) {
+          const damageTextSystem = new (require('./DamageTextSystem.js').DamageTextSystem)();
+          damageTextSystem.addPickupText(state, item.pos, item.name.toUpperCase());
+        }
+        
+        // Add to inventory or equip
+        state.inventory = state.inventory || [];
+        state.inventory.push(item);
+        
+        const itemNameEl = document.getElementById('item-name');
+        if (itemNameEl) itemNameEl.textContent = item.name;
+        
+        state.entities.splice(state.entities.indexOf(item), 1);
+      }
+    }
   }
 
   isWalkableTile(state, x, y) {

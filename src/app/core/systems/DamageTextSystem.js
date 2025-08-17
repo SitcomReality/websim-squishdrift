@@ -55,4 +55,18 @@ export class DamageTextSystem {
     
     state.damageTexts.push(floatingText);
   }
+
+  addPickupText(state, pos, itemName, color = '#4CAF50') {
+    const pickupText = {
+      type: 'pickup_text',
+      pos: { x: pos.x, y: pos.y - 0.5 }, // Offset slightly above pickup
+      text: itemName,
+      color,
+      age: 0,
+      lifetime: 2.0, // Longer duration for pickups
+      size: 16 // Slightly larger for visibility
+    };
+    
+    state.damageTexts.push(pickupText);
+  }
 }

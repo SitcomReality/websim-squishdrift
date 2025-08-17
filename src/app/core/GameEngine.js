@@ -164,10 +164,6 @@ export class GameEngine {
         : player.pos;
       
       const distance = Math.hypot(entity.pos.x - referencePos.x, entity.pos.y - referencePos.y);
-      
-      // Always keep trees visible - don't despawn them
-      if (entity.type === 'tree') continue;
-      
       if (distance > despawnRadius) {
         this.state.entities.splice(i, 1);
       }
@@ -267,50 +263,6 @@ export class GameEngine {
           ctrl: { throttle: 0, brake: 0, steer: 0 },
           mass: 1200, maxSpeed: 4, engineForce: 900, brakeForce: 1600,
           rollingRes: 1.0, drag: 0.25, grip: 6.0, steerRate: 2.5
-        });
-      }
-    }
-
-    // Spawn trees separately from other entities
-    this.spawnTrees(referencePos, innerSpawnRadius, outerSpawnRadius);
-  }
-
-  spawnTrees(referencePos, innerSpawnRadius, outerSpawnRadius) {
-    const existingTrees = this.state.entities.filter(e => e.type === 'tree');
-    
-    // Spawn new trees if below threshold
-    const maxTrees = 50;
-    if (existingTrees.length < maxTrees) {
-      // Find park tiles for tree spawning
-      const parkTiles = [];
-      const map = this.state.world.map;
-      
-      for (let y = 0; y < map.height; y++) {
-        for (let x = 0; x < map.width; x++) {
-          if (map.tiles[y][x] === Tile.Park) {
-            parkTiles.push({ x: x + 0.5, y: y + 0.5 });
-          }
-        }
-      }
-      
-      // Filter by distance
-      const validSpawns = parkTiles.filter(tile => {
-        const distance = Math.hypot(tile.x - referencePos.x, tile.y - referencePos.y);
-        return distance <= outerSpawnRadius && distance >= innerSpawnRadius;
-      });
-      
-      // Spawn trees in valid locations
-      for (let i = 0; i < Math.min(3, validSpawns.length); i++) {
-        const pos = validSpawns[Math.floor(this.state.rand() * validSpawns.length)];
-        
-        this.state.entities.push({
-          type: 'tree',
-          pos: { x: pos.x, y: pos.y },
-          trunkHeight: 20 + this.state.rand() * 15,
-          leafHeight: (15 + this.state.rand() * 10) * 0.5,
-          leafWidth: (1.5 + this.state.rand() * 0.5) * 0.5,
-          leafColor: `hsl(${100 + this.state.rand() * 40}, 60%, ${35 + this.state.rand() * 20}%)`,
-          trunkColor: `hsl(${30 + this.state.rand() * 20}, 40%, ${25 + this.state.rand() * 15}%)`
         });
       }
     }

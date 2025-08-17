@@ -14,6 +14,7 @@ export const Tile = {
   ZebraCrossingE: 12,
   ZebraCrossingS: 13,
   ZebraCrossingW: 14,
+  RoundaboutCenter: 15, // new: special center tile with circular grass + tree
 };
 
 export const TileColor = {
@@ -32,6 +33,7 @@ export const TileColor = {
   [Tile.ZebraCrossingE]: '#6a6a6a',
   [Tile.ZebraCrossingS]: '#6a6a6a',
   [Tile.ZebraCrossingW]: '#6a6a6a',
+  [Tile.RoundaboutCenter]: '#2F2F2F', // base road background for roundabout center
 };
 
 export function isWalkable(t) { 

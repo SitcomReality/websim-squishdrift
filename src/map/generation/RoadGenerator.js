@@ -5,7 +5,6 @@ export class RoadGenerator {
     this.cityLayout = cityLayout;
     this.rand = rand;
     this.roundabouts = [];
-    this.trees = [];
   }
 
   generateRoads(tiles) {
@@ -53,23 +52,9 @@ export class RoadGenerator {
   }
 
   createRoundabout(tiles, cx, cy, isPerimeter) {
-    // Change the center median to grass
-    tiles[cy][cx] = Tile.Grass;
-    
-    // Create a tree on the center grass tile
-    const treeHeight = 30 + this.rand() * 50; // Random height between 30-80
-    const treeSize = 0.6 + this.rand() * 0.4; // Random size variation
-    
-    // Add tree to the map's trees array
-    if (!this.trees) this.trees = [];
-    this.trees.push({
-      pos: { x: cx + 0.5, y: cy + 0.5 },
-      trunkHeight: treeHeight,
-      leafHeight: treeHeight * 0.6,
-      leafWidth: 1.2 + this.rand() * 0.3,
-      leafColor: `hsl(${100 + this.rand() * 40}, 60%, ${35 + this.rand() * 20}%)`,
-      trunkColor: `hsl(${30 + this.rand() * 20}, 40%, ${25 + this.rand() * 15}%)`
-    });
+    // Mark center as a special roundabout center tile (will be drawn as road background
+    // with a circular grass patch). We keep separate metadata via roundabouts array.
+    tiles[cy][cx] = Tile.RoundaboutCenter;
     
     const set = (x, y, t) => {
       if (x >= 0 && y >= 0 && x < this.cityLayout.width && y < this.cityLayout.height) {
@@ -173,9 +158,5 @@ export class RoadGenerator {
 
   getRoundabouts() {
     return this.roundabouts;
-  }
-
-  getTrees() {
-    return this.trees || [];
   }
 }

@@ -97,87 +97,169 @@ export class AIDrivingSystem {
       v.currentPathIndex = 0;
     }
     
-    // Check for upcoming zebra crossings and adjust speed
-    const zebraCrossingDistance = this.findZebraCrossingDistance(v);
-    const baseSpeed = 3.0;
-    
-    if (zebraCrossingDistance !== null) {
-      // Reduce speed based on distance to zebra crossing
-      const minDistance = 2; // nodes
-      const maxDistance = 5; // nodes
-      let speedMultiplier = 1.0;
-      
-      if (zebraCrossingDistance <= minDistance) {
-        speedMultiplier = 0.3; // Slow down significantly
-      } else if (zebraCrossingDistance <= maxDistance) {
-        // Gradually reduce speed as we get closer
-        const factor = (zebraCrossingDistance - minDistance) / (maxDistance - minDistance);
-        speedMultiplier = 0.3 + (factor * 0.7);
-      }
-      
-      v.aiTargetSpeed = baseSpeed * speedMultiplier;
-    } else {
-      v.aiTargetSpeed = baseSpeed;
-    }
-    
-    // If we've reached the target node
-    const ARRIVAL_TOLERANCE = 0.75;
-    if (distanceToTarget < ARRIVAL_TOLERANCE) {
-      v.currentPathIndex++;
-      
-      // If we've reached the end of planned route or need more nodes
-      if (v.currentPathIndex >= v.plannedRoute.length || 
-          v.plannedRoute.length < 4) {
-        
-        // Get last node in path
-        const lastNode = v.plannedRoute[v.plannedRoute.length - 1];
-        const newNodes = this.buildPathAhead(lastNode, 4, roads);
-        
-        // Replace current path with new extended path
-        v.plannedRoute = newNodes;
-        v.currentPathIndex = 0;
-      }
-    }
-    
     // Update waypoint following based on current target
     const currentNode = v.plannedRoute[v.currentPathIndex];
     if (currentNode) {
       const currentPos = { x: currentNode.x + 0.5, y: currentNode.y + 0.5 };
       
-      // Predictive steering
-      const PREDICTION_TIME = 0.5;
-      const currentSpeed = Math.hypot(v.vel?.x || 0, v.vel?.y || 0);
-      const futureTarget = {
-        x: currentPos.x + (v.vel?.x || 0) * PREDICTION_TIME,
-        y: currentPos.y + (v.vel?.y || 0) * PREDICTION_TIME
-      };
+      // Predictive steering with look-ahead
+      const PREDICTION_TIME = 0.8; // Increased from 0.5 for better prediction
+      const LOOK_AHEAD_DISTANCE = 2.0; // Look ahead 2 tiles
       
-      const toT = { x: futureTarget.x - v.pos.x, y: futureTarget.y - v.pos.y };
+      // Calculate look-ahead target based on velocity
+      const currentSpeed = Math.hypot(v.vel?.x || 0, v.vel?.y || 0);
+      const lookAheadFactor = Math.min(LOOK_AHEAD_DISTANCE, currentSpeed * PREDICTION_TIME);
+      
+      // Use quadratic bezier curve smoothing
+      const nextNode = v.plannedRoute[v.currentPathIndex + 1];
+      let targetPoint = currentPos;
+      
+      if (nextNode) {
+        const nextPos = { x: nextNode.x + 0.5, y: nextNode.y + 0.5 };
+        
+        // Create smooth curve between current and next node
+        const midPoint = {
+          x: (currentPos.x + nextPos.x) / 2,
+          y: (currentPos.y + nextPos.y) / 2
+        };
+        
+        // Use bezier interpolation
+        const t = Math.min(1, distanceToTarget / 2.0);
+        targetPoint = {
+          x: (1-t)*(1-t)*currentPos.x + 2*(1-t)*t*midPoint.x + t*t*nextPos.x,
+          y: (1-t)*(1-t)*currentPos.y + 2*(1-t)*t*midPoint.y + t*t*nextPos.y
+        };
+      }
+      
+      // Add velocity-based look-ahead
+      targetPoint.x += (v.vel?.x || 0) * lookAheadFactor;
+      targetPoint.y += (v.vel?.y || 0) * lookAheadFactor;
+      
+      const toT = { x: targetPoint.x - v.pos.x, y: targetPoint.y - v.pos.y };
       const dist = Math.hypot(toT.x, toT.y) || 1;
       const desired = Math.atan2(toT.y, toT.x);
+      
+      // Smoother angle wrapping and steering
       const diff = wrapAngle(desired - (v.rot || 0));
       
-      // Steering with velocity damping
-      const steerK = 6.0;
+      // Improved steering with velocity-based damping
+      const steerK = 4.0; // Reduced from 6.0 for smoother turns
       const velocityDamping = Math.min(1, currentSpeed / 4.0);
-      v.ctrl.steer = clamp(diff * steerK * (1 - velocityDamping * 0.3), -1, 1);
+      const steering = clamp(diff * steerK * (1 - velocityDamping * 0.2), -1, 1);
       
-      // Speed control based on zebra crossing proximity
-      const turnSlow = 1 / (1 + 2 * Math.abs(diff));
-      const targetSpeed = v.aiTargetSpeed * turnSlow;
+      // Add small correction based on distance from path center
+      const pathOffset = this.calculatePathOffset(v, currentNode);
+      const correctionFactor = 0.5;
+      v.ctrl.steer = steering + (pathOffset * correctionFactor);
       
-      const fwd = { x: Math.cos(v.rot || 0), y: Math.sin(v.rot || 0) };
-      const vLong = (v.vel?.x || 0) * fwd.x + (v.vel?.y || 0) * fwd.y;
+      // Check for upcoming zebra crossings and adjust speed
+      const zebraCrossingDistance = this.findZebraCrossingDistance(v);
+      const baseSpeed = 3.0;
       
-      const accelBand = 0.2;
-      if (Math.abs(vLong - targetSpeed) < accelBand) {
-        v.ctrl.throttle = 0; v.ctrl.brake = 0;
-      } else if (vLong < targetSpeed - accelBand) {
-        v.ctrl.throttle = 1; v.ctrl.brake = 0;
-      } else if (vLong > targetSpeed + accelBand) {
-        v.ctrl.throttle = 0; v.ctrl.brake = 0.5;
+      if (zebraCrossingDistance !== null) {
+        // Reduce speed based on distance to zebra crossing
+        const minDistance = 2; // nodes
+        const maxDistance = 5; // nodes
+        let speedMultiplier = 1.0;
+        
+        if (zebraCrossingDistance <= minDistance) {
+          speedMultiplier = 0.3; // Slow down significantly
+        } else if (zebraCrossingDistance <= maxDistance) {
+          // Gradually reduce speed as we get closer
+          const factor = (zebraCrossingDistance - minDistance) / (maxDistance - minDistance);
+          speedMultiplier = 0.3 + (factor * 0.7);
+        }
+        
+        v.aiTargetSpeed = baseSpeed * speedMultiplier;
+      } else {
+        v.aiTargetSpeed = baseSpeed;
+      }
+      
+      // If we've reached the target node
+      const ARRIVAL_TOLERANCE = 0.75;
+      if (distanceToTarget < ARRIVAL_TOLERANCE) {
+        v.currentPathIndex++;
+        
+        // If we've reached the end of planned route or need more nodes
+        if (v.currentPathIndex >= v.plannedRoute.length || 
+            v.plannedRoute.length < 4) {
+          
+          // Get last node in path
+          const lastNode = v.plannedRoute[v.plannedRoute.length - 1];
+          const newNodes = this.buildPathAhead(lastNode, 4, roads);
+          
+          // Replace current path with new extended path
+          v.plannedRoute = newNodes;
+          v.currentPathIndex = 0;
+        }
+      }
+      
+      // Update waypoint following based on current target
+      const currentNode = v.plannedRoute[v.currentPathIndex];
+      if (currentNode) {
+        const currentPos = { x: currentNode.x + 0.5, y: currentNode.y + 0.5 };
+        
+        // Predictive steering
+        const PREDICTION_TIME = 0.5;
+        const currentSpeed = Math.hypot(v.vel?.x || 0, v.vel?.y || 0);
+        const futureTarget = {
+          x: currentPos.x + (v.vel?.x || 0) * PREDICTION_TIME,
+          y: currentPos.y + (v.vel?.y || 0) * PREDICTION_TIME
+        };
+        
+        const toT = { x: futureTarget.x - v.pos.x, y: futureTarget.y - v.pos.y };
+        const dist = Math.hypot(toT.x, toT.y) || 1;
+        const desired = Math.atan2(toT.y, toT.x);
+        const diff = wrapAngle(desired - (v.rot || 0));
+        
+        // Steering with velocity damping
+        const steerK = 6.0;
+        const velocityDamping = Math.min(1, currentSpeed / 4.0);
+        v.ctrl.steer = clamp(diff * steerK * (1 - velocityDamping * 0.3), -1, 1);
+        
+        // Speed control based on zebra crossing proximity
+        const turnSlow = 1 / (1 + 2 * Math.abs(diff));
+        const targetSpeed = v.aiTargetSpeed * turnSlow;
+        
+        const fwd = { x: Math.cos(v.rot || 0), y: Math.sin(v.rot || 0) };
+        const vLong = (v.vel?.x || 0) * fwd.x + (v.vel?.y || 0) * fwd.y;
+        
+        const accelBand = 0.2;
+        if (Math.abs(vLong - targetSpeed) < accelBand) {
+          v.ctrl.throttle = 0; v.ctrl.brake = 0;
+        } else if (vLong < targetSpeed - accelBand) {
+          v.ctrl.throttle = 1; v.ctrl.brake = 0;
+        } else if (vLong > targetSpeed + accelBand) {
+          v.ctrl.throttle = 0; v.ctrl.brake = 0.5;
+        }
       }
     }
+  }
+
+  calculatePathOffset(v, currentNode) {
+    // Calculate how far the vehicle is from the ideal path center
+    const pathCenter = { x: currentNode.x + 0.5, y: currentNode.y + 0.5 };
+    const offset = {
+      x: v.pos.x - pathCenter.x,
+      y: v.pos.y - pathCenter.y
+    };
+    
+    // Project offset onto perpendicular to path direction
+    const pathAngle = this.getPathAngle(currentNode);
+    const perpX = -Math.sin(pathAngle);
+    const perpY = Math.cos(pathAngle);
+    
+    return offset.x * perpX + offset.y * perpY;
+  }
+
+  getPathAngle(node) {
+    const dirVec = {
+      'N': -Math.PI/2,
+      'E': 0,
+      'S': Math.PI/2,
+      'W': Math.PI
+    };
+    return dirVec[node.dir] || 0;
   }
 
   findZebraCrossingDistance(v) {

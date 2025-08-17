@@ -69,26 +69,26 @@ export class GraphBuilder {
       // NW quadrant: S/W optional turn
       for (let x = cx - 2; x <= cx - 1; x++) for (let y = cy - 2; y <= cy - 1; y++) {
         const d = dirAt(x, y); if (!d) continue;
-        const [tx, ty] = d === 'S' ? [x - 1, y] : d === 'W' ? [x, y + 1] : [null, null];
-        if (tx != null) tryLink(x, y, d, tx, ty);
+        if (d === 'S') tryLink(x, y, d, x - 1, y); // Option to turn West
+        if (d === 'W') tryLink(x, y, d, x, y + 1); // Option to turn South
       }
       // NE quadrant: N/W optional turn
       for (let x = cx + 1; x <= cx + 2; x++) for (let y = cy - 2; y <= cy - 1; y++) {
         const d = dirAt(x, y); if (!d) continue;
-        const [tx, ty] = d === 'N' ? [x - 1, y] : d === 'W' ? [x, y - 1] : [null, null];
-        if (tx != null) tryLink(x, y, d, tx, ty);
+        if (d === 'N') tryLink(x, y, d, x - 1, y); // Option to turn West
+        if (d === 'W') tryLink(x, y, d, x, y - 1); // Option to turn North
       }
       // SW quadrant: S/E optional turn
       for (let x = cx - 2; x <= cx - 1; x++) for (let y = cy + 1; y <= cy + 2; y++) {
         const d = dirAt(x, y); if (!d) continue;
-        const [tx, ty] = d === 'S' ? [x + 1, y] : d === 'E' ? [x, y + 1] : [null, null];
-        if (tx != null) tryLink(x, y, d, tx, ty);
+        if (d === 'S') tryLink(x, y, d, x + 1, y); // Option to turn East
+        if (d === 'E') tryLink(x, y, d, x, y + 1); // Option to turn South
       }
       // SE quadrant: N/E optional turn
       for (let x = cx + 1; x <= cx + 2; x++) for (let y = cy + 1; y <= cy + 2; y++) {
         const d = dirAt(x, y); if (!d) continue;
-        const [tx, ty] = d === 'N' ? [x + 1, y] : d === 'E' ? [x, y - 1] : [null, null];
-        if (tx != null) tryLink(x, y, d, tx, ty);
+        if (d === 'N') tryLink(x, y, d, x + 1, y); // Option to turn East
+        if (d === 'E') tryLink(x, y, d, x, y - 1); // Option to turn North
       }
     }
   }

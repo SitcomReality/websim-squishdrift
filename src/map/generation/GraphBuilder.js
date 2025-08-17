@@ -50,77 +50,58 @@ export class GraphBuilder {
       }
     }
     
-    // Augment exits for roundabouts
-    this.augmentRoundaboutExits(byKey, roundabouts);
+    // Handle roundabout special cases
+    this.createRoundaboutConnections(byKey, roundabouts, nodes);
     
     return { nodes, byKey };
   }
 
-  augmentRoundaboutExits(byKey, roundabouts) {
-    for (const { cx, cy, isPerimeter } of roundabouts) {
-      const addExit = (x, y, ex, ey) => {
-        const fromKey = `${x},${y},${roadDir(byKey.get(`${x},${y}`)?.dir)}`;
-        const fromNode = byKey.get(fromKey);
-        const toDir = roadDir(byKey.get(`${ex},${ey}`)?.dir);
-        
-        if (fromNode && toDir) {
-          const alreadyExists = fromNode.next.some(n => n.x === ex && n.y === ey);
-          if (!alreadyExists) {
-            fromNode.next.push({ x: ex, y: ey, dir: toDir });
-          }
-        }
-      };
-
-      // Add turning links for all four quadrants
+  createRoundaboutConnections(byKey, roundabouts, nodes) {
+    for (const { cx, cy } of roundabouts) {
+      // Define the 2x2 quadrants for each corner
       const quadrants = [
-        { xRange: [cx - 2, cx - 1], yRange: [cy - 2, cy - 1], dir: 'NW' },
-        { xRange: [cx + 1, cx + 2], yRange: [cy - 2, cy - 1], dir: 'NE' },
-        { xRange: [cx - 2, cx - 1], yRange: [cy + 1, cy + 2], dir: 'SW' },
-        { xRange: [cx + 1, cx + 2], yRange: [cy + 1, cy + 2], dir: 'SE' }
+        { xRange: [cx - 2, cx - 1], yRange: [cy - 2, cy - 1], dirs: ['S', 'W'] }, // Top-left
+        { xRange: [cx + 1, cx + 2], yRange: [cy - 2, cy - 1], dirs: ['S', 'E'] }, // Top-right
+        { xRange: [cx - 2, cx - 1], yRange: [cy + 1, cy + 2], dirs: ['N', 'W'] }, // Bottom-left
+        { xRange: [cx + 1, cx + 2], yRange: [cy + 1, cy + 2], dirs: ['N', 'E'] }  // Bottom-right
       ];
 
       for (const quad of quadrants) {
         for (let x = quad.xRange[0]; x <= quad.xRange[1]; x++) {
           for (let y = quad.yRange[0]; y <= quad.yRange[1]; y++) {
-            // Add appropriate exit directions based on quadrant
-            this.addQuadrantExits(addExit, x, y, quad);
+            const key = `${x},${y},${quad.dirs[0]}`;
+            const node = byKey.get(key);
+            if (node) {
+              // Add connections for both directions
+              const dir1 = quad.dirs[0];
+              const dir2 = quad.dirs[1];
+              
+              // Create bidirectional movement
+              node.dir = dir1; // Primary direction
+              
+              // Add both directional connections
+              const dirVec = {
+                N: { x: 0, y: -1 },
+                E: { x: 1, y: 0 },
+                S: { x: 0, y: 1 },
+                W: { x: -1, y: 0 }
+              };
+              
+              // Add connections in both directions
+              for (const dir of [dir1, dir2]) {
+                const vec = dirVec[dir];
+                const nextX = x + vec.x;
+                const nextY = y + vec.y;
+                
+                // Check if next tile is valid road
+                if (nextX >= 0 && nextY >= 0 && nextX < 100 && nextY < 100) {
+                  node.next.push({ x: nextX, y: nextY, dir });
+                }
+              }
+            }
           }
         }
       }
-    }
-  }
-
-  addQuadrantExits(addExit, x, y, quad) {
-    // Each quadrant needs to provide exits in multiple directions
-    switch(quad.dir) {
-      case 'NW':
-        // Top-left quadrant: can go south or east
-        if (y === quad.yRange[0] && x === quad.xRange[0]) {
-          addExit(x, y, x, y + 1); // South
-          addExit(x, y, x + 1, y); // East
-        }
-        break;
-      case 'NE':
-        // Top-right quadrant: can go south or west
-        if (y === quad.yRange[0] && x === quad.xRange[1]) {
-          addExit(x, y, x, y + 1); // South
-          addExit(x, y, x - 1, y); // West
-        }
-        break;
-      case 'SW':
-        // Bottom-left quadrant: can go north or east
-        if (y === quad.yRange[1] && x === quad.xRange[0]) {
-          addExit(x, y, x, y - 1); // North
-          addExit(x, y, x + 1, y); // East
-        }
-        break;
-      case 'SE':
-        // Bottom-right quadrant: can go north or west
-        if (y === quad.yRange[1] && x === quad.xRange[1]) {
-          addExit(x, y, x, y - 1); // North
-          addExit(x, y, x - 1, y); // West
-        }
-        break;
     }
   }
 

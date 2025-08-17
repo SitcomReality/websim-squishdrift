@@ -1,4 +1,3 @@
-import { generateCity } from './MapGen.js';
 import { rng } from '../utils/RNG.js';
 import { CityLayout } from './generation/CityLayout.js';
 import { BlockGenerator } from './generation/BlockGenerator.js';

@@ -41,15 +41,15 @@ export class RenderSystem {
     drawSkidmarks(renderer, state);
     
     // Sort entities by y-position for proper z-ordering
-    // Vehicles and blood stains should be drawn on top
+    // Blood, pedestrians, vehicles in that order
     const entities = [...state.entities].sort((a, b) => {
-      // Blood stains should be drawn on top of everything
-      if (a.type === 'blood' && b.type !== 'blood') return 1;
-      if (b.type === 'blood' && a.type !== 'blood') return -1;
+      // Blood stains should be drawn behind everything
+      if (a.type === 'blood' && b.type !== 'blood') return -1;
+      if (b.type === 'blood' && a.type !== 'blood') return 1;
       
-      // Vehicles should be drawn on top of other entities
-      if (a.type === 'vehicle' && b.type !== 'vehicle') return 1;
-      if (b.type === 'vehicle' && a.type !== 'vehicle') return -1;
+      // Pedestrians behind vehicles
+      if (a.type === 'npc' && b.type === 'vehicle') return -1;
+      if (b.type === 'npc' && a.type === 'vehicle') return 1;
       
       // Otherwise sort by y-position for depth
       return (a.pos.y || 0) - (b.pos.y || 0);

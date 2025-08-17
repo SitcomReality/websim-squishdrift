@@ -1,7 +1,7 @@
 import { Vec2 } from '../../utils/Vec2.js';
 
 export class CollisionSystem {
-    constructor() {
+  constructor() {
     this.collisionPairs = [];
     this.collisionRadius = 0.35;
     this.playerVehicleCollisionRadius = 0.75;
@@ -42,7 +42,55 @@ export class CollisionSystem {
     }
   }
 
+  // Check collisions between vehicles and pedestrians
+  checkVehiclePedestrianCollisions(state) {
+    const vehicles = state.entities.filter(e => e.type === 'vehicle');
+    const pedestrians = state.entities.filter(e => e.type === 'npc');
+
+    for (const vehicle of vehicles) {
+      for (const pedestrian of pedestrians) {
+        if (this.checkCollision(vehicle, pedestrian, 0.6)) {
+          // Pedestrian gets squished - remove from game
+          const pedIndex = state.entities.indexOf(pedestrian);
+          if (pedIndex > -1) {
+            state.entities.splice(pedIndex, 1);
+          }
+          
+          // Add a small visual effect (blood splatter) - for now just log it
+          console.log('Pedestrian squished by vehicle at', pedestrian.pos.x, pedestrian.pos.y);
+        }
+      }
+    }
+  }
+
+  // Check collisions between player and vehicles
+  checkPlayerVehicleCollisions(state) {
+    const player = state.entities.find(e => e.type === 'player');
+    const vehicles = state.entities.filter(e => e.type === 'vehicle');
+    
+    if (!player || !player.health) return;
+    
+    for (const vehicle of vehicles) {
+      if (vehicle.controlled) continue; // Skip player-controlled vehicle
+      
+      if (this.checkCollision(player, vehicle, 0.75)) {
+        player.health.takeDamage(10);
+        
+        // Simple knockback
+        const dx = player.pos.x - vehicle.pos.x;
+        const dy = player.pos.y - vehicle.pos.y;
+        const len = Math.sqrt(dx * dx + dy * dy);
+        if (len > 0) {
+          player.pos.x += (dx / len) * 0.2;
+          player.pos.y += (dy / len) * 0.2;
+        }
+      }
+    }
+  }
+
   update(state) {
     this.checkBulletCollisions(state);
+    this.checkVehiclePedestrianCollisions(state);
+    this.checkPlayerVehicleCollisions(state);
   }
 }

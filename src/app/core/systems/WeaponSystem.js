@@ -26,7 +26,7 @@ export class WeaponSystem {
     
     // Handle firing
     if (player.equippedWeapon) {
-      this.handleWeaponFiring(state, player, input);
+      this.handleWeaponFiring(state, player, input, state.debugOverlay?.enabled || false);
     }
 
     // Update projectiles
@@ -52,7 +52,7 @@ export class WeaponSystem {
     }
   }
 
-  handleWeaponFiring(state, player, input) {
+  handleWeaponFiring(state, player, input, debugEnabled) {
     const weapon = player.equippedWeapon;
     const now = Date.now();
     
@@ -65,7 +65,7 @@ export class WeaponSystem {
     }
     
     // Reload on R
-    if (input.pressed.has('KeyR') && weapon.ammo < weapon.maxAmmo) {
+    if (input.pressed.has('KeyR') && weapon.ammo < weapon.maxAmmo && !debugEnabled) {
       weapon.isReloading = true;
       weapon.reloadStartTime = now;
       return;
@@ -73,7 +73,7 @@ export class WeaponSystem {
     
     // Fire on mouse click
     if (input.keys.has('MouseLeft') && now - weapon.lastFireTime >= weapon.fireRate) {
-      if (weapon.ammo <= 0) {
+      if (weapon.ammo <= 0 && !debugEnabled) {
         // Auto-reload
         weapon.isReloading = true;
         weapon.reloadStartTime = now;
@@ -82,7 +82,11 @@ export class WeaponSystem {
       
       this.fireProjectile(state, player);
       weapon.lastFireTime = now;
-      weapon.ammo--;
+      
+      // Skip ammo depletion in debug mode
+      if (!debugEnabled) {
+        weapon.ammo--;
+      }
     }
   }
 

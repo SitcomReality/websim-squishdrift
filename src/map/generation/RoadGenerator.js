@@ -78,25 +78,25 @@ export class RoadGenerator {
       }
     };
     
-    // Top side (2 lanes RoadN, 2 lanes RoadS)
-    set(cx - 2, cy - 3, Tile.ZebraCrossingN);
-    set(cx - 1, cy - 3, Tile.ZebraCrossingN);
-    set(cx + 1, cy - 3, Tile.ZebraCrossingS);
-    set(cx + 2, cy - 3, Tile.ZebraCrossingS);
+    // Top side (horizontal zebra crossing over N/S road) - fix directions
+    set(cx - 2, cy - 3, Tile.ZebraCrossingS);
+    set(cx - 1, cy - 3, Tile.ZebraCrossingS);
+    set(cx + 1, cy - 3, Tile.ZebraCrossingN);
+    set(cx + 2, cy - 3, Tile.ZebraCrossingN);
     
-    // Bottom side (2 lanes RoadN, 2 lanes RoadS)
-    set(cx - 2, cy + 3, Tile.ZebraCrossingN);
-    set(cx - 1, cy + 3, Tile.ZebraCrossingN);
-    set(cx + 1, cy + 3, Tile.ZebraCrossingS);
-    set(cx + 2, cy + 3, Tile.ZebraCrossingS);
+    // Bottom side (horizontal zebra crossing over N/S road) - fix directions
+    set(cx - 2, cy + 3, Tile.ZebraCrossingS);
+    set(cx - 1, cy + 3, Tile.ZebraCrossingS);
+    set(cx + 1, cy + 3, Tile.ZebraCrossingN);
+    set(cx + 2, cy + 3, Tile.ZebraCrossingN);
     
-    // Left side (2 lanes RoadW, 2 lanes RoadE)
+    // Left side (vertical zebra crossing over E/W road) - these are correct
     set(cx - 3, cy - 2, Tile.ZebraCrossingW);
     set(cx - 3, cy - 1, Tile.ZebraCrossingW);
     set(cx - 3, cy + 1, Tile.ZebraCrossingE);
     set(cx - 3, cy + 2, Tile.ZebraCrossingE);
 
-    // Right side (2 lanes RoadW, 2 lanes RoadE)
+    // Right side (vertical zebra crossing over E/W road) - these are correct
     set(cx + 3, cy - 2, Tile.ZebraCrossingW);
     set(cx + 3, cy - 1, Tile.ZebraCrossingW);
     set(cx + 3, cy + 1, Tile.ZebraCrossingE);

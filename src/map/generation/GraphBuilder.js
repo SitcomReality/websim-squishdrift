@@ -51,48 +51,7 @@ export class GraphBuilder {
     }
     
     // Augment exits for roundabouts
-    for (const {cx, cy, isPerimeter} of roundabouts) {
-      const addExit = (x,y,ex,ey)=>{
-        const fromNode = byKey.get(keyOf(x,y,tileDir(get(x,y))));
-        const toDir = tileDir(get(ex,ey));
-        if (fromNode && toDir) {
-          const alreadyExists = fromNode.next.some(n => n.x === ex && n.y === ey);
-          if (!alreadyExists) {
-              fromNode.next.push({ x:ex, y:ey, dir:toDir });
-          }
-        }
-      };
-
-      // Add turning links for all four quadrants
-      // Top-left (S/W)
-      for (let x = cx - 2; x <= cx - 1; x++) {
-        for (let y = cy - 2; y <= cy - 1; y++) {
-          addExit(x, y, x, y + 1); // Go South
-          addExit(x, y, x - 1, y); // Go West
-        }
-      }
-      // Top-right (N/W)
-      for (let x = cx + 1; x <= cx + 2; x++) {
-        for (let y = cy - 2; y <= cy - 1; y++) {
-          addExit(x, y, x - 1, y); // Go West
-          addExit(x, y, x, y - 1); // Go North
-        }
-      }
-      // Bottom-left (S/E)
-      for (let x = cx - 2; x <= cx - 1; x++) {
-        for (let y = cy + 1; y <= cy + 2; y++) {
-          addExit(x, y, x + 1, y); // Go East
-          addExit(x, y, x, y + 1); // Go South
-        }
-      }
-      // Bottom-right (N/E)
-      for (let x = cx + 1; x <= cx + 2; x++) {
-        for (let y = cy + 1; y <= cy + 2; y++) {
-          addExit(x, y, x, y - 1); // Go North
-          addExit(x, y, x + 1, y); // Go East
-        }
-      }
-    }
+    this.augmentRoundaboutExits(byKey, roundabouts);
     
     return { nodes, byKey };
   }
@@ -114,10 +73,10 @@ export class GraphBuilder {
 
       // Add turning links for all four quadrants
       const quadrants = [
-        { xRange: [cx - 2, cx - 1], yRange: [cy - 2, cy - 1] },
-        { xRange: [cx + 1, cx + 2], yRange: [cy - 2, cy - 1] },
-        { xRange: [cx - 2, cx - 1], yRange: [cy + 1, cy + 2] },
-        { xRange: [cx + 1, cx + 2], yRange: [cy + 1, cy + 2] }
+        { xRange: [cx - 2, cx - 1], yRange: [cy - 2, cy - 1], dir: 'NW' },
+        { xRange: [cx + 1, cx + 2], yRange: [cy - 2, cy - 1], dir: 'NE' },
+        { xRange: [cx - 2, cx - 1], yRange: [cy + 1, cy + 2], dir: 'SW' },
+        { xRange: [cx + 1, cx + 2], yRange: [cy + 1, cy + 2], dir: 'SE' }
       ];
 
       for (const quad of quadrants) {
@@ -132,25 +91,36 @@ export class GraphBuilder {
   }
 
   addQuadrantExits(addExit, x, y, quad) {
-    // Top-left quadrant
-    if (quad.xRange[0] === x && quad.yRange[0] === y) {
-      addExit(x, y, x, y + 1); // South
-      addExit(x, y, x - 1, y); // West
-    }
-    // Top-right quadrant
-    else if (quad.xRange[0] === x && quad.yRange[0] === y) {
-      addExit(x, y, x - 1, y); // West
-      addExit(x, y, x, y - 1); // North
-    }
-    // Bottom-left quadrant
-    else if (quad.xRange[0] === x && quad.yRange[0] === y) {
-      addExit(x, y, x + 1, y); // East
-      addExit(x, y, x, y + 1); // South
-    }
-    // Bottom-right quadrant
-    else {
-      addExit(x, y, x, y - 1); // North
-      addExit(x, y, x + 1, y); // East
+    // Each quadrant needs to provide exits in multiple directions
+    switch(quad.dir) {
+      case 'NW':
+        // Top-left quadrant: can go south or east
+        if (y === quad.yRange[0] && x === quad.xRange[0]) {
+          addExit(x, y, x, y + 1); // South
+          addExit(x, y, x + 1, y); // East
+        }
+        break;
+      case 'NE':
+        // Top-right quadrant: can go south or west
+        if (y === quad.yRange[0] && x === quad.xRange[1]) {
+          addExit(x, y, x, y + 1); // South
+          addExit(x, y, x - 1, y); // West
+        }
+        break;
+      case 'SW':
+        // Bottom-left quadrant: can go north or east
+        if (y === quad.yRange[1] && x === quad.xRange[0]) {
+          addExit(x, y, x, y - 1); // North
+          addExit(x, y, x + 1, y); // East
+        }
+        break;
+      case 'SE':
+        // Bottom-right quadrant: can go north or west
+        if (y === quad.yRange[1] && x === quad.xRange[1]) {
+          addExit(x, y, x, y - 1); // North
+          addExit(x, y, x - 1, y); // West
+        }
+        break;
     }
   }
 

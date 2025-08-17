@@ -17,7 +17,6 @@ import { SkidmarkSystem } from './systems/SkidmarkSystem.js';
 import { Tile } from '../../map/TileTypes.js';
 import { BloodManager } from '../entities/drawBlood.js';
 import { WeaponSystem } from './systems/WeaponSystem.js';
-import { DamageTextSystem } from './systems/DamageTextSystem.js';
 
 export class GameEngine {
   constructor(canvas, { debugEl } = {}) {
@@ -38,7 +37,6 @@ export class GameEngine {
       vehicleCollision: new VehicleCollisionSystem(),
       skidmarks: new SkidmarkSystem(),
       weapon: new WeaponSystem(),
-      damageText: new DamageTextSystem()
     };
     
     this.state = createInitialState();
@@ -104,7 +102,6 @@ export class GameEngine {
     this.emergencyServices.update(this.state, dt)
     this.systems.skidmarks.update(this.state, dt)
     this.systems.weapon.update(this.state, this.input, dt)
-    this.systems.damageText.update(this.state, dt)
     
     // Update spawn/despawn system
     this.updateSpawning(dt)

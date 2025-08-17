@@ -36,6 +36,40 @@ export class WeaponSystem {
 
     // Update projectiles
     this.updateProjectiles(state, dt);
+    
+    // Update ammo bar
+    this.updateAmmoBar(state, player);
+  }
+
+  updateAmmoBar(state, player) {
+    if (!player.equippedWeapon) return;
+    
+    const weapon = player.equippedWeapon;
+    const weaponUI = state.weaponUI || {};
+    
+    // Calculate percentages
+    const ammoPercent = weapon.ammo / weapon.maxAmmo;
+    const reloadPercent = weapon.isReloading ? 
+      Math.min(1, (Date.now() - weapon.reloadStartTime) / weapon.reloadTime) : 0;
+    
+    // Update UI
+    const ammoBarEl = document.getElementById('ammo-bar');
+    if (ammoBarEl) {
+      if (weapon.isReloading) {
+        // During reload, show reload progress
+        ammoBarEl.style.width = `${reloadPercent * 100}%`;
+        ammoBarEl.style.backgroundColor = '#FFA500'; // Orange for reloading
+      } else {
+        // Normal ammo display
+        ammoBarEl.style.width = `${ammoPercent * 100}%`;
+        ammoBarEl.style.backgroundColor = '#4CAF50'; // Green for ammo
+      }
+    }
+    
+    const ammoTextEl = document.getElementById('ammo-text');
+    if (ammoTextEl) {
+      ammoTextEl.textContent = weapon.isReloading ? 'Reloading...' : `${weapon.ammo}/${weapon.maxAmmo}`;
+    }
   }
 
   handleWeaponPickup(state, player) {
@@ -50,8 +84,35 @@ export class WeaponSystem {
         
         state.entities.splice(state.entities.indexOf(weapon), 1);
         
+        // Create ammo bar if it doesn't exist
+        this.createAmmoBar();
+        
         const itemNameEl = document.getElementById('item-name');
         if (itemNameEl) itemNameEl.textContent = player.equippedWeapon.name;
+      }
+    }
+  }
+
+  createAmmoBar() {
+    // Create ammo bar if it doesn't exist
+    if (!document.getElementById('ammo-container')) {
+      const hud = document.getElementById('hud');
+      
+      const ammoContainer = document.createElement('div');
+      ammoContainer.className = 'row';
+      ammoContainer.id = 'ammo-container';
+      ammoContainer.innerHTML = `
+        <span class="label">Ammo</span>
+        <div class="bar" style="width: 120px;"><div id="ammo-bar" class="fill" style="width:100%; background-color:#4CAF50;"></div></div>
+        <span id="ammo-text">12/12</span>
+      `;
+      
+      // Insert after HP bar
+      const hpRow = hud.querySelector('.row');
+      if (hpRow) {
+        hpRow.insertAdjacentElement('afterend', ammoContainer);
+      } else {
+        hud.appendChild(ammoContainer);
       }
     }
   }

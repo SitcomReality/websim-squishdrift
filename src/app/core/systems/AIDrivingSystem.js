@@ -1,10 +1,34 @@
 export class AIDrivingSystem {
+  constructor() {
+    // Exposed parameters for tweaking
+    this.tweaks = {
+      baseSpeed: 3.0,
+      zebraSlowdown: {
+        enabled: true,
+        minDistance: 2, // nodes
+        maxDistance: 5, // nodes
+        minSpeedMultiplier: 0.3,
+        maxSpeedMultiplier: 1.0
+      },
+      steering: {
+        predictionTime: 0.45,
+        steerGain: 6.0,
+        velocityDamping: 0.3,
+        smoothFactor: 0.7
+      },
+      pathFollowing: {
+        arrivalTolerance: 0.75,
+        lookAheadFactor: 0.35
+      }
+    };
+  }
+
   update(state, dt) {
     const roads = state.world.map.roads;
     for (const v of state.entities.filter(e => e.type === 'vehicle' && e.controlled !== true)) {
       // Ensure control struct
       v.ctrl = v.ctrl || { throttle: 0, brake: 0, steer: 0 };
-      v.aiTargetSpeed = v.aiTargetSpeed || 3.0;
+      v.aiTargetSpeed = v.aiTargetSpeed || this.tweaks.baseSpeed;
       
       // Initialize planned route if not exists
       if (!v.plannedRoute || !v.plannedRoute.length) {
@@ -97,32 +121,27 @@ export class AIDrivingSystem {
       v.currentPathIndex = 0;
     }
     
-    // Check for upcoming zebra crossings and adjust speed
-    const zebraCrossingDistance = this.findZebraCrossingDistance(v);
-    const baseSpeed = 3.0;
+    // Calculate zebra crossing slowdown
+    const zebraCrossingDistance = this.findZebraCrossingDistance(v, state);
+    let targetSpeed = this.tweaks.baseSpeed;
     
-    if (zebraCrossingDistance !== null) {
-      // Reduce speed based on distance to zebra crossing
-      const minDistance = 2; // nodes
-      const maxDistance = 5; // nodes
-      let speedMultiplier = 1.0;
+    if (this.tweaks.zebraSlowdown.enabled && zebraCrossingDistance !== null) {
+      const { minDistance, maxDistance, minSpeedMultiplier, maxSpeedMultiplier } = this.tweaks.zebraSlowdown;
       
       if (zebraCrossingDistance <= minDistance) {
-        speedMultiplier = 0.3; // Slow down significantly
+        targetSpeed *= minSpeedMultiplier;
       } else if (zebraCrossingDistance <= maxDistance) {
-        // Gradually reduce speed as we get closer
-        const factor = (zebraCrossingDistance - minDistance) / (maxDistance - minDistance);
-        speedMultiplier = 0.3 + (factor * 0.7);
+        // Gradual slowdown
+        const progress = (zebraCrossingDistance - minDistance) / (maxDistance - minDistance);
+        const multiplier = minSpeedMultiplier + (maxSpeedMultiplier - minSpeedMultiplier) * progress;
+        targetSpeed *= multiplier;
       }
-      
-      v.aiTargetSpeed = baseSpeed * speedMultiplier;
-    } else {
-      v.aiTargetSpeed = baseSpeed;
     }
     
+    v.aiTargetSpeed = targetSpeed;
+    
     // If we've reached the target node
-    const ARRIVAL_TOLERANCE = 0.75;
-    if (distanceToTarget < ARRIVAL_TOLERANCE) {
+    if (distanceToTarget < this.tweaks.pathFollowing.arrivalTolerance) {
       v.currentPathIndex++;
       
       // If we've reached the end of planned route or need more nodes
@@ -145,54 +164,55 @@ export class AIDrivingSystem {
       const currentPos = { x: currentNode.x + 0.5, y: currentNode.y + 0.5 };
       
       // Predictive steering: look ahead a bit along velocity and path to get smooth aiming point
-      const PREDICTION_TIME = 0.45;
+      const { predictionTime, steerGain, velocityDamping, smoothFactor } = this.tweaks.steering;
       const currentSpeed = Math.hypot(v.vel?.x || 0, v.vel?.y || 0);
+      
       // Interpolate towards the path node center to avoid jerky instant turns
-      const followT = 0.35; // fraction between current node and next for smoother gliding
+      const followT = this.tweaks.pathFollowing.lookAheadFactor;
       const nextNode = v.plannedRoute[v.currentPathIndex + 1] || currentNode;
       const interpTarget = {
         x: (currentPos.x * (1 - followT)) + ((nextNode.x + 0.5) * followT),
         y: (currentPos.y * (1 - followT)) + ((nextNode.y + 0.5) * followT)
       };
       const futureTarget = {
-        x: interpTarget.x + (v.vel?.x || 0) * PREDICTION_TIME,
-        y: interpTarget.y + (v.vel?.y || 0) * PREDICTION_TIME
+        x: interpTarget.x + (v.vel?.x || 0) * predictionTime,
+        y: interpTarget.y + (v.vel?.y || 0) * predictionTime
       };
       const toT = { x: futureTarget.x - v.pos.x, y: futureTarget.y - v.pos.y };
       const desired = Math.atan2(toT.y, toT.x);
       const diff = wrapAngle(desired - (v.rot || 0));
+      
       // Apply steering gain and damping, then smooth by lerping towards previous steer for stability
-      const steerK = 6.0;
-      const velocityDamping = Math.min(1, currentSpeed / 4.0);
-      const rawSteer = clamp(diff * steerK * (1 - velocityDamping * 0.3), -1, 1);
-      v.ctrl.steer = v.ctrl.steer !== undefined ? (v.ctrl.steer * 0.7 + rawSteer * 0.3) : rawSteer;
+      const dampFactor = Math.min(1, currentSpeed / 4.0);
+      const rawSteer = clamp(diff * steerGain * (1 - dampFactor * velocityDamping), -1, 1);
+      v.ctrl.steer = v.ctrl.steer !== undefined ? (v.ctrl.steer * smoothFactor + rawSteer * (1 - smoothFactor)) : rawSteer;
       
       // Speed control based on zebra crossing proximity
       const turnSlow = 1 / (1 + 2 * Math.abs(diff));
-      const targetSpeed = v.aiTargetSpeed * turnSlow;
+      const finalTargetSpeed = v.aiTargetSpeed * turnSlow;
       
       const fwd = { x: Math.cos(v.rot || 0), y: Math.sin(v.rot || 0) };
       const vLong = (v.vel?.x || 0) * fwd.x + (v.vel?.y || 0) * fwd.y;
       
       const accelBand = 0.2;
-      if (Math.abs(vLong - targetSpeed) < accelBand) {
+      if (Math.abs(vLong - finalTargetSpeed) < accelBand) {
         v.ctrl.throttle = 0; v.ctrl.brake = 0;
-      } else if (vLong < targetSpeed - accelBand) {
+      } else if (vLong < finalTargetSpeed - accelBand) {
         v.ctrl.throttle = 1; v.ctrl.brake = 0;
-      } else if (vLong > targetSpeed + accelBand) {
+      } else if (vLong > finalTargetSpeed + accelBand) {
         v.ctrl.throttle = 0; v.ctrl.brake = 0.5;
       }
     }
   }
 
-  findZebraCrossingDistance(v) {
+  findZebraCrossingDistance(v, state) {
     if (!v.plannedRoute || v.currentPathIndex === undefined) return null;
     
     const zebraCrossingTypes = [11, 12, 13, 14]; // Zebra crossing tile types
     
     for (let i = v.currentPathIndex; i < v.plannedRoute.length; i++) {
       const node = v.plannedRoute[i];
-      const tileType = window.state?.world?.map?.tiles[node.y]?.[node.x];
+      const tileType = state.world?.map?.tiles[node.y]?.[node.x];
       
       if (zebraCrossingTypes.includes(tileType)) {
         return i - v.currentPathIndex; // Distance in nodes
@@ -213,21 +233,30 @@ export class AIDrivingSystem {
     const fwd = { x: Math.cos(v.rot || 0), y: Math.sin(v.rot || 0) };
     const vLong = (v.vel?.x || 0) * fwd.x + (v.vel?.y || 0) * fwd.y;
     // targetSpeed already set in updateRouteFollowing, ensure defined
-    const target = v.aiTargetSpeed || 3.0;
+    const target = v.aiTargetSpeed || this.tweaks.baseSpeed;
+    
     const accelBand = 0.2;
     let desiredThrottle = 0, desiredBrake = 0;
-    if (Math.abs(vLong - target) < accelBand) { desiredThrottle = 0; desiredBrake = 0; }
-    else if (vLong < target - accelBand) { desiredThrottle = 1; desiredBrake = 0; }
-    else if (vLong > target + accelBand) { desiredThrottle = 0; desiredBrake = 0.6; }
+    
+    if (Math.abs(vLong - target) < accelBand) {
+      desiredThrottle = 0; desiredBrake = 0;
+    } else if (vLong < target - accelBand) {
+      desiredThrottle = 1; desiredBrake = 0;
+    } else if (vLong > target + accelBand) {
+      desiredThrottle = 0; desiredBrake = 0.6;
+    }
+    
     // lerp control values for smooth application
     v.ctrl.throttle = (v.ctrl.throttle || 0) * 0.75 + desiredThrottle * 0.25;
     v.ctrl.brake = (v.ctrl.brake || 0) * 0.75 + desiredBrake * 0.25;
+    
     // gentle cap to prevent instant flips
     v.ctrl.throttle = clamp(v.ctrl.throttle, -1, 1);
     v.ctrl.brake = clamp(v.ctrl.brake, 0, 1);
   }
 }
 
+// Helper functions moved to top-level scope
 function clamp(x, a, b) { return Math.max(a, Math.min(b, x)); }
 function wrapAngle(a) {
   while (a > Math.PI) a -= 2*Math.PI;

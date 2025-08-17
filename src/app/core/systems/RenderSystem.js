@@ -13,6 +13,7 @@ import { drawSkidmarks } from '../../../render/drawSkidmarks.js';
 import { drawBlood } from '../../entities/drawBlood.js';
 import { drawProjectile } from '../../entities/drawProjectile.js';
 import { drawDamageIndicator } from '../../entities/drawDamageIndicator.js';
+import { drawDamageText } from '../../entities/drawDamageText.js';
 
 export class RenderSystem {
   render(state, renderer, debugOverlay) {
@@ -43,7 +44,6 @@ export class RenderSystem {
     drawSkidmarks(renderer, state);
     
     // Sort entities by y-position for proper z-ordering
-    // Blood, pedestrians, vehicles in that order
     const entities = [...state.entities].sort((a, b) => {
       // Blood stains should be drawn behind everything
       if (a.type === 'blood' && b.type !== 'blood') return -1;
@@ -95,6 +95,9 @@ export class RenderSystem {
           break;
       }
     }
+    
+    // Draw damage text
+    drawDamageText(renderer, state);
     
     // Draw buildings (walls and roofs) in front
     drawBuildings(renderer, state, 'walls');

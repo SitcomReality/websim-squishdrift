@@ -15,6 +15,7 @@ export class WeaponSystem {
         reloadTime: 1000 // ms
       }
     };
+    this.damageTextSystem = new (require('./DamageTextSystem.js').DamageTextSystem)();
   }
 
   update(state, input, dt) {
@@ -28,6 +29,9 @@ export class WeaponSystem {
     if (player.equippedWeapon) {
       this.handleWeaponFiring(state, player, input, state.debugOverlay?.enabled || false);
     }
+
+    // Update damage text system
+    this.damageTextSystem.update(state, dt);
 
     // Update projectiles
     this.updateProjectiles(state, dt);
@@ -45,7 +49,6 @@ export class WeaponSystem {
         
         state.entities.splice(state.entities.indexOf(weapon), 1);
         
-        // Update HUD
         const itemNameEl = document.getElementById('item-name');
         if (itemNameEl) itemNameEl.textContent = player.equippedWeapon.name;
       }
@@ -64,18 +67,15 @@ export class WeaponSystem {
       return;
     }
     
-    // Reload on R
     if (input.pressed.has('KeyR') && weapon.ammo < weapon.maxAmmo && !debugEnabled) {
       weapon.isReloading = true;
       weapon.reloadStartTime = now;
       return;
     }
     
-    // Fire on mouse click - changed from MouseLeft to check mousePos and click
     const isFiring = input.mousePos && input.keys.has('MouseLeft');
     if (isFiring && now - weapon.lastFireTime >= weapon.fireRate) {
       if (weapon.ammo <= 0 && !debugEnabled) {
-        // Auto-reload
         weapon.isReloading = true;
         weapon.reloadStartTime = now;
         return;
@@ -84,7 +84,6 @@ export class WeaponSystem {
       this.fireProjectile(state, player);
       weapon.lastFireTime = now;
       
-      // Skip ammo depletion in debug mode
       if (!debugEnabled) {
         weapon.ammo--;
       }
@@ -119,18 +118,15 @@ export class WeaponSystem {
     for (let i = projectiles.length - 1; i >= 0; i--) {
       const proj = projectiles[i];
       
-      // Update position
       proj.pos.x += proj.vel.x * dt;
       proj.pos.y += proj.vel.y * dt;
       
-      // Update age and lifetime
       proj.age += dt;
       if (proj.age >= proj.lifetime) {
         state.entities.splice(state.entities.indexOf(proj), 1);
         continue;
       }
       
-      // Check collisions
       if (this.checkCollisions(state, proj)) {
         state.entities.splice(state.entities.indexOf(proj), 1);
       }
@@ -152,7 +148,6 @@ export class WeaponSystem {
     const ty = Math.floor(projectile.pos.y);
     if (tx >= 0 && tx < map.width && ty >= 0 && ty < map.height) {
       const tile = map.tiles[ty][tx];
-      // Solid tiles
       if ([8, 9].includes(tile)) { // BuildingWall, BuildingFloor
         return true;
       }
@@ -180,14 +175,13 @@ export class WeaponSystem {
         
         entity.health.takeDamage(projectile.damage);
         
-        // Show damage indicator
-        this.createDamageIndicator(state, entity.pos, projectile.damage);
+        // Show damage text
+        this.damageTextSystem.addDamageText(state, entity.pos, projectile.damage);
         
         // Remove entity if dead
         if (!entity.health.isAlive()) {
           const index = state.entities.indexOf(entity);
           if (index > -1) {
-            // Create blood stain for NPCs
             if (entity.type === 'npc') {
               const bloodStain = {
                 type: 'blood',
@@ -213,17 +207,5 @@ export class WeaponSystem {
     }
     
     return false;
-  }
-
-  createDamageIndicator(state, pos, damage) {
-    const indicator = {
-      type: 'damage_indicator',
-      pos: { x: pos.x, y: pos.y - 0.5 },
-      damage: damage,
-      age: 0,
-      lifetime: 1.0
-    };
-    
-    state.entities.push(indicator);
   }
 }

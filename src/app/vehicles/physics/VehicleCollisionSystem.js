@@ -41,20 +41,33 @@ export class VehicleCollisionSystem {
       
       const contact = obbOverlap(obb, aabbForTile(gx,gy)); if (!contact) continue;
       
-      // For buildings, use velocity direction for bounce
+      // Calculate reflection vector based on velocity direction
       const velocityDir = this.getVelocityDirection(v);
-      const bounceNormal = this.calculateBounceNormal(velocityDir, contact.normal);
+      const bounceNormal = this.calculateReflectionNormal(velocityDir, contact.normal);
       
       // Create corrected contact
       const correctedContact = { ...contact, normal: bounceNormal };
-      // Use a low restitution for building impacts and heavily damp linear/angular velocity
-      resolveDynamicStatic(v, correctedContact, 0.2);
-      // Immediately bleed off most of the vehicle's inertia to avoid excessive bouncing
+      
+      // Use lower restitution for buildings to reduce bounce
+      resolveDynamicStatic(v, correctedContact, 0.3);
+      
+      // Significantly reduce velocity to prevent jitter
       if (v.vel) {
-        v.vel.x *= 0.25;
-        v.vel.y *= 0.25;
+        v.vel.x *= 0.4;
+        v.vel.y *= 0.4;
       }
-      if (typeof v.angularVelocity === 'number') v.angularVelocity *= 0.3;
+      
+      // Apply friction to slow down sliding along walls
+      const friction = 0.8;
+      if (v.vel) {
+        const speed = Math.hypot(v.vel.x, v.vel.y);
+        if (speed > 0.1) {
+          v.vel.x *= friction;
+          v.vel.y *= friction;
+        }
+      }
+      
+      if (typeof v.angularVelocity === 'number') v.angularVelocity *= 0.5;
     }
   }
 
@@ -78,7 +91,7 @@ export class VehicleCollisionSystem {
 
   calculateBounceNormal(velocityDir, contactNormal) {
     if (velocityDir.x === 0 && velocityDir.y === 0) {
-      return contactNormal; // Fallback if no velocity
+      return contactNormal;
     }
 
     // Calculate reflection vector: r = d - 2(d·n)n
@@ -93,5 +106,21 @@ export class VehicleCollisionSystem {
     if (length < 0.01) return contactNormal;
 
     return { x: reflected.x / length, y: reflected.y / length };
+  }
+
+  calculateReflectionNormal(velocityDir, contactNormal) {
+    // Simplified reflection for buildings - prioritize straight bounce away from wall
+    const dot = velocityDir.x * contactNormal.x + velocityDir.y * contactNormal.y;
+    
+    // If moving towards the wall, reflect directly away
+    if (dot < 0) {
+      return {
+        x: contactNormal.x,
+        y: contactNormal.y
+      };
+    }
+    
+    // If moving parallel or away, use contact normal
+    return contactNormal;
   }
 }

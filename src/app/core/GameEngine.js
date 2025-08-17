@@ -14,6 +14,7 @@ import { VehicleMovementSystem } from '../vehicles/physics/VehicleMovementSystem
 import { VehicleCollisionSystem } from '../vehicles/physics/VehicleCollisionSystem.js';
 import { AIDrivingSystem } from './systems/AIDrivingSystem.js';
 import { SkidmarkSystem } from './systems/SkidmarkSystem.js';
+import { Tile } from '../../map/TileTypes.js';
 
 export class GameEngine {
   constructor(canvas, { debugEl } = {}) {

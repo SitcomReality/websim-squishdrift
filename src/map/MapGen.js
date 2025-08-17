@@ -23,6 +23,9 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
   const buildingGenerator = new BuildingGenerator(cityLayout, rand);
   const buildings = buildingGenerator.generateBuildings(tiles);
   
+  // Get trees from building generator
+  const trees = buildingGenerator.getTrees();
+  
   // Build road and pedestrian graphs
   const graphBuilder = new GraphBuilder();
   const roads = graphBuilder.buildRoadGraph(tiles, cityLayout.width, cityLayout.height, roadGenerator.getRoundabouts());
@@ -37,6 +40,7 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
     seed,
     roads,
     peds,
-    buildings
+    buildings,
+    trees
   };
 }

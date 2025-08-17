@@ -5,6 +5,7 @@ export class BuildingGenerator {
     this.cityLayout = cityLayout;
     this.rand = rand;
     this.buildings = [];
+    this.trees = []; // Store tree data
   }
 
   generateBuildings(tiles) {
@@ -79,5 +80,29 @@ export class BuildingGenerator {
         tiles[ty][tx] = Tile.Park;
       }
     }
+
+    // Add 1-3 random trees to this park
+    const treeCount = Math.floor(this.rand() * 3) + 1;
+    for (let i = 0; i < treeCount; i++) {
+      const treeX = rect.x + this.rand() * (rect.width - 1);
+      const treeY = rect.y + this.rand() * (rect.height - 1);
+      
+      // Ensure tree is within park boundaries
+      const tx = Math.floor(treeX) + 0.5;
+      const ty = Math.floor(treeY) + 0.5;
+      
+      this.trees.push({
+        pos: { x: tx, y: ty },
+        trunkHeight: 20 + this.rand() * 15,
+        leafHeight: 15 + this.rand() * 10,
+        leafWidth: 1.5 + this.rand() * 0.5, // Leaves wider than trunk
+        leafColor: `hsl(${100 + this.rand() * 40}, 60%, ${35 + this.rand() * 20}%)`,
+        trunkColor: `hsl(${30 + this.rand() * 20}, 40%, ${25 + this.rand() * 15}%)`
+      });
+    }
+  }
+
+  getTrees() {
+    return this.trees;
   }
 }

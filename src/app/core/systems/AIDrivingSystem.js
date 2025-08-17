@@ -11,37 +11,8 @@ export class AIDrivingSystem {
         this.initializeRoute(v, roads);
       }
 
-      // Ensure we always have nodes in our path
-      this.ensurePathContinues(v, roads);
-      
       this.updateRouteFollowing(state, v, roads, dt);
       this.updateMovement(v, dt);
-    }
-  }
-
-  ensurePathContinues(v, roads) {
-    // Always maintain at least 4 nodes ahead
-    const MIN_PATH_LENGTH = 4;
-    
-    if (!v.plannedRoute) {
-      v.plannedRoute = [];
-    }
-    
-    if (v.plannedRoute.length < MIN_PATH_LENGTH) {
-      // Get the last node in current path
-      const lastNode = v.plannedRoute[v.plannedRoute.length - 1];
-      
-      if (lastNode) {
-        const newNodes = this.buildPathAhead(lastNode, MIN_PATH_LENGTH - v.plannedRoute.length + 1, roads);
-        if (newNodes && newNodes.length > 1) {
-          // Add new nodes except the first one (which is duplicate of lastNode)
-          v.plannedRoute.push(...newNodes.slice(1));
-        }
-      } else if (v.node) {
-        // If no last node but we have a starting node, build from there
-        v.plannedRoute = this.buildPathAhead(v.node, MIN_PATH_LENGTH, roads);
-        v.currentPathIndex = 0;
-      }
     }
   }
 
@@ -51,20 +22,13 @@ export class AIDrivingSystem {
     // Build initial path of 4 nodes ahead
     v.plannedRoute = this.buildPathAhead(v.node, 4, roads);
     v.currentPathIndex = 0;
-    
-    // Ensure we actually got a valid path
-    if (!v.plannedRoute || v.plannedRoute.length === 0) {
-      v.plannedRoute = [v.node];
-    }
   }
 
   buildPathAhead(startNode, depth, roads) {
-    if (!startNode || !roads || !roads.byKey) return [];
-    
     const path = [startNode];
     let current = startNode;
     
-    for (let i = 0; i < depth && current; i++) {
+    for (let i = 0; i < depth; i++) {
       if (!current.next || !current.next.length) break;
       
       // Choose next node (prefer straight, avoid immediate backtracking)
@@ -104,15 +68,49 @@ export class AIDrivingSystem {
       v.pos.y - targetPos.y
     );
     
-    // Check if we've reached the target node
+    // Check if we're closer to a later node in the path
+    let newTargetIndex = v.currentPathIndex;
+    for (let i = v.currentPathIndex + 1; i < v.plannedRoute.length; i++) {
+      const laterNode = v.plannedRoute[i];
+      const laterPos = { x: laterNode.x + 0.5, y: laterNode.y + 0.5 };
+      const distToLater = Math.hypot(v.pos.x - laterPos.x, v.pos.y - laterPos.y);
+      
+      if (distToLater < distanceToTarget) {
+        newTargetIndex = i;
+        break;
+      }
+    }
+    
+    // If we found a closer node, skip to it and rebuild path
+    if (newTargetIndex !== v.currentPathIndex) {
+      v.currentPathIndex = newTargetIndex;
+      
+      // Rebuild remaining path
+      const remainingPath = v.plannedRoute.slice(v.currentPathIndex);
+      const additionalNodes = this.buildPathAhead(
+        remainingPath[remainingPath.length - 1], 
+        4 - remainingPath.length + 1, 
+        roads
+      );
+      
+      v.plannedRoute = [...remainingPath, ...additionalNodes.slice(1)];
+      v.currentPathIndex = 0;
+    }
+    
+    // If we've reached the target node
     const ARRIVAL_TOLERANCE = 0.75;
     if (distanceToTarget < ARRIVAL_TOLERANCE) {
       v.currentPathIndex++;
       
-      // If we've reached the end of current path, extend it
-      if (v.currentPathIndex >= v.plannedRoute.length) {
+      // If we've reached the end of planned route or need more nodes
+      if (v.currentPathIndex >= v.plannedRoute.length || 
+          v.plannedRoute.length < 4) {
+        
+        // Get last node in path
         const lastNode = v.plannedRoute[v.plannedRoute.length - 1];
         const newNodes = this.buildPathAhead(lastNode, 4, roads);
+        
+        // Replace current path with new extended path
         v.plannedRoute = newNodes;
         v.currentPathIndex = 0;
       }

@@ -105,9 +105,24 @@ export class GraphBuilder {
       return t === Tile.Footpath || t === Tile.Grass || t === Tile.Park;
     };
     
-    // Collect walkable nodes
+    // Collect tree positions for collision checking
+    const treePositions = new Set();
+    const map = { tiles, width, height };
+    
+    // Check if this is a tree trunk position
+    const isTreeTrunk = (x, y) => {
+      if (!map.trees) return false;
+      return map.trees.some(tree => 
+        Math.floor(tree.pos.x) === x && Math.floor(tree.pos.y) === y
+      );
+    };
+    
+    // Collect walkable nodes, avoiding tree trunks
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
+        // Skip tree trunk positions
+        if (isTreeTrunk(x, y)) continue;
+        
         if (!walkable(tiles[y][x])) continue;
         nodes.set(key(x, y), { x, y, neighbors: [] });
       }

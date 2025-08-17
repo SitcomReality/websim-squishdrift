@@ -81,21 +81,30 @@ export class BuildingGenerator {
       }
     }
 
-    // Add 1-3 random trees to this park
+    // Randomly place 1-3 trees in any cell of this park
     const treeCount = Math.floor(this.rand() * 3) + 1;
+    const occupiedCells = new Set();
+    
     for (let i = 0; i < treeCount; i++) {
-      const treeX = rect.x + this.rand() * (rect.width - 1);
-      const treeY = rect.y + this.rand() * (rect.height - 1);
+      // Find an unoccupied cell
+      let attempts = 0;
+      let cellX, cellY;
       
-      // Ensure tree is within park boundaries
-      const tx = Math.floor(treeX) + 0.5;
-      const ty = Math.floor(treeY) + 0.5;
+      do {
+        cellX = Math.floor(rect.x + this.rand() * rect.width);
+        cellY = Math.floor(rect.y + this.rand() * rect.height);
+        attempts++;
+      } while (occupiedCells.has(`${cellX},${cellY}`) && attempts < 10);
       
+      // Mark cell as occupied
+      occupiedCells.add(`${cellX},${cellY}`);
+      
+      // Place tree at center of cell
       this.trees.push({
-        pos: { x: tx, y: ty },
+        pos: { x: cellX + 0.5, y: cellY + 0.5 },
         trunkHeight: 20 + this.rand() * 15,
-        leafHeight: (15 + this.rand() * 10) * 0.5, // Reduced by 50%
-        leafWidth: (1.5 + this.rand() * 0.5) * 0.5, // Reduced by 50%
+        leafHeight: (15 + this.rand() * 10) * 0.5,
+        leafWidth: (1.5 + this.rand() * 0.5) * 0.5,
         leafColor: `hsl(${100 + this.rand() * 40}, 60%, ${35 + this.rand() * 20}%)`,
         trunkColor: `hsl(${30 + this.rand() * 20}, 40%, ${25 + this.rand() * 15}%)`
       });

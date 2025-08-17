@@ -6,7 +6,12 @@ export function drawRoadDebug(r, state){
   const z = state.camera.zoom || 1;
   const wTiles = Math.ceil(canvas.width/(ts*z))+2, hTiles = Math.ceil(canvas.height/(ts*z))+2;
   const sx = Math.floor(state.camera.x - wTiles/2), sy = Math.floor(state.camera.y - hTiles/2);
-  ctx.save(); ctx.lineWidth = 1; ctx.strokeStyle = '#111'; ctx.fillStyle = '#111';
+  
+  ctx.save();
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = '#111';
+  ctx.fillStyle = '#111';
+  
   for (let y=0; y<hTiles; y++) for (let x=0; x<wTiles; x++){
     const gx = sx + x, gy = sy + y; if (gy<0||gx<0||gy>=map.height||gx>=map.width) continue;
     const d = roadDir(map.tiles[gy][gx]); if (!d) continue;
@@ -24,6 +29,10 @@ export function drawRoadDebug(r, state){
       drawDirArrow(ctx, cxp, cyp, d, ts*0.28);
     }
   }
+  
+  // Draw AI path debug lines for vehicles
+  drawVehiclePaths(r, state, ts);
+  
   ctx.restore();
 }
 
@@ -44,4 +53,32 @@ function drawAngleArrow(ctx, cx, cy, ang, len){
   ctx.lineTo(tx + Math.cos(a1)*ah, ty + Math.sin(a1)*ah);
   ctx.lineTo(tx + Math.cos(a2)*ah, ty + Math.sin(a2)*ah);
   ctx.closePath(); ctx.fill();
+}
+
+function drawVehiclePaths(r, state, ts) {
+  const { ctx } = r;
+  
+  for (const v of state.entities.filter(e => e.type === 'vehicle' && !e.controlled)) {
+    if (!v.plannedRoute || v.plannedRoute.length === 0) continue;
+    
+    const vehiclePos = { x: v.pos.x * ts, y: v.pos.y * ts };
+    
+    // Draw path lines with decreasing opacity
+    for (let i = v.currentPathIndex || 0; i < v.plannedRoute.length; i++) {
+      const node = v.plannedRoute[i];
+      const nodePos = { x: (node.x + 0.5) * ts, y: (node.y + 0.5) * ts };
+      
+      // Calculate opacity based on position in path
+      const opacityIndex = i - (v.currentPathIndex || 0);
+      const opacity = Math.max(0.25, 1 - (opacityIndex * 0.25));
+      
+      ctx.strokeStyle = `rgba(255, 0, 0, ${opacity})`;
+      ctx.lineWidth = 2;
+      
+      ctx.beginPath();
+      ctx.moveTo(vehiclePos.x, vehiclePos.y);
+      ctx.lineTo(nodePos.x, nodePos.y);
+      ctx.stroke();
+    }
+  }
 }

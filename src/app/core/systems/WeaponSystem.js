@@ -1,5 +1,6 @@
 import { Vec2 } from '../../../utils/Vec2.js';
 import { Health } from '../../components/Health.js';
+import { DamageTextSystem } from './DamageTextSystem.js';
 
 export class WeaponSystem {
   constructor() {
@@ -15,7 +16,7 @@ export class WeaponSystem {
         reloadTime: 1000 // ms
       }
     };
-    this.damageTextSystem = new (require('./DamageTextSystem.js').DamageTextSystem)();
+    this.damageTextSystem = new DamageTextSystem();
   }
 
   update(state, input, dt) {

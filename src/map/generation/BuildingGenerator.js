@@ -94,8 +94,8 @@ export class BuildingGenerator {
       this.trees.push({
         pos: { x: tx, y: ty },
         trunkHeight: 20 + this.rand() * 15,
-        leafHeight: 15 + this.rand() * 10,
-        leafWidth: 0.75 + this.rand() * 0.25, // Reduced from 1.5 to 0.75 (50% reduction)
+        leafHeight: (15 + this.rand() * 10) * 0.5, // Reduced by 50%
+        leafWidth: (1.5 + this.rand() * 0.5) * 0.5, // Reduced by 50%
         leafColor: `hsl(${100 + this.rand() * 40}, 60%, ${35 + this.rand() * 20}%)`,
         trunkColor: `hsl(${30 + this.rand() * 20}, 40%, ${25 + this.rand() * 15}%)`
       });

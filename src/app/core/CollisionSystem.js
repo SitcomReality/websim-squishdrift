@@ -40,35 +40,9 @@ export class CollisionSystem {
     }
   }
 
-  // Check collisions between vehicles and pedestrians
-  checkVehiclePedestrianCollisions(state) {
-    const vehicles = state.entities.filter(e => e.type === 'vehicle');
-    const pedestrians = state.entities.filter(e => e.type === 'npc');
-
-    for (const v of vehicles) {
-      for (let i = pedestrians.length - 1; i >= 0; i--) {
-        const ped = pedestrians[i];
-        if (this.checkCollision(v, ped, 0.45)) {
-          // spawn blood stain at ped position
-          state.entities.push({
-            type: 'blood',
-            pos: { x: ped.pos.x, y: ped.pos.y },
-            size: 0.6 + Math.random() * 0.4,
-            color: `hsl(0, 70%, ${30 + Math.random() * 20}%)`,
-            rotation: Math.random() * Math.PI * 2
-          });
-          // remove pedestrian
-          const idx = state.entities.indexOf(ped);
-          if (idx > -1) state.entities.splice(idx, 1);
-        }
-      }
-    }
-  }
-
   update(state) {
     this.checkBulletCollisions(state);
-    // remove player-vehicle radius collisions; handled by VehicleCollisionSystem now
-    // this.checkPlayerVehicleCollisions(state);
-    this.checkVehiclePedestrianCollisions(state);
+    // vehicle-pedestrian collision is now handled by VehicleCollisionSystem
   }
 }
+

@@ -11,6 +11,7 @@ export class VehicleCollisionSystem {
       this.handleVehicleCollisions(state, v);
       this.handleBuildingCollisions(state, v);
       this.handlePlayerCollision(state, v);
+      this.handlePedestrianCollision(state, v);
     }
   }
 
@@ -46,6 +47,36 @@ export class VehicleCollisionSystem {
       
       // Strong damping for building impacts
       this.applyBuildingDamping(v);
+    }
+  }
+
+  handlePedestrianCollision(state, v) {
+    const peds = state.entities.filter(e => e.type === 'npc');
+    const vehicleOBB = entityOBB(v);
+
+    for (let i = peds.length - 1; i >= 0; i--) {
+        const ped = peds[i];
+        ped.hitboxW = ped.hitboxW ?? 0.2;
+        ped.hitboxH = ped.hitboxH ?? 0.2;
+        ped.rot = 0;
+
+        const pedOBB = entityOBB(ped, {w: ped.hitboxW, h: ped.hitboxH});
+        const contact = obbOverlap(vehicleOBB, pedOBB);
+
+        if (contact) {
+            state.entities.push({
+                type: 'blood',
+                pos: { x: ped.pos.x, y: ped.pos.y },
+                size: 0.6 + (state.rand ? state.rand() * 0.4 : Math.random() * 0.4),
+                color: `hsl(0, 70%, ${30 + (state.rand ? state.rand() * 20 : Math.random() * 20)}%)`,
+                rotation: (state.rand ? state.rand() * Math.PI * 2 : Math.random() * Math.PI * 2)
+            });
+
+            const pedIndex = state.entities.indexOf(ped);
+            if (pedIndex > -1) {
+                state.entities.splice(pedIndex, 1);
+            }
+        }
     }
   }
 

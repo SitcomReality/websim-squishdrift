@@ -81,29 +81,38 @@ export class AIDrivingSystem {
       }
     }
     
-    // If we found a closer node, skip to it
+    // If we found a closer node, skip to it and rebuild path
     if (newTargetIndex !== v.currentPathIndex) {
       v.currentPathIndex = newTargetIndex;
+      
+      // Rebuild remaining path
+      const remainingPath = v.plannedRoute.slice(v.currentPathIndex);
+      const additionalNodes = this.buildPathAhead(
+        remainingPath[remainingPath.length - 1], 
+        4 - remainingPath.length + 1, 
+        roads
+      );
+      
+      v.plannedRoute = [...remainingPath, ...additionalNodes.slice(1)];
+      v.currentPathIndex = 0;
     }
     
     // If we've reached the target node
     const ARRIVAL_TOLERANCE = 0.75;
     if (distanceToTarget < ARRIVAL_TOLERANCE) {
       v.currentPathIndex++;
-    }
-    
-    // Always maintain at least 4 nodes ahead by extending the path
-    const remainingNodes = v.plannedRoute.length - v.currentPathIndex;
-    if (remainingNodes <= 2) {
-      // Get the last node in current path
-      const lastNode = v.plannedRoute[v.plannedRoute.length - 1];
-      if (lastNode) {
+      
+      // If we've reached the end of planned route or need more nodes
+      if (v.currentPathIndex >= v.plannedRoute.length || 
+          v.plannedRoute.length < 4) {
+        
+        // Get last node in path
+        const lastNode = v.plannedRoute[v.plannedRoute.length - 1];
         const newNodes = this.buildPathAhead(lastNode, 4, roads);
-        if (newNodes && newNodes.length > 1) {
-          // Remove completed nodes and append new ones
-          v.plannedRoute = v.plannedRoute.slice(v.currentPathIndex).concat(newNodes.slice(1));
-          v.currentPathIndex = 0;
-        }
+        
+        // Replace current path with new extended path
+        v.plannedRoute = newNodes;
+        v.currentPathIndex = 0;
       }
     }
     

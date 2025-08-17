@@ -51,7 +51,48 @@ export class GraphBuilder {
     }
     
     // Augment exits for roundabouts
-    this.augmentRoundaboutExits(byKey, roundabouts);
+    for (const {cx, cy, isPerimeter} of roundabouts) {
+      const addExit = (x,y,ex,ey)=>{
+        const fromNode = byKey.get(keyOf(x,y,tileDir(get(x,y))));
+        const toDir = tileDir(get(ex,ey));
+        if (fromNode && toDir) {
+          const alreadyExists = fromNode.next.some(n => n.x === ex && n.y === ey);
+          if (!alreadyExists) {
+              fromNode.next.push({ x:ex, y:ey, dir:toDir });
+          }
+        }
+      };
+
+      // Add turning links for all four quadrants
+      // Top-left (S/W)
+      for (let x = cx - 2; x <= cx - 1; x++) {
+        for (let y = cy - 2; y <= cy - 1; y++) {
+          addExit(x, y, x, y + 1); // Go South
+          addExit(x, y, x - 1, y); // Go West
+        }
+      }
+      // Top-right (N/W)
+      for (let x = cx + 1; x <= cx + 2; x++) {
+        for (let y = cy - 2; y <= cy - 1; y++) {
+          addExit(x, y, x - 1, y); // Go West
+          addExit(x, y, x, y - 1); // Go North
+        }
+      }
+      // Bottom-left (S/E)
+      for (let x = cx - 2; x <= cx - 1; x++) {
+        for (let y = cy + 1; y <= cy + 2; y++) {
+          addExit(x, y, x + 1, y); // Go East
+          addExit(x, y, x, y + 1); // Go South
+        }
+      }
+      // Bottom-right (N/E)
+      for (let x = cx + 1; x <= cx + 2; x++) {
+        for (let y = cy + 1; y <= cy + 2; y++) {
+          addExit(x, y, x, y - 1); // Go North
+          addExit(x, y, x + 1, y); // Go East
+        }
+      }
+    }
     
     return { nodes, byKey };
   }

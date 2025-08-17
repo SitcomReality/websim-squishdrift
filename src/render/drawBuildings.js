@@ -243,54 +243,60 @@ function drawTree(r, state, tree) {
     h: leafWidth 
   };
   
+  // Calculate leaf roof positions based on trunk height
+  const leafFloorY = trunkRoofRect.y; // Start from top of trunk
   const leafRoofRect = { 
     x: leafX + leafRoofOffset.x - (leafWidth - leafWidth) / 2, 
-    y: leafY + leafRoofOffset.y - (leafWidth - leafWidth) / 2, 
+    y: leafFloorY + leafRoofOffset.y - (leafWidth - leafWidth) / 2, 
     w: leafWidth, 
     h: leafWidth 
   };
   
-  // Draw leaves with 3D effect
+  // Draw leaves with 3D effect, walls starting from trunk height
   ctx.fillStyle = tree.leafColor;
   
-  // Front and back walls
+  // Calculate leaf positions relative to trunk top
+  const leafBaseY = trunkRoofRect.y;
+  const leafTopY = leafBaseY - leafHeight * perspectiveScale;
+  
+  // Front and back walls starting from trunk height
   ctx.beginPath();
-  ctx.moveTo(leafFloorRect.x, leafFloorRect.y);
-  ctx.lineTo(leafRoofRect.x, leafRoofRect.y);
-  ctx.lineTo(leafRoofRect.x + leafRoofRect.w, leafRoofRect.y);
-  ctx.lineTo(leafFloorRect.x + leafFloorRect.w, leafFloorRect.y);
+  ctx.moveTo(leafFloorRect.x, leafBaseY);
+  ctx.lineTo(leafRoofRect.x, leafTopY);
+  ctx.lineTo(leafRoofRect.x + leafRoofRect.w, leafTopY);
+  ctx.lineTo(leafFloorRect.x + leafFloorRect.w, leafBaseY);
   ctx.closePath();
   ctx.fill();
   
   ctx.beginPath();
-  ctx.moveTo(leafFloorRect.x, leafFloorRect.y + leafFloorRect.h);
-  ctx.lineTo(leafRoofRect.x, leafRoofRect.y + leafRoofRect.h);
-  ctx.lineTo(leafRoofRect.x + leafRoofRect.w, leafRoofRect.y + leafRoofRect.h);
-  ctx.lineTo(leafFloorRect.x + leafFloorRect.w, leafFloorRect.y + leafFloorRect.h);
+  ctx.moveTo(leafFloorRect.x, leafBaseY + leafFloorRect.h);
+  ctx.lineTo(leafRoofRect.x, leafTopY + leafRoofRect.h);
+  ctx.lineTo(leafRoofRect.x + leafRoofRect.w, leafTopY + leafRoofRect.h);
+  ctx.lineTo(leafFloorRect.x + leafFloorRect.w, leafBaseY + leafFloorRect.h);
   ctx.closePath();
   ctx.fill();
   
   // Side walls
   ctx.beginPath();
-  ctx.moveTo(leafFloorRect.x, leafFloorRect.y);
-  ctx.lineTo(leafRoofRect.x, leafRoofRect.y);
-  ctx.lineTo(leafRoofRect.x, leafRoofRect.y + leafRoofRect.h);
-  ctx.lineTo(leafFloorRect.x, leafFloorRect.y + leafFloorRect.h);
+  ctx.moveTo(leafFloorRect.x, leafBaseY);
+  ctx.lineTo(leafRoofRect.x, leafTopY);
+  ctx.lineTo(leafRoofRect.x, leafTopY + leafRoofRect.h);
+  ctx.lineTo(leafFloorRect.x, leafBaseY + leafFloorRect.h);
   ctx.closePath();
   ctx.fill();
   
   ctx.beginPath();
-  ctx.moveTo(leafFloorRect.x + leafFloorRect.w, leafFloorRect.y);
-  ctx.lineTo(leafRoofRect.x + leafRoofRect.w, leafRoofRect.y);
-  ctx.lineTo(leafRoofRect.x + leafRoofRect.w, leafRoofRect.y + leafRoofRect.h);
-  ctx.lineTo(leafFloorRect.x + leafFloorRect.w, leafFloorRect.y + leafFloorRect.h);
+  ctx.moveTo(leafFloorRect.x + leafFloorRect.w, leafBaseY);
+  ctx.lineTo(leafRoofRect.x + leafRoofRect.w, leafTopY);
+  ctx.lineTo(leafRoofRect.x + leafRoofRect.w, leafTopY + leafRoofRect.h);
+  ctx.lineTo(leafFloorRect.x + leafFloorRect.w, leafBaseY + leafFloorRect.h);
   ctx.closePath();
   ctx.fill();
   
   // Draw leaves top
   ctx.fillStyle = tree.leafColor;
-  ctx.fillRect(leafRoofRect.x, leafRoofRect.y, leafRoofRect.w, leafRoofRect.h);
+  ctx.fillRect(leafRoofRect.x, leafTopY, leafRoofRect.w, leafRoofRect.h);
   ctx.strokeStyle = 'rgba(0,0,0,0.2)';
   ctx.lineWidth = 1;
-  ctx.strokeRect(leafRoofRect.x, leafRoofRect.y, leafRoofRect.w, leafRoofRect.h);
+  ctx.strokeRect(leafRoofRect.x, leafTopY, leafRoofRect.w, leafRoofRect.h);
 }

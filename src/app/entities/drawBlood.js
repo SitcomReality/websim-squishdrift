@@ -10,7 +10,7 @@ export function drawBlood(r, state, blood) {
   ctx.beginPath();
   
   // Create an irregular blood stain shape - use fixed random values
-  const size = ts * (blood.size || 0.03125); // 25% of original 0.125
+  const size = ts * (blood.size || 0.5) * 0.25; // Reduced to 25% size
   const segments = 8;
   const random = blood.random || [];
   
@@ -42,19 +42,18 @@ export function drawBlood(r, state, blood) {
 
 // Blood management system
 export class BloodManager {
-  constructor(maxBloodPuddles = 25) {
+  constructor(maxBloodPuddles = 20) {
     this.maxBloodPuddles = maxBloodPuddles;
   }
 
   addBlood(state, blood) {
     const bloods = state.entities.filter(e => e.type === 'blood');
     
-    // If we're over the limit, remove oldest blood puddles
-    if (bloods.length >= this.maxBloodPuddles) {
-      // Sort by age (oldest first)
-      const sortedBloods = bloods.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
-      
-      // Remove oldest puddles until we're at the limit
+    // Sort by creation time (oldest first)
+    const sortedBloods = bloods.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+    
+    // If we're over the limit, remove oldest
+    if (sortedBloods.length >= this.maxBloodPuddles) {
       const removeCount = sortedBloods.length - this.maxBloodPuddles + 1;
       for (let i = 0; i < removeCount; i++) {
         const index = state.entities.indexOf(sortedBloods[i]);

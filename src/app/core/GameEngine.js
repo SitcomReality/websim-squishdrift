@@ -90,26 +90,45 @@ export class GameEngine {
   }
 
   update(dt) {
-    // this.input.update() moved to end so 'pressed' keys are available this frame
     this.systems.player.update(this.state, this.input, dt);
     this.systems.vehicle.update(this.state, this.input, dt);
-    this.systems.bullet.update(this.state, dt);
-    this.systems.npc.update(this.state, dt);
-    this.systems.aiDrive.update(this.state, dt);
-    this.systems.vehicleMovement.update(this.state, dt);
-    this.systems.vehicleCollision.update(this.state, dt);
-    this.systems.camera.update(this.state, this.input);
-    this.collisionSystem.update(this.state);
-    this.emergencyServices.update(this.state, dt);
-    this.systems.skidmarks.update(this.state, dt);
-    this.systems.weapon.update(this.state, this.input, dt);
+    this.systems.bullet.update(this.state, dt)
+    this.systems.npc.update(this.state, dt)
+    this.systems.aiDrive.update(this.state, dt)
+    this.systems.vehicleMovement.update(this.state, dt)
+    this.systems.vehicleCollision.update(this.state, dt)
+    this.systems.camera.update(this.state, this.input)
+    this.collisionSystem.update(this.state)
+    this.emergencyServices.update(this.state, dt)
+    this.systems.skidmarks.update(this.state, dt)
+    this.systems.weapon.update(this.state, this.input, dt)
     
     // Update spawn/despawn system
-    this.updateSpawning(dt);
-    this.updateDebugHUD();
+    this.updateSpawning(dt)
+    this.updateDebugHUD()
+    
+    // Clean up excess blood stains
+    this.cleanupBloodStains()
     
     // Now clear one-shot inputs (pressed) after systems consumed them
-    this.input.update();
+    this.input.update()
+  }
+
+  cleanupBloodStains() {
+    const bloods = this.state.entities.filter(e => e.type === 'blood');
+    if (bloods.length > 20) {
+      // Sort by creation time (oldest first)
+      const sortedBloods = bloods.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+      
+      // Remove oldest stains until we're at 20
+      const removeCount = bloods.length - 20;
+      for (let i = 0; i < removeCount; i++) {
+        const index = this.state.entities.indexOf(sortedBloods[i]);
+        if (index > -1) {
+          this.state.entities.splice(index, 1);
+        }
+      }
+    }
   }
 
   updateSpawning(dt) {

@@ -28,19 +28,17 @@ export const TileColor = {
   [Tile.BuildingFloor]: '#f8f9fa',
   [Tile.BuildingWall]: '#9ca3af',
   [Tile.Park]: '#228B22', // dark green
-  [Tile.ZebraCrossingN]: '#3A3A3A',
-  [Tile.ZebraCrossingE]: '#3A3A3A',
-  [Tile.ZebraCrossingS]: '#3A3A3A',
-  [Tile.ZebraCrossingW]: '#3A3A3A',
+  [Tile.ZebraCrossingN]: '#6a6a6a', // Slightly lighter road with a hint of white
+  [Tile.ZebraCrossingE]: '#6a6a6a',
+  [Tile.ZebraCrossingS]: '#6a6a6a',
+  [Tile.ZebraCrossingW]: '#6a6a6a',
 };
 
 export function isWalkable(t) { 
-  return t !== Tile.BuildingWall && t !== Tile.BuildingFloor &&
-         t !== Tile.RoadN && t !== Tile.RoadE && t !== Tile.RoadS && t !== Tile.RoadW;
+  return t !== Tile.BuildingWall && t !== Tile.BuildingFloor;
 }
 
-export function isRoad(t){ return t===Tile.RoadN||t===Tile.RoadE||t===Tile.RoadS||t===Tile.RoadW||isZebraCrossing(t); }
-export function isZebraCrossing(t){ return t>=Tile.ZebraCrossingN && t<=Tile.ZebraCrossingW; }
+export function isRoad(t){ return (t>=Tile.RoadN && t<=Tile.RoadW) || (t>=Tile.ZebraCrossingN && t<=Tile.ZebraCrossingW); }
 export function roadDir(t){
   if (t===Tile.RoadN || t===Tile.ZebraCrossingN) return 'N';
   if (t===Tile.RoadE || t===Tile.ZebraCrossingE) return 'E';

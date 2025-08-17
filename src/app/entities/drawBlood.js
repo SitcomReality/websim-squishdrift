@@ -6,6 +6,7 @@ export function drawBlood(r, state, blood) {
   
   // Create a realistic blood stain shape
   ctx.fillStyle = blood.color || 'hsl(0, 70%, 35%)';
+  ctx.globalAlpha = 0.75; // 75% opacity
   ctx.beginPath();
   
   // Create an irregular blood stain shape - use fixed random values

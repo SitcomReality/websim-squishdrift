@@ -1,13 +1,4 @@
 export class AIDrivingSystem {
-  /* @tweakable minimum number of nodes to maintain in planned route */
-  minPathLength = 4;
-  /* @tweakable how many nodes ahead to plan when rebuilding path */
-  planAheadNodes = 6;
-  /* @tweakable threshold for considering a node reached (in tiles) */
-  arrivalThreshold = 0.75;
-  /* @tweakable how aggressively to rebuild path when getting low */
-  rebuildAggressiveness = 0.5;
-
   update(state, dt) {
     const roads = state.world.map.roads;
     for (const v of state.entities.filter(e => e.type === 'vehicle' && e.controlled !== true)) {
@@ -28,16 +19,55 @@ export class AIDrivingSystem {
   initializeRoute(v, roads) {
     if (!v.node) return;
     
-    // Build initial path of minPathLength nodes ahead
-    v.plannedRoute = this.buildPathAhead(v.node, this.minPathLength, roads);
+    // Build initial path of 6 nodes ahead (increased from 4)
+    v.plannedRoute = this.buildPathAhead(v.node, 6, roads);
     v.currentPathIndex = 0;
+  }
+
+  buildPathAhead(startNode, depth, roads) {
+    const path = [startNode];
+    let current = startNode;
+    
+    for (let i = 0; i < depth; i++) {
+      if (!current.next || !current.next.length) break;
+      
+      // Choose next node (prefer straight, avoid immediate backtracking)
+      let nextChoice;
+      if (current.next.length === 1) {
+        nextChoice = current.next[0];
+      } else {
+        // Filter out immediate backtracking
+        const validChoices = current.next.filter(n => 
+          !path[path.length - 2] || 
+          !(n.x === path[path.length - 2].x && n.y === path[path.length - 2].y)
+        );
+        nextChoice = validChoices.length > 0 
+          ? validChoices[Math.floor(Math.random() * validChoices.length)]
+          : current.next[Math.floor(Math.random() * current.next.length)];
+      }
+      
+      const nextNode = roads.byKey.get(`${nextChoice.x},${nextChoice.y},${nextChoice.dir}`);
+      if (!nextNode) break;
+      
+      path.push(nextNode);
+      current = nextNode;
+    }
+    
+    return path;
   }
 
   updateRouteFollowing(state, v, roads, dt) {
     if (!v.plannedRoute || !v.plannedRoute.length) return;
     
-    // Proactively maintain path length
-    this.maintainPathLength(v, roads);
+    // Always maintain minimum path length - extend path BEFORE it runs out
+    const MIN_PATH_LENGTH = 5;
+    if (v.plannedRoute.length - v.currentPathIndex < MIN_PATH_LENGTH) {
+      const lastNode = v.plannedRoute[v.plannedRoute.length - 1];
+      const newNodes = this.buildPathAhead(lastNode, MIN_PATH_LENGTH, roads);
+      
+      // Add new nodes, skipping the first one (it's the same as lastNode)
+      v.plannedRoute = [...v.plannedRoute, ...newNodes.slice(1)];
+    }
     
     const currentTarget = v.plannedRoute[v.currentPathIndex];
     if (!currentTarget) return;
@@ -48,20 +78,22 @@ export class AIDrivingSystem {
       v.pos.y - targetPos.y
     );
     
-    // Check if we've reached the current target
-    if (distanceToTarget < this.arrivalThreshold) {
-      v.currentPathIndex++;
+    // Check if we're closer to a later node in the path
+    let newTargetIndex = v.currentPathIndex;
+    for (let i = v.currentPathIndex + 1; i < v.plannedRoute.length; i++) {
+      const laterNode = v.plannedRoute[i];
+      const laterPos = { x: laterNode.x + 0.5, y: laterNode.y + 0.5 };
+      const distToLater = Math.hypot(v.pos.x - laterPos.x, v.pos.y - laterPos.y);
       
-      // Always maintain minimum path length when advancing
-      if (v.currentPathIndex >= v.plannedRoute.length - this.minPathLength + 1) {
-        this.extendPath(v, roads);
+      if (distToLater < distanceToTarget) {
+        newTargetIndex = i;
+        break;
       }
     }
     
-    // Also check if we need to extend path due to running low
-    const remainingNodes = v.plannedRoute.length - v.currentPathIndex;
-    if (remainingNodes < this.minPathLength) {
-      this.extendPath(v, roads);
+    // If we found a closer node, skip to it
+    if (newTargetIndex !== v.currentPathIndex) {
+      v.currentPathIndex = newTargetIndex;
     }
     
     // Check for upcoming zebra crossings and adjust speed
@@ -91,19 +123,6 @@ export class AIDrivingSystem {
     const ARRIVAL_TOLERANCE = 0.75;
     if (distanceToTarget < ARRIVAL_TOLERANCE) {
       v.currentPathIndex++;
-      
-      // If we've reached the end of planned route or need more nodes
-      if (v.currentPathIndex >= v.plannedRoute.length || 
-          v.plannedRoute.length < 4) {
-        
-        // Get last node in path
-        const lastNode = v.plannedRoute[v.plannedRoute.length - 1];
-        const newNodes = this.buildPathAhead(lastNode, 4, roads);
-        
-        // Replace current path with new extended path
-        v.plannedRoute = newNodes;
-        v.currentPathIndex = 0;
-      }
     }
     
     // Update waypoint following based on current target
@@ -152,35 +171,6 @@ export class AIDrivingSystem {
     }
   }
 
-  maintainPathLength(v, roads) {
-    const remainingNodes = v.plannedRoute.length - v.currentPathIndex;
-    
-    // If we're running low on path nodes, extend immediately
-    if (remainingNodes < this.minPathLength) {
-      this.extendPath(v, roads);
-    }
-  }
-
-  extendPath(v, roads) {
-    if (!v.plannedRoute || v.currentPathIndex >= v.plannedRoute.length) {
-      // Rebuild from current position
-      if (v.node) {
-        v.plannedRoute = this.buildPathAhead(v.node, this.planAheadNodes, roads);
-        v.currentPathIndex = 0;
-      }
-      return;
-    }
-    
-    // Get the last node in current path
-    const lastNode = v.plannedRoute[v.plannedRoute.length - 1];
-    const newNodes = this.buildPathAhead(lastNode, this.planAheadNodes, roads);
-    
-    // Append new nodes (skip first one as it's the same as lastNode)
-    if (newNodes.length > 1) {
-      v.plannedRoute.push(...newNodes.slice(1));
-    }
-  }
-
   findZebraCrossingDistance(v) {
     if (!v.plannedRoute || v.currentPathIndex === undefined) return null;
     
@@ -221,37 +211,6 @@ export class AIDrivingSystem {
     // gentle cap to prevent instant flips
     v.ctrl.throttle = clamp(v.ctrl.throttle, -1, 1);
     v.ctrl.brake = clamp(v.ctrl.brake, 0, 1);
-  }
-
-  buildPathAhead(startNode, targetLength, roads) {
-    const path = [startNode];
-    let current = startNode;
-    
-    for (let i = 0; i < targetLength; i++) {
-      if (!current.next || !current.next.length) break;
-      
-      // Choose next node with bias against immediate backtracking
-      let nextChoice;
-      if (current.next.length === 1) {
-        nextChoice = current.next[0];
-      } else {
-        const validChoices = current.next.filter(n => 
-          !path[path.length - 2] || 
-          !(n.x === path[path.length - 2].x && n.y === path[path.length - 2].y)
-        );
-        nextChoice = validChoices.length > 0 
-          ? validChoices[Math.floor(Math.random() * validChoices.length)]
-          : current.next[Math.floor(Math.random() * current.next.length)];
-      }
-      
-      const nextNode = roads.byKey.get(`${nextChoice.x},${nextChoice.y},${nextChoice.dir}`);
-      if (!nextNode) break;
-      
-      path.push(nextNode);
-      current = nextNode;
-    }
-    
-    return path;
   }
 }
 

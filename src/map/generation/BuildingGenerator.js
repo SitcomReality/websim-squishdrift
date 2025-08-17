@@ -42,30 +42,31 @@ export class BuildingGenerator {
       };
 
       if (isBuilding) {
-        this.createBuilding(tiles, buildingRect);
+        // 30% chance for octagonal building
+        const isOctagon = this.rand() < 0.3;
+        
+        this.createBuilding(tiles, buildingRect, isOctagon);
       } else {
         this.createPark(tiles, buildingRect);
       }
     }
   }
 
-  createBuilding(tiles, rect) {
+  createBuilding(tiles, rect, isOctagon = false) {
     const building = {
       rect,
       height: 40 + this.rand() * 80,
-      color: `hsl(${Math.floor(this.rand() * 40 + 190)}, 20%, ${Math.floor(this.rand() * 20 + 55)}%)`
+      color: `hsl(${Math.floor(this.rand() * 40 + 190)}, 20%, ${Math.floor(this.rand() * 20 + 55)}%)`,
+      shape: isOctagon ? 'octagon' : 'rectangle'
     };
     this.buildings.push(building);
 
-    // Create building with floor and walls
+    // Create building floor
     for (let ly = 0; ly < rect.height; ly++) {
       for (let lx = 0; lx < rect.width; lx++) {
         const tx = rect.x + lx;
         const ty = rect.y + ly;
-        
-        const isWall = (lx === 0 || lx === rect.width - 1 || 
-                       ly === 0 || ly === rect.height - 1);
-        tiles[ty][tx] = isWall ? Tile.BuildingWall : Tile.BuildingFloor;
+        tiles[ty][tx] = Tile.BuildingFloor;
       }
     }
   }

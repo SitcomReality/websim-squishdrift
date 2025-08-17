@@ -23,14 +23,24 @@ export class AIDrivingSystem {
     // Always maintain at least 4 nodes ahead
     const MIN_PATH_LENGTH = 4;
     
+    if (!v.plannedRoute) {
+      v.plannedRoute = [];
+    }
+    
     if (v.plannedRoute.length < MIN_PATH_LENGTH) {
+      // Get the last node in current path
       const lastNode = v.plannedRoute[v.plannedRoute.length - 1];
+      
       if (lastNode) {
         const newNodes = this.buildPathAhead(lastNode, MIN_PATH_LENGTH - v.plannedRoute.length + 1, roads);
-        if (newNodes.length > 1) {
+        if (newNodes && newNodes.length > 1) {
           // Add new nodes except the first one (which is duplicate of lastNode)
           v.plannedRoute.push(...newNodes.slice(1));
         }
+      } else if (v.node) {
+        // If no last node but we have a starting node, build from there
+        v.plannedRoute = this.buildPathAhead(v.node, MIN_PATH_LENGTH, roads);
+        v.currentPathIndex = 0;
       }
     }
   }
@@ -41,13 +51,20 @@ export class AIDrivingSystem {
     // Build initial path of 4 nodes ahead
     v.plannedRoute = this.buildPathAhead(v.node, 4, roads);
     v.currentPathIndex = 0;
+    
+    // Ensure we actually got a valid path
+    if (!v.plannedRoute || v.plannedRoute.length === 0) {
+      v.plannedRoute = [v.node];
+    }
   }
 
   buildPathAhead(startNode, depth, roads) {
+    if (!startNode || !roads || !roads.byKey) return [];
+    
     const path = [startNode];
     let current = startNode;
     
-    for (let i = 0; i < depth; i++) {
+    for (let i = 0; i < depth && current; i++) {
       if (!current.next || !current.next.length) break;
       
       // Choose next node (prefer straight, avoid immediate backtracking)

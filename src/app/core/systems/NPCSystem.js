@@ -13,10 +13,36 @@ export class NPCSystem {
     ped.from = { x: ped.to.x, y: ped.to.y };
     const key = `${ped.from.x},${ped.from.y}`;
     const node = state.world.map.peds.nodes.get(key);
-    const options = (node?.neighbors||[]).filter(n=> !(n.x===ped.from.x && n.y===ped.from.y && n.x===ped.to.x && n.y===ped.to.y));
-    const notBack = options.filter(n=> !(n.x===ped.to.x && n.y===ped.to.y));
-    const pool = (notBack.length?notBack:options.length?options:[{x:ped.from.x,y:ped.from.y}]);
-    ped.to = pool[Math.floor(state.rand()*pool.length)];
+    
+    if (!node || !node.neighbors || node.neighbors.length === 0) {
+      // Fallback to current position if no neighbors
+      ped.to = { x: ped.from.x, y: ped.from.y };
+      ped.t = 0;
+      return;
+    }
+    
+    const options = node.neighbors;
+    
+    // Filter out the node we just came from (heavy bias against backtracking)
+    let filteredOptions = options.filter(n => 
+      !(n.x === ped.from.x && n.y === ped.from.y)
+    );
+    
+    // If we have no options except backtracking, we have to backtrack
+    if (filteredOptions.length === 0) {
+      // Find the original node we came from
+      const prevNode = options.find(n => n.x === ped.from.x && n.y === ped.from.y);
+      if (prevNode) {
+        ped.to = prevNode;
+      } else {
+        // Fallback to any available neighbor
+        ped.to = options[Math.floor(state.rand() * options.length)];
+      }
+    } else {
+      // Choose from the filtered options (excluding backtracking)
+      ped.to = filteredOptions[Math.floor(state.rand() * filteredOptions.length)];
+    }
+    
     ped.t = 0;
   }
 
@@ -27,4 +53,3 @@ export class NPCSystem {
     ped.pos.y = ay*(1-ped.t) + by*ped.t;
   }
 }
-

@@ -7,7 +7,9 @@ export function drawSkidmarks(r, state) {
   for (const m of marks) {
     const fade = Math.max(0, 1 - (m.age / (m.fadeDuration || 9999))); // age fade optional
     const alpha = (m.alpha ?? 0.3) * fade;
-    ctx.strokeStyle = `rgba(0,0,0,${alpha})`;
+    
+    // Use custom color if provided, otherwise default black
+    ctx.strokeStyle = m.color || `rgba(0,0,0,${alpha})`;
     ctx.lineWidth = m.widthPx ?? 2;
     ctx.beginPath();
     ctx.moveTo(m.left.x * ts, m.left.y * ts);

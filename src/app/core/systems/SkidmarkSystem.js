@@ -28,6 +28,9 @@ export class SkidmarkSystem {
     const ref = state.control.inVehicle ? state.control.vehicle?.pos : state.entities.find(e=>e.type==='player')?.pos;
     if (!ref) return;
 
+    // Track blood stains for collision detection
+    const bloodStains = state.entities.filter(e => e.type === 'blood');
+    
     // Emit new segments from vehicles
     for (const v of state.entities.filter(e => e.type === 'vehicle')) {
       const speed = Math.hypot(v.vel?.x||0, v.vel?.y||0);
@@ -41,46 +44,73 @@ export class SkidmarkSystem {
         const moved = Math.hypot(v.pos.x - v._lastSkidPos.x, v.pos.y - v._lastSkidPos.y);
 
         if (moved >= this.skidMinSegmentSpacing) {
-          const alpha = Math.min(1, this.skidAlpha + (drifting ? (lateralSlip * 0.25) : 0));
-          const segmentHalfLength = this.skidSegmentLength / 2;
-
-          // Forward vector of the car (along its rotation)
+          // Calculate rear wheel positions
           const fwdX = Math.cos(v.rot || 0);
           const fwdY = Math.sin(v.rot || 0);
-
-          // Perpendicular vector to the car's forward direction (pointing to the right of the car)
           const perpX = Math.sin(v.rot || 0);
           const perpY = -Math.cos(v.rot || 0);
           
-          const lw = this.skidTrackHalfWidth;
-
-          // Calculate approximate rear wheel positions by offsetting from vehicle center
           const rearX = v.pos.x + fwdX * this.rearWheelOffset;
           const rearY = v.pos.y + fwdY * this.rearWheelOffset;
 
-          // Left wheel track segment: segment is aligned with car's rotation
+          // Check if rear wheels are over blood
+          const isOverBlood = this.checkBloodCollision(rearX, rearY, bloodStains);
+          
+          // Update blood skid state
+          if (!v._bloodSkidState) {
+            v._bloodSkidState = { inBlood: false, bloodCount: 0 };
+          }
+          
+          if (isOverBlood) {
+            v._bloodSkidState.inBlood = true;
+            v._bloodSkidState.bloodCount = 8; // Continue blood skids for 8 segments
+          } else if (v._bloodSkidState.bloodCount > 0) {
+            v._bloodSkidState.bloodCount--;
+          }
+          
+          // Determine skid color based on state
+          const useBloodSkids = v._bloodSkidState.inBlood || v._bloodSkidState.bloodCount > 0;
+          const alpha = Math.min(1, this.skidAlpha + (drifting ? (lateralSlip * 0.25) : 0));
+          const segmentHalfLength = this.skidSegmentLength / 2;
+          
+          const skidColor = useBloodSkids ? 'rgba(139, 0, 0, 0.8)' : 'rgba(0, 0, 0, 0.8)';
+          
+          const lw = this.skidTrackHalfWidth;
+
+          // Left wheel track
           state.skidmarks.push({
             left: { x: rearX - perpX * lw - fwdX * segmentHalfLength, y: rearY - perpY * lw - fwdY * segmentHalfLength },
             right: { x: rearX - perpX * lw + fwdX * segmentHalfLength, y: rearY - perpY * lw + fwdY * segmentHalfLength },
             age: 0,
             widthPx: this.skidLineWidthPx,
             alpha: alpha,
+            color: skidColor
           });
 
-          // Right wheel track segment: segment is aligned with car's rotation
+          // Right wheel track
           state.skidmarks.push({
             left: { x: rearX + perpX * lw - fwdX * segmentHalfLength, y: rearY + perpY * lw - fwdY * segmentHalfLength },
             right: { x: rearX + perpX * lw + fwdX * segmentHalfLength, y: rearY + perpY * lw + fwdY * segmentHalfLength },
             age: 0,
             widthPx: this.skidLineWidthPx,
             alpha: alpha,
+            color: skidColor
           });
           
           v._lastSkidPos.x = v.pos.x; v._lastSkidPos.y = v.pos.y;
+          
+          // Reset inBlood flag if not currently over blood
+          if (!isOverBlood) {
+            v._bloodSkidState.inBlood = false;
+          }
         }
       } else {
-        // If not skidding/braking, reset the last position to current pos to start a fresh line next time
+        // If not skidding/braking, reset the last position and blood state
         v._lastSkidPos = new Vec2(v.pos.x, v.pos.y);
+        if (v._bloodSkidState) {
+          v._bloodSkidState.inBlood = false;
+          v._bloodSkidState.bloodCount = 0;
+        }
       }
     }
 
@@ -96,6 +126,19 @@ export class SkidmarkSystem {
         state.skidmarks.splice(i, 1);
       }
     }
+  }
+
+  checkBloodCollision(x, y, bloodStains) {
+    const detectionRadius = 0.3; // Radius around rear wheels
+    for (const blood of bloodStains) {
+      const dx = x - blood.pos.x;
+      const dy = y - blood.pos.y;
+      const distance = Math.hypot(dx, dy);
+      if (distance < detectionRadius) {
+        return true;
+      }
+    }
+    return false;
   }
 
   computeLateralSlip(v) {

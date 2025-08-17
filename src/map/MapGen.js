@@ -187,9 +187,61 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
     }
   }
 
+  // After creating roundabouts, add zebra crossings
+  const zebraCrossings = [];
+  
+  // Add zebra crossings at roundabout entrances
+  for (let gy = 0; gy <= blocksHigh; gy++) {
+    for (let gx = 0; gx <= blocksWide; gx++) {
+      const cx = mapOffset + gx * (W + MED);
+      const cy = mapOffset + gy * (W + MED);
+      if (cy >= height || cx >= width) continue;
+      
+      // Zebra crossings at roundabout corners
+      // Top-left corner of roundabout
+      if (gx > 0 && gy > 0) {
+        // Horizontal zebra crossing (east-west traffic)
+        for (let x = cx - 2; x <= cx + 2; x++) {
+          if (x >= 0 && x < width) {
+            if (tiles[cy - 2][x] === Tile.RoadW && tiles[cy - 1][x] === Tile.RoadW) {
+              tiles[cy - 2][x] = 11; // Zebra crossing west
+              tiles[cy - 1][x] = 11; // Zebra crossing west
+              zebraCrossings.push({ x, y: cy - 2, dir: 'W', type: 'zebra' });
+              zebraCrossings.push({ x, y: cy - 1, dir: 'W', type: 'zebra' });
+            }
+            if (tiles[cy + 2][x] === Tile.RoadE && tiles[cy + 1][x] === Tile.RoadE) {
+              tiles[cy + 2][x] = 12; // Zebra crossing east
+              tiles[cy + 1][x] = 12; // Zebra crossing east
+              zebraCrossings.push({ x, y: cy + 2, dir: 'E', type: 'zebra' });
+              zebraCrossings.push({ x, y: cy + 1, dir: 'E', type: 'zebra' });
+            }
+          }
+        }
+        
+        // Vertical zebra crossing (north-south traffic)
+        for (let y = cy - 2; y <= cy + 2; y++) {
+          if (y >= 0 && y < height) {
+            if (tiles[y][cx - 2] === Tile.RoadS && tiles[y][cx - 1] === Tile.RoadS) {
+              tiles[y][cx - 2] = 13; // Zebra crossing south
+              tiles[y][cx - 1] = 13; // Zebra crossing south
+              zebraCrossings.push({ x: cx - 2, y, dir: 'S', type: 'zebra' });
+              zebraCrossings.push({ x: cx - 1, y, dir: 'S', type: 'zebra' });
+            }
+            if (tiles[y][cx + 2] === Tile.RoadN && tiles[y][cx + 1] === Tile.RoadN) {
+              tiles[y][cx + 2] = 14; // Zebra crossing north
+              tiles[y][cx + 1] = 14; // Zebra crossing north
+              zebraCrossings.push({ x: cx + 2, y, dir: 'N', type: 'zebra' });
+              zebraCrossings.push({ x: cx + 1, y, dir: 'N', type: 'zebra' });
+            }
+          }
+        }
+      }
+    }
+  }
+  
   const roads = buildRoadGraph(tiles, width, height, roundabouts);
-  const peds = buildPedGraph(tiles, width, height);
-  return { tiles, width, height, W, MED, seed, roads, peds, buildings };
+  const peds = buildPedGraph(tiles, width, height, zebraCrossings);
+  return { tiles, width, height, W, MED, seed, roads, peds, buildings, zebraCrossings };
 }
 
 // helpers
@@ -264,16 +316,59 @@ function buildRoadGraph(tiles, width, height, roundabouts){
   return { nodes, byKey };
 }
 
-function buildPedGraph(tiles, width, height){
-  const nodes = new Map(); const key=(x,y)=>`${x},${y}`;
-  const walkable = (t)=> t!==Tile.Median && t!==Tile.Intersection && t!==Tile.BuildingWall && t!==Tile.BuildingFloor &&
-                        t!==Tile.RoadN && t!==Tile.RoadE && t!==Tile.RoadS && t!==Tile.RoadW;
-  for (let y=0;y<height;y++) for (let x=0;x<width;x++){
-    if (!walkable(tiles[y][x])) continue; nodes.set(key(x,y), { x, y, neighbors:[] });
+function buildPedGraph(tiles, width, height, zebraCrossings) {
+  const nodes = new Map();
+  const key = (x, y) => `${x},${y}`;
+  
+  // Walkable includes zebra crossings
+  const walkable = (t) => t !== Tile.Median && t !== Tile.Intersection && t !== Tile.BuildingWall && 
+                     (t === 11 || t === 12 || t === 13 || t === 14 || isWalkable(t));
+  
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      if (!walkable(tiles[y][x])) continue;
+      nodes.set(key(x, y), { x, y, neighbors: [] });
+    }
   }
-  const dirs=[[1,0],[-1,0],[0,1],[0,-1]];
-  for (const n of nodes.values()) for (const [dx,dy] of dirs){
-    const k = key(n.x+dx, n.y+dy); const m = nodes.get(k); if (m) n.neighbors.push({ x:m.x, y:m.y });
+  
+  const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+  for (const n of nodes.values()) {
+    for (const [dx, dy] of dirs) {
+      const k = key(n.x + dx, n.y + dy);
+      const m = nodes.get(k);
+      if (m) n.neighbors.push({ x: m.x, y: m.y });
+    }
   }
+  
+  // Add special zebra crossing connections
+  for (const crossing of zebraCrossings) {
+    // Allow pedestrians to cross zebra crossings
+    if (crossing.type === 'zebra') {
+      // Find connected footpaths
+      const footpaths = [];
+      const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+      for (const [dx, dy] of dirs) {
+        const nx = crossing.x + dx;
+        const ny = crossing.y + dy;
+        if (nx >= 0 && ny >= 0 && nx < width && ny < height && 
+            tiles[ny][nx] === Tile.Footpath) {
+          footpaths.push({ x: nx, y: ny });
+        }
+      }
+      
+      // Connect zebra crossing to adjacent footpaths
+      const crossingNode = nodes.get(key(crossing.x, crossing.y));
+      if (crossingNode) {
+        for (const fp of footpaths) {
+          const fpNode = nodes.get(key(fp.x, fp.y));
+          if (fpNode) {
+            crossingNode.neighbors.push({ x: fp.x, y: fp.y });
+            fpNode.neighbors.push({ x: crossing.x, y: crossing.y });
+          }
+        }
+      }
+    }
+  }
+  
   return { nodes, list: Array.from(nodes.values()) };
 }

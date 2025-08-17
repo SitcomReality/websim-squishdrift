@@ -81,6 +81,9 @@ export function createInitialState() {
   const sortedByDist = pedNodes.slice().sort((a,b)=> (Math.hypot(a.x+0.5-spawnX,a.y+0.5-spawnY) - Math.hypot(b.x+0.5-spawnX,b.y+0.5-spawnY)));
   for (let i=0;i<spawnCount;i++){
     const n = sortedByDist[i];
+    // Skip spawning on median strips
+    if (map.tiles[Math.floor(n.y)][Math.floor(n.x)] === Tile.Median) continue;
+    
     const next = (n.neighbors && n.neighbors.length) ? n.neighbors[Math.floor(rand()*n.neighbors.length)] : { x:n.x, y:n.y };
     state.entities.push({ type:'npc', pos:new Vec2(n.x+0.5, n.y+0.5), from:{x:n.x,y:n.y}, to: next, t: 0, speed: 0.2 + rand()*0.15 });
   }

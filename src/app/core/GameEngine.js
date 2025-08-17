@@ -157,7 +157,7 @@ export class GameEngine {
     );
   }
 
-  spawnEntitiesNearPlayer(referencePos, innerRadius, outerRadius) {
+  spawnEntitiesNearPlayer(referencePos, innerSpawnRadius, outerSpawnRadius) {
     const existingNPCs = this.state.entities.filter(e => e.type === 'npc').length;
     const existingVehicles = this.state.entities.filter(e => e.type === 'vehicle').length;
     
@@ -168,8 +168,12 @@ export class GameEngine {
     if (existingNPCs < maxNPCs) {
       const pedNodes = this.state.world.map.peds?.list || [];
       const validSpawns = pedNodes.filter(node => {
+        // Skip median strips for spawning
+        if (this.state.world.map.tiles[Math.floor(node.y)][Math.floor(node.x)] === Tile.Median) {
+          return false;
+        }
         const distance = Math.hypot(node.x - referencePos.x, node.y - referencePos.y);
-        return distance <= outerRadius && distance >= innerRadius;
+        return distance <= outerSpawnRadius && distance >= innerSpawnRadius;
       });
 
       if (validSpawns.length > 0) {
@@ -194,7 +198,7 @@ export class GameEngine {
       const roads = this.state.world.map.roads;
       const validSpawns = roads.nodes.filter(node => {
         const distance = Math.hypot(node.x - referencePos.x, node.y - referencePos.y);
-        return distance <= outerRadius && distance >= innerRadius && node.next && node.next.length > 0;
+        return distance <= outerSpawnRadius && distance >= innerSpawnRadius && node.next && node.next.length > 0;
       });
 
       if (validSpawns.length > 0) {

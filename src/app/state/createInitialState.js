@@ -1,5 +1,5 @@
 import { generateCity } from '../../map/MapGen.js';
-import { isWalkable } from '../../map/TileTypes.js';
+import { isWalkable, Tile } from '../../map/TileTypes.js';
 import { rng } from '../../utils/RNG.js';
 import { Vec2 } from '../../utils/Vec2.js';
 

@@ -63,7 +63,7 @@ export class SkidmarkSystem {
           
           if (isOverBlood) {
             v._bloodSkidState.inBlood = true;
-            v._bloodSkidState.bloodCount = 8; // Continue blood skids for 8 segments
+            v._bloodSkidState.bloodCount = 24; // Continue blood skids for 24 segments (3x longer)
           } else if (v._bloodSkidState.bloodCount > 0) {
             v._bloodSkidState.bloodCount--;
           }

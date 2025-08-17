@@ -20,13 +20,12 @@ export class VehicleCollisionSystem {
     for (const o of others) {
       const contact = obbOverlap(obbA, entityOBB(o)); if (!contact) continue;
       
-      // Use velocity-based bounce direction instead of contact normal
-      const velocityDir = this.getVelocityDirection(v);
-      const bounceNormal = this.calculateBounceNormal(velocityDir, contact.normal);
+      // Use contact normal for more predictable collision response
+      const correctedContact = { ...contact, normal: this.smoothCollisionNormal(contact.normal, v, o) };
+      resolveDynamicDynamic(v, o, correctedContact, 0.4); // Reduced restitution for smoother bounce
       
-      // Create new contact with corrected normal
-      const correctedContact = { ...contact, normal: bounceNormal };
-      resolveDynamicDynamic(v, o, correctedContact, 0.85);
+      // Apply damping to reduce flickering
+      this.applyCollisionDamping(v, o);
     }
   }
 
@@ -41,33 +40,12 @@ export class VehicleCollisionSystem {
       
       const contact = obbOverlap(obb, aabbForTile(gx,gy)); if (!contact) continue;
       
-      // Calculate reflection vector based on velocity direction
-      const velocityDir = this.getVelocityDirection(v);
-      const bounceNormal = this.calculateReflectionNormal(velocityDir, contact.normal);
+      // Use contact normal for building collision
+      const correctedContact = { ...contact, normal: contact.normal };
+      resolveDynamicStatic(v, correctedContact, 0.2);
       
-      // Create corrected contact
-      const correctedContact = { ...contact, normal: bounceNormal };
-      
-      // Use lower restitution for buildings to reduce bounce
-      resolveDynamicStatic(v, correctedContact, 0.3);
-      
-      // Significantly reduce velocity to prevent jitter
-      if (v.vel) {
-        v.vel.x *= 0.4;
-        v.vel.y *= 0.4;
-      }
-      
-      // Apply friction to slow down sliding along walls
-      const friction = 0.8;
-      if (v.vel) {
-        const speed = Math.hypot(v.vel.x, v.vel.y);
-        if (speed > 0.1) {
-          v.vel.x *= friction;
-          v.vel.y *= friction;
-        }
-      }
-      
-      if (typeof v.angularVelocity === 'number') v.angularVelocity *= 0.5;
+      // Strong damping for building impacts
+      this.applyBuildingDamping(v);
     }
   }
 
@@ -77,10 +55,65 @@ export class VehicleCollisionSystem {
     const contact = obbOverlap(entityOBB(v), entityOBB(player,{w:player.hitboxW,h:player.hitboxH}));
     if (!contact) return;
     
-    const velocityDir = this.getVelocityDirection(v);
-    const bounceNormal = this.calculateBounceNormal(velocityDir, contact.normal);
-    const correctedContact = { ...contact, normal: bounceNormal };
-    resolveDynamicDynamic(v, player, correctedContact, 0.85);
+    const correctedContact = { ...contact, normal: this.smoothCollisionNormal(contact.normal, v, player) };
+    resolveDynamicDynamic(v, player, correctedContact, 0.5);
+    
+    // Apply damping
+    this.applyCollisionDamping(v, player);
+  }
+
+  smoothCollisionNormal(normal, objA, objB) {
+    // Ensure consistent collision normals for smoother response
+    const centerToCenter = {
+      x: objB.pos.x - objA.pos.x,
+      y: objB.pos.y - objA.pos.y
+    };
+    
+    // Normalize center-to-center vector
+    const len = Math.hypot(centerToCenter.x, centerToCenter.y);
+    if (len > 0) {
+      centerToCenter.x /= len;
+      centerToCenter.y /= len;
+    }
+    
+    // Use contact normal but bias slightly toward center-to-center for stability
+    const blendFactor = 0.8; // 80% contact normal, 20% center-to-center
+    return {
+      x: normal.x * blendFactor + centerToCenter.x * (1 - blendFactor),
+      y: normal.y * blendFactor + centerToCenter.y * (1 - blendFactor)
+    };
+  }
+
+  applyCollisionDamping(objA, objB) {
+    // Reduce angular velocity to prevent spinning
+    if (typeof objA.angularVelocity === 'number') {
+      objA.angularVelocity *= 0.7;
+    }
+    if (typeof objB.angularVelocity === 'number') {
+      objB.angularVelocity *= 0.7;
+    }
+    
+    // Reduce linear velocity slightly for stability
+    const dampingFactor = 0.85;
+    if (objA.vel) {
+      objA.vel.x *= dampingFactor;
+      objA.vel.y *= dampingFactor;
+    }
+    if (objB.vel) {
+      objB.vel.x *= dampingFactor;
+      objB.vel.y *= dampingFactor;
+    }
+  }
+
+  applyBuildingDamping(v) {
+    // Heavily damp vehicle velocity when hitting buildings
+    if (v.vel) {
+      v.vel.x *= 0.3;
+      v.vel.y *= 0.3;
+    }
+    if (typeof v.angularVelocity === 'number') {
+      v.angularVelocity *= 0.5;
+    }
   }
 
   getVelocityDirection(entity) {
@@ -106,21 +139,5 @@ export class VehicleCollisionSystem {
     if (length < 0.01) return contactNormal;
 
     return { x: reflected.x / length, y: reflected.y / length };
-  }
-
-  calculateReflectionNormal(velocityDir, contactNormal) {
-    // Simplified reflection for buildings - prioritize straight bounce away from wall
-    const dot = velocityDir.x * contactNormal.x + velocityDir.y * contactNormal.y;
-    
-    // If moving towards the wall, reflect directly away
-    if (dot < 0) {
-      return {
-        x: contactNormal.x,
-        y: contactNormal.y
-      };
-    }
-    
-    // If moving parallel or away, use contact normal
-    return contactNormal;
   }
 }

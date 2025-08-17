@@ -10,7 +10,6 @@ export const Tile = {
   BuildingFloor: 8,
   BuildingWall: 9,
   Park: 10,
-  ZebraCrossing: 11, // new zebra crossing tile
 };
 
 export const TileColor = {
@@ -25,12 +24,10 @@ export const TileColor = {
   [Tile.BuildingFloor]: '#f8f9fa',
   [Tile.BuildingWall]: '#9ca3af',
   [Tile.Park]: '#228B22', // dark green
-  [Tile.ZebraCrossing]: '#CED4DA', // slightly lighter for crossing base
 };
 
 export function isWalkable(t) { 
-  return t !== Tile.BuildingWall && t !== Tile.BuildingFloor && t !== Tile.Median;
-  // Note: ZebraCrossing is walkable (not excluded here)
+  return t !== Tile.BuildingWall && t !== Tile.BuildingFloor;
 }
 
 export function isRoad(t){ return t===Tile.RoadN||t===Tile.RoadE||t===Tile.RoadS||t===Tile.RoadW; }

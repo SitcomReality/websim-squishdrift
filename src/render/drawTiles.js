@@ -13,13 +13,6 @@ export function drawTiles(r, state, layer = 'all'){
     if (layer === 'floors' && !floorTypes.has(t)) continue;
     r.ctx.fillStyle = TileColor[t] || '#f5f5f5';
     r.ctx.fillRect(gx*ts, gy*ts, ts, ts);
-    // Draw zebra stripes for crossings
-    if (t === Tile.ZebraCrossing) {
-      r.ctx.fillStyle = '#ffffff';
-      const stripeW = Math.max(2, Math.floor(ts * 0.12));
-      r.ctx.fillRect(gx*ts + ts*0.12, gy*ts + ts*0.28, ts*0.76, stripeW);
-      r.ctx.fillRect(gx*ts + ts*0.12, gy*ts + ts*0.56, ts*0.76, stripeW);
-    }
     if (t === Tile.BuildingWall) {
       r.ctx.fillStyle = 'rgba(0,0,0,0.2)';
       r.ctx.fillRect(gx*ts, gy*ts + ts*0.7, ts, ts*0.3);

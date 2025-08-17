@@ -187,21 +187,6 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
     }
   }
 
-  // Convert road tiles adjacent to medians (roundabout entrances/exits) into zebra crossings
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      const t = tiles[y][x];
-      // only consider road tiles (not those inside the roundabout centers/arms we explicitly set)
-      if (t === Tile.RoadN || t === Tile.RoadE || t === Tile.RoadS || t === Tile.RoadW) {
-        // if any 4-neighbor is a median, this is an approach tile -> mark as zebra
-        const neigh = (nx, ny) => (nx >= 0 && ny >= 0 && nx < width && ny < height) ? tiles[ny][nx] : null;
-        if (neigh(x+1,y) === Tile.Median || neigh(x-1,y) === Tile.Median || neigh(x,y+1) === Tile.Median || neigh(x,y-1) === Tile.Median) {
-          tiles[y][x] = Tile.ZebraCrossing;
-        }
-      }
-    }
-  }
-
   const roads = buildRoadGraph(tiles, width, height, roundabouts);
   const peds = buildPedGraph(tiles, width, height);
   return { tiles, width, height, W, MED, seed, roads, peds, buildings };

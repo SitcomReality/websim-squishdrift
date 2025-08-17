@@ -37,7 +37,7 @@ export class BuildingGenerator {
       const buildingRect = {
         x: ox + interiorStart + lot.x,
         y: oy + interiorStart + lot.y,
-        width: 2,
+        width: 2 + 2,
         height: 2,
       };
 

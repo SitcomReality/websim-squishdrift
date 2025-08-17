@@ -47,6 +47,7 @@ export class CollisionSystem {
     
     if (!player || !player.health) return;
     if (state.control?.inVehicle) return; // disable player collisions while inside a vehicle
+    if (player.collisionDisabled) return; // Skip if player collision is disabled
     
     for (const vehicle of vehicles) {
       if (vehicle.controlled) continue; // Skip player-controlled vehicle

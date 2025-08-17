@@ -23,11 +23,14 @@ export class WeaponSystem {
     const player = state.entities.find(e => e.type === 'player');
     if (!player) return;
 
+    // Skip weapon handling if player is in vehicle
+    if (player.inVehicle) return;
+
     // Handle weapon pickup
     this.handleWeaponPickup(state, player);
     
     // Handle firing
-    if (player.equippedWeapon) {
+    if (player.equippedWeapon && !player.inVehicle) {
       this.handleWeaponFiring(state, player, input, state.debugOverlay?.enabled || false);
     }
 

@@ -128,6 +128,12 @@ export class PlayerSystem {
     state.control.inVehicle = true;
     state.control.vehicle = vehicle;
     player.hidden = true;
+    player.inVehicle = true; // Mark player as in vehicle
+    
+    // Make player non-collidable and non-interactive
+    player.collisionDisabled = true;
+    player.canUseItems = false;
+    
     vehicle.controlled = true;
     
     // Remove AI properties if they exist
@@ -160,7 +166,11 @@ export class PlayerSystem {
         player.pos.y = vehicle.pos.y + 1;
       }
       
+      // Restore player state
       player.hidden = false;
+      player.inVehicle = false;
+      player.collisionDisabled = false;
+      player.canUseItems = true;
     }
     
     state.control.inVehicle = false;

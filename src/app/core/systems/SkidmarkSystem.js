@@ -1,38 +1,27 @@
 import { Vec2 } from '../../../utils/Vec2.js';
 
 export class SkidmarkSystem {
-    /* @tweakable Lateral slip threshold for skid detection */
-    skidLateralSlipThreshold = 0.35;
+        skidLateralSlipThreshold = 0.35;
     
-    /* @tweakable Minimum speed for brake-induced skids */
-    skidMinSpeedForBraking = 3.0;
+        skidMinSpeedForBraking = 3.0;
     
-    /* @tweakable Brake threshold for skid activation */
-    skidBrakeThreshold = 0.7;
+        skidBrakeThreshold = 0.7;
     
-    /* @tweakable Minimum spacing between skid segments */
-    skidMinSegmentSpacing = 0.05;
+        skidMinSegmentSpacing = 0.05;
     
-    /* @tweakable Half-width of skid tracks in tiles */
-    skidTrackHalfWidth = 0.23;
+        skidTrackHalfWidth = 0.23;
     
-    /* @tweakable Line width of skid marks in pixels */
-    skidLineWidthPx = 2;
+        skidLineWidthPx = 2;
     
-    /* @tweakable Opacity of skid marks */
-    skidAlpha = 0.35;
+        skidAlpha = 0.35;
     
-    /* @tweakable Maximum age of skid marks in seconds */
-    skidMaxAge = 18;
+        skidMaxAge = 18;
     
-    /* @tweakable Despawn radius for skid marks in tiles */
-    skidDespawnRadius = 15;
+        skidDespawnRadius = 15;
     
-    /* @tweakable Length of each skid segment in tiles */
-    skidSegmentLength = 0.05;
+        skidSegmentLength = 0.05;
     
-    /* @tweakable Offset from vehicle center to rear wheels */
-    rearWheelOffset = -0.3;
+        rearWheelOffset = -0.3;
 
   update(state, dt) {
     if (!state.skidmarks) state.skidmarks = [];

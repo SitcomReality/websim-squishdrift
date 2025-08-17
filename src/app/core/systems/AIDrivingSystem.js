@@ -97,6 +97,29 @@ export class AIDrivingSystem {
       v.currentPathIndex = 0;
     }
     
+    // Check for upcoming zebra crossings and adjust speed
+    const zebraCrossingDistance = this.findZebraCrossingDistance(v);
+    const baseSpeed = 3.0;
+    
+    if (zebraCrossingDistance !== null) {
+      // Reduce speed based on distance to zebra crossing
+      const minDistance = 2; // nodes
+      const maxDistance = 5; // nodes
+      let speedMultiplier = 1.0;
+      
+      if (zebraCrossingDistance <= minDistance) {
+        speedMultiplier = 0.3; // Slow down significantly
+      } else if (zebraCrossingDistance <= maxDistance) {
+        // Gradually reduce speed as we get closer
+        const factor = (zebraCrossingDistance - minDistance) / (maxDistance - minDistance);
+        speedMultiplier = 0.3 + (factor * 0.7);
+      }
+      
+      v.aiTargetSpeed = baseSpeed * speedMultiplier;
+    } else {
+      v.aiTargetSpeed = baseSpeed;
+    }
+    
     // If we've reached the target node
     const ARRIVAL_TOLERANCE = 0.75;
     if (distanceToTarget < ARRIVAL_TOLERANCE) {
@@ -139,7 +162,7 @@ export class AIDrivingSystem {
       const velocityDamping = Math.min(1, currentSpeed / 4.0);
       v.ctrl.steer = clamp(diff * steerK * (1 - velocityDamping * 0.3), -1, 1);
       
-      // Speed control
+      // Speed control based on zebra crossing proximity
       const turnSlow = 1 / (1 + 2 * Math.abs(diff));
       const targetSpeed = v.aiTargetSpeed * turnSlow;
       
@@ -155,6 +178,23 @@ export class AIDrivingSystem {
         v.ctrl.throttle = 0; v.ctrl.brake = 0.5;
       }
     }
+  }
+
+  findZebraCrossingDistance(v) {
+    if (!v.plannedRoute || v.currentPathIndex === undefined) return null;
+    
+    const zebraCrossingTypes = [11, 12, 13, 14]; // Zebra crossing tile types
+    
+    for (let i = v.currentPathIndex; i < v.plannedRoute.length; i++) {
+      const node = v.plannedRoute[i];
+      const tileType = window.state?.world?.map?.tiles[node.y]?.[node.x];
+      
+      if (zebraCrossingTypes.includes(tileType)) {
+        return i - v.currentPathIndex; // Distance in nodes
+      }
+    }
+    
+    return null;
   }
 
   updateMovement(v, dt) {

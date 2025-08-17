@@ -37,7 +37,14 @@ export class VehicleCollisionSystem {
     
     for (let oy=-r; oy<=r; oy++) for (let ox=-r; ox<=r; ox++) {
       const gx=tx+ox, gy=ty+oy; if (gx<0||gy<0||gx>=map.width||gy>=map.height) continue;
-      const t = map.tiles[gy][gx]; if (t !== 8 && t !== 9) continue; // BuildingFloor/Wall as solid
+      
+      // Check for tree trunks as impassable obstacles
+      const isTreeTrunk = map.trees?.some(tree => 
+        Math.floor(tree.pos.x) === gx && Math.floor(tree.pos.y) === gy
+      );
+      
+      const t = map.tiles[gy][gx]; 
+      if (t !== 8 && t !== 9 && !isTreeTrunk) continue; // BuildingFloor/Wall/TreeTrunk as solid
       
       const contact = obbOverlap(obb, aabbForTile(gx,gy)); if (!contact) continue;
       

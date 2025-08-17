@@ -1,6 +1,7 @@
 import { VehiclePhysicsConstants } from './VehiclePhysicsConstants.js';
 import { Tile } from '../../../map/TileTypes.js';
 import { entityOBB, aabbForTile, obbOverlap, resolveDynamicDynamic, resolveDynamicStatic } from './geom.js';
+import { BloodManager } from '../../entities/drawBlood.js';
 
 export class VehicleCollisionSystem {
   constructor() {}
@@ -64,15 +65,15 @@ export class VehicleCollisionSystem {
         const contact = obbOverlap(vehicleOBB, pedOBB);
 
         if (contact) {
-            // Use BloodManager to handle blood creation and limit
+            // Ensure BloodManager exists
             if (!state.bloodManager) {
-                state.bloodManager = new (require('../../entities/drawBlood.js').BloodManager)();
+                state.bloodManager = new BloodManager(25);
             }
             
             const bloodStain = {
                 type: 'blood',
                 pos: { x: ped.pos.x, y: ped.pos.y },
-                size: 0.6 + (state.rand ? state.rand() * 0.4 : Math.random() * 0.4),
+                size: 0.25 + (state.rand ? state.rand() * 0.15 : Math.random() * 0.15), // 25% of original size
                 color: `hsl(0, 70%, ${30 + (state.rand ? state.rand() * 20 : Math.random() * 20)}%)`,
                 rotation: (state.rand ? state.rand() * Math.PI * 2 : Math.random() * Math.PI * 2)
             };

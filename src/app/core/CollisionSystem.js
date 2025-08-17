@@ -1,4 +1,5 @@
 import { Vec2 } from '../../utils/Vec2.js';
+import { BloodManager } from '../entities/drawBlood.js';
 
 export class CollisionSystem {
   constructor() {
@@ -40,9 +41,42 @@ export class CollisionSystem {
     }
   }
 
+  // Check collisions between vehicles and pedestrians
+  checkVehiclePedestrianCollisions(state) {
+    const vehicles = state.entities.filter(e => e.type === 'vehicle');
+    const pedestrians = state.entities.filter(e => e.type === 'npc');
+
+    for (const vehicle of vehicles) {
+      for (let i = pedestrians.length - 1; i >= 0; i--) {
+        const pedestrian = pedestrians[i];
+        
+        if (this.checkCollision(vehicle, pedestrian, 0.45)) {
+            // Ensure BloodManager exists
+            if (!state.bloodManager) {
+                state.bloodManager = new BloodManager(25);
+            }
+            
+            const bloodStain = {
+                type: 'blood',
+                pos: { x: pedestrian.pos.x, y: pedestrian.pos.y },
+                size: 0.25 + (state.rand ? state.rand() * 0.15 : Math.random() * 0.15), // 25% of original size
+                color: `hsl(0, 70%, ${30 + (state.rand ? state.rand() * 20 : Math.random() * 20)}%)`,
+                rotation: (state.rand ? state.rand() * Math.PI * 2 : Math.random() * Math.PI * 2)
+            };
+            
+            state.bloodManager.addBlood(state, bloodStain);
+
+            const pedIndex = state.entities.indexOf(pedestrian);
+            if (pedIndex > -1) {
+                state.entities.splice(pedIndex, 1);
+            }
+        }
+      }
+    }
+  }
+
   update(state) {
     this.checkBulletCollisions(state);
-    // vehicle-pedestrian collision is now handled by VehicleCollisionSystem
+    this.checkVehiclePedestrianCollisions(state);
   }
 }
-

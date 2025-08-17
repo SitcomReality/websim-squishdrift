@@ -15,7 +15,6 @@ import { VehicleCollisionSystem } from '../vehicles/physics/VehicleCollisionSyst
 import { AIDrivingSystem } from './systems/AIDrivingSystem.js';
 import { SkidmarkSystem } from './systems/SkidmarkSystem.js';
 import { Tile } from '../../map/TileTypes.js';
-import { TweaksPanel } from '../TweaksPanel.js';
 
 export class GameEngine {
   constructor(canvas, { debugEl } = {}) {
@@ -36,9 +35,6 @@ export class GameEngine {
       vehicleCollision: new VehicleCollisionSystem(),
       skidmarks: new SkidmarkSystem()
     };
-    
-    // Initialize tweaks panel for AI driving
-    this.tweaksPanel = new TweaksPanel(this.systems.aiDrive);
     
     this.state = createInitialState();
     this.state.control = { inVehicle: false, vehicle: null, equipped: null };

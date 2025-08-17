@@ -26,9 +26,9 @@ export class PlayerSystem {
     // Get movement input relative to player facing
     let forward = 0, strafe = 0;
     if (input.keys.has('KeyW') || input.keys.has('ArrowUp')) forward += 1;
-    if (input.keys.has('KeyS') || input.keys.has('ArrowDown')) forward -= 1;
-    if (input.keys.has('KeyA') || input.keys.has('ArrowLeft')) strafe -= 1;
-    if (input.keys.has('KeyD') || input.keys.has('ArrowRight')) strafe += 1;
+    if (input.keys.has('KeyS') || input.keys.has('ArrowDown')) forward -= 0.75; // 75% speed for backward
+    if (input.keys.has('KeyA') || input.keys.has('ArrowLeft')) strafe -= 0.75; // 75% speed for strafing
+    if (input.keys.has('KeyD') || input.keys.has('ArrowRight')) strafe += 0.75; // 75% speed for strafing
     
     if (forward || strafe) {
       // Calculate movement in world space based on player facing

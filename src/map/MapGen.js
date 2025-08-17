@@ -1,4 +1,4 @@
-import { Tile } from './TileTypes.js';
+import { generateCity } from './MapGen.js';
 import { rng } from '../utils/RNG.js';
 import { CityLayout } from './generation/CityLayout.js';
 import { BlockGenerator } from './generation/BlockGenerator.js';
@@ -22,6 +22,9 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
   // Generate buildings and parks
   const buildingGenerator = new BuildingGenerator(cityLayout, rand);
   const buildings = buildingGenerator.generateBuildings(tiles);
+  
+  // Add roundabout trees from road generator
+  buildingGenerator.addRoundaboutTrees(roadGenerator);
   
   // Get trees from building generator
   const trees = buildingGenerator.getTrees();

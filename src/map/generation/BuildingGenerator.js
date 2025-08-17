@@ -114,4 +114,11 @@ export class BuildingGenerator {
   getTrees() {
     return this.trees;
   }
+
+  // Add method to handle roundabout trees
+  addRoundaboutTrees(roadGenerator) {
+    if (roadGenerator && roadGenerator.trees) {
+      this.trees.push(...roadGenerator.trees);
+    }
+  }
 }

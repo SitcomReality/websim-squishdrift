@@ -5,35 +5,20 @@ export function drawBuildings(r, state, mode = 'all') {
   // Sort buildings and trees by y-position + height for proper z-ordering
   const sortedElements = [...map.buildings];
   
-  // Add trees to sorting array - separate trunks and leaves for proper z-ordering
-  const treeElements = [];
+  // Add trees to sorting array
   if (map.trees) {
     map.trees.forEach(tree => {
-      // Trunk element (lower z-layer)
-      treeElements.push({
-        type: 'tree_trunk',
-        pos: tree.pos,
-        height: tree.trunkHeight,
-        tree: tree,
-        isTrunk: true
-      });
-      
-      // Leaves element (higher z-layer)
-      treeElements.push({
-        type: 'tree_leaves',
+      sortedElements.push({
+        type: 'tree',
         pos: tree.pos,
         height: tree.trunkHeight + tree.leafHeight,
-        tree: tree,
-        isLeaves: true
+        tree: tree
       });
     });
   }
   
-  // Sort ALL elements together by y-position + height
-  const allElements = [...sortedElements, ...treeElements];
-  
   // Sort by y-position + height for proper z-ordering
-  allElements.sort((a, b) => {
+  sortedElements.sort((a, b) => {
     const aY = a.rect ? (a.rect.y + a.rect.height) : (a.pos.y + 1);
     const bY = b.rect ? (b.rect.y + b.rect.height) : (b.pos.y + 1);
     const aZ = aY + ((a.height || 0) / ts) * 0.1;
@@ -41,13 +26,8 @@ export function drawBuildings(r, state, mode = 'all') {
     return aZ - bZ;
   });
 
-  for (const element of allElements) {
-    if (element.type === 'tree_trunk') {
-      drawTreeTrunk(r, state, element.tree);
-    } else if (element.type === 'tree_leaves') {
-      drawTreeLeaves(r, state, element.tree);
-    } else if (element.type === 'tree') {
-      // Handle legacy tree rendering
+  for (const element of sortedElements) {
+    if (element.type === 'tree') {
       drawTree(r, state, element.tree);
     } else {
       const b = element;
@@ -161,178 +141,6 @@ export function drawBuildings(r, state, mode = 'all') {
       }
     }
   }
-}
-
-function drawTreeTrunk(r, state, tree) {
-  const { ctx } = r, ts = state.world.tileSize;
-  const cam = state.camera, perspectiveScale = 0.8;
-  
-  // Tree trunk dimensions
-  const trunkWidth = ts * 0.3;
-  const trunkHeight = tree.trunkHeight;
-  const trunkX = tree.pos.x * ts - trunkWidth / 2;
-  const trunkY = tree.pos.y * ts - trunkWidth / 2;
-  
-  // Calculate roof offset based on camera position
-  let trunkRoofOffset = { x: 0, y: 0 };
-  
-  const distX = tree.pos.x - cam.x;
-  const distY = tree.pos.y - cam.y;
-  const len = Math.hypot(distX, distY) || 1;
-  const dir = { x: distX / len, y: distY / len };
-  
-  const offsetMagnitude = trunkHeight * perspectiveScale * Math.min(1, len / 20);
-  trunkRoofOffset.x = dir.x * offsetMagnitude;
-  trunkRoofOffset.y = dir.y * offsetMagnitude;
-  
-  // Draw trunk (impassable)
-  const trunkRect = { 
-    x: trunkX, 
-    y: trunkY, 
-    w: trunkWidth, 
-    h: trunkWidth 
-  };
-  
-  const trunkRoofRect = { 
-    x: trunkX + trunkRoofOffset.x - (trunkWidth - trunkWidth) / 2, 
-    y: trunkY + trunkRoofOffset.y - (trunkWidth - trunkWidth) / 2, 
-    w: trunkWidth, 
-    h: trunkWidth 
-  };
-  
-  // Draw trunk walls
-  ctx.fillStyle = tree.trunkColor;
-  
-  // Front and back walls
-  ctx.beginPath();
-  ctx.moveTo(trunkRect.x, trunkRect.y);
-  ctx.lineTo(trunkRoofRect.x, trunkRoofRect.y);
-  ctx.lineTo(trunkRoofRect.x + trunkRoofRect.w, trunkRoofRect.y);
-  ctx.lineTo(trunkRect.x + trunkRect.w, trunkRect.y);
-  ctx.closePath();
-  ctx.fill();
-  
-  ctx.beginPath();
-  ctx.moveTo(trunkRect.x, trunkRect.y + trunkRect.h);
-  ctx.lineTo(trunkRoofRect.x, trunkRoofRect.y + trunkRoofRect.h);
-  ctx.lineTo(trunkRoofRect.x + trunkRoofRect.w, trunkRoofRect.y + trunkRoofRect.h);
-  ctx.lineTo(trunkRect.x + trunkRect.w, trunkRect.y + trunkRect.h);
-  ctx.closePath();
-  ctx.fill();
-  
-  // Side walls
-  ctx.beginPath();
-  ctx.moveTo(trunkRect.x, trunkRect.y);
-  ctx.lineTo(trunkRoofRect.x, trunkRoofRect.y);
-  ctx.lineTo(trunkRoofRect.x, trunkRoofRect.y + trunkRoofRect.h);
-  ctx.lineTo(trunkRect.x, trunkRect.y + trunkRect.h);
-  ctx.closePath();
-  ctx.fill();
-  
-  ctx.beginPath();
-  ctx.moveTo(trunkRect.x + trunkRect.w, trunkRect.y);
-  ctx.lineTo(trunkRoofRect.x + trunkRoofRect.w, trunkRoofRect.y);
-  ctx.lineTo(trunkRoofRect.x + trunkRoofRect.w, trunkRoofRect.y + trunkRoofRect.h);
-  ctx.lineTo(trunkRect.x + trunkRect.w, trunkRect.y + trunkRect.h);
-  ctx.closePath();
-  ctx.fill();
-  
-  // Draw trunk top
-  ctx.fillStyle = tree.trunkColor;
-  ctx.fillRect(trunkRoofRect.x, trunkRoofRect.y, trunkRoofRect.w, trunkRoofRect.h);
-  ctx.strokeStyle = 'rgba(0,0,0,0.2)';
-  ctx.lineWidth = 1;
-  ctx.strokeRect(trunkRoofRect.x, trunkRoofRect.y, trunkRoofRect.w, trunkRoofRect.h);
-}
-
-function drawTreeLeaves(r, state, tree) {
-  const { ctx } = r, ts = state.world.tileSize;
-  const cam = state.camera, perspectiveScale = 0.8;
-  
-  // Tree leaves dimensions
-  const leafWidth = ts * tree.leafWidth;
-  const leafHeight = tree.leafHeight;
-  const leafX = tree.pos.x * ts - leafWidth / 2;
-  const leafY = tree.pos.y * ts - leafWidth / 2;
-  
-  // Calculate roof offset based on camera position
-  let leafRoofOffset = { x: 0, y: 0 };
-  
-  const distX = tree.pos.x - cam.x;
-  const distY = tree.pos.y - cam.y;
-  const len = Math.hypot(distX, distY) || 1;
-  const dir = { x: distX / len, y: distY / len };
-  
-  const leafOffsetMagnitude = (tree.trunkHeight + leafHeight) * perspectiveScale * Math.min(1, len / 20);
-  leafRoofOffset.x = dir.x * leafOffsetMagnitude;
-  leafRoofOffset.y = dir.y * leafOffsetMagnitude;
-  
-  // Draw leaves with 3D effect
-  const leafFloorRect = { 
-    x: leafX, 
-    y: leafY, 
-    w: leafWidth, 
-    h: leafWidth 
-  };
-  
-  const leafRoofRect = { 
-    x: leafX + leafRoofOffset.x - (leafWidth - leafWidth) / 2, 
-    y: leafY + leafRoofOffset.y - (leafWidth - leafWidth) / 2, 
-    w: leafWidth, 
-    h: leafWidth 
-  };
-  
-  // The 'floor' of the leaves should be at the same projected height as the top of the trunk.
-  const leafFloorProjectedRect = {
-    x: leafX + leafRoofOffset.x,
-    y: leafY + leafRoofOffset.y,
-    w: leafWidth,
-    h: leafWidth
-  };
-  
-  // Draw leaves with 3D effect
-  ctx.fillStyle = tree.leafColor;
-  
-  // Front and back walls
-  ctx.beginPath();
-  ctx.moveTo(leafFloorProjectedRect.x, leafFloorProjectedRect.y);
-  ctx.lineTo(leafRoofRect.x, leafRoofRect.y);
-  ctx.lineTo(leafRoofRect.x + leafRoofRect.w, leafRoofRect.y);
-  ctx.lineTo(leafFloorProjectedRect.x + leafFloorProjectedRect.w, leafFloorProjectedRect.y);
-  ctx.closePath();
-  ctx.fill();
-  
-  ctx.beginPath();
-  ctx.moveTo(leafFloorProjectedRect.x, leafFloorProjectedRect.y + leafFloorProjectedRect.h);
-  ctx.lineTo(leafRoofRect.x, leafRoofRect.y + leafRoofRect.h);
-  ctx.lineTo(leafRoofRect.x + leafRoofRect.w, leafRoofRect.y + leafRoofRect.h);
-  ctx.lineTo(leafFloorProjectedRect.x + leafFloorProjectedRect.w, leafFloorProjectedRect.y + leafFloorProjectedRect.h);
-  ctx.closePath();
-  ctx.fill();
-  
-  // Side walls
-  ctx.beginPath();
-  ctx.moveTo(leafFloorProjectedRect.x, leafFloorProjectedRect.y);
-  ctx.lineTo(leafRoofRect.x, leafRoofRect.y);
-  ctx.lineTo(leafRoofRect.x, leafRoofRect.y + leafRoofRect.h);
-  ctx.lineTo(leafFloorProjectedRect.x, leafFloorProjectedRect.y + leafFloorProjectedRect.h);
-  ctx.closePath();
-  ctx.fill();
-  
-  ctx.beginPath();
-  ctx.moveTo(leafFloorProjectedRect.x + leafFloorProjectedRect.w, leafFloorProjectedRect.y);
-  ctx.lineTo(leafRoofRect.x + leafRoofRect.w, leafRoofRect.y);
-  ctx.lineTo(leafRoofRect.x + leafRoofRect.w, leafRoofRect.y + leafRoofRect.h);
-  ctx.lineTo(leafFloorProjectedRect.x + leafFloorProjectedRect.w, leafFloorProjectedRect.y + leafFloorProjectedRect.h);
-  ctx.closePath();
-  ctx.fill();
-  
-  // Draw leaves top
-  ctx.fillStyle = tree.leafColor;
-  ctx.fillRect(leafRoofRect.x, leafRoofRect.y, leafRoofRect.w, leafRoofRect.h);
-  ctx.strokeStyle = 'rgba(0,0,0,0.2)';
-  ctx.lineWidth = 1;
-  ctx.strokeRect(leafRoofRect.x, leafRoofRect.y, leafRoofRect.w, leafRoofRect.h);
 }
 
 function drawTree(r, state, tree) {

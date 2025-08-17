@@ -33,7 +33,7 @@ export class NPCSystem {
     
     // Add random offset from path center
     if (!ped.pathOffset) {
-      const maxOffset = 0.075; // About 1/4 of pedestrian width
+      const maxOffset = 0.3; // Increased from 0.075 to 0.3 (4x)
       ped.pathOffset = {
         x: (Math.random() - 0.5) * 2 * maxOffset,
         y: (Math.random() - 0.5) * 2 * maxOffset

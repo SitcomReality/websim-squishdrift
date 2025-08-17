@@ -1,2 +1,0 @@
-this.systems.physics.update(this.state, dt);
-

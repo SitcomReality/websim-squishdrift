@@ -64,22 +64,31 @@ export class GraphBuilder {
       const exists = fromNode.next.some(n => n.x === tx && n.y === ty && n.dir === toDir);
       if (!exists) fromNode.next.push({ x: tx, y: ty, dir: toDir });
     };
+    const dirAt = (x, y) => this.tileDirFor(get(x, y));
     for (const { cx, cy } of roundabouts) {
-      // NW quadrant: add choice S or W (link S nodes to west neighbor)
+      // NW quadrant: S/W optional turn
       for (let x = cx - 2; x <= cx - 1; x++) for (let y = cy - 2; y <= cy - 1; y++) {
-        tryLink(x, y, 'S', x - 1, y);
+        const d = dirAt(x, y); if (!d) continue;
+        const [tx, ty] = d === 'S' ? [x - 1, y] : d === 'W' ? [x, y + 1] : [null, null];
+        if (tx != null) tryLink(x, y, d, tx, ty);
       }
-      // NE quadrant: add choice N or W (link N nodes to west neighbor)
+      // NE quadrant: N/W optional turn
       for (let x = cx + 1; x <= cx + 2; x++) for (let y = cy - 2; y <= cy - 1; y++) {
-        tryLink(x, y, 'N', x - 1, y);
+        const d = dirAt(x, y); if (!d) continue;
+        const [tx, ty] = d === 'N' ? [x - 1, y] : d === 'W' ? [x, y - 1] : [null, null];
+        if (tx != null) tryLink(x, y, d, tx, ty);
       }
-      // SW quadrant: add choice S or E (link S nodes to east neighbor)
+      // SW quadrant: S/E optional turn
       for (let x = cx - 2; x <= cx - 1; x++) for (let y = cy + 1; y <= cy + 2; y++) {
-        tryLink(x, y, 'S', x + 1, y);
+        const d = dirAt(x, y); if (!d) continue;
+        const [tx, ty] = d === 'S' ? [x + 1, y] : d === 'E' ? [x, y + 1] : [null, null];
+        if (tx != null) tryLink(x, y, d, tx, ty);
       }
-      // SE quadrant: add choice N or E (link N nodes to east neighbor)
+      // SE quadrant: N/E optional turn
       for (let x = cx + 1; x <= cx + 2; x++) for (let y = cy + 1; y <= cy + 2; y++) {
-        tryLink(x, y, 'N', x + 1, y);
+        const d = dirAt(x, y); if (!d) continue;
+        const [tx, ty] = d === 'N' ? [x + 1, y] : d === 'E' ? [x, y - 1] : [null, null];
+        if (tx != null) tryLink(x, y, d, tx, ty);
       }
     }
   }

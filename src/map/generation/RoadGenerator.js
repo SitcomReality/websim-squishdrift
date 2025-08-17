@@ -71,59 +71,6 @@ export class RoadGenerator {
     this.createZebraCrossings(tiles, cx, cy);
   }
 
-  createStandardRoundabout(tiles, cx, cy, set) {
-    // Fix: Use bi-directional paths in the corners
-    // Top-left quadrant (S/W paths)
-    for (let x = cx - 2; x <= cx - 1; x++) {
-      for (let y = cy - 2; y <= cy - 1; y++) {
-        set(x, y, Tile.RoadS); // Use S which will be handled by GraphBuilder for bi-directional
-      }
-    }
-    
-    // Top-right quadrant (N/W paths)
-    for (let x = cx + 1; x <= cx + 2; x++) {
-      for (let y = cy - 2; y <= cy - 1; y++) {
-        set(x, y, Tile.RoadN); // Use N for bi-directional
-      }
-    }
-    
-    // Bottom-left quadrant (S/E paths)
-    for (let x = cx - 2; x <= cx - 1; x++) {
-      for (let y = cy + 1; y <= cy + 2; y++) {
-        set(x, y, Tile.RoadS); // Use S for bi-directional
-      }
-    }
-    
-    // Bottom-right quadrant (N/E paths)
-    for (let x = cx + 1; x <= cx + 2; x++) {
-      for (let y = cy + 1; y <= cy + 2; y++) {
-        set(x, y, Tile.RoadN); // Use N for bi-directional
-      }
-    }
-
-    // Center cross (orthogonal paths)
-    // Top (leftward)
-    for (let x = cx - 2; x <= cx + 2; x++) {
-      set(x, cy - 2, Tile.RoadW);
-      set(x, cy - 1, Tile.RoadW);
-    }
-    // Bottom (rightward)
-    for (let x = cx - 2; x <= cx + 2; x++) {
-      set(x, cy + 2, Tile.RoadE);
-      set(x, cy + 1, Tile.RoadE);
-    }
-    // Left (downward)
-    for (let y = cy - 2; y <= cy + 2; y++) {
-      set(cx - 2, y, Tile.RoadS);
-      set(cx - 1, y, Tile.RoadS);
-    }
-    // Right (upward)
-    for (let y = cy - 2; y <= cy + 2; y++) {
-      set(cx + 1, y, Tile.RoadN);
-      set(cx + 2, y, Tile.RoadN);
-    }
-  }
-
   createZebraCrossings(tiles, cx, cy) {
     const set = (x, y, t) => {
       if (x >= 0 && y >= 0 && x < this.cityLayout.width && y < this.cityLayout.height) {
@@ -154,6 +101,29 @@ export class RoadGenerator {
     set(cx + 3, cy - 1, Tile.ZebraCrossingW);
     set(cx + 3, cy + 1, Tile.ZebraCrossingE);
     set(cx + 3, cy + 2, Tile.ZebraCrossingE);
+  }
+
+  createStandardRoundabout(tiles, cx, cy, set) {
+    // Top (leftward)
+    for (let x = cx - 2; x <= cx + 2; x++) {
+      set(x, cy - 2, Tile.RoadW);
+      set(x, cy - 1, Tile.RoadW);
+    }
+    // Bottom (rightward)
+    for (let x = cx - 2; x <= cx + 2; x++) {
+      set(x, cy + 2, Tile.RoadE);
+      set(x, cy + 1, Tile.RoadE);
+    }
+    // Left (downward)
+    for (let y = cy - 2; y <= cy + 2; y++) {
+      set(cx - 2, y, Tile.RoadS);
+      set(cx - 1, y, Tile.RoadS);
+    }
+    // Right (upward)
+    for (let y = cy - 2; y <= cy + 2; y++) {
+      set(cx + 1, y, Tile.RoadN);
+      set(cx + 2, y, Tile.RoadN);
+    }
   }
 
   createPerimeterRoundabout(tiles, cx, cy, set, isPerimeter) {

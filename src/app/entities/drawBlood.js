@@ -10,7 +10,7 @@ export function drawBlood(r, state, blood) {
   ctx.beginPath();
   
   // Create an irregular blood stain shape - use fixed random values
-  const size = ts * (blood.size || 0.5);
+  const size = ts * (blood.size || 0.125); // Reduced from 0.5 to 0.125 (25% of original)
   const segments = 8;
   const random = blood.random || [];
   
@@ -42,7 +42,7 @@ export function drawBlood(r, state, blood) {
 
 // Blood management system
 export class BloodManager {
-  constructor(maxBloodPuddles = 20) {
+  constructor(maxBloodPuddles = 25) { // Changed from 20 to 25
     this.maxBloodPuddles = maxBloodPuddles;
   }
 

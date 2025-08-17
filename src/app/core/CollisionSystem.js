@@ -40,9 +40,42 @@ export class CollisionSystem {
     }
   }
 
+  // Check collisions between vehicles and pedestrians
+  checkVehiclePedestrianCollisions(state) {
+    const vehicles = state.entities.filter(e => e.type === 'vehicle');
+    const pedestrians = state.entities.filter(e => e.type === 'npc');
+
+    for (const vehicle of vehicles) {
+      for (let i = pedestrians.length - 1; i >= 0; i--) {
+        const pedestrian = pedestrians[i];
+        
+        // Skip if vehicle is controlled by player (they might be careful)
+        if (vehicle.controlled) continue;
+        
+        if (this.checkCollision(vehicle, pedestrian, 0.75)) {
+          // Pedestrian gets squished - create blood stain
+          const bloodStain = {
+            type: 'blood',
+            pos: new Vec2(pedestrian.pos.x, pedestrian.pos.y),
+            size: 0.6 + Math.random() * 0.4,
+            color: `hsl(0, 70%, ${30 + Math.random() * 20}%)`,
+            rotation: Math.random() * Math.PI * 2
+          };
+          
+          state.entities.push(bloodStain);
+          
+          // Remove the pedestrian
+          const pedestrianIndex = state.entities.indexOf(pedestrian);
+          if (pedestrianIndex > -1) {
+            state.entities.splice(pedestrianIndex, 1);
+          }
+        }
+      }
+    }
+  }
+
   update(state) {
     this.checkBulletCollisions(state);
-    // remove player-vehicle radius collisions; handled by VehicleCollisionSystem now
-    // this.checkPlayerVehicleCollisions(state);
+    this.checkVehiclePedestrianCollisions(state);
   }
 }

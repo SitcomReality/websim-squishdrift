@@ -103,5 +103,27 @@ export function createInitialState() {
     const pos = footpathTiles[i];
     state.entities.push({ type: 'item', pos: new Vec2(pos.x, pos.y), name: 'Pistol', color: '#FFD700' });
   }
+
+  // Spawn weapons near player
+  const weaponTiles = [];
+  for (let y = 0; y < map.height; y++) {
+    for (let x = 0; x < map.width; x++) {
+      const t = map.tiles[y][x];
+      if (t === 7) { // Footpath
+        weaponTiles.push({ x: x + 0.5, y: y + 0.5 });
+      }
+    }
+  }
+  weaponTiles.sort((a,b) => Math.hypot(a.x-spawnX, a.y-spawnY) - Math.hypot(b.x-spawnX, b.y-spawnY));
+  for (let i = 0; i < Math.min(2, weaponTiles.length); i++) {
+    const pos = weaponTiles[i];
+    state.entities.push({ 
+      type: 'weapon', 
+      pos: new Vec2(pos.x, pos.y), 
+      weaponType: 'pistol',
+      color: '#8B4513'
+    });
+  }
+  
   return state;
 }

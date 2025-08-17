@@ -11,6 +11,8 @@ import { drawPedestrianDebug } from '../../../render/drawPedestrianDebug.js';
 import { drawSpawnDebug } from '../../../render/drawSpawnDebug.js';
 import { drawSkidmarks } from '../../../render/drawSkidmarks.js';
 import { drawBlood } from '../../entities/drawBlood.js';
+import { drawProjectile } from '../../entities/drawProjectile.js';
+import { drawDamageIndicator } from '../../entities/drawDamageIndicator.js';
 
 export class RenderSystem {
   render(state, renderer, debugOverlay) {
@@ -84,6 +86,12 @@ export class RenderSystem {
           ctx.arc(entity.pos.x * ts, entity.pos.y * ts, ts * 0.1, 0, Math.PI * 2);
           ctx.fill();
           ctx.restore();
+          break;
+        case 'projectile':
+          drawProjectile(renderer, state, entity);
+          break;
+        case 'damage_indicator':
+          drawDamageIndicator(renderer, state, entity);
           break;
       }
     }

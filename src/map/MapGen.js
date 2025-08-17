@@ -187,63 +187,16 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
     }
   }
 
-  // Add zebra crossings at roundabout entrances/exits
-  for (let gy = 0; gy <= blocksHigh; gy++) {
-    for (let gx = 0; gx <= blocksWide; gx++) {
-      const cx = mapOffset + gx * (W + MED);
-      const cy = mapOffset + gy * (W + MED);
-      
-      // Add zebra crossings at roundabout edges
-      if (gy > 0 && gy < blocksHigh && gx > 0 && gx < blocksWide) {
-        // Internal intersections - skip
-        continue;
-      }
-      
-      // Top edge zebra crossings
-      if (gy === 0) {
-        for (let x = cx - 2; x <= cx + 2; x++) {
-          if (x >= 0 && x < width && cy - 1 >= 0) {
-            tiles[cy - 1][x] = Tile.ZebraCrossingW;
-          }
-          if (x >= 0 && x < width && cy - 2 >= 0) {
-            tiles[cy - 2][x] = Tile.ZebraCrossingW;
-          }
-        }
-      }
-      
-      // Bottom edge zebra crossings
-      if (gy === blocksHigh) {
-        for (let x = cx - 2; x <= cx + 2; x++) {
-          if (x >= 0 && x < width && cy + 1 < height) {
-            tiles[cy + 1][x] = Tile.ZebraCrossingE;
-          }
-          if (x >= 0 && x < width && cy + 2 < height) {
-            tiles[cy + 2][x] = Tile.ZebraCrossingE;
-          }
-        }
-      }
-      
-      // Left edge zebra crossings
-      if (gx === 0) {
-        for (let y = cy - 2; y <= cy + 2; y++) {
-          if (y >= 0 && y < height && cx - 1 >= 0) {
-            tiles[y][cx - 1] = Tile.ZebraCrossingS;
-          }
-          if (y >= 0 && y < height && cx - 2 >= 0) {
-            tiles[y][cx - 2] = Tile.ZebraCrossingS;
-          }
-        }
-      }
-      
-      // Right edge zebra crossings
-      if (gx === blocksWide) {
-        for (let y = cy - 2; y <= cy + 2; y++) {
-          if (y >= 0 && y < height && cx + 1 < width) {
-            tiles[y][cx + 1] = Tile.ZebraCrossingN;
-          }
-          if (y >= 0 && y < height && cx + 2 < width) {
-            tiles[y][cx + 2] = Tile.ZebraCrossingN;
-          }
+  // Convert road tiles adjacent to medians (roundabout entrances/exits) into zebra crossings
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const t = tiles[y][x];
+      // only consider road tiles (not those inside the roundabout centers/arms we explicitly set)
+      if (t === Tile.RoadN || t === Tile.RoadE || t === Tile.RoadS || t === Tile.RoadW) {
+        // if any 4-neighbor is a median, this is an approach tile -> mark as zebra
+        const neigh = (nx, ny) => (nx >= 0 && ny >= 0 && nx < width && ny < height) ? tiles[ny][nx] : null;
+        if (neigh(x+1,y) === Tile.Median || neigh(x-1,y) === Tile.Median || neigh(x,y+1) === Tile.Median || neigh(x,y-1) === Tile.Median) {
+          tiles[y][x] = Tile.ZebraCrossing;
         }
       }
     }
@@ -263,14 +216,7 @@ function buildRoadGraph(tiles, width, height, roundabouts){
   const leftOf = { N:'W', E:'N', S:'E', W:'S' }, rightOf = { N:'E', E:'S', S:'W', W:'N' };
   const nodes = []; const byKey = new Map();
   const get = (x,y)=> (x>=0&&y>=0&&x<width&&y<height)?tiles[y][x]:255;
-  const tileDir = (t)=> {
-    if (t === Tile.RoadN || t === Tile.ZebraCrossingN) return 'N';
-    if (t === Tile.RoadE || t === Tile.ZebraCrossingE) return 'E';
-    if (t === Tile.RoadS || t === Tile.ZebraCrossingS) return 'S';
-    if (t === Tile.RoadW || t === Tile.ZebraCrossingW) return 'W';
-    return null;
-  };
-  
+  const tileDir = (t)=> t===Tile.RoadN?'N':t===Tile.RoadE?'E':t===Tile.RoadS?'S':t===Tile.RoadW?'W':null;
   const keyOf = (x,y,d)=> `${x},${y},${d}`;
   
   // Define mapOffset here since it's used below
@@ -335,12 +281,8 @@ function buildRoadGraph(tiles, width, height, roundabouts){
 
 function buildPedGraph(tiles, width, height){
   const nodes = new Map(); const key=(x,y)=>`${x},${y}`;
-  const walkable = (t)=> {
-    return t !== Tile.Median && t !== Tile.Intersection && t !== Tile.BuildingWall && t !== Tile.BuildingFloor &&
-           t !== Tile.RoadN && t !== Tile.RoadE && t !== Tile.RoadS && t !== Tile.RoadW ||
-           t === Tile.ZebraCrossingN || t === Tile.ZebraCrossingE || 
-           t === Tile.ZebraCrossingS || t === Tile.ZebraCrossingW;
-  };
+  const walkable = (t)=> t!==Tile.Median && t!==Tile.Intersection && t!==Tile.BuildingWall && t!==Tile.BuildingFloor &&
+                        t!==Tile.RoadN && t!==Tile.RoadE && t!==Tile.RoadS && t!==Tile.RoadW;
   for (let y=0;y<height;y++) for (let x=0;x<width;x++){
     if (!walkable(tiles[y][x])) continue; nodes.set(key(x,y), { x, y, neighbors:[] });
   }

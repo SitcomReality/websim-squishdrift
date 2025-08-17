@@ -16,16 +16,20 @@ export class GraphBuilder {
     const get = (x, y) => (x >= 0 && y >= 0 && x < width && y < height) ? tiles[y][x] : 255;
     const tileDir = (t) => {
       switch (t) {
-        case Tile.RoadN: return 'N';
-        case Tile.RoadE: return 'E';
-        case Tile.RoadS: return 'S';
-        case Tile.RoadW: return 'W';
+        case Tile.RoadN:
+        case Tile.ZebraCrossingN: return 'N';
+        case Tile.RoadE:
+        case Tile.ZebraCrossingE: return 'E';
+        case Tile.RoadS:
+        case Tile.ZebraCrossingS: return 'S';
+        case Tile.RoadW:
+        case Tile.ZebraCrossingW: return 'W';
         default: return null;
       }
     };
     const keyOf = (x, y, d) => `${x},${y},${d}`;
     
-    // Collect nodes
+    // Collect nodes including zebra crossings
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         const d = tileDir(get(x, y));
@@ -118,32 +122,43 @@ export class GraphBuilder {
     const key = (x, y) => `${x},${y}`;
     
     const walkable = (t) => {
-      return t !== Tile.Median && t !== Tile.Intersection && 
+      return t !== Tile.Median && t !== Tile.Intersection &&
              t !== Tile.BuildingWall && t !== Tile.BuildingFloor &&
              t !== Tile.RoadN && t !== Tile.RoadE && 
              t !== Tile.RoadS && t !== Tile.RoadW;
     };
     
-    // Collect walkable nodes
+    // Collect walkable nodes including zebra crossings
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
-        if (!walkable(tiles[y][x])) continue;
+        if (!walkable(tiles[y][x]) && !isZebraCrossing(tiles[y][x])) continue;
         nodes.set(key(x, y), { x, y, neighbors: [] });
       }
     }
     
-    // Link neighbors
-    const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+    // Link neighbors including diagonal connections for zebra crossings
+    const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]];
     for (const n of nodes.values()) {
       for (const [dx, dy] of dirs) {
         const neighborKey = key(n.x + dx, n.y + dy);
         const neighbor = nodes.get(neighborKey);
         if (neighbor) {
-          n.neighbors.push({ x: neighbor.x, y: neighbor.y });
+          // Only allow diagonal movement for zebra crossings
+          const isDiagonal = Math.abs(dx) === 1 && Math.abs(dy) === 1;
+          const currentTile = tiles[n.y][n.x];
+          const neighborTile = tiles[n.y + dy][n.x + dx];
+          
+          if (!isDiagonal || (isZebraCrossing(currentTile) || isZebraCrossing(neighborTile))) {
+            n.neighbors.push({ x: neighbor.x, y: neighbor.y });
+          }
         }
       }
     }
     
     return { nodes, list: Array.from(nodes.values()) };
   }
+}
+
+function isZebraCrossing(t) {
+  return t >= Tile.ZebraCrossingN && t <= Tile.ZebraCrossingW;
 }

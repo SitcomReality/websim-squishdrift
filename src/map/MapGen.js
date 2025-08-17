@@ -322,7 +322,8 @@ function buildPedGraph(tiles, width, height, zebraCrossings) {
   
   // Walkable includes zebra crossings
   const walkable = (t) => t !== Tile.Median && t !== Tile.Intersection && t !== Tile.BuildingWall && 
-                     (t === 11 || t === 12 || t === 13 || t === 14 || isWalkable(t));
+                     (t === 11 || t === 12 || t === 13 || t === 14 || 
+                      (t !== Tile.BuildingWall && t !== Tile.BuildingFloor));
   
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {

@@ -50,58 +50,47 @@ export class GraphBuilder {
       }
     }
     
-    // Handle roundabout special cases
-    this.createRoundaboutConnections(byKey, roundabouts, nodes);
+    // Augment exits for roundabouts
+    this.augmentRoundaboutExits(tiles, byKey, roundabouts, width, height);
     
     return { nodes, byKey };
   }
 
-  createRoundaboutConnections(byKey, roundabouts, nodes) {
+  augmentRoundaboutExits(tiles, byKey, roundabouts, width, height) {
+    const get = (x, y) => (x >= 0 && y >= 0 && x < width && y < height) ? tiles[y][x] : 255;
+    const tryLink = (fx, fy, fdir, tx, ty) => {
+      const fromNode = byKey.get(`${fx},${fy},${fdir}`); if (!fromNode) return;
+      const toTile = get(tx, ty); const toDir = this.tileDirFor(toTile); if (!toDir) return;
+      const exists = fromNode.next.some(n => n.x === tx && n.y === ty && n.dir === toDir);
+      if (!exists) fromNode.next.push({ x: tx, y: ty, dir: toDir });
+    };
     for (const { cx, cy } of roundabouts) {
-      // Define the 2x2 quadrants for each corner
-      const quadrants = [
-        { xRange: [cx - 2, cx - 1], yRange: [cy - 2, cy - 1], dirs: ['S', 'W'] }, // Top-left
-        { xRange: [cx + 1, cx + 2], yRange: [cy - 2, cy - 1], dirs: ['S', 'E'] }, // Top-right
-        { xRange: [cx - 2, cx - 1], yRange: [cy + 1, cy + 2], dirs: ['N', 'W'] }, // Bottom-left
-        { xRange: [cx + 1, cx + 2], yRange: [cy + 1, cy + 2], dirs: ['N', 'E'] }  // Bottom-right
-      ];
-
-      for (const quad of quadrants) {
-        for (let x = quad.xRange[0]; x <= quad.xRange[1]; x++) {
-          for (let y = quad.yRange[0]; y <= quad.yRange[1]; y++) {
-            const key = `${x},${y},${quad.dirs[0]}`;
-            const node = byKey.get(key);
-            if (node) {
-              // Add connections for both directions
-              const dir1 = quad.dirs[0];
-              const dir2 = quad.dirs[1];
-              
-              // Create bidirectional movement
-              node.dir = dir1; // Primary direction
-              
-              // Add both directional connections
-              const dirVec = {
-                N: { x: 0, y: -1 },
-                E: { x: 1, y: 0 },
-                S: { x: 0, y: 1 },
-                W: { x: -1, y: 0 }
-              };
-              
-              // Add connections in both directions
-              for (const dir of [dir1, dir2]) {
-                const vec = dirVec[dir];
-                const nextX = x + vec.x;
-                const nextY = y + vec.y;
-                
-                // Check if next tile is valid road
-                if (nextX >= 0 && nextY >= 0 && nextX < 100 && nextY < 100) {
-                  node.next.push({ x: nextX, y: nextY, dir });
-                }
-              }
-            }
-          }
-        }
+      // NW quadrant: add choice S or W (link S nodes to west neighbor)
+      for (let x = cx - 2; x <= cx - 1; x++) for (let y = cy - 2; y <= cy - 1; y++) {
+        tryLink(x, y, 'S', x - 1, y);
       }
+      // NE quadrant: add choice N or W (link N nodes to west neighbor)
+      for (let x = cx + 1; x <= cx + 2; x++) for (let y = cy - 2; y <= cy - 1; y++) {
+        tryLink(x, y, 'N', x - 1, y);
+      }
+      // SW quadrant: add choice S or E (link S nodes to east neighbor)
+      for (let x = cx - 2; x <= cx - 1; x++) for (let y = cy + 1; y <= cy + 2; y++) {
+        tryLink(x, y, 'S', x + 1, y);
+      }
+      // SE quadrant: add choice N or E (link N nodes to east neighbor)
+      for (let x = cx + 1; x <= cx + 2; x++) for (let y = cy + 1; y <= cy + 2; y++) {
+        tryLink(x, y, 'N', x + 1, y);
+      }
+    }
+  }
+
+  tileDirFor(t) {
+    switch (t) {
+      case 1: return 'N';
+      case 2: return 'E';
+      case 3: return 'S';
+      case 4: return 'W';
+      default: return null;
     }
   }
 

@@ -91,7 +91,7 @@ export class GameEngine {
 
   update(dt) {
     this.systems.player.update(this.state, this.input, dt);
-    this.systems.vehicle.update(this.state, this.input, dt);
+    this.systems.vehicle.update(this.state, this.input, dt)
     this.systems.bullet.update(this.state, dt)
     this.systems.npc.update(this.state, dt)
     this.systems.aiDrive.update(this.state, dt)
@@ -261,9 +261,9 @@ export class GameEngine {
   }
 
   render(interp) {
-    this.renderer.beginFrame(this.state);
-    this.systems.render.render(this.state, this.renderer, this.debugOverlay);
-    this.renderer.endFrame();
+    this.renderer.beginFrame(this.state)
+    this.systems.render.render(this.state, this.renderer, this.debugOverlay)
+    this.renderer.endFrame()
   }
 
   updateDebugHUD() {

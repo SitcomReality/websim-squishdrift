@@ -129,13 +129,7 @@ export class WeaponSystem {
       return;
     }
     
-    if (input.pressed.has('KeyR') && weapon.ammo < weapon.maxAmmo && !debugEnabled) {
-      weapon.isReloading = true;
-      weapon.reloadStartTime = now;
-      return;
-    }
-    
-    const isFiring = input.mousePos && input.keys.has('MouseLeft');
+    const isFiring = input.mousePos && (input.keys.has('MouseLeft') || input.pressed.has('MouseLeft'));
     if (isFiring && now - weapon.lastFireTime >= weapon.fireRate) {
       if (weapon.ammo <= 0 && !debugEnabled) {
         weapon.isReloading = true;
@@ -143,11 +137,15 @@ export class WeaponSystem {
         return;
       }
       
-      this.fireProjectile(state, player);
-      weapon.lastFireTime = now;
-      
-      if (!debugEnabled) {
-        weapon.ammo--;
+      // Find the actual player entity (not hidden)
+      const actualPlayer = state.entities.find(e => e.type === 'player');
+      if (actualPlayer && !actualPlayer.hidden) {
+        this.fireProjectile(state, actualPlayer);
+        weapon.lastFireTime = now;
+        
+        if (!debugEnabled) {
+          weapon.ammo--;
+        }
       }
     }
   }

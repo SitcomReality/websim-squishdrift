@@ -53,7 +53,7 @@ export class CollisionSystem {
           // Pedestrian gets squished - create blood stain
           const bloodStain = {
             type: 'blood',
-            pos: new (require('../../utils/Vec2.js').Vec2 || Object) (pedestrian.pos.x, pedestrian.pos.y),
+            pos: new Vec2(pedestrian.pos.x, pedestrian.pos.y),
             size: 0.6 + Math.random() * 0.4,
             color: `hsl(0, 70%, ${30 + Math.random() * 20}%)`,
             rotation: Math.random() * Math.PI * 2
@@ -77,8 +77,57 @@ export class CollisionSystem {
     }
   }
 
+  // Check collisions between player and vehicles
+  checkPlayerVehicleCollisions(state) {
+    const player = state.entities.find(e => e.type === 'player');
+    const vehicles = state.entities.filter(e => e.type === 'vehicle');
+    
+    if (!player || !player.health) return;
+    if (state.control?.inVehicle) return; // disable player collisions while inside a vehicle
+    if (player.collisionDisabled) return; // Skip if player collision is disabled
+    
+    // Check tree trunk collision for player
+    const map = state.world.map;
+    const tx = Math.floor(player.pos.x);
+    const ty = Math.floor(player.pos.y);
+    if (this.isTreeTrunk(tx, ty, map)) {
+      // Push player away from tree trunk
+      const dx = player.pos.x - (tx + 0.5);
+      const dy = player.pos.y - (ty + 0.5);
+      const len = Math.hypot(dx, dy) || 1;
+      player.pos.x += (dx / len) * 0.2;
+      player.pos.y += (dy / len) * 0.2;
+      return;
+    }
+    
+    for (const vehicle of vehicles) {
+      if (vehicle.controlled) continue; // Skip player-controlled vehicle
+      
+      if (this.checkCollision(player, vehicle, 0.75)) {
+        player.health.takeDamage(10);
+        
+        // Simple knockback
+        const dx = player.pos.x - vehicle.pos.x;
+        const dy = player.pos.y - vehicle.pos.y;
+        const len = Math.sqrt(dx * dx + dy * dy);
+        if (len > 0) {
+          player.pos.x += (dx / len) * 0.2;
+          player.pos.y += (dy / len) * 0.2;
+        }
+      }
+    }
+  }
+
+  isTreeTrunk(x, y, map) {
+    if (!map.trees) return false;
+    return map.trees.some(tree => 
+      Math.floor(tree.pos.x) === x && Math.floor(tree.pos.y) === y
+    );
+  }
+
   update(state) {
     this.checkBulletCollisions(state);
     this.checkVehiclePedestrianCollisions(state);
+    this.checkPlayerVehicleCollisions(state);
   }
 }

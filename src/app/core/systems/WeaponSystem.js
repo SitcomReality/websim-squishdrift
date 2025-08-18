@@ -212,9 +212,14 @@ export class WeaponSystem {
       return true;
     }
     
-    // Check tile collision
+    // Check tree trunk collision
     const tx = Math.floor(projectile.pos.x);
     const ty = Math.floor(projectile.pos.y);
+    if (this.isTreeTrunk(tx, ty, map)) {
+      return true;
+    }
+    
+    // Check tile collision
     if (tx >= 0 && tx < map.width && ty >= 0 && ty < map.height) {
       const tile = map.tiles[ty][tx];
       if ([8, 9].includes(tile)) { // BuildingWall, BuildingFloor
@@ -276,5 +281,12 @@ export class WeaponSystem {
     }
     
     return false;
+  }
+
+  isTreeTrunk(x, y, map) {
+    if (!map.trees) return false;
+    return map.trees.some(tree => 
+      Math.floor(tree.pos.x) === x && Math.floor(tree.pos.y) === y
+    );
   }
 }

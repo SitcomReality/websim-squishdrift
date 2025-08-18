@@ -37,24 +37,32 @@ export class VehicleCollisionSystem {
     
     for (let oy=-r; oy<=r; oy++) for (let ox=-r; ox<=r; ox++) {
       const gx=tx+ox, gy=ty+oy; if (gx<0||gy<0||gx>=map.width||gy>=map.height) continue;
-      
-      // Check for tree trunks as impassable obstacles
-      const isTreeTrunk = map.trees?.some(tree => 
-        Math.floor(tree.pos.x) === gx && Math.floor(tree.pos.y) === gy
-      );
-      
       const t = map.tiles[gy][gx]; 
-      if (t !== 8 && t !== 9 && !isTreeTrunk) continue; // BuildingFloor/Wall/TreeTrunk as solid
+      
+      // Check for tree trunk collision
+      if (this.isTreeTrunk(gx, gy, map)) {
+        const contact = obbOverlap(obb, aabbForTile(gx,gy)); if (!contact) continue;
+        const correctedContact = { ...contact, normal: contact.normal };
+        resolveDynamicStatic(v, correctedContact, 0.2);
+        this.applyBuildingDamping(v);
+        continue;
+      }
+      
+      // Original building collision
+      if (t !== 8 && t !== 9) continue; // BuildingFloor/Wall as solid
       
       const contact = obbOverlap(obb, aabbForTile(gx,gy)); if (!contact) continue;
-      
-      // Use contact normal for building collision
       const correctedContact = { ...contact, normal: contact.normal };
       resolveDynamicStatic(v, correctedContact, 0.2);
-      
-      // Strong damping for building impacts
       this.applyBuildingDamping(v);
     }
+  }
+
+  isTreeTrunk(x, y, map) {
+    if (!map.trees) return false;
+    return map.trees.some(tree => 
+      Math.floor(tree.pos.x) === x && Math.floor(tree.pos.y) === y
+    );
   }
 
   handlePedestrianCollision(state, v) {

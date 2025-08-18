@@ -39,12 +39,12 @@ export function drawVehicle(r, state, v){
   ctx.closePath();
   ctx.fill();
 
-  // Two headlights (side-by-side)
+  // Two headlights (side-by-side, moved forward and smaller)
   ctx.fillStyle = '#fff';
-  const headlightSize = ts * 0.15;
+  const headlightSize = ts * 0.075; // Reduced by 50% from 0.15 to 0.075
   const headlightSpacing = ts * 0.25;
-  // Position headlights forward on the vehicle (x) and offset across the width (y) so they sit side-by-side
-  const headX = w * 0.25;
+  // Move headlights further forward (x position)
+  const headX = w * 0.4; // Increased from 0.25 to 0.4 (further forward)
   ctx.fillRect(headX - headlightSize/2, -headlightSpacing/2 - headlightSize/2, headlightSize, headlightSize);
   ctx.fillRect(headX - headlightSize/2, headlightSpacing/2 - headlightSize/2, headlightSize, headlightSize);
 

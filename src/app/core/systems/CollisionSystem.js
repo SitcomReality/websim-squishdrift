@@ -1,4 +1,5 @@
 import { Vec2 } from '../../utils/Vec2.js';
+import { entityOBB, obbOverlap, resolveDynamicDynamic } from '../../app/vehicles/physics/geom.js';
 
 export class CollisionSystem {
   constructor() {
@@ -46,10 +47,18 @@ export class CollisionSystem {
     const pedestrians = state.entities.filter(e => e.type === 'npc');
 
     for (const vehicle of vehicles) {
+      const vehicleOBB = entityOBB(vehicle);
+      
       for (let i = pedestrians.length - 1; i >= 0; i--) {
         const pedestrian = pedestrians[i];
+        pedestrian.hitboxW = pedestrian.hitboxW ?? 0.2;
+        pedestrian.hitboxH = pedestrian.hitboxH ?? 0.2;
+        pedestrian.rot = 0;
         
-        if (this.checkCollision(vehicle, pedestrian, 0.45)) {
+        const pedOBB = entityOBB(pedestrian, {w: pedestrian.hitboxW, h: pedestrian.hitboxH});
+        const contact = obbOverlap(vehicleOBB, pedOBB);
+        
+        if (contact) {
           // Pedestrian gets squished - create blood stain
           const bloodStain = {
             type: 'blood',
@@ -86,25 +95,25 @@ export class CollisionSystem {
     if (state.control?.inVehicle) return; // disable player collisions while inside a vehicle
     if (player.collisionDisabled) return; // Skip if player collision is disabled
     
-    // Check tree trunk collision for player
-    const map = state.world.map;
-    const tx = Math.floor(player.pos.x);
-    const ty = Math.floor(player.pos.y);
-    if (this.isTreeTrunk(tx, ty, map)) {
-      // Push player away from tree trunk
-      const dx = player.pos.x - (tx + 0.5);
-      const dy = player.pos.y - (ty + 0.5);
-      const len = Math.hypot(dx, dy) || 1;
-      player.pos.x += (dx / len) * 0.2;
-      player.pos.y += (dy / len) * 0.2;
-      return;
-    }
+    // Ensure player has proper hitbox dimensions
+    player.hitboxW = player.hitboxW ?? 0.15;
+    player.hitboxH = player.hitboxH ?? 0.15;
+    player.rot = 0;
+    
+    // Use the same OBB collision system as vehicles
+    const playerOBB = entityOBB(player, {w: player.hitboxW, h: player.hitboxH});
     
     for (const vehicle of vehicles) {
       if (vehicle.controlled) continue; // Skip player-controlled vehicle
       
-      if (this.checkCollision(player, vehicle, 0.75)) {
+      const vehicleOBB = entityOBB(vehicle);
+      const contact = obbOverlap(vehicleOBB, playerOBB);
+      
+      if (contact) {
         player.health.takeDamage(10);
+        
+        // Apply collision response
+        resolveDynamicDynamic(vehicle, player, contact, 0.5);
         
         // Simple knockback
         const dx = player.pos.x - vehicle.pos.x;

@@ -299,8 +299,8 @@ export function createVehicle(type, pos, options = {}) {
     rot: 0,
     angularVel: 0,
     ctrl: { throttle: 0, brake: 0, steer: 0 },
-    color: color, // Use the dynamically selected color
     ...base,
+    color: color,
     ...options,
     health: { hp: base.maxHealth, maxHp: base.maxHealth, getPercent: () => 1, isAlive: () => true }
   };

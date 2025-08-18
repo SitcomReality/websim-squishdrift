@@ -10,14 +10,16 @@ export function drawVehicle(r, state, v){
   ctx.fillStyle = '#555';
   ctx.fillRect(-w*0.5, -h*0.5, w, h);
 
-  // Two headlights side-by-side (horizontal arrangement)
+  // Two headlights (side-by-side)
   ctx.fillStyle = '#fff';
   const headlightSize = ts * 0.15;
-  const headlightSpacing = ts * 0.3; // Side-to-side spacing
-  ctx.fillRect(-headlightSpacing/2, -h*0.5 - headlightSize/2, headlightSize, headlightSize);
-  ctx.fillRect(headlightSpacing/2, -h*0.5 - headlightSize/2, headlightSize, headlightSize);
+  const headlightSpacing = ts * 0.25;
+  // Position headlights forward on the vehicle (x) and offset across the width (y) so they sit side-by-side
+  const headX = w * 0.25;
+  ctx.fillRect(headX - headlightSize/2, -headlightSpacing/2 - headlightSize/2, headlightSize, headlightSize);
+  ctx.fillRect(headX - headlightSize/2, headlightSpacing/2 - headlightSize/2, headlightSize, headlightSize);
 
-  // Brake lights (darker by default)
+  // Brake lights (darker when off)
   ctx.fillStyle = v.brakeLight ? '#ff2d2d' : '#4a0000'; // Darker red when off
   ctx.fillRect(-w*0.5, -h*0.5, 4, h*0.3);
   ctx.fillRect(-w*0.5, h*0.2, 4, h*0.3);

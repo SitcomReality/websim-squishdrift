@@ -119,11 +119,13 @@ export class PlayerSystem {
 
   findNearbyVehicle(state, player) {
     if (!state || !state.entities || !player) return null;
+    if (!player.pos) return null;
+    
     const interactionDistance = 1.5; // tiles
     return state.entities.find(e => 
       e.type === 'vehicle' && 
       !e.controlled && 
-      e.pos && player.pos && // Add null checks
+      e.pos && player.pos &&
       Math.hypot(e.pos.x - player.pos.x, e.pos.y - player.pos.y) < interactionDistance
     );
   }
@@ -181,10 +183,12 @@ export class PlayerSystem {
 
   pickupItem(state, player) {
     if (!state || !player || !state.entities) return;
+    if (!player.pos) return;
     
     const items = state.entities.filter(e => 
       (e.type === 'item' || e.type === 'weapon') && e.pos
     );
+    
     for (let i = items.length - 1; i >= 0; i--) {
       const item = items[i];
       if (!item || !item.pos || !player.pos) continue;

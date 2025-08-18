@@ -206,6 +206,17 @@ export class WeaponSystem {
     const map = state.world.map;
     const tileSize = state.world.tileSize;
     
+    // Precise trunk collision: check against trunk AABB (tight square), not leaf visuals
+    if (map.trees && map.trees.length) {
+      const trunkSize = 0.3; // match aabbForTrunk default
+      const half = trunkSize / 2;
+      for (const tree of map.trees) {
+        const dx = projectile.pos.x - tree.pos.x;
+        const dy = projectile.pos.y - tree.pos.y;
+        if (Math.abs(dx) <= half && Math.abs(dy) <= half) return true;
+      }
+    }
+    
     // Check map boundaries
     if (projectile.pos.x < 0 || projectile.pos.x >= map.width || 
         projectile.pos.y < 0 || projectile.pos.y >= map.height) {

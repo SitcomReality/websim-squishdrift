@@ -1,336 +1,35 @@
-import { CanvasRenderer } from '../CanvasRenderer.js';
-import { InputSystem } from '../InputSystem.js';
-import { DebugOverlaySystem } from '../DebugOverlaySystem.js';
-import { CollisionSystem } from '../systems/CollisionSystem.js';
-import { EmergencyServices } from '../systems/EmergencyServices.js';
-import { PlayerSystem } from './systems/PlayerSystem.js';
-import { VehicleSystem } from './systems/VehicleSystem.js';
-import { BulletSystem } from './systems/BulletSystem.js';
-import { NPCSystem } from './systems/NPCSystem.js';
-import { CameraSystem } from './systems/CameraSystem.js';
-import { RenderSystem } from './systems/RenderSystem.js';
-import { createInitialState } from '../state/createInitialState.js';
-import { VehicleMovementSystem } from '../vehicles/physics/VehicleMovementSystem.js';
-import { VehicleCollisionSystem } from '../vehicles/physics/VehicleCollisionSystem.js';
-import { AIDrivingSystem } from './systems/AIDrivingSystem.js';
-import { SkidmarkSystem } from './systems/SkidmarkSystem.js';
-import { Tile } from '../../map/TileTypes.js';
-import { BloodManager } from '../entities/drawBlood.js';
-import { WeaponSystem } from './systems/WeaponSystem.js';
-import { createVehicle } from '../vehicles/VehicleTypes.js';
-import { Vec2 } from '../../utils/Vec2.js';
+import { GameStateManager } from './GameStateManager.js';
+import { SystemManager } from './SystemManager.js';
+import { RenderingManager } from './RenderingManager.js';
+import { InputManager } from './InputManager.js';
+import { SpawnManager } from './SpawnManager.js';
+import { HUDManager } from './HUDManager.js';
+import { DebugManager } from './DebugManager.js';
 
 export class GameEngine {
   constructor(canvas, { debugEl } = {}) {
-    this.renderer = new CanvasRenderer(canvas);
-    this.input = new InputSystem(canvas);
-    this.debugOverlay = new DebugOverlaySystem(debugEl);
-    this.collisionSystem = new CollisionSystem();
+    this.stateManager = new GameStateManager();
+    this.systemManager = new SystemManager(this.stateManager);
+    this.renderingManager = new RenderingManager(canvas);
+    this.inputManager = new InputManager(canvas);
+    this.spawnManager = new SpawnManager(this.stateManager);
+    this.hudManager = new HUDManager();
+    this.debugManager = new DebugManager(debugEl, this.stateManager);
     
-    this.systems = {
-      player: new PlayerSystem(),
-      vehicle: new VehicleSystem(),
-      bullet: new BulletSystem(),
-      npc: new NPCSystem(),
-      camera: new CameraSystem(),
-      render: new RenderSystem(),
-      aiDrive: new AIDrivingSystem(),
-      vehicleMovement: new VehicleMovementSystem(),
-      vehicleCollision: new VehicleCollisionSystem(),
-      skidmarks: new SkidmarkSystem(),
-      weapon: new WeaponSystem(),
-    };
-    
-    this.state = createInitialState();
-    this.state.control = { inVehicle: false, vehicle: null, equipped: null };
-    this.state.canvas = canvas; // Store canvas reference for mouse tracking
-    
-    // Initialize EmergencyServices after state is created
-    this.emergencyServices = new EmergencyServices(this.state);
-    
-    // Initialize BloodManager
-    this.state.bloodManager = new BloodManager(20); // 20 blood puddles max
-    
-    // Start with debug overlay disabled by default
-    this.debugOverlay.enabled = false;
-    
-    this.updateHUD();
-  }
-
-  updateHUD() {
-    const wantedRow = document.createElement('div');
-    wantedRow.className = 'row';
-    wantedRow.innerHTML = '<span class="label">Wanted</span><span id="wanted-level">0</span>';
-    document.getElementById('hud').appendChild(wantedRow);
-    
-    // Add interaction prompt
-    const interactionRow = document.createElement('div');
-    interactionRow.className = 'row';
-    interactionRow.id = 'interaction-prompt';
-    interactionRow.style.display = 'none';
-    interactionRow.innerHTML = '<span class="label">Press E to</span><span id="interaction-action">enter vehicle</span>';
-    document.getElementById('hud').appendChild(interactionRow);
-    
-    // Add debug info row
-    const debugRow = document.createElement('div');
-    debugRow.className = 'row';
-    debugRow.id = 'debug-info';
-    debugRow.style.display = 'none';
-    debugRow.innerHTML = '<span class="label">Debug</span><span id="debug-text">-</span>';
-    document.getElementById('hud').appendChild(debugRow);
-    
-    this.hud = {
-      vehicleStateEl: document.getElementById('vehicle-state'),
-      itemNameEl: document.getElementById('item-name'),
-      hpBarEl: document.getElementById('hp-bar'),
-      wantedLevelEl: document.getElementById('wanted-level'),
-      interactionPromptEl: document.getElementById('interaction-prompt'),
-      interactionActionEl: document.getElementById('interaction-action'),
-      debugInfoEl: document.getElementById('debug-info'),
-      debugTextEl: document.getElementById('debug-text')
-    };
+    this.stateManager.initialize();
+    this.hudManager.initialize();
   }
 
   update(dt) {
-    this.systems.player.update(this.state, this.input, dt);
-    this.systems.vehicle.update(this.state, this.input, dt);
-    this.systems.bullet.update(this.state, dt)
-    this.systems.npc.update(this.state, dt)
-    this.systems.aiDrive.update(this.state, dt)
-    this.systems.vehicleMovement.update(this.state, dt)
-    this.systems.vehicleCollision.update(this.state, dt)
-    this.systems.camera.update(this.state, this.input)
-    this.collisionSystem.update(this.state)
-    this.emergencyServices.update(this.state, dt)
-    this.systems.skidmarks.update(this.state, dt)
-    this.systems.weapon.update(this.state, this.input, dt)
-    
-    // Update spawn/despawn system
-    this.updateSpawning(dt)
-    this.updateDebugHUD()
-    
-    // Clean up excess blood stains
-    this.cleanupBloodStains()
-    
-    // Now clear one-shot inputs (pressed) after systems consumed them
-    this.input.update()
-  }
-
-  cleanupBloodStains() {
-    const bloods = this.state.entities.filter(e => e.type === 'blood');
-    if (bloods.length > 20) {
-      // Sort by creation time (oldest first)
-      const sortedBloods = bloods.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
-      
-      // Remove oldest stains until we're at 20
-      const removeCount = bloods.length - 20;
-      for (let i = 0; i < removeCount; i++) {
-        const index = this.state.entities.indexOf(sortedBloods[i]);
-        if (index > -1) {
-          this.state.entities.splice(index, 1);
-        }
-      }
-    }
-  }
-
-  updateSpawning(dt) {
-    const player = this.state.entities.find(e => e.type === 'player');
-    if (!player) return;
-
-    // Update interaction prompt
-    if (!this.state.control.inVehicle) {
-      const nearbyVehicle = this.findNearbyVehicle(player);
-      if (nearbyVehicle) {
-        this.hud.interactionPromptEl.style.display = 'flex';
-        this.hud.interactionActionEl.textContent = 'enter vehicle';
-      } else {
-        this.hud.interactionPromptEl.style.display = 'none';
-      }
-    } else {
-      this.hud.interactionPromptEl.style.display = 'flex';
-      this.hud.interactionActionEl.textContent = 'exit vehicle';
-    }
-
-    const innerSpawnRadius = 8;  // New inner radius
-    const outerSpawnRadius = 10;   // Changed from spawnRadius
-    const despawnRadius = 15;      // Reduced from 20
-
-    // Despawn entities outside despawn radius
-    for (let i = this.state.entities.length - 1; i >= 0; i--) {
-      const entity = this.state.entities[i];
-      if (entity.type === 'player') continue;
-      
-      // Use vehicle position if controlling vehicle, otherwise use player position
-      const referencePos = this.state.control.inVehicle 
-        ? this.state.control.vehicle.pos 
-        : player.pos;
-      
-      const distance = Math.hypot(entity.pos.x - referencePos.x, entity.pos.y - referencePos.y);
-      if (distance > despawnRadius) {
-        // If this entity is tied to a pickup spot, mark that spot empty so it can respawn later
-        if (entity.type === 'item' && typeof entity.spotId === 'number' && this.state.pickupSpots?.[entity.spotId]) {
-          this.state.pickupSpots[entity.spotId].hasItem = false;
-        }
-        this.state.entities.splice(i, 1);
-      }
-    }
-
-    // Spawn new entities within spawn radius but outside inner radius
-    const referencePos = this.state.control.inVehicle 
-      ? this.state.control.vehicle.pos 
-      : player.pos;
-    this.spawnEntitiesNearPlayer(referencePos, innerSpawnRadius, outerSpawnRadius);
-    
-    // Handle pickup spot respawn: ensure central pickup exists when player is within spawn radius
-    if (this.state.pickupSpots && this.state.pickupSpots.length) {
-      for (let s = 0; s < this.state.pickupSpots.length; s++) {
-        const spot = this.state.pickupSpots[s];
-        const dist = Math.hypot(spot.x - referencePos.x, spot.y - referencePos.y);
-        // If within spawn bounds and spot empty, spawn a pickup (pistol for now)
-        if (dist <= outerSpawnRadius && dist >= innerSpawnRadius && !spot.hasItem) {
-          const item = {
-            type: 'item',
-            pos: { x: spot.x, y: spot.y },
-            name: 'Pistol',
-            color: '#FFD700',
-            spotId: s
-          };
-          this.state.entities.push(item);
-          spot.hasItem = true;
-        }
-      }
-    }
-  }
-
-  findNearbyVehicle(player) {
-    const interactionDistance = 1.5;
-    return this.state.entities.find(e => 
-      e.type === 'vehicle' && 
-      !e.controlled && 
-      Math.hypot(e.pos.x - player.pos.x, e.pos.y - player.pos.y) < interactionDistance
-    );
-  }
-
-  spawnEntitiesNearPlayer(referencePos, innerSpawnRadius, outerSpawnRadius) {
-    const existingNPCs = this.state.entities.filter(e => e.type === 'npc').length;
-    const existingVehicles = this.state.entities.filter(e => e.type === 'vehicle').length;
-    
-    const maxNPCs = 20;
-    const maxVehicles = 10;
-
-    // Spawn NPCs
-    if (existingNPCs < maxNPCs) {
-      const pedNodes = this.state.world.map.peds?.list || [];
-      const validSpawns = pedNodes.filter(node => {
-        // Skip median strips for spawning
-        if (this.state.world.map.tiles[Math.floor(node.y)][Math.floor(node.x)] === Tile.Median) {
-          return false;
-        }
-        const distance = Math.hypot(node.x - referencePos.x, node.y - referencePos.y);
-        return distance <= outerSpawnRadius && distance >= innerSpawnRadius;
-      });
-
-      if (validSpawns.length > 0) {
-        const spawnNode = validSpawns[Math.floor(this.state.rand() * validSpawns.length)];
-        const next = (spawnNode.neighbors && spawnNode.neighbors.length) 
-          ? spawnNode.neighbors[Math.floor(this.state.rand() * spawnNode.neighbors.length)]
-          : { x: spawnNode.x, y: spawnNode.y };
-        
-        this.state.entities.push({
-          type: 'npc',
-          pos: { x: spawnNode.x + 0.5, y: spawnNode.y + 0.5 },
-          from: { x: spawnNode.x, y: spawnNode.y },
-          to: next,
-          t: 0,
-          speed: 0.2 + this.state.rand() * 0.15
-        });
-      }
-    }
-
-    // Spawn vehicles with random types
-    if (existingVehicles < maxVehicles) {
-      const roads = this.state.world.map.roads;
-      const vehicleTypes = ['compact', 'sedan', 'truck', 'sports'];
-      
-      const validSpawns = roads.nodes.filter(node => {
-        // Check distance to existing vehicles
-        const tooCloseToVehicle = this.state.entities.some(e => 
-          e.type === 'vehicle' && 
-          Math.hypot(e.pos.x - (node.x + 0.5), e.pos.y - (node.y + 0.5)) < 1.5
-        );
-        
-        if (tooCloseToVehicle) return false;
-        
-        const distance = Math.hypot(node.x - referencePos.x, node.y - referencePos.y);
-        return distance <= outerSpawnRadius && distance >= innerSpawnRadius && node.next && node.next.length > 0;
-      });
-
-      if (validSpawns.length > 0) {
-        const spawnNode = validSpawns[Math.floor(this.state.rand() * validSpawns.length)];
-        const next = spawnNode.next[Math.floor(this.state.rand() * spawnNode.next.length)];
-        
-        // Randomly select vehicle type
-        const selectedType = vehicleTypes[Math.floor(this.state.rand() * vehicleTypes.length)];
-        
-        // Determine direction based on road direction
-        let rot = 0;
-        switch(spawnNode.dir) {
-          case 'N': rot = -Math.PI/2; break;
-          case 'E': rot = 0; break;
-          case 'S': rot = Math.PI/2; break;
-          case 'W': rot = Math.PI; break;
-        }
-        
-        // Create vehicle using the vehicle type system
-        const vehicle = this.createVehicle(selectedType, {
-          x: spawnNode.x + 0.5,
-          y: spawnNode.y + 0.5
-        }, {
-          node: spawnNode,
-          next,
-          rot,
-          speed: 0.25 * 1.5,
-          vel: { x: 0, y: 0 },
-          angularVel: 0,
-          ctrl: { throttle: 0, brake: 0, steer: 0 }
-        });
-        
-        this.state.entities.push(vehicle);
-      }
-    }
-  }
-
-  createVehicle(type, pos, options = {}) {
-    return createVehicle(type, new Vec2(pos.x, pos.y), options);
+    this.inputManager.update();
+    this.systemManager.update(dt);
+    this.spawnManager.update(dt);
+    this.debugManager.update();
+    this.hudManager.update();
   }
 
   render(interp) {
-    this.renderer.beginFrame(this.state);
-    this.systems.render.render(this.state, this.renderer, this.debugOverlay);
-    this.renderer.endFrame();
-  }
-
-  updateDebugHUD() {
-    const player = this.state.entities.find(e => e.type === 'player');
-    const debugData = {
-      fps: this.renderer.fps,
-      player: { x: player?.pos.x.toFixed(2), y: player?.pos.y.toFixed(2) },
-      camera: { x: this.state.camera.x.toFixed(2), y: this.state.camera.y.toFixed(2) },
-      npcs: this.state.entities.filter(e=>e.type==='npc').length,
-      vehicles: this.state.entities.filter(e=>e.type==='vehicle').length,
-      wantedLevel: this.emergencyServices.wantedLevel,
-      activeIncidents: this.emergencyServices.activeIncidents.length,
-      emergencyVehicles: this.emergencyServices.emergencyVehicles.length
-    };
-    
-    this.debugOverlay.update(debugData);
-    
-    // Update HUD debug info
-    if (this.debugOverlay.enabled) {
-      this.hud.debugInfoEl.style.display = 'flex';
-      this.hud.debugTextEl.textContent = `FPS:${debugData.fps} NPCs:${debugData.npcs} Vehicles:${debugData.vehicles}`;
-    } else {
-      this.hud.debugInfoEl.style.display = 'none';
-    }
+    this.renderingManager.render(this.stateManager.state, interp);
   }
 }
+

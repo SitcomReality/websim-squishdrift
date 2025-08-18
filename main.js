@@ -7,58 +7,58 @@ const canvas = document.getElementById('game');
 const debugEl = document.getElementById('debug');
 const toggleBtn = document.getElementById('toggle-debug');
 
-// Ensure canvas exists
-if (!canvas) {
-  console.error('Canvas element not found');
-}
-
 const game = new GameEngine(canvas, { debugEl });
 const loop = createLoop({
   update: (dt) => game.update(dt),
   render: (interp) => game.render(interp),
 });
 
-// Ensure game is properly initialized
-if (!game || !game.stateManager) {
-  console.error('Game engine initialization failed');
-}
-
 toggleBtn.addEventListener('click', () => {
   console.log('Debug button clicked');
-  const next = !game.debugOverlay.enabled;
-  game.debugOverlay.enabled = next;
-  debugEl.toggleAttribute('hidden', !next);
-  toggleBtn.setAttribute('aria-pressed', String(next));
+  const next = !game.debugOverlay?.enabled;
+  if (game.debugOverlay) {
+    game.debugOverlay.enabled = next;
+  }
+  if (debugEl) {
+    debugEl.toggleAttribute('hidden', !next);
+  }
+  if (toggleBtn) {
+    toggleBtn.setAttribute('aria-pressed', String(next));
+  }
   console.log('Debug overlay enabled:', next);
 });
 
 // Add click handling for debug spawning
 canvas.addEventListener('click', (e) => {
-  if (!game.debugOverlay.enabled) return;
+  if (!game.debugOverlay?.enabled) return;
   
   const rect = canvas.getBoundingClientRect();
   const x = e.clientX - rect.left;
   const y = e.clientY - rect.top;
   
   // Convert screen coordinates to world coordinates
-  const ts = game.state.world.tileSize;
+  const ts = game.stateManager?.getState?.()?.world?.tileSize || 24;
   const cx = Math.floor(canvas.width / 2);
   const cy = Math.floor(canvas.height / 2);
-  const worldX = (x - cx) / ts + game.state.camera.x;
-  const worldY = (y - cy) / ts + game.state.camera.y;
+  const state = game.stateManager?.getState?.();
+  
+  if (!state) return;
+  
+  const worldX = (x - cx) / ts + state.camera.x;
+  const worldY = (y - cy) / ts + state.camera.y;
   
   const tileX = Math.floor(worldX);
   const tileY = Math.floor(worldY);
   
-  if (tileX < 0 || tileY < 0 || tileX >= game.state.world.map.width || tileY >= game.state.world.map.height) {
+  if (tileX < 0 || tileY < 0 || tileX >= state.world.map.width || tileY >= state.world.map.height) {
     return;
   }
   
-  const tile = game.state.world.map.tiles[tileY][tileX];
+  const tile = state.world.map.tiles[tileY][tileX];
   
   // Check tile type and spawn appropriate entity
   if (tile === 7) { // Footpath - spawn pedestrian
-    const pedNodes = game.state.world.map.peds?.list || [];
+    const pedNodes = state.world.map.peds?.list || [];
     if (pedNodes.length > 0) {
       const nearestNode = pedNodes.reduce((nearest, node) => {
         const dist = Math.hypot(node.x - worldX, node.y - worldY);
@@ -67,20 +67,20 @@ canvas.addEventListener('click', (e) => {
       });
       
       const next = (nearestNode.neighbors && nearestNode.neighbors.length) 
-        ? nearestNode.neighbors[Math.floor(game.state.rand() * nearestNode.neighbors.length)]
+        ? nearestNode.neighbors[Math.floor(state.rand() * nearestNode.neighbors.length)]
         : { x: nearestNode.x, y: nearestNode.y };
       
-      game.state.entities.push({
+      state.entities.push({
         type: 'npc',
         pos: new Vec2(worldX, worldY),
         from: { x: Math.floor(worldX), y: Math.floor(worldY) },
         to: next,
         t: 0,
-        speed: 2 + game.state.rand() * 1.5
+        speed: 2 + state.rand() * 1.5
       });
     }
   } else if ([1, 2, 3, 4, 6].includes(tile)) { // Road tiles - spawn vehicle
-    const roads = game.state.world.map.roads;
+    const roads = state.world.map.roads;
     const nearestNode = roads.nodes.reduce((nearest, node) => {
       const dist = Math.hypot(node.x - worldX, node.y - worldY);
       const nearestDist = Math.hypot(nearest.x - worldX, nearest.y - worldY);
@@ -88,9 +88,9 @@ canvas.addEventListener('click', (e) => {
     });
     
     if (nearestNode && nearestNode.next && nearestNode.next.length > 0) {
-      const next = nearestNode.next[Math.floor(game.state.rand() * nearestNode.next.length)];
+      const next = nearestNode.next[Math.floor(state.rand() * nearestNode.next.length)];
       
-      game.state.entities.push({
+      state.entities.push({
         type: 'vehicle',
         pos: new Vec2(worldX, worldY),
         node: nearestNode,
@@ -109,23 +109,18 @@ canvas.addEventListener('click', (e) => {
 });
 
 // Show zoom indicator (optional unobtrusive)
-function updateZoomUI() {
-  try {
-    const zoomEl = document.getElementById('zoom-indicator');
-    if (zoomEl && game && game.stateManager && game.stateManager.getState) {
-      const state = game.stateManager.getState();
-      if (state && state.camera) {
-        zoomEl.textContent = `Zoom: ${(state.camera.zoom || 1).toFixed(1)}x`;
-      }
-    }
-  } catch (error) {
-    console.warn('Failed to update zoom UI:', error);
+function updateZoomUI(){
+  const zoomEl = document.getElementById('zoom-indicator');
+  if (!zoomEl || !game.stateManager) return;
+  
+  const state = game.stateManager.getState?.();
+  if (state?.camera) {
+    zoomEl.textContent = `Zoom: ${(state.camera.zoom || 1).toFixed(1)}x`;
   }
 }
 
 setInterval(updateZoomUI, 200);
 
-// Handle window resize
 window.addEventListener('resize', () => {
   if (game.renderer && game.renderer.resizeToDisplay) {
     game.renderer.resizeToDisplay();

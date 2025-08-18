@@ -1,4 +1,4 @@
-import { SpawnManager } from '../core/SpawnManager.js';
+import { SpawnManager } from '../app/core/SpawnManager.js';
 
 export function drawSpawnDebug(r, state) {
   const { ctx } = r, ts = state.world.tileSize;

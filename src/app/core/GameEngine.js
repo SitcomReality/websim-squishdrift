@@ -221,9 +221,11 @@ export class GameEngine {
       }
     }
 
-    // Spawn vehicles
+    // Spawn vehicles with random types
     if (existingVehicles < maxVehicles) {
       const roads = this.state.world.map.roads;
+      const vehicleTypes = ['compact', 'sedan', 'truck', 'sports'];
+      
       const validSpawns = roads.nodes.filter(node => {
         // Check distance to existing vehicles
         const tooCloseToVehicle = this.state.entities.some(e => 
@@ -241,6 +243,9 @@ export class GameEngine {
         const spawnNode = validSpawns[Math.floor(this.state.rand() * validSpawns.length)];
         const next = spawnNode.next[Math.floor(this.state.rand() * spawnNode.next.length)];
         
+        // Randomly select vehicle type
+        const selectedType = vehicleTypes[Math.floor(this.state.rand() * vehicleTypes.length)];
+        
         // Determine direction based on road direction
         let rot = 0;
         switch(spawnNode.dir) {
@@ -250,22 +255,28 @@ export class GameEngine {
           case 'W': rot = Math.PI; break;
         }
         
-        this.state.entities.push({
-          type: 'vehicle',
-          pos: { x: spawnNode.x + 0.5, y: spawnNode.y + 0.5 },
+        // Create vehicle using the vehicle type system
+        const vehicle = this.createVehicle(selectedType, {
+          x: spawnNode.x + 0.5,
+          y: spawnNode.y + 0.5
+        }, {
           node: spawnNode,
           next,
-          t: 0,
-          speed: 0.25 * 1.5, // 25% of original speed
           rot,
+          speed: 0.25 * 1.5,
           vel: { x: 0, y: 0 },
           angularVel: 0,
-          ctrl: { throttle: 0, brake: 0, steer: 0 },
-          mass: 1200, maxSpeed: 4, engineForce: 900, brakeForce: 1600,
-          rollingRes: 1.0, drag: 0.25, grip: 6.0, steerRate: 2.5
+          ctrl: { throttle: 0, brake: 0, steer: 0 }
         });
+        
+        this.state.entities.push(vehicle);
       }
     }
+  }
+
+  createVehicle(type, pos, options = {}) {
+    const { createVehicle } = require('../vehicles/VehicleTypes.js');
+    return createVehicle(type, new Vec2(pos.x, pos.y), options);
   }
 
   render(interp) {

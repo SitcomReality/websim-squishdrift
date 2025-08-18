@@ -1,18 +1,21 @@
 export class AIDrivingSystem {
   update(state, dt) {
     const roads = state.world.map.roads;
+    const obstacles = state.entities.filter(e => e.type === 'vehicle' || e.type === 'npc' || e.type === 'player');
+
     for (const v of state.entities.filter(e => e.type === 'vehicle' && e.controlled !== true)) {
       // Ensure control struct
       v.ctrl = v.ctrl || { throttle: 0, brake: 0, steer: 0 };
       v.drivingStyle = v.drivingStyle || 'normal'; // Default to normal driving
       v.aiTargetSpeed = v.aiTargetSpeed || (v.drivingStyle === 'reckless' ? 4.0 : 1.5);
+      v.impatience = v.impatience || 0;
       
       // Initialize planned route if not exists
       if (!v.plannedRoute || !v.plannedRoute.length) {
         this.initializeRoute(v, roads);
       }
 
-      this.updateRouteFollowing(state, v, roads, dt);
+      this.updateRouteFollowing(state, v, roads, dt, obstacles);
       this.updateMovement(v, dt);
     }
   }
@@ -57,7 +60,7 @@ export class AIDrivingSystem {
     return path;
   }
 
-  updateRouteFollowing(state, v, roads, dt) {
+  updateRouteFollowing(state, v, roads, dt, allObstacles) {
     if (!v.plannedRoute || !v.plannedRoute.length) return;
     
     // Always maintain minimum path length - extend path BEFORE it runs out
@@ -99,9 +102,45 @@ export class AIDrivingSystem {
 
     // --- NEW DRIVING STYLE LOGIC ---
     const drivingStyle = v.drivingStyle || 'normal';
+    const IMPATIENCE_THRESHOLD = 10; // 10 seconds
+
+    let detectedObstacle = null;
+    let obstacleDistance = Infinity;
+
+    if (drivingStyle === 'normal' && v.impatience < IMPATIENCE_THRESHOLD) {
+      const obstacles = allObstacles.filter(o => o !== v);
+      const checkDistance = 3; // Check current + next 2 nodes
+
+      for (let i = 0; i < checkDistance; i++) {
+        const pathIndex = (v.currentPathIndex || 0) + i;
+        if (pathIndex >= v.plannedRoute.length) break;
+
+        const node = v.plannedRoute[pathIndex];
+        const nodePos = { x: node.x + 0.5, y: node.y + 0.5 };
+
+        for (const obs of obstacles) {
+          if (!obs.pos) continue;
+          const distToNode = Math.hypot(obs.pos.x - nodePos.x, obs.pos.y - nodePos.y);
+
+          if (distToNode < 0.7) { // Obstacle is on this path tile
+            detectedObstacle = obs;
+            obstacleDistance = i;
+            break; 
+          }
+        }
+        if (detectedObstacle) break;
+      }
+    }
+
+    if (detectedObstacle) {
+      v.impatience += dt;
+    } else if (v.impatience > 0) {
+      // Slowly decrease impatience when path is clear
+      v.impatience = Math.max(0, v.impatience - dt * 0.5);
+    }
 
     let baseSpeed;
-    if (drivingStyle === 'reckless') {
+    if (drivingStyle === 'reckless' || (drivingStyle === 'normal' && v.impatience >= IMPATIENCE_THRESHOLD)) {
       baseSpeed = v.isEmergency ? 5.0 : 4.0;
     } else { // 'normal'
       baseSpeed = 1.5;
@@ -109,11 +148,24 @@ export class AIDrivingSystem {
 
     let speedMultiplier = 1.0;
 
+    // --- NEW --- Obstacle avoidance speed adjustment for normal drivers
+    if (drivingStyle === 'normal' && v.impatience < IMPATIENCE_THRESHOLD) {
+      if (obstacleDistance === 0) { // Obstacle right in front
+        speedMultiplier = 0; // Slam brakes
+        v.ctrl.brake = 1;
+        v.ctrl.throttle = 0;
+      } else if (obstacleDistance === 1) { // Obstacle 1 node away
+        speedMultiplier = Math.min(speedMultiplier, 0.3);
+      } else if (obstacleDistance === 2) { // Obstacle 2 nodes away
+        speedMultiplier = Math.min(speedMultiplier, 0.6);
+      }
+    }
+
     // Check for upcoming hazards and adjust speed
     const zebraCrossingDistance = this.findZebraCrossingDistance(v);
     const intersectionDistance = this.findIntersectionDistance(v, roads);
     
-    if (drivingStyle === 'normal') {
+    if (drivingStyle === 'normal' && v.impatience < IMPATIENCE_THRESHOLD) {
       // Slow down for zebra crossings
       if (zebraCrossingDistance !== null) {
         const minZebraDist = 2, maxZebraDist = 5;
@@ -135,7 +187,7 @@ export class AIDrivingSystem {
           speedMultiplier = Math.min(speedMultiplier, 0.4 + (factor * 0.6));
         }
       }
-    } else { // 'reckless'
+    } else { // 'reckless' or impatient
       // Only a slight slowdown for zebra crossings, ignore intersections
       if (zebraCrossingDistance !== null) {
         const minZebraDist = 1, maxZebraDist = 3;

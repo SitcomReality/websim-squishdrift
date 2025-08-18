@@ -51,10 +51,14 @@ export class GameEngine {
     // Initialize BloodManager
     this.state.bloodManager = new BloodManager(20); // 20 blood puddles max
     
+    // Initialize pickup manager
+    this.pickupManager = new PickupManager();
+    
     // Start with debug overlay disabled by default
     this.debugOverlay.enabled = false;
     
     this.updateHUD();
+    this.initializePickups();
   }
 
   updateHUD() {
@@ -104,6 +108,9 @@ export class GameEngine {
     this.emergencyServices.update(this.state, dt)
     this.systems.skidmarks.update(this.state, dt)
     this.systems.weapon.update(this.state, this.input, dt)
+    
+    // Update pickup spawning
+    this.pickupManager.update(this.state, dt);
     
     // Update spawn/despawn system
     this.updateSpawning(dt)
@@ -307,6 +314,23 @@ export class GameEngine {
       this.hud.debugTextEl.textContent = `FPS:${debugData.fps} NPCs:${debugData.npcs} Vehicles:${debugData.vehicles}`;
     } else {
       this.hud.debugInfoEl.style.display = 'none';
+    }
+  }
+
+  initializePickups() {
+    // Create pickup spawn locations at center of each block
+    const cityLayout = this.state.world.map;
+    const blockWidth = cityLayout.W + cityLayout.MED;
+    
+    for (let by = 0; by < cityLayout.blocksHigh; by++) {
+      for (let bx = 0; bx < cityLayout.blocksWide; bx++) {
+        const center = {
+          x: cityLayout.mapOffset + cityLayout.MED + bx * blockWidth + cityLayout.W / 2,
+          y: cityLayout.mapOffset + cityLayout.MED + by * blockWidth + cityLayout.W / 2
+        };
+        
+        this.pickupManager.addSpawnLocation(center);
+      }
     }
   }
 }

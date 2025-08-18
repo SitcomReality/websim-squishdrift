@@ -5,7 +5,11 @@ export function drawNPC(r, state, npc){
   
   // Generate random color if not already set
   if (!npc.color) {
-    npc.color = `hsl(${Math.random() * 360}, 70%, 50%)`;
+    // cooler hues (purple->lime), low saturation
+    const hue = 120 + Math.random() * 140; // 120..260
+    const sat = 25 + Math.random() * 20;   // 25..45
+    const lig = 45 + Math.random() * 20;   // 45..65
+    npc.color = `hsl(${Math.round(hue)}, ${Math.round(sat)}%, ${Math.round(lig)}%)`;
   }
   
   ctx.fillStyle = npc.color;

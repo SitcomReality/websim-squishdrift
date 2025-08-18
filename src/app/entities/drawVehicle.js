@@ -1,7 +1,7 @@
 import { VehicleArchetype, VehicleTypes } from '../vehicles/VehicleTypes.js';
 
-export function drawVehicle(r, state, v) {
-  const { ctx } = r, ts = state.world.tileSize;
+export function drawVehicle(renderer, state, v) {
+  const { ctx } = renderer, ts = state.world.tileSize;
   
   // Get vehicle properties, falling back to archetype if not defined
   const vehicleType = v.vehicleType || 'sedan';

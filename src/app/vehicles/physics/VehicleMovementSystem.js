@@ -38,9 +38,9 @@ export class VehicleMovementSystem {
     
     const throttle = v.ctrl?.throttle || 0;
     const brake = v.ctrl?.brake || 0;
-    const steer = v.ctrl?.steer || 0;
+    const handbrake = v.ctrl?.handbrake || false;
     
-    const longitudinalForce = this.calculateLongitudinalForce(v, throttle, brake);
+    const longitudinalForce = this.calculateLongitudinalForce(v, throttle, brake, handbrake);
     v.longitudinalForce = longitudinalForce;
     
     const lateralForce = this.calculateLateralForce(v);
@@ -92,8 +92,10 @@ export class VehicleMovementSystem {
     v.brakeLight = brake > 0.1;
   }
 
-  calculateLongitudinalForce(v, throttle, brake) {
+  calculateLongitudinalForce(v, throttle, brake, handbrake) {
+    // Note: signature augmented to accept handbrake; fallback if not provided
     let force = 0;
+    const handbrake = (arguments.length >= 4) ? arguments[3] : (v.ctrl?.handbrake || false);
     
     if (throttle > 0) {
       force = this.maxEngineForce * throttle;
@@ -103,16 +105,22 @@ export class VehicleMovementSystem {
       const speed = Math.hypot(v.vel.x, v.vel.y);
       if (speed > 0.1) {
         force -= this.maxBrakeForce * brake;
-      } else if (v.handbrake) {
-        // Handbrake active - apply full brake force but don't reverse
-        force -= this.maxBrakeForce * brake;
       } else {
-        // Normal brake - allow reverse when fully stopped
-        force -= this.maxBrakeForce * brake;
+        // When nearly stopped, braking should not cause the vehicle to be pushed into reverse.
+        // If handbrake is engaged, explicitly prevent reverse force and zero velocity.
+        if (handbrake) {
+          force = 0;
+          v.vel.x = 0; v.vel.y = 0;
+        } else {
+          // Prevent brakes alone from causing a sustained reverse push when speed is very low:
+          force = Math.min(0, -this.maxBrakeForce * brake * 0.5);
+        }
       }
     }
     
-    if (throttle < 0) {
+    // Reverse input only allowed when player (or AI) actively commands negative throttle.
+    // If handbrake is active, ignore reverse input.
+    if (throttle < 0 && !handbrake) {
       force = this.maxReverseForce * throttle;
     }
     

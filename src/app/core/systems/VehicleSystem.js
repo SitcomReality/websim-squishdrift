@@ -9,10 +9,9 @@ export class VehicleSystem {
     const v = state.control.vehicle;
     if (!v) return;
     
-    v.ctrl = v.ctrl || { throttle: 0, brake: 0, steer: 0 };
-    v.handbrake = v.handbrake || false;
+    v.ctrl = v.ctrl || { throttle: 0, brake: 0, steer: 0, handbrake: false };
     
-    // Forward/reverse with throttle
+    // Throttle: W/Up = forward, S/Down = reverse
     v.ctrl.throttle = (input.keys.has('KeyW') || input.keys.has('ArrowUp') ? 1 : 0) +
                       (input.keys.has('KeyS') || input.keys.has('ArrowDown') ? -1 : 0);
     
@@ -20,10 +19,8 @@ export class VehicleSystem {
     v.ctrl.steer = (input.keys.has('KeyA') || input.keys.has('ArrowLeft') ? -1 : 0) +
                    (input.keys.has('KeyD') || input.keys.has('ArrowRight') ? 1 : 0);
     
-    // Handbrake on spacebar (replaces old brake)
-    v.handbrake = input.keys.has('Space');
-    
-    // Normal brake is now separate from handbrake
-    v.ctrl.brake = 0;
+    // Handbrake (space): apply strong brakes but never cause reversal when engaged
+    v.ctrl.handbrake = input.keys.has('Space');
+    v.ctrl.brake = v.ctrl.handbrake ? 1 : 0;
   }
 }

@@ -215,33 +215,4 @@ export class VehicleCollisionSystem {
 
     return { x: reflected.x / length, y: reflected.y / length };
   }
-
-  updateMovement(state, v, dt) {
-    this.ensurePhysics(v);
-    
-    const throttle = v.ctrl?.throttle || 0;
-    const brake = v.ctrl?.brake || 0;
-    const steer = v.ctrl?.steer || 0;
-    
-    // Handle handbrake override
-    const actualBrake = v.handbrake ? 1 : brake;
-    
-    const longitudinalForce = this.calculateLongitudinalForce(v, throttle, actualBrake);
-    v.longitudinalForce = longitudinalForce;
-  }
-
-  ensurePhysics(v) {
-    // Add physics properties if they don't exist
-    if (!v.physics) {
-      v.physics = {};
-    }
-    // Add other physics-related properties as needed
-  }
-
-  calculateLongitudinalForce(v, throttle, brake) {
-    // Calculate the longitudinal force based on throttle and brake inputs
-    // This is a placeholder, the actual implementation depends on the vehicle physics model
-    const force = throttle * 1000 - brake * 500;
-    return force;
-  }
 }

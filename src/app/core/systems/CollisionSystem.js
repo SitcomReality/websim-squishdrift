@@ -1,5 +1,4 @@
 import { Vec2 } from '../../utils/Vec2.js';
-import { entityOBB, obbOverlap, resolveDynamicDynamic } from '../../app/vehicles/physics/geom.js';
 
 export class CollisionSystem {
   constructor() {
@@ -47,18 +46,10 @@ export class CollisionSystem {
     const pedestrians = state.entities.filter(e => e.type === 'npc');
 
     for (const vehicle of vehicles) {
-      const vehicleOBB = entityOBB(vehicle);
-      
       for (let i = pedestrians.length - 1; i >= 0; i--) {
         const pedestrian = pedestrians[i];
-        pedestrian.hitboxW = pedestrian.hitboxW ?? 0.2;
-        pedestrian.hitboxH = pedestrian.hitboxH ?? 0.2;
-        pedestrian.rot = 0;
         
-        const pedOBB = entityOBB(pedestrian, {w: pedestrian.hitboxW, h: pedestrian.hitboxH});
-        const contact = obbOverlap(vehicleOBB, pedOBB);
-        
-        if (contact) {
+        if (this.checkCollision(vehicle, pedestrian, 0.45)) {
           // Pedestrian gets squished - create blood stain
           const bloodStain = {
             type: 'blood',
@@ -95,29 +86,22 @@ export class CollisionSystem {
     if (state.control?.inVehicle) return; // disable player collisions while inside a vehicle
     if (player.collisionDisabled) return; // Skip if player collision is disabled
     
-    // Ensure player has proper hitbox dimensions
-    player.hitboxW = player.hitboxW ?? 0.15;
-    player.hitboxH = player.hitboxH ?? 0.15;
-    player.rot = 0;
-    
-    // Use the same OBB collision system as vehicles
-    const playerOBB = entityOBB(player, {w: player.hitboxW, h: player.hitboxH});
-    
     for (const vehicle of vehicles) {
       if (vehicle.controlled) continue; // Skip player-controlled vehicle
       
-      const vehicleOBB = entityOBB(vehicle);
-      const contact = obbOverlap(vehicleOBB, playerOBB);
+      // Use actual hitbox sizes instead of fixed radius
+      const playerRadius = Math.max(player.hitboxW || 0.15, player.hitboxH || 0.15) * 0.8; // 80% of max dimension
+      const vehicleRadius = Math.max(vehicle.hitboxW || 0.9, vehicle.hitboxH || 0.5) * 0.8;
+      const totalRadius = playerRadius + vehicleRadius;
       
-      if (contact) {
+      const dx = player.pos.x - vehicle.pos.x;
+      const dy = player.pos.y - vehicle.pos.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      
+      if (distance < totalRadius) {
         player.health.takeDamage(10);
         
-        // Apply collision response
-        resolveDynamicDynamic(vehicle, player, contact, 0.5);
-        
         // Simple knockback
-        const dx = player.pos.x - vehicle.pos.x;
-        const dy = player.pos.y - vehicle.pos.y;
         const len = Math.sqrt(dx * dx + dy * dy);
         if (len > 0) {
           player.pos.x += (dx / len) * 0.2;

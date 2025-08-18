@@ -291,7 +291,6 @@ export function createVehicle(type, pos, options = {}) {
     color = base.baseColor || '#555';
   }
   
-  // Create vehicle object ensuring color assignment happens after base spread
   return {
     type: 'vehicle',
     vehicleType: type,
@@ -300,9 +299,9 @@ export function createVehicle(type, pos, options = {}) {
     rot: 0,
     angularVel: 0,
     ctrl: { throttle: 0, brake: 0, steer: 0 },
+    color: color,
     ...base,
     ...options,
-    color: color, // Override color with palette selection
     health: { hp: base.maxHealth, maxHp: base.maxHealth, getPercent: () => 1, isAlive: () => true }
   };
 }

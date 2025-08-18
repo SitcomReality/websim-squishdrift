@@ -37,7 +37,7 @@ export const VehicleArchetype = {
   
   brakeLights: {
     size: 4,
-    width: 4,
+    width: 4, // Individual light width
     height: 0.3,
     rearOffset: 0.5,
     offColor: '#4a0000',

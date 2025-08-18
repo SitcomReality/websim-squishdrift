@@ -309,20 +309,34 @@ export class AIDrivingSystem {
     // targetSpeed already set in updateRouteFollowing, ensure defined
     const target = v.aiTargetSpeed || 3.0;
     const accelBand = 0.2;
-    let desiredThrottle = 0, desiredBrake = 0;
-    if (Math.abs(vLong - target) < accelBand) { desiredThrottle = 0; desiredBrake = 0; }
-    else if (vLong < target - accelBand) { desiredThrottle = 1; desiredBrake = 0; }
-    else if (vLong > target + accelBand) { desiredThrottle = 0; desiredBrake = 0.6; }
+    let desiredThrottle = 0, desiredBrake = 0, desiredHandbrake = false;
     
-    // Honor any explicit brakeHold requested by route following (prevents rapid pulse braking)
+    if (Math.abs(vLong - target) < accelBand) { 
+      desiredThrottle = 0; 
+      desiredBrake = 0; 
+      desiredHandbrake = true; // Use handbrake when we want to stop completely
+    } else if (vLong < target - accelBand) { 
+      desiredThrottle = 1; 
+      desiredBrake = 0; 
+      desiredHandbrake = false;
+    } else if (vLong > target + accelBand) { 
+      desiredThrottle = 0; 
+      desiredBrake = 0.6; 
+      desiredHandbrake = false;
+    }
+    
+    // Honor any explicit brakeHold requested by route following
     if (v.brakeHoldTimer && v.brakeHoldTimer > 0) {
-      desiredBrake = Math.max(desiredBrake, 1.0);
+      desiredHandbrake = true;
       desiredThrottle = 0;
       v.brakeHoldTimer = Math.max(0, v.brakeHoldTimer - dt);
     }
+    
     // lerp control values for smooth application
     v.ctrl.throttle = (v.ctrl.throttle || 0) * 0.75 + desiredThrottle * 0.25;
     v.ctrl.brake = (v.ctrl.brake || 0) * 0.75 + desiredBrake * 0.25;
+    v.ctrl.handbrake = (v.ctrl.handbrake || false) || desiredHandbrake;
+    
     // gentle cap to prevent instant flips
     v.ctrl.throttle = clamp(v.ctrl.throttle, -1, 1);
     v.ctrl.brake = clamp(v.ctrl.brake, 0, 1);

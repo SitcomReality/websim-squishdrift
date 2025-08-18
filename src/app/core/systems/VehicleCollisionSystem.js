@@ -44,6 +44,16 @@ export class VehicleCollisionSystem {
         const contact = obbOverlap(obb, aabbForTrunk(gx, gy)); if (!contact) continue;
         const correctedContact = { ...contact, normal: contact.normal };
         resolveDynamicStatic(v, correctedContact, 0.2);
+        // Add bounce reflection for trunk impacts
+        {
+          const restitution = 0.6;
+          const speed = Math.hypot(v.vel.x || 0, v.vel.y || 0);
+          const velDir = this.getVelocityDirection(v);
+          const reflect = this.calculateBounceNormal(velDir, correctedContact.normal);
+          const bounceFactor = Math.max(0.25, restitution * 0.8);
+          v.vel.x = reflect.x * speed * bounceFactor;
+          v.vel.y = reflect.y * speed * bounceFactor;
+        }
         this.applyBuildingDamping(v);
         continue;
       }
@@ -55,6 +65,16 @@ export class VehicleCollisionSystem {
       // Use contact normal for building collision
       const correctedContact = { ...contact, normal: contact.normal };
       resolveDynamicStatic(v, correctedContact, 0.2);
+      // Reflect velocity for a bounce effect when hitting building tiles
+      {
+        const restitution = 0.6;
+        const speed = Math.hypot(v.vel.x || 0, v.vel.y || 0);
+        const velDir = this.getVelocityDirection(v);
+        const reflect = this.calculateBounceNormal(velDir, correctedContact.normal);
+        const bounceFactor = Math.max(0.25, restitution * 0.8);
+        v.vel.x = reflect.x * speed * bounceFactor;
+        v.vel.y = reflect.y * speed * bounceFactor;
+      }
       
       // Strong damping for building impacts
       this.applyBuildingDamping(v);

@@ -23,7 +23,7 @@ export class VehicleCollisionSystem {
       
       // Use contact normal for more predictable collision response
       const correctedContact = { ...contact, normal: this.smoothCollisionNormal(contact.normal, v, o) };
-      resolveDynamicDynamic(v, o, correctedContact, 0.8); // Increased restitution for more bounce
+      resolveDynamicDynamic(v, o, correctedContact, 0.8); // Increased restitution from 0.4 to 0.8
       
       // Apply damping to reduce flickering
       this.applyCollisionDamping(v, o);
@@ -43,7 +43,17 @@ export class VehicleCollisionSystem {
       if (this.isTreeTrunk(gx, gy, map)) {
         const contact = obbOverlap(obb, aabbForTrunk(gx, gy)); if (!contact) continue;
         const correctedContact = { ...contact, normal: contact.normal };
-        resolveDynamicStatic(v, correctedContact, 0.8); // Increased restitution from 0.2 to 0.8 for more bounce
+        resolveDynamicStatic(v, correctedContact, 0.6); // Increased restitution from 0.2 to 0.6
+        // Reflect velocity along contact normal to produce a bounce effect
+        {
+          const restitution = 0.6;
+          const speed = Math.hypot(v.vel.x || 0, v.vel.y || 0);
+          const velDir = this.getVelocityDirection(v);
+          const reflect = this.calculateBounceNormal(velDir, correctedContact.normal);
+          const bounceFactor = Math.max(0.25, restitution * 0.8);
+          v.vel.x = reflect.x * speed * bounceFactor;
+          v.vel.y = reflect.y * speed * bounceFactor;
+        }
         this.applyBuildingDamping(v);
         continue;
       }
@@ -53,9 +63,19 @@ export class VehicleCollisionSystem {
       
       const contact = obbOverlap(obb, aabbForTile(gx,gy)); if (!contact) continue;
       const correctedContact = { ...contact, normal: contact.normal };
-      resolveDynamicStatic(v, correctedContact, 0.8); // Increased restitution from 0.2 to 0.8
+      resolveDynamicStatic(v, correctedContact, 0.6); // Increased restitution from 0.2 to 0.6
+      // Reflect velocity so vehicle bounces off walls/tiles rather than sticking
+      {
+        const restitution = 0.6;
+        const speed = Math.hypot(v.vel.x || 0, v.vel.y || 0);
+        const velDir = this.getVelocityDirection(v);
+        const reflect = this.calculateBounceNormal(velDir, correctedContact.normal);
+        const bounceFactor = Math.max(0.25, restitution * 0.8);
+        v.vel.x = reflect.x * speed * bounceFactor;
+        v.vel.y = reflect.y * speed * bounceFactor;
+      }
       
-      // Stronger bounce for building impacts
+      // Strong damping for building impacts
       this.applyBuildingDamping(v);
     }
   }

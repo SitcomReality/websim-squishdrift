@@ -291,8 +291,7 @@ export function createVehicle(type, pos, options = {}) {
     color = base.baseColor || '#555';
   }
   
-  // Spread base first, then options, then force the chosen color so palette selection
-  // always wins over any color defined in the archetype/base type.
+  // Create vehicle object ensuring color assignment happens after base spread
   return {
     type: 'vehicle',
     vehicleType: type,
@@ -303,7 +302,7 @@ export function createVehicle(type, pos, options = {}) {
     ctrl: { throttle: 0, brake: 0, steer: 0 },
     ...base,
     ...options,
-    color: color,
+    color: color, // Override color with palette selection
     health: { hp: base.maxHealth, maxHp: base.maxHealth, getPercent: () => 1, isAlive: () => true }
   };
 }

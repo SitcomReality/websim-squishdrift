@@ -47,7 +47,7 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
   // Build road and pedestrian graphs
   const graphBuilder = new GraphBuilder();
   const roads = graphBuilder.buildRoadGraph(tiles, cityLayout.width, cityLayout.height, roadGenerator.getRoundabouts());
-  const peds = graphBuilder.buildPedGraph(tiles, cityLayout.width, cityLayout.height);
+  const peds = graphBuilder.buildPedGraph(tiles, cityLayout.width, cityLayout.height, trees);
   
   return {
     tiles,

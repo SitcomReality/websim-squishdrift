@@ -91,7 +91,7 @@ export class GraphBuilder {
     return roadDir(t);
   }
 
-  buildPedGraph(tiles, width, height) {
+  buildPedGraph(tiles, width, height, trees = []) {
     const nodes = new Map();
     const key = (x, y) => `${x},${y}`;
     
@@ -107,20 +107,17 @@ export class GraphBuilder {
     
     // Collect tree positions for collision checking
     const treePositions = new Set();
-    const map = { tiles, width, height };
+    for (const tree of (trees || [])) {
+      treePositions.add(`${Math.floor(tree.pos.x)},${Math.floor(tree.pos.y)}`);
+    }
     
     // Check if this is a tree trunk position
-    const isTreeTrunk = (x, y) => {
-      if (!map.trees) return false;
-      return map.trees.some(tree => 
-        Math.floor(tree.pos.x) === x && Math.floor(tree.pos.y) === y
-      );
-    };
+    const isTreeTrunk = (x, y) => treePositions.has(`${x},${y}`);
     
     // Collect walkable nodes, avoiding tree trunks
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
-        // Skip tree trunk positions
+        // Skip tree trunk positions (don't create ped nodes where a tree trunk exists)
         if (isTreeTrunk(x, y)) continue;
         
         if (!walkable(tiles[y][x])) continue;

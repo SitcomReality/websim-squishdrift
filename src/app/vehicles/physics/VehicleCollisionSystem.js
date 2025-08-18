@@ -1,6 +1,6 @@
 import { VehiclePhysicsConstants } from './VehiclePhysicsConstants.js';
 import { Tile } from '../../../map/TileTypes.js';
-import { entityOBB, aabbForTile, obbOverlap, resolveDynamicDynamic, resolveDynamicStatic } from './geom.js';
+import { entityOBB, aabbForTile, aabbForTrunk, obbOverlap, resolveDynamicDynamic, resolveDynamicStatic } from './geom.js';
 
 export class VehicleCollisionSystem {
   constructor() {}
@@ -39,9 +39,9 @@ export class VehicleCollisionSystem {
       const gx=tx+ox, gy=ty+oy; if (gx<0||gy<0||gx>=map.width||gy>=map.height) continue;
       const t = map.tiles[gy][gx]; 
       
-      // Check for tree trunk collision
+      // Check for tree trunk collision (use tight trunk AABB, not whole tile)
       if (this.isTreeTrunk(gx, gy, map)) {
-        const contact = obbOverlap(obb, aabbForTile(gx,gy)); if (!contact) continue;
+        const contact = obbOverlap(obb, aabbForTrunk(gx, gy)); if (!contact) continue;
         const correctedContact = { ...contact, normal: contact.normal };
         resolveDynamicStatic(v, correctedContact, 0.2);
         this.applyBuildingDamping(v);

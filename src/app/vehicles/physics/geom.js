@@ -4,6 +4,11 @@ export function entityOBB(e, fallback={w:0.9,h:0.5}) {
   return { cx:e.pos.x, cy:e.pos.y, axes:[{x:c,y:s},{x:-s,y:c}], ext:[hw,hh] };
 }
 export function aabbForTile(x,y){ return { cx:x+0.5, cy:y+0.5, axes:[{x:1,y:0},{x:0,y:1}], ext:[0.5,0.5] }; }
+// new: A tighter AABB for tree trunks (trunk occupies a small square centered in tile)
+export function aabbForTrunk(x, y, trunkSize = 0.3) {
+  const half = trunkSize / 2;
+  return { cx: x + 0.5, cy: y + 0.5, axes: [{ x: 1, y: 0 }, { x: 0, y: 1 }], ext: [half, half] };
+}
 function projInterval(obb, axis){
   const corners=[[1,1],[1,-1],[-1,1],[-1,-1]];
   let min=Infinity,max=-Infinity;

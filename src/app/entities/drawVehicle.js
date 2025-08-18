@@ -61,19 +61,28 @@ export function drawVehicle(renderer, state, v) {
     );
   }
   
-  // Draw brake lights as two side-by-side lights across the rear (mirrors headlights layout)
-  {
-    const brakeX = -hw * (brakeLights.rearOffset || 0.5);
-    // Use a per-light pixel size derived from archetype size if available, fallback to width*ts fractions
-    const lightW = (brakeLights.size ? ts * brakeLights.size : w * 0.12);
-    const lightH = (brakeLights.height ? ts * brakeLights.height : h * 0.12);
-    const spacing = Math.max(lightW * 0.6, w * 0.18);
-    ctx.fillStyle = v.brakeLight ? brakeLights.onColor : brakeLights.offColor;
-    // left
-    ctx.fillRect(brakeX, -spacing/2 - lightH/2, lightW, lightH);
-    // right (mirror)
-    ctx.fillRect(brakeX, spacing/2 - lightH/2, lightW, lightH);
-  }
+  // Draw brake lights - now two side-by-side
+  const brakeX = -hw * (brakeLights.rearOffset || 0.5);
+  const brakeW = brakeLights.width; // Individual light width
+  const brakeH = brakeLights.height * h;
+  const brakeSpacing = w * 0.3; // Spacing between the two brake lights
+  
+  // Left brake light
+  ctx.fillStyle = v.brakeLight ? brakeLights.onColor : brakeLights.offColor;
+  ctx.fillRect(
+    brakeX - brakeW/2 - brakeSpacing/2,
+    -brakeH/2,
+    brakeW,
+    brakeH
+  );
+  
+  // Right brake light
+  ctx.fillRect(
+    brakeX - brakeW/2 + brakeSpacing/2,
+    -brakeH/2,
+    brakeW,
+    brakeH
+  );
   
   // Add windows if defined
   if (v.windows || typeProps.windows) {

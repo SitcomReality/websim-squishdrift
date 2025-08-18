@@ -4,11 +4,32 @@ export class DebugOverlaySystem {
     this.enabled = false; 
   }
   
+  toggle(enabled) {
+    this.enabled = enabled;
+    if (this.el) {
+      this.el.toggleAttribute('hidden', !enabled);
+    }
+  }
+
   update(data){
     if (!this.el) return;
     this.el.toggleAttribute('hidden', !this.enabled);
     if (this.enabled) {
-      this.el.textContent = JSON.stringify(data, null, 2);
+      // Only show summary stats, not full entity data
+      const summary = {
+        fps: data.fps || 0,
+        entities: data.entities?.length || 0,
+        npcs: data.entities?.filter(e => e.type === 'npc').length || 0,
+        vehicles: data.entities?.filter(e => e.type === 'vehicle').length || 0,
+        bullets: data.entities?.filter(e => e.type === 'bullet').length || 0,
+        player: data.entities?.find(e => e.type === 'player') ? {
+          x: data.entities.find(e => e.type === 'player')?.pos?.x?.toFixed(1),
+          y: data.entities.find(e => e.type === 'player')?.pos?.y?.toFixed(1)
+        } : null,
+        camera: { x: data.camera?.x?.toFixed(1), y: data.camera?.y?.toFixed(1), zoom: data.camera?.zoom?.toFixed(1) }
+      };
+      
+      this.el.textContent = JSON.stringify(summary, null, 2);
     }
   }
 }

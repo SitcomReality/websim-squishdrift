@@ -281,7 +281,7 @@ export const VehicleTypes = {
 export function createVehicle(type, pos, options = {}) {
   const base = VehicleTypes[type] || VehicleTypes.sedan;
   
-  // Determine color based on type using the new palettes
+  // Determine color based on type
   let color;
   if (type === 'emergency') {
     color = getColorFromPalette(ColorPalettes.emergency);
@@ -291,6 +291,8 @@ export function createVehicle(type, pos, options = {}) {
     color = base.baseColor || '#555';
   }
   
+  // Spread base first, then options, then force the chosen color so palette selection
+  // always wins over any color defined in the archetype/base type.
   return {
     type: 'vehicle',
     vehicleType: type,
@@ -299,9 +301,9 @@ export function createVehicle(type, pos, options = {}) {
     rot: 0,
     angularVel: 0,
     ctrl: { throttle: 0, brake: 0, steer: 0 },
-    color: color, // Use the determined color
     ...base,
     ...options,
+    color: color,
     health: { hp: base.maxHealth, maxHp: base.maxHealth, getPercent: () => 1, isAlive: () => true }
   };
 }

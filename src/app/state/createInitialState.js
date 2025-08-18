@@ -114,7 +114,7 @@ export function createInitialState() {
     return `#${toHex(c)}${toHex(x)}${toHex(0)}`.replace(/undefined/g, '00');
   };
   
-  // Spawn empty vehicle using new system with proper color
+  // Spawn empty vehicle using new system
   const emptyVehicleTypes = ['compact', 'sedan', 'truck', 'sports'];
   const randomEmptyType = emptyVehicleTypes[Math.floor(rand() * emptyVehicleTypes.length)];
   const emptyVehicle = createVehicle(randomEmptyType, new Vec2(spawnX + 1.5, spawnY + 0.5), {

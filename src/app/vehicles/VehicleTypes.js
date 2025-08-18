@@ -281,7 +281,7 @@ export const VehicleTypes = {
 export function createVehicle(type, pos, options = {}) {
   const base = VehicleTypes[type] || VehicleTypes.sedan;
   
-  // Determine color based on type
+  // Determine color based on type using the new palettes
   let color;
   if (type === 'emergency') {
     color = getColorFromPalette(ColorPalettes.emergency);
@@ -299,7 +299,7 @@ export function createVehicle(type, pos, options = {}) {
     rot: 0,
     angularVel: 0,
     ctrl: { throttle: 0, brake: 0, steer: 0 },
-    color: color,
+    color: color, // Use the determined color
     ...base,
     ...options,
     health: { hp: base.maxHealth, maxHp: base.maxHealth, getPercent: () => 1, isAlive: () => true }

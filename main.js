@@ -7,11 +7,21 @@ const canvas = document.getElementById('game');
 const debugEl = document.getElementById('debug');
 const toggleBtn = document.getElementById('toggle-debug');
 
+// Ensure canvas exists
+if (!canvas) {
+  console.error('Canvas element not found');
+}
+
 const game = new GameEngine(canvas, { debugEl });
 const loop = createLoop({
   update: (dt) => game.update(dt),
   render: (interp) => game.render(interp),
 });
+
+// Ensure game is properly initialized
+if (!game || !game.stateManager) {
+  console.error('Game engine initialization failed');
+}
 
 toggleBtn.addEventListener('click', () => {
   console.log('Debug button clicked');
@@ -99,17 +109,31 @@ canvas.addEventListener('click', (e) => {
 });
 
 // Show zoom indicator (optional unobtrusive)
-function updateZoomUI(){
-  const zoomEl = document.getElementById('zoom-indicator');
-  if (zoomEl && game && game.stateManager && game.stateManager.getState && game.stateManager.getState().camera) {
-    const state = game.stateManager.getState();
-    zoomEl.textContent = `Zoom: ${(state.camera.zoom || 1).toFixed(1)}x`;
+function updateZoomUI() {
+  try {
+    const zoomEl = document.getElementById('zoom-indicator');
+    if (zoomEl && game && game.stateManager && game.stateManager.getState) {
+      const state = game.stateManager.getState();
+      if (state && state.camera) {
+        zoomEl.textContent = `Zoom: ${(state.camera.zoom || 1).toFixed(1)}x`;
+      }
+    }
+  } catch (error) {
+    console.warn('Failed to update zoom UI:', error);
   }
 }
+
 setInterval(updateZoomUI, 200);
 
-window.addEventListener('resize', () => game.renderer && game.renderer.resizeToDisplay());
-if (game.renderer) {
+// Handle window resize
+window.addEventListener('resize', () => {
+  if (game.renderer && game.renderer.resizeToDisplay) {
+    game.renderer.resizeToDisplay();
+  }
+});
+
+if (game.renderer && game.renderer.resizeToDisplay) {
   game.renderer.resizeToDisplay();
 }
+
 loop.start();

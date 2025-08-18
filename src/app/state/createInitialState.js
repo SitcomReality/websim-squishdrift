@@ -2,6 +2,7 @@ import { generateCity } from '../../map/MapGen.js';
 import { isWalkable, Tile } from '../../map/TileTypes.js';
 import { rng } from '../../utils/RNG.js';
 import { Vec2 } from '../../utils/Vec2.js';
+import { createVehicle } from '../vehicles/VehicleTypes.js';
 
 export function createInitialState() {
   const map = generateCity('alpha-seed', 4, 4);
@@ -19,26 +20,14 @@ export function createInitialState() {
   player.pos.x = spawnX; player.pos.y = spawnY; state.camera.x = spawnX; state.camera.y = spawnY;
   player.vel = { x: 0, y: 0 }; player.mass = 80; player.hitboxW = 0.15; player.hitboxH = 0.15;
   
-  // Spawn empty vehicle right next to player
-  const emptyVehicle = {
-    type: 'vehicle',
-    pos: new Vec2(spawnX + 1.5, spawnY + 0.5), // Right side of player
-    t: 0,
-    speed: 0,
-    rot: 0,
-    vel: { x: 0, y: 0 },
-    angularVel: 0,
-    ctrl: { throttle: 0, brake: 0, steer: 0 },
-    mass: 1200, maxSpeed: 4, engineForce: 900, brakeForce: 1600,
-    rollingRes: 1.0, drag: 0.25, grip: 6.0, steerRate: 10.0,
-    health: { hp: 100, maxHp: 100, getPercent: () => 1, isAlive: () => true },
-    controlled: false, // Make sure it's not controlled by player
-    controlledByAI: false // Explicitly disable AI control
-  };
+  // Spawn empty vehicle using new system
+  const emptyVehicle = createVehicle('sedan', new Vec2(spawnX + 1.5, spawnY + 0.5), {
+    controlled: false
+  });
   state.entities.push(emptyVehicle);
   
-  // Spawn simple vehicles on road graph
-  const maxVehicles = 5; // Define maxVehicles
+  // Spawn different vehicle types on road graph
+  const maxVehicles = 5;
   const roads = state.world.map.roads;
   const roadNodes = roads.nodes.filter(n => n.next && n.next.length > 0);
   const validSpawns = roadNodes.filter(node => {
@@ -46,11 +35,13 @@ export function createInitialState() {
     return distance <= 15 && distance >= 8;
   }).slice(0, maxVehicles);
 
+  const vehicleTypes = ['compact', 'sedan', 'truck', 'sports'];
   for (let i = 0; i < validSpawns.length; i++) {
     const spawnNode = validSpawns[i];
     const next = spawnNode.next[Math.floor(rand() * spawnNode.next.length)];
+    const vehicleType = vehicleTypes[i % vehicleTypes.length];
     
-    // Determine direction based on road direction
+    // Determine rotation based on road direction
     let rot = 0;
     switch(spawnNode.dir) {
       case 'N': rot = -Math.PI/2; break;
@@ -59,20 +50,17 @@ export function createInitialState() {
       case 'W': rot = Math.PI; break;
     }
     
-    state.entities.push({
-      type: 'vehicle',
-      pos: new Vec2(spawnNode.x + 0.5, spawnNode.y + 0.5),
+    const vehicle = createVehicle(vehicleType, new Vec2(spawnNode.x + 0.5, spawnNode.y + 0.5), {
       node: spawnNode,
       next,
-      t: 0,
-      speed: 0.25 * 1.5, // 25% of original speed
       rot,
+      speed: 0.25 * 1.5,
       vel: { x: 0, y: 0 },
       angularVel: 0,
-      ctrl: { throttle: 0, brake: 0, steer: 0 },
-      mass: 1200, maxSpeed: 4, engineForce: 900, brakeForce: 1600,
-      rollingRes: 1.0, drag: 0.25, grip: 6.0, steerRate: 10.0
+      ctrl: { throttle: 0, brake: 0, steer: 0 }
     });
+    
+    state.entities.push(vehicle);
   }
   
   // Spawn simple NPC pedestrians on ped graph near player

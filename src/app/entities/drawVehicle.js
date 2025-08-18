@@ -1,59 +1,127 @@
-export function drawVehicle(r, state, v){
-  const { ctx } = r, ts = state.world.tileSize;
-  const w = ts * 0.9, h = ts * 0.5;
+import { VehicleArchetype, VehicleTypes } from '../vehicles/VehicleTypes.js';
 
+export function drawVehicle(r, state, v) {
+  const { ctx } = r, ts = state.world.tileSize;
+  
+  // Get vehicle properties, falling back to archetype if not defined
+  const vehicleType = v.vehicleType || 'sedan';
+  const typeProps = VehicleTypes[vehicleType] || VehicleArchetype;
+  
+  // Use vehicle-specific properties if available, otherwise use type defaults
+  const color = v.color || typeProps.color;
+  const width = v.width || typeProps.width;
+  const height = v.height || typeProps.height;
+  const cornerRadius = v.cornerRadius || typeProps.cornerRadius;
+  const w = ts * width;
+  const h = ts * height;
+  
   ctx.save();
   ctx.translate(v.pos.x * ts, v.pos.y * ts);
   ctx.rotate(v.rot || 0);
-
-  // Body with rounded front corners
-  ctx.fillStyle = '#555';
   
-  // Draw main body
+  // Draw main body with rounded corners
+  ctx.fillStyle = color;
+  
+  // Calculate rounded rectangle path
+  const cx = 0, cy = 0;
+  const hw = w/2, hh = h/2;
+  const r = Math.min(hw * cornerRadius, hh * cornerRadius);
+  
   ctx.beginPath();
-  const cornerRadius = w * 0.15; // Slight rounding for aerodynamic look
-  const frontOffset = w * 0.5;
-  const rearOffset = -w * 0.5;
-  
-  // Start at bottom-left
-  ctx.moveTo(rearOffset, -h * 0.5);
-  
-  // Bottom edge
-  ctx.lineTo(frontOffset - cornerRadius, -h * 0.5);
-  
-  // Bottom-right rounded corner
-  ctx.arcTo(frontOffset, -h * 0.5, frontOffset, -h * 0.5 + cornerRadius, cornerRadius);
-  
-  // Right edge
-  ctx.lineTo(frontOffset, h * 0.5 - cornerRadius);
-  
-  // Top-right rounded corner
-  ctx.arcTo(frontOffset, h * 0.5, frontOffset - cornerRadius, h * 0.5, cornerRadius);
-  
-  // Top edge
-  ctx.lineTo(rearOffset, h * 0.5);
-  
-  // Left edge (straight)
-  ctx.lineTo(rearOffset, -h * 0.5);
-  
+  ctx.moveTo(cx - hw + r, cy - hh);
+  ctx.lineTo(cx + hw - r, cy - hh);
+  ctx.quadraticCurveTo(cx + hw, cy - hh, cx + hw, cy - hh + r);
+  ctx.lineTo(cx + hw, cy + hh - r);
+  ctx.quadraticCurveTo(cx + hw, cy + hh, cx + hw - r, cy + hh);
+  ctx.lineTo(cx - hw + r, cy + hh);
+  ctx.quadraticCurveTo(cx - hw, cy + hh, cx - hw, cy + hh - r);
+  ctx.lineTo(cx - hw, cy - hh + r);
+  ctx.quadraticCurveTo(cx - hw, cy - hh, cx - hw + r, cy - hh);
   ctx.closePath();
   ctx.fill();
-
-  // Two headlights (side-by-side, moved forward and smaller)
-  ctx.fillStyle = '#fff';
-  const headlightSize = ts * 0.075; // Reduced by 50% from 0.15 to 0.075
-  const headlightWidth = ts * 0.15; // doubled width
-  const headlightHeight = ts * 0.075; // keep same height
-  const headlightSpacing = ts * 0.25;
-  // Move headlights further forward (x position)
-  const headX = w * 0.4; // Increased from 0.25 to 0.4 (further forward)
-  ctx.fillRect(headX - headlightWidth/2, -headlightSpacing/2 - headlightHeight/2, headlightWidth, headlightHeight);
-  ctx.fillRect(headX - headlightWidth/2, headlightSpacing/2 - headlightHeight/2, headlightWidth, headlightHeight);
-
-  // Brake lights (darker when off)
-  ctx.fillStyle = v.brakeLight ? '#ff2d2d' : '#4a0000'; // Darker red when off
-  ctx.fillRect(-w*0.5, -h*0.5, 4, h*0.3);
-  ctx.fillRect(-w*0.5, h*0.2, 4, h*0.3);
-
+  
+  // Get lighting properties
+  const headlights = { ...VehicleArchetype.headlights, ...typeProps.headlights, ...(v.headlights || {}) };
+  const brakeLights = { ...VehicleArchetype.brakeLights, ...typeProps.brakeLights, ...(v.brakeLights || {}) };
+  
+  // Draw headlights
+  ctx.fillStyle = headlights.color;
+  const headX = hw * headlights.frontOffset;
+  
+  for (let i = 0; i < headlights.count; i++) {
+    const offset = (i - (headlights.count - 1) / 2) * (headlights.spacing * ts);
+    const headlightW = ts * headlights.width;
+    const headlightH = ts * headlights.height;
+    
+    ctx.fillRect(
+      headX - headlightW/2,
+      offset - headlightH/2,
+      headlightW,
+      headlightH
+    );
+  }
+  
+  // Draw brake lights
+  const brakeX = -hw * (brakeLights.rearOffset || 0.5);
+  const brakeW = brakeLights.width;
+  const brakeH = brakeLights.height * h;
+  
+  ctx.fillStyle = v.brakeLight ? brakeLights.onColor : brakeLights.offColor;
+  ctx.fillRect(
+    brakeX - brakeW/2,
+    -brakeH/2,
+    brakeW,
+    brakeH
+  );
+  
+  // Add windows if defined
+  if (v.windows || typeProps.windows) {
+    const windows = v.windows || typeProps.windows;
+    ctx.fillStyle = '#333';
+    
+    if (windows.front) {
+      const win = windows.front;
+      ctx.fillRect(
+        headX - hw * win.width/2,
+        -h * win.height/2,
+        hw * win.width,
+        h * win.height
+      );
+    }
+    
+    if (windows.rear) {
+      const win = windows.rear;
+      ctx.fillRect(
+        brakeX - hw * win.width/2,
+        -h * win.height/2,
+        hw * win.width,
+        h * win.height
+      );
+    }
+  }
+  
+  // Add stripes or decals if defined
+  if (v.stripes || typeProps.stripes) {
+    const stripes = v.stripes || typeProps.stripes;
+    ctx.fillStyle = stripes.color || '#fff';
+    
+    for (const stripe of stripes.list || []) {
+      ctx.fillRect(
+        -hw * stripe.x,
+        -hh * stripe.y,
+        hw * stripe.width,
+        hh * stripe.height
+      );
+    }
+  }
+  
+  // Draw sirens for emergency vehicles
+  if (v.vehicleType === 'emergency' && v.siren) {
+    ctx.fillStyle = Math.floor(Date.now() / 500) % 2 ? '#ff0000' : '#0000ff';
+    ctx.beginPath();
+    ctx.arc(headX + ts * 0.1, 0, ts * 0.05, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  
   ctx.restore();
 }

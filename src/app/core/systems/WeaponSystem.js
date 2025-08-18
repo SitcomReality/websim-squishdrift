@@ -206,27 +206,18 @@ export class WeaponSystem {
     const map = state.world.map;
     const tileSize = state.world.tileSize;
     
-    // Precise trunk collision: check against trunk AABB (tight square), not leaf visuals
-    if (map.trees && map.trees.length) {
-      const trunkSize = 0.3; // match aabbForTrunk default
-      const half = trunkSize / 2;
-      for (const tree of map.trees) {
-        const dx = projectile.pos.x - tree.pos.x;
-        const dy = projectile.pos.y - tree.pos.y;
-        if (Math.abs(dx) <= half && Math.abs(dy) <= half) return true;
-      }
-    }
-    
     // Check map boundaries
     if (projectile.pos.x < 0 || projectile.pos.x >= map.width || 
         projectile.pos.y < 0 || projectile.pos.y >= map.height) {
       return true;
     }
     
-    // Check tree trunk collision
+    // Check tree trunk collision using precise trunk detection
     const tx = Math.floor(projectile.pos.x);
     const ty = Math.floor(projectile.pos.y);
-    if (this.isTreeTrunk(tx, ty, map)) {
+    
+    // Use the same precise trunk collision detection as vehicles
+    if (this.isTreeTrunkCollision(projectile.pos.x, projectile.pos.y, tx, ty)) {
       return true;
     }
     
@@ -294,10 +285,41 @@ export class WeaponSystem {
     return false;
   }
 
-  isTreeTrunk(x, y, map) {
-    if (!map.trees) return false;
-    return map.trees.some(tree => 
-      Math.floor(tree.pos.x) === x && Math.floor(tree.pos.y) === y
+  isTreeTrunkCollision(projX, projY, tileX, tileY) {
+    if (!this.state.world.map.trees) return false;
+    
+    // Find if there's a tree trunk at this tile
+    const tree = this.state.world.map.trees.find(tree => 
+      Math.floor(tree.pos.x) === tileX && Math.floor(tree.pos.y) === tileY
     );
+    
+    if (!tree) return false;
+    
+    // Calculate the precise trunk collision area
+    const trunkSize = 0.3; // Same as used in aabbForTrunk
+    const trunkHalf = trunkSize / 2;
+    const trunkCenterX = tileX + 0.5;
+    const trunkCenterY = tileY + 0.5;
+    
+    // Check if projectile is within the trunk's precise hitbox
+    const dx = Math.abs(projX - trunkCenterX);
+    const dy = Math.abs(projY - trunkCenterY);
+    
+    return dx <= trunkHalf && dy <= trunkHalf;
+  }
+
+  isTreeTrunk(x, y, map) {
+    // Use the same precise trunk detection as vehicles
+    if (!map.trees) return false;
+    return map.trees.some(tree => {
+      const trunkX = Math.floor(tree.pos.x);
+      const trunkY = Math.floor(tree.pos.y);
+      
+      // Check if this is the tree trunk at these coordinates
+      if (trunkX !== x || trunkY !== y) return false;
+      
+      // Return true if this is a tree trunk tile
+      return true;
+    });
   }
 }

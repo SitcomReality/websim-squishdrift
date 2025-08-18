@@ -103,7 +103,9 @@ export class PlayerSystem {
   }
 
   handleVehicleInteraction(state, player) {
-    if (state.control.inVehicle) {
+    if (!state || !player) return;
+    
+    if (state.control?.inVehicle) {
       // Exit vehicle
       this.exitVehicle(state, player);
     } else {
@@ -116,6 +118,7 @@ export class PlayerSystem {
   }
 
   findNearbyVehicle(state, player) {
+    if (!state || !state.entities || !player) return null;
     const interactionDistance = 1.5; // tiles
     return state.entities.find(e => 
       e.type === 'vehicle' && 
@@ -125,18 +128,19 @@ export class PlayerSystem {
   }
 
   enterVehicle(state, player, vehicle) {
+    if (!state || !player || !vehicle) return;
+    
+    state.control = state.control || {};
     state.control.inVehicle = true;
     state.control.vehicle = vehicle;
     player.hidden = true;
-    player.inVehicle = true; // Mark player as in vehicle
+    player.inVehicle = true;
     
-    // Make player non-collidable and non-interactive
     player.collisionDisabled = true;
     player.canUseItems = false;
     
     vehicle.controlled = true;
     
-    // Remove AI properties if they exist
     delete vehicle.aiTargetSpeed;
     delete vehicle.node;
     delete vehicle.next;
@@ -144,29 +148,26 @@ export class PlayerSystem {
   }
 
   exitVehicle(state, player) {
-    if (!state.control.inVehicle) return;
+    if (!state || !player || !state.control?.inVehicle) return;
     
     const vehicle = state.control.vehicle;
     if (vehicle) {
       vehicle.controlled = false;
       
-      // Find a safe spot to spawn the player
       const spawnOffset = 0.8;
-      const exitPos = new Vec2(
-        vehicle.pos.x + Math.cos(vehicle.rot) * spawnOffset,
-        vehicle.pos.y + Math.sin(vehicle.rot) * spawnOffset
-      );
+      const exitPos = {
+        x: vehicle.pos.x + Math.cos(vehicle.rot || 0) * spawnOffset,
+        y: vehicle.pos.y + Math.sin(vehicle.rot || 0) * spawnOffset
+      };
       
-      // Ensure the exit position is walkable
       if (this.isWalkableTile(state, exitPos.x, exitPos.y)) {
-        player.pos.copy(exitPos);
+        player.pos.x = exitPos.x;
+        player.pos.y = exitPos.y;
       } else {
-        // Fallback to vehicle position + small offset
         player.pos.x = vehicle.pos.x + 1;
         player.pos.y = vehicle.pos.y + 1;
       }
       
-      // Restore player state
       player.hidden = false;
       player.inVehicle = false;
       player.collisionDisabled = false;
@@ -178,9 +179,13 @@ export class PlayerSystem {
   }
 
   pickupItem(state, player) {
+    if (!state || !player || !state.entities) return;
+    
     const items = state.entities.filter(e => e.type === 'item' || e.type === 'weapon');
     for (let i = items.length - 1; i >= 0; i--) {
       const item = items[i];
+      if (!item || !item.pos) continue;
+      
       if (Math.hypot(player.pos.x - item.pos.x, player.pos.y - item.pos.y) < 1) {
         if (item.type === 'item') {
           // Handle regular items
@@ -193,27 +198,22 @@ export class PlayerSystem {
           // remove from entities and mark spot (if any) as empty so it can respawn
           const idx = state.entities.indexOf(item);
           if (idx > -1) state.entities.splice(idx, 1);
-          if (typeof item.spotId === 'number' && state.pickupSpots?.[item.spotId]) {
+          if (typeof item.spotId === 'number' && state?.pickupSpots?.[item.spotId]) {
             state.pickupSpots[item.spotId].hasItem = false;
           }
         } else if (item.type === 'weapon') {
           // Handle weapon pickup
-          // prefer to use the WeaponSystem instance if available on engine systems
           try {
-            // If WeaponSystem exists on the engine (GameEngine adds it), use that
-            if (state._engine && state._engine.systems && state._engine.systems.weapon) {
+            // Use WeaponSystem directly if available
+            if (state._engine?.systems?.weapon) {
               state._engine.systems.weapon.handleWeaponPickup(state, player);
-            } else {
-              // fallback: create transient instance (non-bundled require not used)
-              import('./WeaponSystem.js').then(mod => {
-                const ws = new mod.WeaponSystem();
-                ws.handleWeaponPickup(state, player);
-              }).catch(()=>{ /* ignore */ });
             }
+          } catch (e) {
+            console.warn('Weapon pickup failed:', e);
           } finally {
             const idx2 = state.entities.indexOf(item);
             if (idx2 > -1) state.entities.splice(idx2, 1);
-            if (typeof item.spotId === 'number' && state.pickupSpots?.[item.spotId]) {
+            if (typeof item.spotId === 'number' && state?.pickupSpots?.[item.spotId]) {
               state.pickupSpots[item.spotId].hasItem = false;
             }
           }
@@ -223,6 +223,8 @@ export class PlayerSystem {
   }
 
   isWalkableTile(state, x, y) {
+    if (!state || !state.world || !state.world.map) return false;
+    
     const tx = Math.floor(x);
     const ty = Math.floor(y);
     if (tx < 0 || ty < 0 || tx >= state.world.map.width || ty >= state.world.map.height) return false;

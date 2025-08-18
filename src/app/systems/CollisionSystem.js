@@ -52,7 +52,16 @@ export class CollisionSystem {
     for (const vehicle of vehicles) {
       if (vehicle.controlled) continue; // Skip player-controlled vehicle
       
-      if (this.checkCollision(player, vehicle, 0.75)) {
+      // Use player's actual hitbox extents rather than a hardcoded radius
+      const playerHw = (player.hitboxW || 0.15) / 2;
+      const playerHh = (player.hitboxH || 0.15) / 2;
+      const vehicleHw = (vehicle.hitboxW || 0.9) / 2;
+      const vehicleHh = (vehicle.hitboxH || 0.5) / 2;
+      const playerRadius = Math.hypot(playerHw, playerHh);
+      const vehicleRadius = Math.hypot(vehicleHw, vehicleHh);
+      const collisionRadius = playerRadius + vehicleRadius;
+      
+      if (this.checkCollision(player, vehicle, collisionRadius)) {
         player.health.takeDamage(10);
         
         // Simple knockback

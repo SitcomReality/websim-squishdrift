@@ -103,8 +103,14 @@ export class CollisionSystem {
     for (const vehicle of vehicles) {
       if (vehicle.controlled) continue; // Skip player-controlled vehicle
       
-      // Use actual hitbox dimensions for collision detection
-      const collisionRadius = (player.hitboxW + player.hitboxH) / 4 + (vehicle.hitboxW + vehicle.hitboxH) / 4; // Sum of average radii
+      // Use actual rectangle half-extents (converted into an equivalent circle radius)
+      const playerHw = (player.hitboxW || 0.15) / 2;
+      const playerHh = (player.hitboxH || 0.15) / 2;
+      const vehicleHw = (vehicle.hitboxW || 0.9) / 2;
+      const vehicleHh = (vehicle.hitboxH || 0.5) / 2;
+      const playerRadius = Math.hypot(playerHw, playerHh);
+      const vehicleRadius = Math.hypot(vehicleHw, vehicleHh);
+      const collisionRadius = playerRadius + vehicleRadius;
       if (this.checkCollision(player, vehicle, collisionRadius)) {
         player.health.takeDamage(10);
         

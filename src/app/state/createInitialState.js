@@ -78,43 +78,6 @@ export function createInitialState() {
     state.entities.push({ type:'npc', pos:new Vec2(n.x+0.5, n.y+0.5), from:{x:n.x,y:n.y}, to: next, t: 0, speed: 0.2 + rand()*0.15 });
   }
   
-  // Spawn simple items (pistol) on footpaths near player
-  const footpathTiles = [];
-  for (let y = 0; y < map.height; y++) {
-    for (let x = 0; x < map.width; x++) {
-      const t = map.tiles[y][x];
-      if (t === 7) { // Footpath
-        footpathTiles.push({ x: x + 0.5, y: y + 0.5 });
-      }
-    }
-  }
-  footpathTiles.sort((a,b) => Math.hypot(a.x-spawnX, a.y-spawnY) - Math.hypot(b.x-spawnX, b.y-spawnY));
-  for (let i = 0; i < Math.min(5, footpathTiles.length); i++) {
-    const pos = footpathTiles[i];
-    state.entities.push({ type: 'item', pos: new Vec2(pos.x, pos.y), name: 'Pistol', color: '#FFD700' });
-  }
-
-  // Spawn weapons near player
-  const weaponTiles = [];
-  for (let y = 0; y < map.height; y++) {
-    for (let x = 0; x < map.width; x++) {
-      const t = map.tiles[y][x];
-      if (t === 7) { // Footpath
-        weaponTiles.push({ x: x + 0.5, y: y + 0.5 });
-      }
-    }
-  }
-  weaponTiles.sort((a,b) => Math.hypot(a.x-spawnX, a.y-spawnY) - Math.hypot(b.x-spawnX, b.y-spawnY));
-  for (let i = 0; i < Math.min(2, weaponTiles.length); i++) {
-    const pos = weaponTiles[i];
-    state.entities.push({ 
-      type: 'weapon', 
-      pos: new Vec2(pos.x, pos.y), 
-      weaponType: 'pistol',
-      color: '#8B4513'
-    });
-  }
-  
   // Create pickup spots at the center of each block and spawn an initial pickup (pistol)
   // Use map properties instead of cityLayout
   const blocksWide = 4;

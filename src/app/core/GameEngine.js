@@ -14,11 +14,11 @@ import { VehicleMovementSystem } from '../vehicles/physics/VehicleMovementSystem
 import { VehicleCollisionSystem } from '../vehicles/physics/VehicleCollisionSystem.js';
 import { AIDrivingSystem } from './systems/AIDrivingSystem.js';
 import { SkidmarkSystem } from './systems/SkidmarkSystem.js';
-import { Tile } from '../../map/TileTypes.js';
 import { BloodManager } from '../entities/drawBlood.js';
 import { WeaponSystem } from './systems/WeaponSystem.js';
 import { createVehicle } from '../vehicles/VehicleTypes.js';
 import { Vec2 } from '../../utils/Vec2.js';
+import { PickupManager } from './systems/PickupManager.js'; // Add this import
 
 export class GameEngine {
   constructor(canvas, { debugEl } = {}) {

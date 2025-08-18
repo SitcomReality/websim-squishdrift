@@ -1,4 +1,5 @@
 import { Vec2 } from '../../../utils/Vec2.js';
+import { Tile } from '../../../map/TileTypes.js';
 
 export class PickupManager {
   constructor() {

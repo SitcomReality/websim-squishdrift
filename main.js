@@ -14,6 +14,7 @@ const loop = createLoop({
 });
 
 toggleBtn.addEventListener('click', () => {
+  console.log('Debug button clicked');
   const next = !game.debugOverlay?.enabled;
   if (game.debugOverlay) {
     game.debugOverlay.enabled = next;
@@ -24,6 +25,7 @@ toggleBtn.addEventListener('click', () => {
   if (toggleBtn) {
     toggleBtn.setAttribute('aria-pressed', String(next));
   }
+  console.log('Debug overlay enabled:', next);
 });
 
 // Add click handling for debug spawning

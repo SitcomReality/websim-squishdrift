@@ -59,7 +59,10 @@ export class InputSystem {
     });
   }
   
-  update(){
-    this.pressed.clear();
-  }
+  // Note: do not clear this.pressed here — callers should clear it once systems
+  // have consumed the input for the frame. This preserves one-frame "pressed" events.
+  update(){ /* no-op: pressed will be cleared explicitly via clearPressed() */ }
+  
+  // Clear one-frame pressed events. Call this after systems have run for the frame.
+  clearPressed() { this.pressed.clear(); }
 }

@@ -33,9 +33,18 @@ export class GameEngine {
   }
 
   update(dt) {
-    this.inputManager.update();
+    // Run game systems which may read input.pressed; clear pressed AFTER systems run.
     this.systemManager.update(dt);
     this.spawnManager.update(dt);
+
+    // Now update input manager to perform any end-of-frame housekeeping.
+    // Note: InputSystem.update() is intentionally a no-op; we need to clear the
+    // one-frame 'pressed' set so presses are only valid for a single update cycle.
+    this.inputManager.update();
+    if (this.inputManager?.inputSystem?.clearPressed) {
+      this.inputManager.inputSystem.clearPressed();
+    }
+
     this.debugManager.update();
     this.hudManager.update();
   }

@@ -123,6 +123,7 @@ export class PlayerSystem {
     return state.entities.find(e => 
       e.type === 'vehicle' && 
       !e.controlled && 
+      e.pos && player.pos && // Add null checks
       Math.hypot(e.pos.x - player.pos.x, e.pos.y - player.pos.y) < interactionDistance
     );
   }
@@ -181,10 +182,12 @@ export class PlayerSystem {
   pickupItem(state, player) {
     if (!state || !player || !state.entities) return;
     
-    const items = state.entities.filter(e => e.type === 'item' || e.type === 'weapon');
+    const items = state.entities.filter(e => 
+      (e.type === 'item' || e.type === 'weapon') && e.pos
+    );
     for (let i = items.length - 1; i >= 0; i--) {
       const item = items[i];
-      if (!item || !item.pos) continue;
+      if (!item || !item.pos || !player.pos) continue;
       
       if (Math.hypot(player.pos.x - item.pos.x, player.pos.y - item.pos.y) < 1) {
         if (item.type === 'item') {

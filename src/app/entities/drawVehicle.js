@@ -7,31 +7,20 @@ export function drawVehicle(r, state, v){
   ctx.rotate(v.rot || 0);
 
   // Body
-  ctx.fillStyle = '#555'; // neutral body color
+  ctx.fillStyle = '#555';
   ctx.fillRect(-w*0.5, -h*0.5, w, h);
 
-  // Two headlights (front)
+  // Two headlights (side-by-side)
   ctx.fillStyle = '#fff';
-  const headlightWidth = ts * 0.12;
-  const headlightHeight = 4;
-  const headlightY = -h*0.5 + 2;
-  
-  // Left headlight
-  ctx.fillRect(-w*0.25, headlightY, headlightWidth, headlightHeight);
-  // Right headlight
-  ctx.fillRect(w*0.25 - headlightWidth, headlightY, headlightWidth, headlightHeight);
+  const headlightSize = ts * 0.15;
+  const headlightSpacing = ts * 0.25;
+  ctx.fillRect(w*0.25 - headlightSpacing/2, -headlightSize/2, headlightSize, headlightSize);
+  ctx.fillRect(w*0.25 + headlightSpacing/2, -headlightSize/2, headlightSize, headlightSize);
 
-  // Brake lights (rear) - darker when off
-  ctx.fillStyle = v.brakeLight ? '#ff2d2d' : '#661111'; // Darker red when off
-  const brakeLightWidth = 4;
-  const brakeLightHeight = h * 0.3;
-  const leftBrakeX = -w*0.5 + 2;
-  const rightBrakeX = w*0.5 - 6;
-  
-  // Left brake light
-  ctx.fillRect(leftBrakeX, -h*0.5 + 2, brakeLightWidth, brakeLightHeight);
-  // Right brake light
-  ctx.fillRect(rightBrakeX, -h*0.5 + 2, brakeLightWidth, brakeLightHeight);
+  // Brake lights (darker when off)
+  ctx.fillStyle = v.brakeLight ? '#ff2d2d' : '#4a0000'; // Darker red when off
+  ctx.fillRect(-w*0.5, -h*0.5, 4, h*0.3);
+  ctx.fillRect(-w*0.5, h*0.2, 4, h*0.3);
 
   ctx.restore();
 }

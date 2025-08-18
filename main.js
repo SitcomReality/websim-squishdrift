@@ -1,6 +1,7 @@
 import { GameEngine } from './src/app/core/GameEngine.js';
 import { createLoop } from './src/app/loop.js';
 import { Vec2 } from './src/utils/Vec2.js';
+import { createVehicle } from './src/app/vehicles/VehicleTypes.js';
 
 // Game elements
 const canvas = document.getElementById('game');
@@ -89,21 +90,13 @@ canvas.addEventListener('click', (e) => {
     
     if (nearestNode && nearestNode.next && nearestNode.next.length > 0) {
       const next = nearestNode.next[Math.floor(state.rand() * nearestNode.next.length)];
-      
-      state.entities.push({
-        type: 'vehicle',
-        pos: new Vec2(worldX, worldY),
-        node: nearestNode,
-        next,
-        t: 0,
-        speed: 6,
-        rot: 0,
-        vel: { x: 0, y: 0 },
-        angularVel: 0,
-        ctrl: { throttle: 0, brake: 0, steer: 0 },
-        mass: 1200, maxSpeed: 4, engineForce: 900, brakeForce: 1600,
-        rollingRes: 1.0, drag: 0.25, grip: 6.0, steerRate: 2.5
+      const types = ['compact','sedan','truck','sports'];
+      const vehicleType = types[Math.floor((state.rand?.() ?? Math.random()) * types.length)];
+      const vehicle = createVehicle(vehicleType, new Vec2(worldX, worldY), {
+        node: nearestNode, next, rot: 0, vel: { x: 0, y: 0 }, angularVel: 0,
+        ctrl: { throttle: 0, brake: 0, steer: 0 }
       });
+      state.entities.push(vehicle);
     }
   }
 });

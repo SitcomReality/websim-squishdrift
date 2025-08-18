@@ -77,7 +77,7 @@ export class VehicleCollisionSystem {
         if (contact) {
             // Use BloodManager to handle blood creation and limit
             if (!state.bloodManager) {
-                state.bloodManager = new BloodManager(15);
+                state.bloodManager = new (require('../../entities/drawBlood.js').BloodManager)();
             }
             
             const bloodStain = {

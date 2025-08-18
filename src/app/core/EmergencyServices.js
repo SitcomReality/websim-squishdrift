@@ -1,15 +1,14 @@
 import { Vec2 } from '../../utils/Vec2.js';
 import { Health } from '../components/Health.js';
 import { findPath } from '../../utils/pathfinding.js';
-import { createVehicle } from '../vehicles/VehicleTypes.js';
 
 export class EmergencyServices {
   constructor(state) {
     this.wantedLevel = 0;
-    this.wantedDecay = 0;
-    this.activeIncidents = [];
-    this.emergencyVehicles = [];
-    this.lastIncidentCheck = 0;
+    this.wantedDecay = 0
+    this.activeIncidents = []
+    this.emergencyVehicles = []
+    this.lastIncidentCheck = 0
     
     // Defensive initialization with fallbacks
     this.roadGraph = state?.world?.map?.roads || { nodes: [] }
@@ -23,21 +22,21 @@ export class EmergencyServices {
       severity,
       time: Date.now(),
       responded: false
-    });
+    })
 
     if (type === 'gunshot' || type === 'assault') {
-      this.wantedLevel = Math.min(5, this.wantedLevel + severity);
-      this.wantedDecay = 0;
+      this.wantedLevel = Math.min(5, this.wantedLevel + severity)
+      this.wantedDecay = 0
     }
   }
 
   update(state, dt) {
-    if (!state) return;
+    if (!state) return
     
-    this.wantedDecay += dt;
+    this.wantedDecay += dt
     if (this.wantedDecay > 10 && this.wantedLevel > 0) {
-      this.wantedLevel = Math.max(0, this.wantedLevel - 1);
-      this.wantedDecay = 0;
+      this.wantedLevel = Math.max(0, this.wantedLevel - 1)
+      this.wantedDecay = 0
     }
 
     this.checkRandomEvents(state, dt)
@@ -46,7 +45,7 @@ export class EmergencyServices {
   }
 
   checkRandomEvents(state, dt) {
-    if (!state || !state.rand) return;
+    if (!state || !state.rand) return
     
     this.lastIncidentCheck += dt
     if (this.lastIncidentCheck < 5) return
@@ -126,19 +125,18 @@ export class EmergencyServices {
         continue
       }
       
-      // Create emergency vehicle using the proper vehicle system
-      const vehicle = createVehicle(vehicleType, {
-        x: startNode.x + 0.5,
-        y: startNode.y + 0.5
-      }, {
+      const vehicle = {
+        type: 'emergency',
+        vehicleType,
+        pos: new Vec2(startNode.x + 0.5, startNode.y + 0.5),
+        targetIncident: incident,
+        color,
         health: new Health(100),
+        speed: 8,
         siren: true,
-        sirenColor: color,
         path: path,
-        currentPathIndex: 0,
-        aiTargetSpeed: 6.0, // Faster than normal traffic
-        isEmergency: true
-      });
+        pathIndex: 0
+      }
       
       state.entities.push(vehicle)
       this.emergencyVehicles.push(vehicle)
@@ -152,79 +150,53 @@ export class EmergencyServices {
     for (let i = this.emergencyVehicles.length - 1; i >= 0; i--) {
       const vehicle = this.emergencyVehicles[i]
       
-      // Check if arrived at destination
-      const distToTarget = Math.hypot(
-        vehicle.pos.x - vehicle.targetIncident.position.x,
-        vehicle.pos.y - vehicle.targetIncident.position.y
-      )
-      
-      if (distToTarget < 1.5) {
-        // Arrived at incident
-        if (vehicle.vehicleType === 'police') {
-          this.wantedLevel = Math.max(0, this.wantedLevel - 1)
-        }
-        
-        this.activeIncidents = this.activeIncidents.filter(
-          inc => inc !== vehicle.targetIncident
+      if (!vehicle.path || vehicle.pathIndex >= vehicle.path.length) {
+        const distToTarget = Math.hypot(
+          vehicle.pos.x - vehicle.targetIncident.position.x,
+          vehicle.pos.y - vehicle.targetIncident.position.y
         )
         
-        // Remove the vehicle
-        const index = state.entities.indexOf(vehicle)
-        if (index > -1) state.entities.splice(index, 1)
-        this.emergencyVehicles.splice(i, 1)
+        if (distToTarget < 1.5) {
+          if (vehicle.vehicleType === 'police') {
+            this.wantedLevel = Math.max(0, this.wantedLevel - 1)
+          }
+          
+          this.activeIncidents = this.activeIncidents.filter(
+            inc => inc !== vehicle.targetIncident
+          )
+          const index = state.entities.indexOf(vehicle)
+          if (index > -1) state.entities.splice(index, 1)
+          this.emergencyVehicles.splice(i, 1)
+        } else {
+          const startNode = this.findNearestRoadNode(vehicle.pos)
+          const endNode = this.findNearestRoadNode(vehicle.targetIncident.position)
+          if (startNode && endNode) {
+            vehicle.path = findPath(this.roadGraph, startNode, endNode)
+            vehicle.pathIndex = 0
+          } else {
+            const index = state.entities.indexOf(vehicle)
+            if (index > -1) state.entities.splice(index, 1)
+            this.emergencyVehicles.splice(i, 1)
+          }
+        }
         continue
       }
+
+      const targetNode = vehicle.path[vehicle.pathIndex]
+      const targetPos = { x: targetNode.x + 0.5, y: targetNode.y + 0.5 }
       
-      // Update path following - use the same system as other AI vehicles
-      if (!vehicle.plannedRoute || vehicle.currentPathIndex === undefined) {
-        vehicle.plannedRoute = vehicle.path
-        vehicle.currentPathIndex = 0
-      }
+      const dx = targetPos.x - vehicle.pos.x
+      const dy = targetPos.y - vehicle.pos.y
+      const dist = Math.hypot(dx, dy)
       
-      // Route following logic similar to AIDrivingSystem
-      const currentTarget = vehicle.plannedRoute[vehicle.currentPathIndex]
-      if (currentTarget) {
-        const targetPos = { x: currentTarget.x + 0.5, y: currentTarget.y + 0.5 }
-        
-        const dx = targetPos.x - vehicle.pos.x
-        const dy = targetPos.y - vehicle.pos.y
-        const dist = Math.hypot(dx, dy)
-        
-        // Check if reached current waypoint
-        if (dist < 0.75) {
-          vehicle.currentPathIndex++
-          if (vehicle.currentPathIndex >= vehicle.plannedRoute.length) {
-            // Reached end of path, but not necessarily incident
-            // Recalculate path from current position
-            const startNode = this.findNearestRoadNode(vehicle.pos)
-            const endNode = this.findNearestRoadNode(vehicle.targetIncident.position)
-            if (startNode && endNode) {
-              const newPath = findPath(this.roadGraph, startNode, endNode)
-              if (newPath) {
-                vehicle.plannedRoute = newPath
-                vehicle.currentPathIndex = 0
-              }
-            }
-          }
-        } else {
-          // Move towards target
-          const speed = vehicle.aiTargetSpeed
-          const moveX = (dx / dist) * speed * dt
-          const moveY = (dy / dist) * speed * dt
-          vehicle.pos.x += moveX
-          vehicle.pos.y += moveY
-          
-          // Update rotation to face direction of travel
-          vehicle.rot = Math.atan2(dy, dx)
-          
-          // Ensure control structure exists for movement system
-          vehicle.ctrl = vehicle.ctrl || { throttle: 0, brake: 0, steer: 0 }
-          
-          // Simple AI control - just move forward
-          vehicle.ctrl.throttle = 1
-          vehicle.ctrl.brake = 0
-          vehicle.ctrl.steer = 0
-        }
+      if (dist < 0.1) {
+        vehicle.pathIndex++
+      } else {
+        const moveX = (dx / dist) * vehicle.speed * dt
+        const moveY = (dy / dist) * vehicle.speed * dt
+        vehicle.pos.x += moveX
+        vehicle.pos.y += moveY
+        vehicle.rot = Math.atan2(dy, dx)
       }
     }
   }

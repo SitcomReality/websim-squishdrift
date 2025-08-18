@@ -103,6 +103,12 @@ export class VehicleMovementSystem {
       const speed = Math.hypot(v.vel.x, v.vel.y);
       if (speed > 0.1) {
         force -= this.maxBrakeForce * brake;
+      } else if (v.handbrake) {
+        // Handbrake active - apply full brake force but don't reverse
+        force -= this.maxBrakeForce * brake;
+      } else {
+        // Normal brake - allow reverse when fully stopped
+        force -= this.maxBrakeForce * brake;
       }
     }
     

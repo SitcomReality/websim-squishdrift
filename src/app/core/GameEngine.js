@@ -280,59 +280,6 @@ export class GameEngine {
     return createVehicle(type, new Vec2(pos.x, pos.y), options);
   }
 
-  pickupItem(state, player) {
-    const weapons = state.entities.filter(e => e.type === 'weapon');
-    const items = state.entities.filter(e => e.type === 'item');
-    
-    // Handle weapon pickup
-    for (let i = weapons.length - 1; i >= 0; i--) {
-      const weapon = weapons[i];
-      if (Math.hypot(player.pos.x - weapon.pos.x, player.pos.y - weapon.pos.y) < 1) {
-        player.equippedWeapon = { ...this.weapons[weapon.weaponType] };
-        player.equippedWeapon.ammo = player.equippedWeapon.maxAmmo;
-        player.equippedWeapon.lastFireTime = 0;
-        player.equippedWeapon.isReloading = false;
-        
-        // Show pickup text
-        this.damageTextSystem.addPickupText(state, weapon.pos, weapon.weaponType.toUpperCase());
-        
-        state.entities.splice(state.entities.indexOf(weapon), 1);
-        
-        // Create ammo bar if it doesn't exist
-        this.createAmmoBar();
-        
-        const itemNameEl = document.getElementById('item-name');
-        if (itemNameEl) itemNameEl.textContent = player.equippedWeapon.name;
-      }
-    }
-
-    // Handle item pickup (like the pistol item)
-    for (let i = items.length - 1; i >= 0; i--) {
-      const item = items[i];
-      if (Math.hypot(player.pos.x - item.pos.x, player.pos.y - item.pos.y) < 1) {
-        // If this is a weapon item, equip it
-        if (item.name && item.name.toLowerCase() === 'pistol') {
-          player.equippedWeapon = { ...this.weapons.pistol };
-          player.equippedWeapon.ammo = player.equippedWeapon.maxAmmo;
-          player.equippedWeapon.lastFireTime = 0;
-          player.equippedWeapon.isReloading = false;
-          
-          // Show pickup text
-          this.damageTextSystem.addPickupText(state, item.pos, 'PISTOL');
-          
-          // Create ammo bar if it doesn't exist
-          this.createAmmoBar();
-          
-          const itemNameEl = document.getElementById('item-name');
-          if (itemNameEl) itemNameEl.textContent = player.equippedWeapon.name;
-        }
-        
-        // Remove the item from the map
-        state.entities.splice(state.entities.indexOf(item), 1);
-      }
-    }
-  }
-
   render(interp) {
     this.renderer.beginFrame(this.state);
     this.systems.render.render(this.state, this.renderer, this.debugOverlay);

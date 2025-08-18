@@ -178,24 +178,26 @@ export class PlayerSystem {
   }
 
   pickupItem(state, player) {
-    const items = state.entities.filter(e => e.type === 'item');
+    const items = state.entities.filter(e => e.type === 'item' || e.type === 'weapon');
     for (let i = items.length - 1; i >= 0; i--) {
       const item = items[i];
       if (Math.hypot(player.pos.x - item.pos.x, player.pos.y - item.pos.y) < 1) {
-        // Show pickup text using the damage text system
-        if (state.damageTexts) {
-          const damageTextSystem = new (require('./DamageTextSystem.js').DamageTextSystem)();
-          damageTextSystem.addPickupText(state, item.pos, item.name.toUpperCase());
+        if (item.type === 'item') {
+          // Handle regular items
+          state.inventory = state.inventory || [];
+          state.inventory.push(item);
+          
+          const itemNameEl = document.getElementById('item-name');
+          if (itemNameEl) itemNameEl.textContent = item.name;
+          
+          state.entities.splice(state.entities.indexOf(item), 1);
+        } else if (item.type === 'weapon') {
+          // Handle weapon pickup
+          const weaponSystem = new (require('./WeaponSystem.js').WeaponSystem)();
+          weaponSystem.handleWeaponPickup(state, player);
+          
+          state.entities.splice(state.entities.indexOf(item), 1);
         }
-        
-        // Add to inventory or equip
-        state.inventory = state.inventory || [];
-        state.inventory.push(item);
-        
-        const itemNameEl = document.getElementById('item-name');
-        if (itemNameEl) itemNameEl.textContent = item.name;
-        
-        state.entities.splice(state.entities.indexOf(item), 1);
       }
     }
   }

@@ -224,11 +224,9 @@ export class WeaponSystem {
       return true;
     }
     
-    // Check tree trunk collision using precise trunk detection
+    // Check tree trunk collision
     const tx = Math.floor(projectile.pos.x);
     const ty = Math.floor(projectile.pos.y);
-    
-    // Use the same precise trunk collision detection as vehicles
     if (this.isTreeTrunkCollision(projectile.pos.x, projectile.pos.y, tx, ty, state)) {
       return true;
     }
@@ -236,7 +234,7 @@ export class WeaponSystem {
     // Check tile collision
     if (tx >= 0 && tx < map.width && ty >= 0 && ty < map.height) {
       const tile = map.tiles[ty][tx];
-      if ([8, 9].includes(tile)) { // BuildingWall, BuildingFloor
+      if ([8, 9].includes(tile)) {
         return true;
       }
     }
@@ -244,10 +242,9 @@ export class WeaponSystem {
     // Check entity collisions
     const entities = state.entities.filter(e => 
       (e.type === 'vehicle' || e.type === 'npc') && 
-      e !== projectile.owner &&
-      (!e.health || e.health.isAlive())
+      e !== projectile.owner
     );
-    
+
     for (const entity of entities) {
       const distance = Math.hypot(
         projectile.pos.x - entity.pos.x,
@@ -256,18 +253,24 @@ export class WeaponSystem {
       
       const radius = entity.type === 'vehicle' ? 0.5 : 0.2;
       if (distance < radius + projectile.size) {
-        // Apply damage
+        // Ensure entity has health
         if (!entity.health) {
-          entity.health = new Health(100);
+          entity.health = new Health(entity.maxHealth || 100);
         }
         
-        entity.health.takeDamage(projectile.damage);
+        // Ensure health has takeDamage method
+        if (typeof entity.health.takeDamage === 'function') {
+          entity.health.takeDamage(projectile.damage);
+        } else {
+          // Fallback for entities without proper Health class
+          entity.health.hp = Math.max(0, (entity.health.hp || entity.health.hp || 100) - projectile.damage);
+        }
         
         // Show damage text
         this.damageTextSystem.addDamageText(state, entity.pos, projectile.damage);
         
-        // Remove entity if dead
-        if (!entity.health.isAlive()) {
+        // Handle entity destruction
+        if ((entity.health.hp || entity.health.hp || 100) <= 0) {
           const index = state.entities.indexOf(entity);
           if (index > -1) {
             if (entity.type === 'npc') {
@@ -285,7 +288,6 @@ export class WeaponSystem {
                 state.entities.push(bloodStain);
               }
             }
-            
             state.entities.splice(index, 1);
           }
         }

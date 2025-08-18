@@ -4,7 +4,8 @@ export class AIDrivingSystem {
     for (const v of state.entities.filter(e => e.type === 'vehicle' && e.controlled !== true)) {
       // Ensure control struct
       v.ctrl = v.ctrl || { throttle: 0, brake: 0, steer: 0 };
-      v.aiTargetSpeed = v.aiTargetSpeed || 3.0;
+      v.drivingStyle = v.drivingStyle || 'normal'; // Default to normal driving
+      v.aiTargetSpeed = v.aiTargetSpeed || (v.drivingStyle === 'reckless' ? 4.0 : 1.5);
       
       // Initialize planned route if not exists
       if (!v.plannedRoute || !v.plannedRoute.length) {
@@ -95,29 +96,59 @@ export class AIDrivingSystem {
     if (newTargetIndex !== v.currentPathIndex) {
       v.currentPathIndex = newTargetIndex;
     }
-    
-    // Check for upcoming zebra crossings and adjust speed
-    const zebraCrossingDistance = this.findZebraCrossingDistance(v);
-    const baseSpeed = v.isEmergency ? 5.0 : 3.0;
-    
-    if (zebraCrossingDistance !== null) {
-      // Reduce speed based on distance to zebra crossing
-      const minDistance = 2; // nodes
-      const maxDistance = 5; // nodes
-      let speedMultiplier = 1.0;
-      
-      if (zebraCrossingDistance <= minDistance) {
-        speedMultiplier = 0.3; // Slow down significantly
-      } else if (zebraCrossingDistance <= maxDistance) {
-        // Gradually reduce speed as we get closer
-        const factor = (zebraCrossingDistance - minDistance) / (maxDistance - minDistance);
-        speedMultiplier = 0.3 + (factor * 0.7);
-      }
-      
-      v.aiTargetSpeed = baseSpeed * speedMultiplier;
-    } else {
-      v.aiTargetSpeed = baseSpeed;
+
+    // --- NEW DRIVING STYLE LOGIC ---
+    const drivingStyle = v.drivingStyle || 'normal';
+
+    let baseSpeed;
+    if (drivingStyle === 'reckless') {
+      baseSpeed = v.isEmergency ? 5.0 : 4.0;
+    } else { // 'normal'
+      baseSpeed = 1.5;
     }
+
+    let speedMultiplier = 1.0;
+
+    // Check for upcoming hazards and adjust speed
+    const zebraCrossingDistance = this.findZebraCrossingDistance(v);
+    const intersectionDistance = this.findIntersectionDistance(v, roads);
+    
+    if (drivingStyle === 'normal') {
+      // Slow down for zebra crossings
+      if (zebraCrossingDistance !== null) {
+        const minZebraDist = 2, maxZebraDist = 5;
+        if (zebraCrossingDistance <= minZebraDist) {
+          speedMultiplier = Math.min(speedMultiplier, 0.3);
+        } else if (zebraCrossingDistance <= maxZebraDist) {
+          const factor = (zebraCrossingDistance - minZebraDist) / (maxZebraDist - minZebraDist);
+          speedMultiplier = Math.min(speedMultiplier, 0.3 + (factor * 0.7));
+        }
+      }
+
+      // Slow down for intersections
+      if (intersectionDistance !== null) {
+        const minIntersectDist = 1, maxIntersectDist = 4;
+        if (intersectionDistance <= minIntersectDist) {
+          speedMultiplier = Math.min(speedMultiplier, 0.4);
+        } else if (intersectionDistance <= maxIntersectDist) {
+          const factor = (intersectionDistance - minIntersectDist) / (maxIntersectDist - minIntersectDist);
+          speedMultiplier = Math.min(speedMultiplier, 0.4 + (factor * 0.6));
+        }
+      }
+    } else { // 'reckless'
+      // Only a slight slowdown for zebra crossings, ignore intersections
+      if (zebraCrossingDistance !== null) {
+        const minZebraDist = 1, maxZebraDist = 3;
+        if (zebraCrossingDistance <= minZebraDist) {
+          speedMultiplier = Math.min(speedMultiplier, 0.8);
+        } else if (zebraCrossingDistance <= maxZebraDist) {
+          const factor = (zebraCrossingDistance - minZebraDist) / (maxZebraDist - minZebraDist);
+          speedMultiplier = Math.min(speedMultiplier, 0.8 + (factor * 0.2));
+        }
+      }
+    }
+    
+    v.aiTargetSpeed = baseSpeed * speedMultiplier;
     
     // If we've reached the target node
     const ARRIVAL_TOLERANCE = 0.75;
@@ -188,6 +219,22 @@ export class AIDrivingSystem {
       const tileType = map.tiles[node.y]?.[node.x];
       
       if (zebraCrossingTypes.includes(tileType)) {
+        return i - v.currentPathIndex; // Distance in nodes
+      }
+    }
+    
+    return null;
+  }
+
+  findIntersectionDistance(v, roads) {
+    if (!v.plannedRoute || v.currentPathIndex === undefined) return null;
+    
+    // Check nodes ahead in the path
+    for (let i = v.currentPathIndex; i < v.plannedRoute.length; i++) {
+      const node = v.plannedRoute[i];
+      const roadNode = roads.byKey.get(`${node.x},${node.y},${node.dir}`);
+      
+      if (roadNode && roadNode.next.length > 1) {
         return i - v.currentPathIndex; // Distance in nodes
       }
     }

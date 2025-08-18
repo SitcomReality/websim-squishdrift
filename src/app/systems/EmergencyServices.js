@@ -147,6 +147,7 @@ export class EmergencyServices {
         controlled: false,
         siren: true,
         isEmergency: true,
+        drivingStyle: 'reckless', // Emergency vehicles drive recklessly
         aiTargetSpeed: 5.0,
         node: startNode,
         plannedRoute: path,

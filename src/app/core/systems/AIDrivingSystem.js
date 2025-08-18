@@ -306,17 +306,34 @@ export class AIDrivingSystem {
     const vLong = (v.vel?.x || 0) * fwd.x + (v.vel?.y || 0) * fwd.y;
     // targetSpeed already set in updateRouteFollowing, ensure defined
     const target = v.aiTargetSpeed || 3.0;
-    const accelBand = 0.2;
-    let desiredThrottle = 0, desiredBrake = 0;
-    if (Math.abs(vLong - target) < accelBand) { desiredThrottle = 0; desiredBrake = 0; }
-    else if (vLong < target - accelBand) { desiredThrottle = 1; desiredBrake = 0; }
-    else if (vLong > target + accelBand) { desiredThrottle = 0; desiredBrake = 0.6; }
-    // lerp control values for smooth application
-    v.ctrl.throttle = (v.ctrl.throttle || 0) * 0.75 + desiredThrottle * 0.25;
-    v.ctrl.brake = (v.ctrl.brake || 0) * 0.75 + desiredBrake * 0.25;
-    // gentle cap to prevent instant flips
-    v.ctrl.throttle = clamp(v.ctrl.throttle, -1, 1);
-    v.ctrl.brake = clamp(v.ctrl.brake, 0, 1);
+    
+    // Use a larger deadband and more stable control
+    const accelBand = 0.5; // Increased from 0.2 to reduce oscillation
+    
+    // Calculate desired control values
+    let desiredThrottle = 0;
+    let desiredBrake = 0;
+    
+    if (Math.abs(vLong - target) < accelBand) {
+      desiredThrottle = 0;
+      desiredBrake = 0;
+    } else if (vLong < target - accelBand) {
+      desiredThrottle = 1;
+      desiredBrake = 0;
+    } else if (vLong > target + accelBand) {
+      desiredThrottle = 0;
+      // Use stronger braking for consistent stopping
+      desiredBrake = Math.min(1, (vLong - target) * 2);
+    }
+    
+    // Apply smoothing to prevent rapid switching
+    const smoothingFactor = 0.9; // Higher = more smoothing
+    v.ctrl.throttle = (v.ctrl.throttle || 0) * smoothingFactor + desiredThrottle * (1 - smoothingFactor);
+    v.ctrl.brake = (v.ctrl.brake || 0) * smoothingFactor + desiredBrake * (1 - smoothingFactor);
+    
+    // Ensure values are clamped
+    v.ctrl.throttle = Math.max(0, Math.min(1, v.ctrl.throttle));
+    v.ctrl.brake = Math.max(0, Math.min(1, v.ctrl.brake));
   }
 }
 

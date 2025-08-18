@@ -97,8 +97,17 @@ export class PlayerSystem {
 
   handleInteraction(state, player, input) {
     if (input.pressed.has('KeyE')) {
-      this.handleVehicleInteraction(state, player);
-      this.pickupItem(state, player);
+      // Add null check for state.control
+      if (!state.control) {
+        state.control = { inVehicle: false };
+      }
+      
+      if (state.control.inVehicle) {
+        this.exitVehicle(state, player);
+      } else {
+        this.handleVehicleInteraction(state, player);
+        this.pickupItem(state, player);
+      }
     }
   }
 
@@ -106,10 +115,8 @@ export class PlayerSystem {
     if (!state || !player) return;
     
     if (state.control?.inVehicle) {
-      // Exit vehicle
       this.exitVehicle(state, player);
     } else {
-      // Enter vehicle
       const nearbyVehicle = this.findNearbyVehicle(state, player);
       if (nearbyVehicle) {
         this.enterVehicle(state, player, nearbyVehicle);

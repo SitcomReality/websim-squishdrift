@@ -101,8 +101,9 @@ canvas.addEventListener('click', (e) => {
 // Show zoom indicator (optional unobtrusive)
 function updateZoomUI(){
   const zoomEl = document.getElementById('zoom-indicator');
-  if (zoomEl && game && game.state && game.state.camera) {
-    zoomEl.textContent = `Zoom: ${(game.state.camera.zoom || 1).toFixed(1)}x`;
+  if (zoomEl && game && game.stateManager && game.stateManager.getState && game.stateManager.getState().camera) {
+    const state = game.stateManager.getState();
+    zoomEl.textContent = `Zoom: ${(state.camera.zoom || 1).toFixed(1)}x`;
   }
 }
 setInterval(updateZoomUI, 200);

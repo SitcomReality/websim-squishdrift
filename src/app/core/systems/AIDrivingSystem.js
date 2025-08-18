@@ -176,9 +176,16 @@ export class AIDrivingSystem {
     
     const zebraCrossingTypes = [11, 12, 13, 14]; // Zebra crossing tile types
     
+    // Use the proper state reference instead of window.state
+    const state = v._engine?.stateManager?.getState?.() || v.state;
+    if (!state) return null;
+    
+    const map = state.world?.map;
+    if (!map) return null;
+    
     for (let i = v.currentPathIndex; i < v.plannedRoute.length; i++) {
       const node = v.plannedRoute[i];
-      const tileType = window.state?.world?.map?.tiles[node.y]?.[node.x];
+      const tileType = map.tiles[node.y]?.[node.x];
       
       if (zebraCrossingTypes.includes(tileType)) {
         return i - v.currentPathIndex; // Distance in nodes

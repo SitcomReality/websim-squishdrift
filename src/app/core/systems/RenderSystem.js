@@ -126,7 +126,7 @@ export class RenderSystem {
       const hitboxH = player.hitboxH || 0.15;
       
       ctx.save();
-      ctx.strokeStyle = '#FF0000';
+      ctx.strokeStyle = '#00FF00'; // Changed from '#FF0000' to '#00FF00' (green)
       ctx.lineWidth = 2;
       ctx.setLineDash([5, 5]);
       
@@ -136,7 +136,7 @@ export class RenderSystem {
       ctx.strokeRect(x * ts, y * ts, hitboxW * ts, hitboxH * ts);
       
       // Draw center point
-      ctx.fillStyle = '#FF0000';
+      ctx.fillStyle = '#00FF00'; // Changed from '#FF0000' to '#00FF00' (green)
       ctx.beginPath();
       ctx.arc(player.pos.x * ts, player.pos.y * ts, 3, 0, Math.PI * 2);
       ctx.fill();

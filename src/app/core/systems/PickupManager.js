@@ -4,6 +4,10 @@ export class PickupManager {
   constructor() {
     this.spawnLocations = [];
     this.activePickups = new Map(); // Map of locationKey -> pickupEntity
+    this.despawnRadius = 15;
+    this.spawnRadius = 10;
+    this.respawnDelay = 5; // seconds
+    this.lastUpdate = 0;
     
     // Define pickup types with spawn chances
     this.pickupTypes = {
@@ -12,7 +16,8 @@ export class PickupManager {
         type: 'weapon',
         weaponType: 'pistol',
         color: '#8B4513',
-        rarity: 1.0 // 100% chance for now
+        rarity: 1.0, // 100% chance until we add more items
+        itemType: 'pistol'
       }
     };
   }
@@ -27,14 +32,18 @@ export class PickupManager {
   }
 
   update(state, dt) {
-    const player = state.entities.find(e => e.type === 'player');
-    if (!player) return;
-
+    this.lastUpdate += dt;
+    
+    // Only check every 2 seconds to avoid performance issues
+    if (this.lastUpdate < 2) return;
+    this.lastUpdate = 0;
+    
     const referenceEntity = state.control.inVehicle 
       ? state.control.vehicle 
-      : player;
+      : state.entities.find(e => e.type === 'player');
     
-    // Check each spawn location
+    if (!referenceEntity) return;
+    
     for (const location of this.spawnLocations) {
       const distance = Math.hypot(
         location.position.x - referenceEntity.pos.x,
@@ -42,7 +51,7 @@ export class PickupManager {
       );
       
       // Despawn pickups that are too far
-      if (distance > this.pickupManager.despawnRadius) {
+      if (distance > this.despawnRadius) {
         const existingPickup = this.activePickups.get(location.key);
         if (existingPickup) {
           const index = state.entities.indexOf(existingPickup);
@@ -54,9 +63,10 @@ export class PickupManager {
         continue;
       }
       
-      // Spawn new pickup if in range and none exists
-      if (distance <= this.pickupManager.spawnRadius) {
-        if (!this.activePickups.has(location.key)) {
+      // Spawn new pickups if within range and no active pickup
+      if (distance <= this.spawnRadius) {
+        if (!this.activePickups.has(location.key) && 
+            (Date.now() - location.lastSpawnTime) / 1000 > this.respawnDelay) {
           this.spawnPickup(state, location);
         }
       }
@@ -64,6 +74,7 @@ export class PickupManager {
   }
 
   spawnPickup(state, location) {
+    // Select random pickup based on rarity
     const selectedType = this.selectRandomPickup();
     if (!selectedType) return;
     
@@ -72,11 +83,13 @@ export class PickupManager {
       pos: new Vec2(location.position.x, location.position.y),
       name: selectedType.name,
       weaponType: selectedType.weaponType,
-      color: selectedType.color
+      color: selectedType.color,
+      itemType: selectedType.itemType
     };
     
     state.entities.push(pickup);
     this.activePickups.set(location.key, pickup);
+    location.lastSpawnTime = Date.now();
   }
 
   selectRandomPickup() {

@@ -319,28 +319,64 @@ export class GameEngine {
   }
 
   initializePickups() {
-    const cityLayout = this.state.world.map;
-    const blockWidth = cityLayout.W + cityLayout.MED;
-    
-    for (let by = 0; by < cityLayout.blocksHigh; by++) {
-      for (let bx = 0; bx < cityLayout.blocksWide; bx++) {
-        const center = {
-          x: cityLayout.mapOffset + cityLayout.MED + bx * blockWidth + cityLayout.W / 2,
-          y: cityLayout.mapOffset + cityLayout.MED + by * blockWidth + cityLayout.W / 2
-        };
-        
-        this.pickupManager.addSpawnLocation(center);
+    // Create pickup spawn locations at center of each block by detecting median grid lines.
+    // The generator places medians (Tile.Median) as full rows/columns between blocks.
+    const map = this.state.world.map;
+    const width = map.width, height = map.height;
+
+    // Collect median row indices (rows that contain Median tiles)
+    const medianRows = new Set();
+    const medianCols = new Set();
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        if (map.tiles[y][x] === Tile.Median) {
+          medianRows.add(y);
+          medianCols.add(x);
+        }
       }
     }
-    
-    // Add pickups at spawn locations
-    this.addPickupsToSpawnLocations();
-  }
 
-  addPickupsToSpawnLocations() {
-    // Spawn initial pickups at all spawn locations
-    for (const location of this.pickupManager.spawnLocations) {
-      this.pickupManager.spawnPickup(this.state, location);
+    const sortedRows = Array.from(medianRows).sort((a,b)=>a-b);
+    const sortedCols = Array.from(medianCols).sort((a,b)=>a-b);
+
+    // If no medians found, fallback to a coarse grid based on map.W / map.MED
+    if (sortedRows.length < 2 || sortedCols.length < 2) {
+      // fallback: try to partition map into rough blocks using W and MED if available
+      const W = map.W || 11;
+      const MED = map.MED || 1;
+      const step = W + MED;
+      for (let oy = Math.floor(step/2); oy < height; oy += step) {
+        for (let ox = Math.floor(step/2); ox < width; ox += step) {
+          this.pickupManager.addSpawnLocation({ x: ox + 0.5, y: oy + 0.5 });
+        }
+      }
+      return;
+    }
+
+    // Compute center rows between adjacent median lines
+    const centerRows = [];
+    for (let i = 0; i < sortedRows.length - 1; i++) {
+      const r1 = sortedRows[i], r2 = sortedRows[i+1];
+      // center is midpoint between medians; ensure it's inside map bounds
+      const cy = Math.floor((r1 + r2) / 2);
+      centerRows.push(cy);
+    }
+
+    // Compute center cols between adjacent median lines
+    const centerCols = [];
+    for (let i = 0; i < sortedCols.length - 1; i++) {
+      const c1 = sortedCols[i], c2 = sortedCols[i+1];
+      const cx = Math.floor((c1 + c2) / 2);
+      centerCols.push(cx);
+    }
+
+    // Register spawn locations at intersections of centerRows and centerCols
+    for (const ry of centerRows) {
+      for (const cx of centerCols) {
+        // Use center of tile (x+0.5, y+0.5)
+        const center = { x: cx + 0.5, y: ry + 0.5 };
+        this.pickupManager.addSpawnLocation(center);
+      }
     }
   }
 }

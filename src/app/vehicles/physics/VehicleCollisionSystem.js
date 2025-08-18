@@ -23,7 +23,7 @@ export class VehicleCollisionSystem {
       
       // Use contact normal for more predictable collision response
       const correctedContact = { ...contact, normal: this.smoothCollisionNormal(contact.normal, v, o) };
-      resolveDynamicDynamic(v, o, correctedContact, 0.8); // Increased restitution from 0.4 to 0.8
+      resolveDynamicDynamic(v, o, correctedContact, 0.8); // Increased restitution for more bounce
       
       // Apply damping to reduce flickering
       this.applyCollisionDamping(v, o);
@@ -43,7 +43,7 @@ export class VehicleCollisionSystem {
       if (this.isTreeTrunk(gx, gy, map)) {
         const contact = obbOverlap(obb, aabbForTrunk(gx, gy)); if (!contact) continue;
         const correctedContact = { ...contact, normal: contact.normal };
-        resolveDynamicStatic(v, correctedContact, 0.6); // Increased restitution from 0.2 to 0.6
+        resolveDynamicStatic(v, correctedContact, 0.8); // Increased restitution from 0.2 to 0.8 for more bounce
         this.applyBuildingDamping(v);
         continue;
       }
@@ -53,9 +53,9 @@ export class VehicleCollisionSystem {
       
       const contact = obbOverlap(obb, aabbForTile(gx,gy)); if (!contact) continue;
       const correctedContact = { ...contact, normal: contact.normal };
-      resolveDynamicStatic(v, correctedContact, 0.6); // Increased restitution from 0.2 to 0.6
+      resolveDynamicStatic(v, correctedContact, 0.8); // Increased restitution from 0.2 to 0.8
       
-      // Strong damping for building impacts
+      // Stronger bounce for building impacts
       this.applyBuildingDamping(v);
     }
   }

@@ -1,3 +1,130 @@
+// Color palettes for consistent theming
+const ColorPalettes = {
+  // Traffic vehicles - dark low saturation warm colors
+  traffic: {
+    compact: [
+      '#8B4513', // SaddleBrown
+      '#A0522D', // Sienna
+      '#CD853F', // Peru
+      '#D2691E', // Chocolate
+      '#B8860B'  // DarkGoldenrod
+    ],
+    sedan: [
+      '#556B2F', // DarkOliveGreen
+      '#696969', // DimGray
+      '#2F4F4F', // DarkSlateGray
+      '#8B7355', // Peru variant
+      '#A0522D'  // Sienna
+    ],
+    truck: [
+      '#654321', // DarkBrown
+      '#5D4037', // Brown
+      '#6D4C41', // DarkBrown variant
+      '#795548', // Brown variant
+      '#6D4E41'  // Brownish
+    ],
+    sports: [
+      '#B22222', // FireBrick (highest saturation)
+      '#A52A2A', // Brown
+      '#FF4500', // OrangeRed
+      '#DC143C', // Crimson
+      '#B8860B'  // DarkGoldenrod
+    ]
+  },
+  
+  // Emergency - vibrant high saturation blues
+  emergency: [
+    '#0000FF', // Blue
+    '#0000CD', // MediumBlue
+    '#00008B', // DarkBlue
+    '#4169E1', // RoyalBlue
+    '#1E90FF'  // DodgerBlue
+  ],
+  
+  // NPCs - low saturation cool colors
+  npc: [
+    '#9370DB', // MediumPurple
+    '#8A2BE2', // BlueViolet
+    '#6A5ACD', // SlateBlue
+    '#483D8B', // DarkSlateBlue
+    '#556B2F', // DarkOliveGreen
+    '#2E8B57', // SeaGreen
+    '#3CB371', // MediumSeaGreen
+    '#9ACD32'  // YellowGreen
+  ]
+};
+
+// Helper to get a color from palette with slight variation
+function getColorFromPalette(palette, baseColor = null) {
+  const colors = Array.isArray(palette) ? palette : palette;
+  const base = baseColor || colors[Math.floor(Math.random() * colors.length)];
+  
+  // Slight variation by adjusting brightness
+  const hsl = hexToHsl(base);
+  hsl.l += (Math.random() - 0.5) * 0.1; // ±5% brightness variation
+  hsl.l = Math.max(0.2, Math.min(0.8, hsl.l));
+  
+  return hslToHex(hsl);
+}
+
+// Color conversion utilities
+function hexToHsl(hex) {
+  const r = parseInt(hex.slice(1, 3), 16) / 255;
+  const g = parseInt(hex.slice(3, 5), 16) / 255;
+  const b = parseInt(hex.slice(5, 7), 16) / 255;
+  
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h, s, l = (max + min) / 2;
+
+  if (max === min) {
+    h = s = 0;
+  } else {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+    h /= 6;
+  }
+
+  return { h: h * 360, s: s * 100, l: l * 100 };
+}
+
+function hslToHex({ h, s, l }) {
+  s /= 100;
+  l /= 100;
+  
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = l - c / 2;
+  
+  let r, g, b;
+  
+  if (h >= 0 && h < 60) {
+    r = c; g = x; b = 0;
+  } else if (h >= 60 && h < 120) {
+    r = x; g = c; b = 0;
+  } else if (h >= 120 && h < 180) {
+    r = 0; g = c; b = x;
+  } else if (h >= 180 && h < 240) {
+    r = 0; g = x; b = c;
+  } else if (h >= 240 && h < 300) {
+    r = x; g = 0; b = c;
+  } else {
+    r = c; g = 0; b = x;
+  }
+  
+  const toHex = (n) => {
+    const hex = Math.round((n + m) * 255).toString(16);
+    return hex.length === 1 ? '0' + hex : hex;
+  };
+  
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
 // Base vehicle archetype - all vehicles inherit from this
 export const VehicleArchetype = {
   // Physics properties
@@ -67,13 +194,15 @@ export const VehicleTypes = {
       size: 0.06,
       width: 0.12,
       frontOffset: 0.7 // Increased from 0.6 to 0.7 for compact
-    }
+    },
+    baseColor: '#8B4513'
   },
   
   sedan: {
     // Standard car
     ...VehicleArchetype,
-    color: '#4444ff'
+    color: '#4444ff',
+    baseColor: '#556B2F'
   },
   
   truck: {
@@ -101,7 +230,8 @@ export const VehicleTypes = {
       height: 0.06,
       spacing: 0.3,
       rearOffset: 0.75 // Increased from 0.6 to 0.75 for truck
-    }
+    },
+    baseColor: '#654321'
   },
   
   sports: {
@@ -122,7 +252,8 @@ export const VehicleTypes = {
       width: 0.1,
       frontOffset: 0.7, // Increased from 0.45 to 0.7 for sports
       frontOffset: 0.75 // Further increased to 0.75
-    }
+    },
+    baseColor: '#B22222'
   },
   
   emergency: {
@@ -141,13 +272,25 @@ export const VehicleTypes = {
       size: 0.08,
       width: 0.16,
       frontOffset: 0.65 // Increased from 0.4 to 0.65 for emergency
-    }
+    },
+    baseColor: '#0000FF'
   }
 };
 
-// Helper function to create a vehicle with type
+// Helper function to create a vehicle with type and color
 export function createVehicle(type, pos, options = {}) {
   const base = VehicleTypes[type] || VehicleTypes.sedan;
+  
+  // Determine color based on type
+  let color;
+  if (type === 'emergency') {
+    color = getColorFromPalette(ColorPalettes.emergency);
+  } else if (['compact', 'sedan', 'truck', 'sports'].includes(type)) {
+    color = getColorFromPalette(ColorPalettes.traffic[type]);
+  } else {
+    color = base.baseColor || '#555';
+  }
+  
   return {
     type: 'vehicle',
     vehicleType: type,
@@ -156,6 +299,7 @@ export function createVehicle(type, pos, options = {}) {
     rot: 0,
     angularVel: 0,
     ctrl: { throttle: 0, brake: 0, steer: 0 },
+    color: color,
     ...base,
     ...options,
     health: { hp: base.maxHealth, maxHp: base.maxHealth, getPercent: () => 1, isAlive: () => true }

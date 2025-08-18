@@ -4,6 +4,64 @@ import { rng } from '../../utils/RNG.js';
 import { Vec2 } from '../../utils/Vec2.js';
 import { createVehicle } from '../vehicles/VehicleTypes.js';
 
+// Add color conversion helpers
+function hexToHsl(hex) {
+  const r = parseInt(hex.slice(1, 3), 16) / 255;
+  const g = parseInt(hex.slice(3, 5), 16) / 255;
+  const b = parseInt(hex.slice(5, 7), 16) / 255;
+  
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h, s, l = (max + min) / 2;
+
+  if (max === min) {
+    h = s = 0;
+  } else {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+    h /= 6;
+  }
+
+  return { h: h * 360, s: s * 100, l: l * 100 };
+}
+
+function hslToHex({ h, s, l }) {
+  s /= 100;
+  l /= 100;
+  
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = l - c / 2;
+  
+  let r, g, b;
+  
+  if (h >= 0 && h < 60) {
+    r = c; g = x; b = 0;
+  } else if (h >= 60 && h < 120) {
+    r = x; g = c; b = 0;
+  } else if (h >= 120 && h < 180) {
+    r = 0; g = c; b = x;
+  } else if (h >= 180 && h < 240) {
+    r = 0; g = x; b = c;
+  } else if (h >= 240 && h < 300) {
+    r = x; g = 0; b = c;
+  } else {
+    r = c; g = 0; b = x;
+  }
+  
+  const toHex = (n) => {
+    const hex = Math.round((n + m) * 255).toString(16);
+    return hex.length === 1 ? '0' + hex : hex;
+  };
+  
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
 export function createInitialState() {
   const map = generateCity('alpha-seed', 4, 4);
   const rand = rng('alpha-seed');
@@ -19,6 +77,42 @@ export function createInitialState() {
   }
   player.pos.x = spawnX; player.pos.y = spawnY; state.camera.x = spawnX; state.camera.y = spawnY;
   player.vel = { x: 0, y: 0 }; player.mass = 80; player.hitboxW = 0.15; player.hitboxH = 0.15;
+  
+  // Helper function to get NPC color from cool palette
+  const getNPCColor = () => {
+    const colors = [
+      '#9370DB', // MediumPurple
+      '#8A2BE2', // BlueViolet
+      '#6A5ACD', // SlateBlue
+      '#483D8B', // DarkSlateBlue
+      '#556B2F', // DarkOliveGreen
+      '#2E8B57', // SeaGreen
+      '#3CB371', // MediumSeaGreen
+      '#9ACD32'  // YellowGreen
+    ];
+    
+    // Add slight variation
+    const baseColor = colors[Math.floor(rand() * colors.length)];
+    const hsl = hexToHsl(baseColor);
+    hsl.l += (rand() - 0.5) * 10; // ±5% brightness
+    hsl.l = Math.max(20, Math.min(80, hsl.l));
+    
+    // Convert back to hex
+    const h = hsl.h / 360;
+    const s = hsl.s / 100;
+    const l = hsl.l / 100;
+    
+    const c = (1 - Math.abs(2 * l - 1)) * s;
+    const x = c * (1 - Math.abs(((h * 360 / 60) % 2) - 1));
+    const m = l - c / 2;
+    
+    const toHex = (n) => {
+      const hex = Math.round((n + m) * 255).toString(16);
+      return hex.length === 1 ? '0' + hex : hex;
+    };
+    
+    return `#${toHex(c)}${toHex(x)}${toHex(0)}`.replace(/undefined/g, '00');
+  };
   
   // Spawn empty vehicle using new system
   const emptyVehicleTypes = ['compact', 'sedan', 'truck', 'sports'];
@@ -75,7 +169,15 @@ export function createInitialState() {
     if (map.tiles[Math.floor(n.y)][Math.floor(n.x)] === Tile.Median) continue;
     
     const next = (n.neighbors && n.neighbors.length) ? n.neighbors[Math.floor(rand()*n.neighbors.length)] : { x:n.x, y:n.y };
-    state.entities.push({ type:'npc', pos:new Vec2(n.x+0.5, n.y+0.5), from:{x:n.x,y:n.y}, to: next, t: 0, speed: 0.2 + rand()*0.15 });
+    state.entities.push({ 
+      type:'npc', 
+      pos:new Vec2(n.x+0.5, n.y+0.5), 
+      from:{x:n.x,y:n.y}, 
+      to: next, 
+      t: 0, 
+      speed: 0.2 + rand()*0.15,
+      color: getNPCColor() // Assign NPC color
+    });
   }
   
   // Create pickup spots at the center of each block and spawn an initial pickup (pistol)

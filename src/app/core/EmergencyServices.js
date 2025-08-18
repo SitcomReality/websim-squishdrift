@@ -102,26 +102,47 @@ export class EmergencyServices {
           color = '#FF0000'
       }
 
-      const spawnPoints = [
-        new Vec2(1, Math.floor(Math.random() * this.map.height)),
-        new Vec2(this.map.width - 2, Math.floor(Math.random() * this.map.height)),
-        new Vec2(Math.floor(Math.random() * this.map.width), 1),
-        new Vec2(Math.floor(Math.random() * this.map.width), this.map.height - 2)
-      ]
+      // Find valid spawn points on roads
+      const spawnPoints = this.findValidSpawnPoints(state)
       
+      if (spawnPoints.length === 0) {
+        console.warn('No valid spawn points found for emergency vehicle')
+        incident.responded = true
+        continue
+      }
+
       const spawnPos = spawnPoints[Math.floor(Math.random() * spawnPoints.length)]
 
       const startNode = this.findNearestRoadNode(spawnPos)
       const endNode = this.findNearestRoadNode(incident.position)
       
       if (!startNode || !endNode) {
+        console.warn('Could not find road nodes for emergency response', { 
+            startPos: spawnPos, 
+            endPos: incident.position,
+            startNode: startNode ? 'found' : 'not found',
+            endNode: endNode ? 'found' : 'not found',
+            incidentType: incident.type,
+            incidentPos: incident.position
+        })
         incident.responded = true
         continue
       }
       
       const path = findPath(this.roadGraph, startNode, endNode)
 
-      if (!path) {
+      if (!path || path.length === 0) {
+        console.warn('Could not find path for emergency vehicle', {
+            start: `${startNode.x},${startNode.y},${startNode.dir}`,
+            end: `${endNode.x},${endNode.y},${endNode.dir}`,
+            pathLength: path?.length || 0,
+            incidentType: incident.type,
+            incidentPos: incident.position,
+            startNodeType: this.getTileType(state, startNode.x, startNode.y),
+            endNodeType: this.getTileType(state, endNode.x, endNode.y),
+            distance: Math.hypot(startNode.x - endNode.x, startNode.y - endNode.y),
+            roadGraphNodes: this.roadGraph.nodes.length
+        })
         incident.responded = true
         continue
       }
@@ -194,5 +215,26 @@ export class EmergencyServices {
       }
     }
     return bestNode
+  }
+
+  findValidSpawnPoints(state) {
+    const map = state.world?.map || this.map
+    const spawnPoints = []
+    
+    for (let y = 0; y < map.height; y++) {
+      for (let x = 0; x < map.width; x++) {
+        if (map.tiles?.[y]?.[x] === 1) {
+          spawnPoints.push(new Vec2(x + 0.5, y + 0.5))
+        }
+      }
+    }
+    
+    return spawnPoints
+  }
+
+  getTileType(state, x, y) {
+    if (!state.world?.map?.tiles) return 'unknown';
+    if (x < 0 || y < 0 || x >= state.world.map.width || y >= state.world.map.height) return 'out_of_bounds';
+    return state.world.map.tiles[y][x];
   }
 }

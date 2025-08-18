@@ -40,12 +40,18 @@ export class PlayerSystem {
   }
 
   handlePlayerMovement(state, player, input, dt) {
+    if (!state || !player || !input || !dt) return;
+    
     // Get movement input relative to player facing
     let forward = 0, strafe = 0;
-    if (input.keys.has('KeyW') || input.keys.has('ArrowUp')) forward += 1;
-    if (input.keys.has('KeyS') || input.keys.has('ArrowDown')) forward -= 0.75; // 75% speed for backward
-    if (input.keys.has('KeyA') || input.keys.has('ArrowLeft')) strafe -= 0.75; // 75% speed for strafing
-    if (input.keys.has('KeyD') || input.keys.has('ArrowRight')) strafe += 0.75; // 75% speed for strafing
+    if (input.keys && input.keys.has('KeyW')) forward += 1;
+    if (input.keys && input.keys.has('ArrowUp')) forward += 1;
+    if (input.keys && input.keys.has('KeyS')) forward -= 0.75; // 75% speed for backward
+    if (input.keys && input.keys.has('ArrowDown')) forward -= 0.75;
+    if (input.keys && input.keys.has('KeyA')) strafe -= 0.75; // 75% speed for strafing
+    if (input.keys && input.keys.has('ArrowLeft')) strafe -= 0.75;
+    if (input.keys && input.keys.has('KeyD')) strafe += 0.75; // 75% speed for strafing
+    if (input.keys && input.keys.has('ArrowRight')) strafe += 0.75;
     
     if (forward || strafe) {
       // Calculate movement in world space based on player facing
@@ -63,8 +69,9 @@ export class PlayerSystem {
         const normalizedDx = dx / len;
         const normalizedDy = dy / len;
         
-        const nx = player.pos.x + normalizedDx * player.moveSpeed * dt;
-        const ny = player.pos.y + normalizedDy * player.moveSpeed * dt;
+        const moveSpeed = player.moveSpeed || 6;
+        const nx = player.pos.x + normalizedDx * moveSpeed * dt;
+        const ny = player.pos.y + normalizedDy * moveSpeed * dt;
         
         if (this.isWalkableTile(state, nx, player.pos.y)) player.pos.x = nx;
         if (this.isWalkableTile(state, player.pos.x, ny)) player.pos.y = ny;
@@ -74,10 +81,10 @@ export class PlayerSystem {
 
   updateFacingFromMouse(state, player, input) {
     // Skip if no canvas or mouse position
-    if (!state.canvas || !input.mousePos) return;
+    if (!state.canvas || !input || !input.mousePos) return;
     
     const canvas = state.canvas;
-    const ts = state.world.tileSize;
+    const ts = state.world.tileSize || 24;
     
     // Convert mouse position to world coordinates
     const rect = canvas.getBoundingClientRect();
@@ -87,8 +94,12 @@ export class PlayerSystem {
     // Apply camera transform to get world coordinates
     const cx = Math.floor(canvas.width / 2);
     const cy = Math.floor(canvas.height / 2);
-    const worldX = (mouseX - cx) / (state.camera.zoom || 1) + state.camera.x * ts;
-    const worldY = (mouseY - cy) / (state.camera.zoom || 1) + state.camera.y * ts;
+    const zoom = state.camera?.zoom || 1;
+    const camX = state.camera?.x || 0;
+    const camY = state.camera?.y || 0;
+    
+    const worldX = (mouseX - cx) / zoom + camX * ts;
+    const worldY = (mouseY - cy) / zoom + camY * ts;
     
     // Calculate angle from player to mouse
     const dx = worldX / ts - player.pos.x;
@@ -96,6 +107,7 @@ export class PlayerSystem {
     player.facingAngle = Math.atan2(dy, dx);
     
     // Update facing vector
+    player.facing = player.facing || new Vec2();
     player.facing.x = Math.cos(player.facingAngle);
     player.facing.y = Math.sin(player.facingAngle);
   }

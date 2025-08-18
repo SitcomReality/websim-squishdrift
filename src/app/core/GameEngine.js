@@ -18,7 +18,8 @@ import { BloodManager } from '../entities/drawBlood.js';
 import { WeaponSystem } from './systems/WeaponSystem.js';
 import { createVehicle } from '../vehicles/VehicleTypes.js';
 import { Vec2 } from '../../utils/Vec2.js';
-import { PickupManager } from './systems/PickupManager.js'; // Add this import
+import { PickupManager } from './systems/PickupManager.js';
+import { Tile } from '../../map/TileTypes.js';
 
 export class GameEngine {
   constructor(canvas, { debugEl } = {}) {
@@ -97,7 +98,7 @@ export class GameEngine {
 
   update(dt) {
     this.systems.player.update(this.state, this.input, dt);
-    this.systems.vehicle.update(this.state, this.input, dt);
+    this.systems.vehicle.update(this.state, this.input, dt)
     this.systems.bullet.update(this.state, dt)
     this.systems.npc.update(this.state, dt)
     this.systems.aiDrive.update(this.state, dt)
@@ -110,7 +111,7 @@ export class GameEngine {
     this.systems.weapon.update(this.state, this.input, dt)
     
     // Update pickup spawning
-    this.pickupManager.update(this.state, dt);
+    this.pickupManager.update(this.state, dt)
     
     // Update spawn/despawn system
     this.updateSpawning(dt)

@@ -36,9 +36,10 @@ export const VehicleArchetype = {
   },
   
   brakeLights: {
-    size: 4,
-    width: 4, // Individual light width
-    height: 0.3,
+    count: 2, // Added for dual brake lights
+    width: 0.1, // Normalized size, relative to tileSize
+    height: 0.05, // Normalized size, relative to tileSize
+    spacing: 0.25, // Spacing between the two brake lights
     rearOffset: 0.5,
     offColor: '#4a0000',
     onColor: '#ff2d2d'
@@ -94,8 +95,9 @@ export const VehicleTypes = {
     },
     brakeLights: {
       ...VehicleArchetype.brakeLights,
-      size: 6,
-      width: 6
+      width: 0.12, // Slightly wider brake lights for truck
+      height: 0.06, // Slightly taller brake lights for truck
+      spacing: 0.3 // Wider spacing for truck brake lights
     }
   },
   

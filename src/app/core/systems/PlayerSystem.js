@@ -15,6 +15,11 @@ export class PlayerSystem {
     // Always handle interaction so E can exit vehicles
     this.handleInteraction(state, player, input);
     
+    // Ensure control object exists
+    if (!state.control) {
+      state.control = { inVehicle: false };
+    }
+    
     if (!state.control.inVehicle) {
       this.handlePlayerMovement(state, player, input, dt);
     } else {

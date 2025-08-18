@@ -17,6 +17,8 @@ import { SkidmarkSystem } from './systems/SkidmarkSystem.js';
 import { Tile } from '../../map/TileTypes.js';
 import { BloodManager } from '../entities/drawBlood.js';
 import { WeaponSystem } from './systems/WeaponSystem.js';
+import { createVehicle } from '../vehicles/VehicleTypes.js';
+import { Vec2 } from '../../utils/Vec2.js';
 
 export class GameEngine {
   constructor(canvas, { debugEl } = {}) {
@@ -275,7 +277,6 @@ export class GameEngine {
   }
 
   createVehicle(type, pos, options = {}) {
-    const { createVehicle } = require('../vehicles/VehicleTypes.js');
     return createVehicle(type, new Vec2(pos.x, pos.y), options);
   }
 

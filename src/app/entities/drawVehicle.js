@@ -65,8 +65,9 @@ export function drawVehicle(renderer, state, v) {
   ctx.fillStyle = v.brakeLight ? brakeLights.onColor : brakeLights.offColor;
   
   // Two side-by-side brake lights
-  const brakeSpacing = ts * 0.4; // Space between brake lights
-  const brakeWidth = brakeLights.width * 2; // Twice as wide as single
+  const brakeX = -hw * brakeLights.rearOffset;
+  const brakeSpacing = ts * 0.3; // Space between brake lights
+  const brakeWidth = brakeLights.width * ts;
   const brakeHeight = brakeLights.height * h;
   
   // Left brake light

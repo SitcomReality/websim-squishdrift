@@ -151,9 +151,11 @@ export class AIDrivingSystem {
     // --- NEW --- Obstacle avoidance speed adjustment for normal drivers
     if (drivingStyle === 'normal' && v.impatience < IMPATIENCE_THRESHOLD) {
       if (obstacleDistance === 0) { // Obstacle right in front
-        speedMultiplier = 0; // Slam brakes
-        v.ctrl.brake = 1;
+        // Request a sustained brake hold instead of instantly flipping brake on/off.
+        // This prevents flicker: we set a short hold timer and force throttle=0.
+        v.brakeHoldTimer = Math.max(v.brakeHoldTimer || 0, 0.6); // hold brakes for ~0.6s
         v.ctrl.throttle = 0;
+        speedMultiplier = 0;
       } else if (obstacleDistance === 1) { // Obstacle 1 node away
         speedMultiplier = Math.min(speedMultiplier, 0.3);
       } else if (obstacleDistance === 2) { // Obstacle 2 nodes away
@@ -306,47 +308,24 @@ export class AIDrivingSystem {
     const vLong = (v.vel?.x || 0) * fwd.x + (v.vel?.y || 0) * fwd.y;
     // targetSpeed already set in updateRouteFollowing, ensure defined
     const target = v.aiTargetSpeed || 3.0;
+    const accelBand = 0.2;
+    let desiredThrottle = 0, desiredBrake = 0;
+    if (Math.abs(vLong - target) < accelBand) { desiredThrottle = 0; desiredBrake = 0; }
+    else if (vLong < target - accelBand) { desiredThrottle = 1; desiredBrake = 0; }
+    else if (vLong > target + accelBand) { desiredThrottle = 0; desiredBrake = 0.6; }
     
-    // Use a larger deadband and more stable control with hysteresis
-    const accelBand = 0.5; // Increased from 0.2 to reduce oscillation
-    const brakeHysteresis = 0.3; // Additional buffer for brake state changes
-    
-    // Calculate desired control values with hysteresis
-    let desiredThrottle = 0;
-    let desiredBrake = 0;
-    
-    const speedDiff = vLong - target;
-    
-    // Apply hysteresis to prevent rapid switching
-    const isCurrentlyBraking = v.ctrl?.brake > 0.1;
-    
-    if (Math.abs(speedDiff) < accelBand) {
+    // Honor any explicit brakeHold requested by route following (prevents rapid pulse braking)
+    if (v.brakeHoldTimer && v.brakeHoldTimer > 0) {
+      desiredBrake = Math.max(desiredBrake, 1.0);
       desiredThrottle = 0;
-      desiredBrake = 0;
-    } else if (speedDiff < -accelBand) {
-      // Need to accelerate
-      desiredThrottle = Math.min(1, Math.abs(speedDiff) * 0.5);
-      desiredBrake = 0;
-    } else if (speedDiff > accelBand) {
-      // Need to brake - add hysteresis
-      if (isCurrentlyBraking || speedDiff > accelBand + brakeHysteresis) {
-        desiredThrottle = 0;
-        desiredBrake = Math.min(1, Math.abs(speedDiff) * 0.8);
-      } else {
-        // Coast - let natural deceleration handle it
-        desiredThrottle = 0;
-        desiredBrake = 0;
-      }
+      v.brakeHoldTimer = Math.max(0, v.brakeHoldTimer - dt);
     }
-    
-    // Apply smoothing to prevent rapid switching
-    const smoothingFactor = 0.85; // Higher = more smoothing
-    v.ctrl.throttle = (v.ctrl.throttle || 0) * smoothingFactor + desiredThrottle * (1 - smoothingFactor);
-    v.ctrl.brake = (v.ctrl.brake || 0) * smoothingFactor + desiredBrake * (1 - smoothingFactor);
-    
-    // Ensure values are clamped
-    v.ctrl.throttle = Math.max(0, Math.min(1, v.ctrl.throttle));
-    v.ctrl.brake = Math.max(0, Math.min(1, v.ctrl.brake));
+    // lerp control values for smooth application
+    v.ctrl.throttle = (v.ctrl.throttle || 0) * 0.75 + desiredThrottle * 0.25;
+    v.ctrl.brake = (v.ctrl.brake || 0) * 0.75 + desiredBrake * 0.25;
+    // gentle cap to prevent instant flips
+    v.ctrl.throttle = clamp(v.ctrl.throttle, -1, 1);
+    v.ctrl.brake = clamp(v.ctrl.brake, 0, 1);
   }
 }
 

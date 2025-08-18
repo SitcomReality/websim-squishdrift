@@ -190,13 +190,33 @@ export class PlayerSystem {
           const itemNameEl = document.getElementById('item-name');
           if (itemNameEl) itemNameEl.textContent = item.name;
           
-          state.entities.splice(state.entities.indexOf(item), 1);
+          // remove from entities and mark spot (if any) as empty so it can respawn
+          const idx = state.entities.indexOf(item);
+          if (idx > -1) state.entities.splice(idx, 1);
+          if (typeof item.spotId === 'number' && state.pickupSpots?.[item.spotId]) {
+            state.pickupSpots[item.spotId].hasItem = false;
+          }
         } else if (item.type === 'weapon') {
           // Handle weapon pickup
-          const weaponSystem = new (require('./WeaponSystem.js').WeaponSystem)();
-          weaponSystem.handleWeaponPickup(state, player);
-          
-          state.entities.splice(state.entities.indexOf(item), 1);
+          // prefer to use the WeaponSystem instance if available on engine systems
+          try {
+            // If WeaponSystem exists on the engine (GameEngine adds it), use that
+            if (state._engine && state._engine.systems && state._engine.systems.weapon) {
+              state._engine.systems.weapon.handleWeaponPickup(state, player);
+            } else {
+              // fallback: create transient instance (non-bundled require not used)
+              import('./WeaponSystem.js').then(mod => {
+                const ws = new mod.WeaponSystem();
+                ws.handleWeaponPickup(state, player);
+              }).catch(()=>{ /* ignore */ });
+            }
+          } finally {
+            const idx2 = state.entities.indexOf(item);
+            if (idx2 > -1) state.entities.splice(idx2, 1);
+            if (typeof item.spotId === 'number' && state.pickupSpots?.[item.spotId]) {
+              state.pickupSpots[item.spotId].hasItem = false;
+            }
+          }
         }
       }
     }

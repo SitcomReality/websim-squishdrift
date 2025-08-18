@@ -14,12 +14,11 @@ import { VehicleMovementSystem } from '../vehicles/physics/VehicleMovementSystem
 import { VehicleCollisionSystem } from '../vehicles/physics/VehicleCollisionSystem.js';
 import { AIDrivingSystem } from './systems/AIDrivingSystem.js';
 import { SkidmarkSystem } from './systems/SkidmarkSystem.js';
+import { Tile } from '../../map/TileTypes.js';
 import { BloodManager } from '../entities/drawBlood.js';
 import { WeaponSystem } from './systems/WeaponSystem.js';
 import { createVehicle } from '../vehicles/VehicleTypes.js';
 import { Vec2 } from '../../utils/Vec2.js';
-import { PickupManager } from './systems/PickupManager.js';
-import { Tile } from '../../map/TileTypes.js';
 
 export class GameEngine {
   constructor(canvas, { debugEl } = {}) {
@@ -52,14 +51,10 @@ export class GameEngine {
     // Initialize BloodManager
     this.state.bloodManager = new BloodManager(20); // 20 blood puddles max
     
-    // Initialize pickup manager
-    this.pickupManager = new PickupManager();
-    
     // Start with debug overlay disabled by default
     this.debugOverlay.enabled = false;
     
     this.updateHUD();
-    this.initializePickups();
   }
 
   updateHUD() {
@@ -98,7 +93,7 @@ export class GameEngine {
 
   update(dt) {
     this.systems.player.update(this.state, this.input, dt);
-    this.systems.vehicle.update(this.state, this.input, dt)
+    this.systems.vehicle.update(this.state, this.input, dt);
     this.systems.bullet.update(this.state, dt)
     this.systems.npc.update(this.state, dt)
     this.systems.aiDrive.update(this.state, dt)
@@ -109,9 +104,6 @@ export class GameEngine {
     this.emergencyServices.update(this.state, dt)
     this.systems.skidmarks.update(this.state, dt)
     this.systems.weapon.update(this.state, this.input, dt)
-    
-    // Update pickup spawning
-    this.pickupManager.update(this.state, dt)
     
     // Update spawn/despawn system
     this.updateSpawning(dt)
@@ -175,6 +167,10 @@ export class GameEngine {
       
       const distance = Math.hypot(entity.pos.x - referencePos.x, entity.pos.y - referencePos.y);
       if (distance > despawnRadius) {
+        // If this entity is tied to a pickup spot, mark that spot empty so it can respawn later
+        if (entity.type === 'item' && typeof entity.spotId === 'number' && this.state.pickupSpots?.[entity.spotId]) {
+          this.state.pickupSpots[entity.spotId].hasItem = false;
+        }
         this.state.entities.splice(i, 1);
       }
     }
@@ -184,6 +180,26 @@ export class GameEngine {
       ? this.state.control.vehicle.pos 
       : player.pos;
     this.spawnEntitiesNearPlayer(referencePos, innerSpawnRadius, outerSpawnRadius);
+    
+    // Handle pickup spot respawn: ensure central pickup exists when player is within spawn radius
+    if (this.state.pickupSpots && this.state.pickupSpots.length) {
+      for (let s = 0; s < this.state.pickupSpots.length; s++) {
+        const spot = this.state.pickupSpots[s];
+        const dist = Math.hypot(spot.x - referencePos.x, spot.y - referencePos.y);
+        // If within spawn bounds and spot empty, spawn a pickup (pistol for now)
+        if (dist <= outerSpawnRadius && dist >= innerSpawnRadius && !spot.hasItem) {
+          const item = {
+            type: 'item',
+            pos: { x: spot.x, y: spot.y },
+            name: 'Pistol',
+            color: '#FFD700',
+            spotId: s
+          };
+          this.state.entities.push(item);
+          spot.hasItem = true;
+        }
+      }
+    }
   }
 
   findNearbyVehicle(player) {
@@ -315,68 +331,6 @@ export class GameEngine {
       this.hud.debugTextEl.textContent = `FPS:${debugData.fps} NPCs:${debugData.npcs} Vehicles:${debugData.vehicles}`;
     } else {
       this.hud.debugInfoEl.style.display = 'none';
-    }
-  }
-
-  initializePickups() {
-    // Create pickup spawn locations at center of each block by detecting median grid lines.
-    // The generator places medians (Tile.Median) as full rows/columns between blocks.
-    const map = this.state.world.map;
-    const width = map.width, height = map.height;
-
-    // Collect median row indices (rows that contain Median tiles)
-    const medianRows = new Set();
-    const medianCols = new Set();
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        if (map.tiles[y][x] === Tile.Median) {
-          medianRows.add(y);
-          medianCols.add(x);
-        }
-      }
-    }
-
-    const sortedRows = Array.from(medianRows).sort((a,b)=>a-b);
-    const sortedCols = Array.from(medianCols).sort((a,b)=>a-b);
-
-    // If no medians found, fallback to a coarse grid based on map.W / map.MED
-    if (sortedRows.length < 2 || sortedCols.length < 2) {
-      // fallback: try to partition map into rough blocks using W and MED if available
-      const W = map.W || 11;
-      const MED = map.MED || 1;
-      const step = W + MED;
-      for (let oy = Math.floor(step/2); oy < height; oy += step) {
-        for (let ox = Math.floor(step/2); ox < width; ox += step) {
-          this.pickupManager.addSpawnLocation({ x: ox + 0.5, y: oy + 0.5 });
-        }
-      }
-      return;
-    }
-
-    // Compute center rows between adjacent median lines
-    const centerRows = [];
-    for (let i = 0; i < sortedRows.length - 1; i++) {
-      const r1 = sortedRows[i], r2 = sortedRows[i+1];
-      // center is midpoint between medians; ensure it's inside map bounds
-      const cy = Math.floor((r1 + r2) / 2);
-      centerRows.push(cy);
-    }
-
-    // Compute center cols between adjacent median lines
-    const centerCols = [];
-    for (let i = 0; i < sortedCols.length - 1; i++) {
-      const c1 = sortedCols[i], c2 = sortedCols[i+1];
-      const cx = Math.floor((c1 + c2) / 2);
-      centerCols.push(cx);
-    }
-
-    // Register spawn locations at intersections of centerRows and centerCols
-    for (const ry of centerRows) {
-      for (const cx of centerCols) {
-        // Use center of tile (x+0.5, y+0.5)
-        const center = { x: cx + 0.5, y: ry + 0.5 };
-        this.pickupManager.addSpawnLocation(center);
-      }
     }
   }
 }

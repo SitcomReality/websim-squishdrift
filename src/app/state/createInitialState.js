@@ -115,5 +115,22 @@ export function createInitialState() {
     });
   }
   
+  // Create pickup spots at the center of each block and spawn an initial pickup (pistol)
+  state.pickupSpots = [];
+  for (let by = 0; by < cityLayout.blocksHigh; by++) {
+    for (let bx = 0; bx < cityLayout.blocksWide; bx++) {
+      const origin = cityLayout.getBlockOrigin(bx, by);
+      // approximate center of block (in tiles)
+      const centerX = origin.x + Math.floor(cityLayout.W / 2) + 0.5;
+      const centerY = origin.y + Math.floor(cityLayout.W / 2) + 0.5;
+      const spotId = state.pickupSpots.length;
+      state.pickupSpots.push({ x: centerX, y: centerY, hasItem: false });
+      // Spawn initial pistol at each spot (biased pool can be added later)
+      const item = { type: 'item', pos: new Vec2(centerX, centerY), name: 'Pistol', color: '#FFD700', spotId };
+      state.entities.push(item);
+      state.pickupSpots[spotId].hasItem = true;
+    }
+  }
+  
   return state;
 }

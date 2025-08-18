@@ -1,3 +1,7 @@
+import { createInitialState } from '../state/createInitialState.js';
+import { EmergencyServices } from '../systems/EmergencyServices.js';
+import { BloodManager } from '../entities/drawBlood.js';
+
 export class GameStateManager {
   constructor() {
     this.state = null;
@@ -7,11 +11,7 @@ export class GameStateManager {
 
   initialize() {
     this.state = createInitialState();
-    this.state.control = { 
-      inVehicle: false,
-      vehicle: null,
-      equipped: null 
-    };
+    this.state.control = { inVehicle: false, vehicle: null, equipped: null };
     this.state.canvas = null;
     
     this.emergencyServices = new EmergencyServices(this.state);

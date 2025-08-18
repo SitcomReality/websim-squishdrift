@@ -18,6 +18,16 @@ export class GameEngine {
     
     this.stateManager.initialize();
     this.hudManager.initialize();
+
+    // Expose input manager to stateManager so systems can read input via stateManager
+    this.stateManager.inputManager = this.inputManager;
+
+    // Ensure state knows about the canvas for systems that reference it
+    if (this.stateManager.state) this.stateManager.state.canvas = canvas;
+
+    // Expose commonly used references for external code (main.js expects these)
+    this.debugOverlay = this.debugManager.debugOverlay;
+    this.renderer = this.renderingManager.renderer;
   }
 
   update(dt) {
@@ -32,4 +42,3 @@ export class GameEngine {
     this.renderingManager.render(this.stateManager.state, interp);
   }
 }
-

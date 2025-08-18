@@ -86,22 +86,31 @@ export class CollisionSystem {
     if (state.control?.inVehicle) return; // disable player collisions while inside a vehicle
     if (player.collisionDisabled) return; // Skip if player collision is disabled
     
+    // Check tree trunk collision for player
+    const map = state.world.map;
+    const tx = Math.floor(player.pos.x);
+    const ty = Math.floor(player.pos.y);
+    if (this.isTreeTrunk(tx, ty, map)) {
+      // Push player away from tree trunk
+      const dx = player.pos.x - (tx + 0.5);
+      const dy = player.pos.y - (ty + 0.5);
+      const len = Math.hypot(dx, dy) || 1;
+      player.pos.x += (dx / len) * 0.2;
+      player.pos.y += (dy / len) * 0.2;
+      return;
+    }
+    
     for (const vehicle of vehicles) {
       if (vehicle.controlled) continue; // Skip player-controlled vehicle
       
-      // Use actual hitbox sizes instead of fixed radius
-      const playerRadius = Math.max(player.hitboxW || 0.15, player.hitboxH || 0.15) * 0.8; // 80% of max dimension
-      const vehicleRadius = Math.max(vehicle.hitboxW || 0.9, vehicle.hitboxH || 0.5) * 0.8;
-      const totalRadius = playerRadius + vehicleRadius;
-      
-      const dx = player.pos.x - vehicle.pos.x;
-      const dy = player.pos.y - vehicle.pos.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-      
-      if (distance < totalRadius) {
+      // Use actual hitbox dimensions for collision detection
+      const collisionRadius = (player.hitboxW + player.hitboxH) / 4 + (vehicle.hitboxW + vehicle.hitboxH) / 4; // Sum of average radii
+      if (this.checkCollision(player, vehicle, collisionRadius)) {
         player.health.takeDamage(10);
         
         // Simple knockback
+        const dx = player.pos.x - vehicle.pos.x;
+        const dy = player.pos.y - vehicle.pos.y;
         const len = Math.sqrt(dx * dx + dy * dy);
         if (len > 0) {
           player.pos.x += (dx / len) * 0.2;

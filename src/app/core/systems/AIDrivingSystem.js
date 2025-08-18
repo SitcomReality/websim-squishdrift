@@ -98,7 +98,7 @@ export class AIDrivingSystem {
     
     // Check for upcoming zebra crossings and adjust speed
     const zebraCrossingDistance = this.findZebraCrossingDistance(v);
-    const baseSpeed = 3.0;
+    const baseSpeed = v.isEmergency ? 5.0 : 3.0;
     
     if (zebraCrossingDistance !== null) {
       // Reduce speed based on distance to zebra crossing

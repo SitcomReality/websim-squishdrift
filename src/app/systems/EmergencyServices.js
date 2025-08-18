@@ -1,6 +1,7 @@
 import { Vec2 } from '../../utils/Vec2.js';
 import { Health } from '../components/Health.js';
 import { findPath } from '../../utils/pathfinding.js';
+import { createVehicle } from '../vehicles/VehicleTypes.js';
 
 export class EmergencyServices {
   constructor(state) {
@@ -120,18 +121,20 @@ export class EmergencyServices {
           return;
       }
       
-      const vehicle = {
-        type: 'emergency',
+      const rot = ({N:-Math.PI/2,E:0,S:Math.PI/2,W:Math.PI})[startNode.dir] ?? 0;
+      const vehicle = createVehicle('emergency', new Vec2(startNode.x + 0.5, startNode.y + 0.5), {
         vehicleType,
-        pos: new Vec2(startNode.x + 0.5, startNode.y + 0.5),
-        targetIncident: incident,
         color,
-        health: new Health(100),
-        speed: 8,
+        rot,
+        controlled: false,
         siren: true,
-        path: path,
-        pathIndex: 0,
-      };
+        isEmergency: true,
+        aiTargetSpeed: 5.0,
+        node: startNode,
+        plannedRoute: path,
+        currentPathIndex: 0,
+        targetIncident: incident
+      });
       
       state.entities.push(vehicle);
       this.emergencyVehicles.push(vehicle);
@@ -143,52 +146,37 @@ export class EmergencyServices {
     for (let i = this.emergencyVehicles.length - 1; i >= 0; i--) {
       const vehicle = this.emergencyVehicles[i];
       
-      if (!vehicle.path || vehicle.pathIndex >= vehicle.path.length) {
-         const distToTarget = Math.hypot(vehicle.pos.x - vehicle.targetIncident.position.x, vehicle.pos.y - vehicle.targetIncident.position.y);
-        
-        if (distToTarget < 1.5) { // Arrived
-          if (vehicle.vehicleType === 'police') {
-            this.wantedLevel = Math.max(0, this.wantedLevel - 1);
-          }
-          
-          this.activeIncidents = this.activeIncidents.filter(
-            inc => inc !== vehicle.targetIncident
-          );
-          const index = state.entities.indexOf(vehicle);
-          if (index > -1) state.entities.splice(index, 1);
-          this.emergencyVehicles.splice(i, 1);
-        } else {
-            // No path or path finished, but not at target. Recalculate.
-            const startNode = this.findNearestRoadNode(vehicle.pos);
-            const endNode = this.findNearestRoadNode(vehicle.targetIncident.position);
-            if(startNode && endNode) {
-                vehicle.path = findPath(this.roadGraph, startNode, endNode);
-                vehicle.pathIndex = 0;
-            } else {
-                 // still can't find path, remove vehicle
-                 const index = state.entities.indexOf(vehicle);
-                 if (index > -1) state.entities.splice(index, 1);
-                 this.emergencyVehicles.splice(i, 1);
-            }
-        }
+      if (!vehicle || !state.entities.includes(vehicle)) {
+        this.emergencyVehicles.splice(i, 1);
         continue;
       }
-
-      const targetNode = vehicle.path[vehicle.pathIndex];
-      const targetPos = { x: targetNode.x + 0.5, y: targetNode.y + 0.5 };
       
-      const dx = targetPos.x - vehicle.pos.x;
-      const dy = targetPos.y - vehicle.pos.y;
-      const dist = Math.hypot(dx, dy);
-      
-      if (dist < 0.1) {
-        vehicle.pathIndex++;
+      const distToTarget = Math.hypot(vehicle.pos.x - vehicle.targetIncident.position.x, vehicle.pos.y - vehicle.targetIncident.position.y);
+      if (distToTarget < 1.5) { // Arrived
+        if (vehicle.vehicleType === 'police') {
+          this.wantedLevel = Math.max(0, this.wantedLevel - 1);
+        }
+        
+        this.activeIncidents = this.activeIncidents.filter(
+          inc => inc !== vehicle.targetIncident
+        );
+        const index = state.entities.indexOf(vehicle);
+        if (index > -1) state.entities.splice(index, 1);
+        this.emergencyVehicles.splice(i, 1);
       } else {
-        const moveX = (dx / dist) * vehicle.speed * dt;
-        const moveY = (dy / dist) * vehicle.speed * dt;
-        vehicle.pos.x += moveX;
-        vehicle.pos.y += moveY;
-        vehicle.rot = Math.atan2(dy, dx);
+        // Ensure they have a plannedRoute; if not, recompute and pass to AI
+        if (!vehicle.plannedRoute || !vehicle.plannedRoute.length) {
+          const startNode = this.findNearestRoadNode(vehicle.pos);
+          const endNode = this.findNearestRoadNode(vehicle.targetIncident.position);
+          if (startNode && endNode) {
+            const newPath = findPath(this.roadGraph, startNode, endNode);
+            if (newPath) { 
+              vehicle.plannedRoute = newPath;
+              vehicle.currentPathIndex = 0;
+              vehicle.node = startNode;
+            }
+          }
+        }
       }
     }
   }

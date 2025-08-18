@@ -217,7 +217,7 @@ export class WeaponSystem {
     const ty = Math.floor(projectile.pos.y);
     
     // Use the same precise trunk collision detection as vehicles
-    if (this.isTreeTrunkCollision(projectile.pos.x, projectile.pos.y, tx, ty)) {
+    if (this.isTreeTrunkCollision(projectile.pos.x, projectile.pos.y, tx, ty, state)) {
       return true;
     }
     
@@ -285,11 +285,11 @@ export class WeaponSystem {
     return false;
   }
 
-  isTreeTrunkCollision(projX, projY, tileX, tileY) {
-    if (!this.state.world.map.trees) return false;
+  isTreeTrunkCollision(projX, projY, tileX, tileY, state) {
+    if (!state.world.map.trees) return false;
     
     // Find if there's a tree trunk at this tile
-    const tree = this.state.world.map.trees.find(tree => 
+    const tree = state.world.map.trees.find(tree => 
       Math.floor(tree.pos.x) === tileX && Math.floor(tree.pos.y) === tileY
     );
     

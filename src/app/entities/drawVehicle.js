@@ -62,16 +62,27 @@ export function drawVehicle(renderer, state, v) {
   }
   
   // Draw brake lights
-  const brakeX = -hw * (brakeLights.rearOffset || 0.5);
-  const brakeW = brakeLights.width;
-  const brakeH = brakeLights.height * h;
-  
   ctx.fillStyle = v.brakeLight ? brakeLights.onColor : brakeLights.offColor;
+  
+  // Two side-by-side brake lights
+  const brakeSpacing = ts * 0.4; // Space between brake lights
+  const brakeWidth = brakeLights.width * 2; // Twice as wide as single
+  const brakeHeight = brakeLights.height * h;
+  
+  // Left brake light
   ctx.fillRect(
-    brakeX - brakeW/2,
-    -brakeH/2,
-    brakeW,
-    brakeH
+    brakeX - brakeWidth/2 - brakeSpacing/2,
+    -brakeHeight/2,
+    brakeWidth,
+    brakeHeight
+  );
+  
+  // Right brake light
+  ctx.fillRect(
+    brakeX - brakeWidth/2 + brakeSpacing/2,
+    -brakeHeight/2,
+    brakeWidth,
+    brakeHeight
   );
   
   // Add windows if defined

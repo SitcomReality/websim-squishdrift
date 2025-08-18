@@ -116,16 +116,23 @@ export function createInitialState() {
   }
   
   // Create pickup spots at the center of each block and spawn an initial pickup (pistol)
+  // Use map properties instead of cityLayout
+  const blocksWide = 4;
+  const blocksHigh = 4;
+  const W = 11; // block width from CityLayout
+  const MED = 1; // median width from CityLayout
+  const mapOffset = 2;
+  
   state.pickupSpots = [];
-  for (let by = 0; by < cityLayout.blocksHigh; by++) {
-    for (let bx = 0; bx < cityLayout.blocksWide; bx++) {
-      const origin = cityLayout.getBlockOrigin(bx, by);
-      // approximate center of block (in tiles)
-      const centerX = origin.x + Math.floor(cityLayout.W / 2) + 0.5;
-      const centerY = origin.y + Math.floor(cityLayout.W / 2) + 0.5;
+  for (let by = 0; by < blocksHigh; by++) {
+    for (let bx = 0; bx < blocksWide; bx++) {
+      const originX = mapOffset + MED + bx * (W + MED);
+      const originY = mapOffset + MED + by * (W + MED);
+      const centerX = originX + Math.floor(W / 2) + 0.5;
+      const centerY = originY + Math.floor(W / 2) + 0.5;
       const spotId = state.pickupSpots.length;
       state.pickupSpots.push({ x: centerX, y: centerY, hasItem: false });
-      // Spawn initial pistol at each spot (biased pool can be added later)
+      // Spawn initial pistol at each spot
       const item = { type: 'item', pos: new Vec2(centerX, centerY), name: 'Pistol', color: '#FFD700', spotId };
       state.entities.push(item);
       state.pickupSpots[spotId].hasItem = true;

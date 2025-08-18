@@ -31,16 +31,16 @@ export const VehicleArchetype = {
     width: 0.15,
     height: 0.075,
     spacing: 0.25,
-    frontOffset: 0.4,
+    frontOffset: 0.6, // Increased from 0.4 to 0.6 to move further forward
     color: '#fff'
   },
   
   brakeLights: {
-    count: 2, // Added for dual brake lights
-    width: 0.1, // Normalized size, relative to tileSize
-    height: 0.05, // Normalized size, relative to tileSize
-    spacing: 0.25, // Spacing between the two brake lights
-    rearOffset: 0.5,
+    count: 2,
+    width: 0.1,
+    height: 0.05,
+    spacing: 0.3,
+    rearOffset: 0.7, // Increased from 0.5 to 0.7 to move further back
     offColor: '#4a0000',
     onColor: '#ff2d2d'
   },
@@ -65,7 +65,8 @@ export const VehicleTypes = {
     headlights: {
       ...VehicleArchetype.headlights,
       size: 0.06,
-      width: 0.12
+      width: 0.12,
+      frontOffset: 0.7 // Increased from 0.6 to 0.7 for compact
     }
   },
   
@@ -91,13 +92,15 @@ export const VehicleTypes = {
       ...VehicleArchetype.headlights,
       size: 0.09,
       width: 0.18,
-      spacing: 0.35
+      spacing: 0.35,
+      frontOffset: 0.65 // Increased from 0.5 to 0.65 for truck
     },
     brakeLights: {
       ...VehicleArchetype.brakeLights,
-      width: 0.12, // Slightly wider brake lights for truck
-      height: 0.06, // Slightly taller brake lights for truck
-      spacing: 0.3 // Wider spacing for truck brake lights
+      width: 0.12,
+      height: 0.06,
+      spacing: 0.3,
+      rearOffset: 0.75 // Increased from 0.6 to 0.75 for truck
     }
   },
   
@@ -117,7 +120,8 @@ export const VehicleTypes = {
       ...VehicleArchetype.headlights,
       size: 0.05,
       width: 0.1,
-      frontOffset: 0.45
+      frontOffset: 0.7, // Increased from 0.45 to 0.7 for sports
+      frontOffset: 0.75 // Further increased to 0.75
     }
   },
   
@@ -135,7 +139,8 @@ export const VehicleTypes = {
     headlights: {
       ...VehicleArchetype.headlights,
       size: 0.08,
-      width: 0.16
+      width: 0.16,
+      frontOffset: 0.65 // Increased from 0.4 to 0.65 for emergency
     }
   }
 };

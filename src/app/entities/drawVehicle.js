@@ -46,7 +46,7 @@ export function drawVehicle(renderer, state, v) {
   
   // Draw headlights
   ctx.fillStyle = headlights.color;
-  const headX = hw * headlights.frontOffset;
+  const headX = hw * (headlights.frontOffset || 0.4);
   
   for (let i = 0; i < headlights.count; i++) {
     const offset = (i - (headlights.count - 1) / 2) * (headlights.spacing * ts);

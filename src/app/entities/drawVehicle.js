@@ -61,7 +61,7 @@ export function drawVehicle(renderer, state, v) {
     );
   }
   
-  // Draw brake lights - now two side-by-side
+  // Draw brake lights - now two side-by-side brake lights
   const brakeX = -hw * (brakeLights.rearOffset || 0.5);
   const brakeW = brakeLights.width; // Individual light width
   const brakeH = brakeLights.height * h;

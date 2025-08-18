@@ -21,7 +21,9 @@ export function createInitialState() {
   player.vel = { x: 0, y: 0 }; player.mass = 80; player.hitboxW = 0.15; player.hitboxH = 0.15;
   
   // Spawn empty vehicle using new system
-  const emptyVehicle = createVehicle('sedan', new Vec2(spawnX + 1.5, spawnY + 0.5), {
+  const emptyVehicleTypes = ['compact', 'sedan', 'truck', 'sports'];
+  const randomEmptyType = emptyVehicleTypes[Math.floor(rand() * emptyVehicleTypes.length)];
+  const emptyVehicle = createVehicle(randomEmptyType, new Vec2(spawnX + 1.5, spawnY + 0.5), {
     controlled: false
   });
   state.entities.push(emptyVehicle);

@@ -28,6 +28,8 @@ export class GameEngine {
     // Expose commonly used references for external code (main.js expects these)
     this.debugOverlay = this.debugManager.debugOverlay;
     this.renderer = this.renderingManager.renderer;
+    // Make debugOverlay available on state for renderer/debug visuals
+    if (this.stateManager.state) this.stateManager.state.debugOverlay = this.debugOverlay;
   }
 
   update(dt) {

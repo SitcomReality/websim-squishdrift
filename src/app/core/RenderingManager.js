@@ -9,8 +9,7 @@ export class RenderingManager {
 
   render(state, interp) {
     this.renderer.beginFrame(state);
-    this.renderSystem.render(state, this.renderer, state.debugManager?.debugOverlay);
+    this.renderSystem.render(state, this.renderer, state.debugOverlay || state.debugManager?.debugOverlay);
     this.renderer.endFrame();
   }
 }
-

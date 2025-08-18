@@ -38,6 +38,7 @@ export class VehicleMovementSystem {
     
     const throttle = v.ctrl?.throttle || 0;
     const brake = v.ctrl?.brake || 0;
+    const steer = v.ctrl?.steer || 0;
     const handbrake = v.ctrl?.handbrake || false;
     
     const longitudinalForce = this.calculateLongitudinalForce(v, throttle, brake, handbrake);
@@ -92,10 +93,10 @@ export class VehicleMovementSystem {
     v.brakeLight = brake > 0.1;
   }
 
-  calculateLongitudinalForce(v, throttle, brake, handbrake) {
+  calculateLongitudinalForce(v, throttle, brake, handbrakeParam) {
     // Note: signature augmented to accept handbrake; fallback if not provided
     let force = 0;
-    const handbrake = (arguments.length >= 4) ? arguments[3] : (v.ctrl?.handbrake || false);
+    const handbrake = (arguments.length >= 4) ? handbrakeParam : (v.ctrl?.handbrake || false);
     
     if (throttle > 0) {
       force = this.maxEngineForce * throttle;

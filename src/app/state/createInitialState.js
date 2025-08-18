@@ -91,9 +91,9 @@ export function createInitialState() {
   footpathTiles.sort((a,b) => Math.hypot(a.x-spawnX, a.y-spawnY) - Math.hypot(b.x-spawnX, b.y-spawnY));
   for (let i = 0; i < Math.min(5, footpathTiles.length); i++) {
     const pos = footpathTiles[i];
-    state.entities.push({ type: 'item', pos: new Vec2(pos.x, pos.y), name: 'Pistol', color: '#FFD700' });
+    state.entities.push({ type: 'weapon', pos: new Vec2(pos.x, pos.y), weaponType: 'pistol', name: 'Pistol', color: '#8B4513' });
   }
-
+  
   // Spawn weapons near player
   const weaponTiles = [];
   for (let y = 0; y < map.height; y++) {

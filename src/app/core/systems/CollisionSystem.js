@@ -42,15 +42,22 @@ export class CollisionSystem {
 
   // Check collisions between vehicles and pedestrians
   checkVehiclePedestrianCollisions(state) {
+    if (!state || !state.entities) return;
+    
     const vehicles = state.entities.filter(e => e.type === 'vehicle');
     const pedestrians = state.entities.filter(e => e.type === 'npc');
+
+    // Initialize blood manager if not exists
+    if (!state.bloodManager) {
+      state.bloodManager = new BloodManager(15);
+    }
 
     for (const vehicle of vehicles) {
       for (let i = pedestrians.length - 1; i >= 0; i--) {
         const pedestrian = pedestrians[i];
         
         if (this.checkCollision(vehicle, pedestrian, 0.45)) {
-          // Pedestrian gets squished - create blood stain
+          // Create blood stain using BloodManager
           const bloodStain = {
             type: 'blood',
             pos: new Vec2(pedestrian.pos.x, pedestrian.pos.y),
@@ -59,15 +66,9 @@ export class CollisionSystem {
             rotation: Math.random() * Math.PI * 2
           };
           
-          // push blood and remove pedestrian entity
-          state.entities.push({
-            type: 'blood',
-            pos: { x: pedestrian.pos.x, y: pedestrian.pos.y },
-            size: bloodStain.size,
-            color: bloodStain.color,
-            rotation: bloodStain.rotation
-          });
+          state.bloodManager.addBlood(state, bloodStain);
           
+          // Remove pedestrian
           const pedestrianIndex = state.entities.indexOf(pedestrian);
           if (pedestrianIndex > -1) {
             state.entities.splice(pedestrianIndex, 1);

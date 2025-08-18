@@ -42,19 +42,24 @@ export function drawBlood(r, state, blood) {
 
 // Blood management system
 export class BloodManager {
-  constructor(maxBloodPuddles = 20) {
+  constructor(maxBloodPuddles = 15) { // Reduced from 20 to 15 for better performance
     this.maxBloodPuddles = maxBloodPuddles;
+    this.bloodStains = []; // Track blood stains for efficient cleanup
   }
 
   addBlood(state, blood) {
+    if (!state) return;
+    
+    // Find all existing blood stains
     const bloods = state.entities.filter(e => e.type === 'blood');
     
-    // Sort by creation time (oldest first)
-    const sortedBloods = bloods.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
-    
-    // If we're over the limit, remove oldest
-    if (sortedBloods.length >= this.maxBloodPuddles) {
-      const removeCount = sortedBloods.length - this.maxBloodPuddles + 1;
+    // If we're at or over the limit, remove the oldest
+    if (bloods.length >= this.maxBloodPuddles) {
+      // Sort by creation time (oldest first)
+      const sortedBloods = bloods.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+      
+      // Remove oldest blood stains
+      const removeCount = Math.min(bloods.length - this.maxBloodPuddles + 1, sortedBloods.length);
       for (let i = 0; i < removeCount; i++) {
         const index = state.entities.indexOf(sortedBloods[i]);
         if (index > -1) {
@@ -63,8 +68,25 @@ export class BloodManager {
       }
     }
     
-    // Add the new blood puddle
+    // Add the new blood stain
     blood.createdAt = Date.now();
     state.entities.push(blood);
+  }
+
+  cleanup(state) {
+    if (!state) return;
+    
+    const bloods = state.entities.filter(e => e.type === 'blood');
+    if (bloods.length > this.maxBloodPuddles) {
+      const sortedBloods = bloods.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+      const removeCount = bloods.length - this.maxBloodPuddles;
+      
+      for (let i = 0; i < removeCount; i++) {
+        const index = state.entities.indexOf(sortedBloods[i]);
+        if (index > -1) {
+          state.entities.splice(index, 1);
+        }
+      }
+    }
   }
 }

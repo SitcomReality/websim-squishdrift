@@ -32,5 +32,22 @@ export class DebugOverlaySystem {
       this.el.textContent = JSON.stringify(summary, null, 2);
     }
   }
-}
 
+  render(renderer, state) {
+    // This method is called from RenderSystem when debug is enabled
+    if (!this.enabled) return;
+    
+    // Import the debug drawing functions
+    import('../../render/drawRoadDebug.js').then(module => {
+      module.drawRoadDebug(renderer, state);
+    });
+    
+    import('../../render/drawPedestrianDebug.js').then(module => {
+      module.drawPedestrianDebug(renderer, state);
+    });
+    
+    import('../../render/drawSpawnDebug.js').then(module => {
+      module.drawSpawnDebug(renderer, state);
+    });
+  }
+}

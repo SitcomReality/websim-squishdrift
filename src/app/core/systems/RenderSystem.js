@@ -22,16 +22,16 @@ export class RenderSystem {
       return;
     }
     
-    const { ctx, canvas } = renderer;
+    const { ctx } = renderer;
     
     // Clear canvas
     ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, renderer.canvas.width, renderer.canvas.height);
     
     // Setup camera transform
     const ts = state.world?.tileSize || 24;
-    const cx = Math.floor(canvas.width / 2);
-    const cy = Math.floor(canvas.height / 2);
+    const cx = Math.floor(renderer.canvas.width / 2);
+    const cy = Math.floor(renderer.canvas.height / 2);
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.translate(cx, cy);
     ctx.scale(state.camera?.zoom || 1, state.camera?.zoom || 1);
@@ -39,8 +39,8 @@ export class RenderSystem {
     
     // Draw layers
     const z = state.camera?.zoom || 1;
-    const wTiles = Math.ceil(canvas.width/(ts*z))+2;
-    const hTiles = Math.ceil(canvas.height/(ts*z))+2;
+    const wTiles = Math.ceil(renderer.canvas.width/(ts*z))+2;
+    const hTiles = Math.ceil(renderer.canvas.height/(ts*z))+2;
     const sx = Math.floor((state.camera?.x || 0) - wTiles/2);
     const sy = Math.floor((state.camera?.y || 0) - hTiles/2);
     ctx.fillStyle = '#b7e3f8'; // ocean

@@ -108,10 +108,98 @@ export class RenderSystem {
       drawRoadDebug(renderer, state);
       drawPedestrianDebug(renderer, state);
       drawSpawnDebug(renderer, state);
+      this.drawDebugHitboxes(state, renderer); // Add hitbox visualization
     }
     
     // Draw mouse reticule
     this.drawMouseReticule(state, renderer);
+  }
+
+  drawDebugHitboxes(state, renderer) {
+    const { ctx } = renderer;
+    const ts = state.world.tileSize;
+    
+    // Draw player hitbox
+    const player = state.entities.find(e => e.type === 'player');
+    if (player) {
+      const hitboxW = player.hitboxW || 0.15;
+      const hitboxH = player.hitboxH || 0.15;
+      
+      ctx.save();
+      ctx.strokeStyle = '#FF0000';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([5, 5]);
+      
+      const x = player.pos.x - hitboxW/2;
+      const y = player.pos.y - hitboxH/2;
+      
+      ctx.strokeRect(x * ts, y * ts, hitboxW * ts, hitboxH * ts);
+      
+      // Draw center point
+      ctx.fillStyle = '#FF0000';
+      ctx.beginPath();
+      ctx.arc(player.pos.x * ts, player.pos.y * ts, 3, 0, Math.PI * 2);
+      ctx.fill();
+      
+      ctx.restore();
+    }
+    
+    // Draw NPC hitboxes
+    state.entities.filter(e => e.type === 'npc').forEach(npc => {
+      const hitboxW = npc.hitboxW || 0.2;
+      const hitboxH = npc.hitboxH || 0.2;
+      
+      ctx.save();
+      ctx.strokeStyle = '#00FF00';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 3]);
+      
+      const x = npc.pos.x - hitboxW/2;
+      const y = npc.pos.y - hitboxH/2;
+      
+      ctx.strokeRect(x * ts, y * ts, hitboxW * ts, hitboxH * ts);
+      ctx.restore();
+    });
+    
+    // Draw vehicle hitboxes
+    state.entities.filter(e => e.type === 'vehicle').forEach(vehicle => {
+      const hitboxW = vehicle.hitboxW || 0.9;
+      const hitboxH = vehicle.hitboxH || 0.5;
+      
+      ctx.save();
+      ctx.strokeStyle = '#0000FF';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      
+      // Account for vehicle rotation
+      ctx.save();
+      ctx.translate(vehicle.pos.x * ts, vehicle.pos.y * ts);
+      ctx.rotate(vehicle.rot || 0);
+      
+      ctx.strokeRect(-hitboxW/2 * ts, -hitboxH/2 * ts, hitboxW * ts, hitboxH * ts);
+      
+      ctx.restore();
+      ctx.restore();
+    });
+    
+    // Draw tree trunk collision boxes
+    if (state.world.map.trees) {
+      state.world.map.trees.forEach(tree => {
+        const trunkSize = 0.3;
+        const halfSize = trunkSize / 2;
+        
+        ctx.save();
+        ctx.strokeStyle = '#8B4513';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([2, 2]);
+        
+        const x = tree.pos.x - halfSize;
+        const y = tree.pos.y - halfSize;
+        
+        ctx.strokeRect(x * ts, y * ts, trunkSize * ts, trunkSize * ts);
+        ctx.restore();
+      });
+    }
   }
 
   drawMouseReticule(state, renderer) {

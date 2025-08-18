@@ -96,6 +96,8 @@ export class PlayerSystem {
   }
 
   handleInteraction(state, player, input) {
+    if (!input || !input.pressed || !input.pressed.has) return;
+    
     if (input.pressed.has('KeyE')) {
       // Add null check for state.control
       if (!state.control) {

@@ -59,5 +59,7 @@ export class InputSystem {
     });
   }
   
-  update(){ this.pressed.clear(); }
+  update(){
+    this.pressed.clear();
+  }
 }

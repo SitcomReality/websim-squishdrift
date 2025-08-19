@@ -107,6 +107,24 @@ export class BlockGenerator {
         const centerX = left.x + W;          // former median
         const topY = left.y + 2, bottomY = left.y + (W - 3); // shared footpaths rows
 
+        // Convert zebra crossings to footpath for horizontal merge
+        const leftCenterX = left.x + W - 1;
+        const rightCenterX = right.x;
+        
+        // Top zebra crossings (change to footpath)
+        for (let x = leftCenterX - 2; x <= rightCenterX + 2; x++) {
+          if (yStart - 4 >= 0 && yStart - 4 < this.cityLayout.height) {
+            tiles[yStart - 4][x] = Tile.Footpath; // Top zebra crossings
+          }
+        }
+        
+        // Bottom zebra crossings (change to footpath)
+        for (let x = leftCenterX - 2; x <= rightCenterX + 2; x++) {
+          if (yStart + 6 >= 0 && yStart + 6 < this.cityLayout.height) {
+            tiles[yStart + 6][x] = Tile.Footpath; // Bottom zebra crossings
+          }
+        }
+
         // Extend top/bottom footpaths across the gap
         for (let x = 0; x < 5; x++) {
           tiles[topY][xStart + x] = Tile.Footpath;
@@ -157,6 +175,24 @@ export class BlockGenerator {
         const xStart = top.x + 3;            // cols 3..7 inside block's interior width
         const centerY = top.y + W;           // former median
         const leftX = top.x + 2, rightX = top.x + (W - 3); // shared footpaths cols
+
+        // Convert zebra crossings to footpath for vertical merge
+        const topCenterY = top.y + W - 1;
+        const bottomCenterY = bottom.y;
+        
+        // Left zebra crossings (change to footpath)
+        for (let y = topCenterY - 2; y <= bottomCenterY + 2; y++) {
+          if (xStart - 4 >= 0 && xStart - 4 < this.cityLayout.width) {
+            tiles[y][xStart - 4] = Tile.Footpath; // Left zebra crossings
+          }
+        }
+        
+        // Right zebra crossings (change to footpath)
+        for (let y = topCenterY - 2; y <= bottomCenterY + 2; y++) {
+          if (xStart + 6 >= 0 && xStart + 6 < this.cityLayout.width) {
+            tiles[y][xStart + 6] = Tile.Footpath; // Right zebra crossings
+          }
+        }
 
         // Extend left/right footpaths across the gap
         for (let y = 0; y < 5; y++) {

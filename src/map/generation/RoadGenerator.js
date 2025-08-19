@@ -96,6 +96,12 @@ export class RoadGenerator {
         set(cx - 1, cy - 3, Tile.ZebraCrossingS);
         set(cx + 1, cy - 3, Tile.ZebraCrossingN);
         set(cx + 2, cy - 3, Tile.ZebraCrossingN);
+    } else {
+        // Edge case: place on the outermost lane adjacent to footpath
+        set(cx - 2, cy - 2, Tile.ZebraCrossingS);
+        set(cx - 1, cy - 2, Tile.ZebraCrossingS);
+        set(cx + 1, cy - 2, Tile.ZebraCrossingN);
+        set(cx + 2, cy - 2, Tile.ZebraCrossingN);
     }
     
     // Bottom side (crossing N/S roads)
@@ -104,6 +110,12 @@ export class RoadGenerator {
         set(cx - 1, cy + 3, Tile.ZebraCrossingS);
         set(cx + 1, cy + 3, Tile.ZebraCrossingN);
         set(cx + 2, cy + 3, Tile.ZebraCrossingN);
+    } else {
+        // Edge case: place on the outermost lane adjacent to footpath
+        set(cx - 2, cy + 2, Tile.ZebraCrossingS);
+        set(cx - 1, cy + 2, Tile.ZebraCrossingS);
+        set(cx + 1, cy + 2, Tile.ZebraCrossingN);
+        set(cx + 2, cy + 2, Tile.ZebraCrossingN);
     }
     
     // Left side (crossing E/W roads)
@@ -112,6 +124,12 @@ export class RoadGenerator {
         set(cx - 3, cy - 1, Tile.ZebraCrossingW);
         set(cx - 3, cy + 1, Tile.ZebraCrossingE);
         set(cx - 3, cy + 2, Tile.ZebraCrossingE);
+    } else {
+        // Edge case: place on the outermost lane adjacent to footpath
+        set(cx - 2, cy - 2, Tile.ZebraCrossingW);
+        set(cx - 2, cy - 1, Tile.ZebraCrossingW);
+        set(cx - 2, cy + 1, Tile.ZebraCrossingE);
+        set(cx - 2, cy + 2, Tile.ZebraCrossingE);
     }
 
     // Right side (crossing E/W roads)
@@ -120,6 +138,12 @@ export class RoadGenerator {
         set(cx + 3, cy - 1, Tile.ZebraCrossingW);
         set(cx + 3, cy + 1, Tile.ZebraCrossingE);
         set(cx + 3, cy + 2, Tile.ZebraCrossingE);
+    } else {
+        // Edge case: place on the outermost lane adjacent to footpath
+        set(cx + 2, cy - 2, Tile.ZebraCrossingW);
+        set(cx + 2, cy - 1, Tile.ZebraCrossingW);
+        set(cx + 2, cy + 1, Tile.ZebraCrossingE);
+        set(cx + 2, cy + 2, Tile.ZebraCrossingE);
     }
   }
 

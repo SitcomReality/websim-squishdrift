@@ -1,10 +1,8 @@
 import { Vec2 } from '../../utils/Vec2.js';
-import { Health } from '../components/Health.js';
 
 export class CollisionSystem {
   constructor() {
     this.collisionPairs = [];
-    this.cameraSystem = null; // Will be set externally
   }
 
   // Simple radius-based collision detection
@@ -26,16 +24,18 @@ export class CollisionSystem {
     for (const bullet of bullets) {
       for (const target of targets) {
         if (this.checkCollision(bullet, target, 0.35)) {
-          // Ensure target has health if it doesn't
-          if (!target.health) {
+          // Ensure health exists for vehicles
+          if (!target.health && target.type === 'vehicle') {
             target.health = new Health(target.maxHealth || 100);
           }
           
-          target.health.takeDamage(25);
-          
-          // Trigger screen shake for player damage
           if (target.type === 'npc') {
-            this.triggerShake(state, 0.5);
+            // NPCs die instantly
+            target.health = new Health(1);
+            target.health.hp = 0;
+          } else {
+            // Vehicles take damage normally
+            target.health.takeDamage(25);
           }
           
           // Remove bullet on hit
@@ -44,34 +44,6 @@ export class CollisionSystem {
           
           // Remove destroyed targets
           if (!target.health.isAlive()) {
-            if (target.type === 'npc') {
-              // Create blood stain when NPC dies
-              const bloodStain = {
-                type: 'blood',
-                pos: { x: target.pos.x, y: target.pos.y },
-                size: 0.6 + (state.rand ? state.rand() * 0.4 : Math.random() * 0.4),
-                color: `hsl(0, 70%, ${30 + (state.rand ? state.rand() * 20 : Math.random() * 20)}%)`,
-                rotation: (state.rand ? state.rand() * Math.PI * 2 : Math.random() * Math.PI * 2)
-              };
-              
-              if (state.bloodManager) {
-                state.bloodManager.addBlood(state, bloodStain);
-              } else {
-                state.entities.push(bloodStain);
-              }
-              
-              // Update stats
-              if (state.stats) {
-                state.stats.enemiesKilled = (state.stats.enemiesKilled || 0) + 1;
-              }
-            } else if (target.type === 'vehicle') {
-              // Update vehicle destruction stats
-              if (state.stats) {
-                state.stats.vehiclesDestroyed = (state.stats.vehiclesDestroyed || 0) + 1;
-              }
-            }
-            
-            // Remove the destroyed entity
             const targetIndex = state.entities.indexOf(target);
             if (targetIndex > -1) state.entities.splice(targetIndex, 1);
           }
@@ -151,9 +123,8 @@ export class CollisionSystem {
       const playerRadius = Math.hypot(playerHw, playerHh);
       const vehicleRadius = Math.hypot(vehicleHw, vehicleHh);
       const collisionRadius = playerRadius + vehicleRadius;
-      
       if (this.checkCollision(player, vehicle, collisionRadius)) {
-        // Compute damage based on vehicle movement vector relative to player
+        // Damage depends on vehicle movement toward the player (no damage if moving away)
         const vx = vehicle.vel?.x || 0, vy = vehicle.vel?.y || 0;
         const speed = Math.hypot(vx, vy);
         if (speed > 0.01) {
@@ -161,15 +132,11 @@ export class CollisionSystem {
           const toPlayer = { x: player.pos.x - vehicle.pos.x, y: player.pos.y - vehicle.pos.y };
           const dist = Math.hypot(toPlayer.x, toPlayer.y) || 1;
           const toPlayerN = { x: toPlayer.x / dist, y: toPlayer.y / dist };
-          const alignment = vdir.x * toPlayerN.x + vdir.y * toPlayerN.y; // 1 => directly toward player
+          const alignment = vdir.x * toPlayerN.x + vdir.y * toPlayerN.y;
           if (alignment > 0) {
-            // Scale damage by speed and alignment; tune multiplier to keep similar feel
             const damage = Math.max(1, Math.round(speed * alignment * 20));
-            const oldHealth = player.health.hp;
             player.health.takeDamage(damage);
-            const damageTaken = oldHealth - player.health.hp;
-            if (damageTaken > 0) this.triggerShake(state, Math.min(1, damageTaken / 50));
-            // Knockback away from vehicle (scaled by damage)
+            // Knockback proportional to damage
             const k = Math.min(1, damage / 30) * 0.35;
             player.pos.x += toPlayerN.x * k;
             player.pos.y += toPlayerN.y * k;
@@ -184,12 +151,6 @@ export class CollisionSystem {
     return map.trees.some(tree => 
       Math.floor(tree.pos.x) === x && Math.floor(tree.pos.y) === y
     );
-  }
-
-  triggerShake(state, intensity = 1) {
-    if (this.cameraSystem) {
-      this.cameraSystem.addShake(intensity);
-    }
   }
 
   update(state) {

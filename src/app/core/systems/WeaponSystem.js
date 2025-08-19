@@ -255,15 +255,21 @@ export class WeaponSystem {
       if (distance < radius + projectile.size) {
         // Ensure entity has health
         if (!entity.health) {
-          entity.health = new Health(entity.maxHealth || 100);
+          if (entity.type === 'vehicle') {
+            entity.health = new Health(entity.maxHealth || 100);
+          } else if (entity.type === 'npc') {
+            // NPCs die instantly to any damage
+            entity.health = new Health(1);
+          }
         }
         
-        // Ensure health has takeDamage method
-        if (typeof entity.health.takeDamage === 'function') {
-          entity.health.takeDamage(projectile.damage);
+        // Apply damage
+        if (entity.type === 'npc') {
+          // NPCs die instantly
+          entity.health.hp = 0;
         } else {
-          // Fallback for entities without proper Health class
-          entity.health.hp = Math.max(0, (entity.health.hp || entity.health.hp || 100) - projectile.damage);
+          // Vehicles take damage normally
+          entity.health.takeDamage(projectile.damage);
         }
         
         // Show damage text
@@ -277,7 +283,7 @@ export class WeaponSystem {
         }
         
         // Handle entity destruction
-        if ((entity.health.hp || entity.health.hp || 100) <= 0) {
+        if (!entity.health.isAlive()) {
           const index = state.entities.indexOf(entity);
           if (index > -1) {
             if (entity.type === 'npc') {

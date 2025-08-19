@@ -3,6 +3,7 @@ import { Vec2 } from '../../utils/Vec2.js';
 export class CollisionSystem {
   constructor() {
     this.collisionPairs = [];
+    this.cameraSystem = null; // Will be set externally
   }
 
   // Simple radius-based collision detection
@@ -25,6 +26,11 @@ export class CollisionSystem {
       for (const target of targets) {
         if (this.checkCollision(bullet, target, 0.35)) {
           target.health.takeDamage(25);
+          
+          // Trigger screen shake for player damage
+          if (target.type === 'npc') {
+            this.triggerShake(state, 0.5);
+          }
           
           // Remove bullet on hit
           const bulletIndex = state.entities.indexOf(bullet);
@@ -49,10 +55,24 @@ export class CollisionSystem {
     if (state.control?.inVehicle) return; // disable player collisions while inside a vehicle
     if (player.collisionDisabled) return; // Skip if player collision is disabled
     
+    // Check tree trunk collision for player
+    const map = state.world.map;
+    const tx = Math.floor(player.pos.x);
+    const ty = Math.floor(player.pos.y);
+    if (this.isTreeTrunk(tx, ty, map)) {
+      // Push player away from tree trunk
+      const dx = player.pos.x - (tx + 0.5);
+      const dy = player.pos.y - (ty + 0.5);
+      const len = Math.hypot(dx, dy) || 1;
+      player.pos.x += (dx / len) * 0.2;
+      player.pos.y += (dy / len) * 0.2;
+      return;
+    }
+    
     for (const vehicle of vehicles) {
       if (vehicle.controlled) continue; // Skip player-controlled vehicle
       
-      // Use player's actual hitbox extents rather than a hardcoded radius
+      // Use actual rectangle half-extents (converted into an equivalent circle radius)
       const playerHw = (player.hitboxW || 0.15) / 2;
       const playerHh = (player.hitboxH || 0.15) / 2;
       const vehicleHw = (vehicle.hitboxW || 0.9) / 2;
@@ -62,7 +82,14 @@ export class CollisionSystem {
       const collisionRadius = playerRadius + vehicleRadius;
       
       if (this.checkCollision(player, vehicle, collisionRadius)) {
+        const oldHealth = player.health.hp;
         player.health.takeDamage(10);
+        
+        // Trigger screen shake when player takes damage
+        const damageTaken = oldHealth - player.health.hp;
+        if (damageTaken > 0) {
+          this.triggerShake(state, damageTaken / 100); // Scale shake by damage amount
+        }
         
         // Simple knockback
         const dx = player.pos.x - vehicle.pos.x;
@@ -73,6 +100,19 @@ export class CollisionSystem {
           player.pos.y += (dy / len) * 0.2;
         }
       }
+    }
+  }
+
+  isTreeTrunk(x, y, map) {
+    if (!map.trees) return false;
+    return map.trees.some(tree => 
+      Math.floor(tree.pos.x) === x && Math.floor(tree.pos.y) === y
+    );
+  }
+
+  triggerShake(state, intensity = 1) {
+    if (this.cameraSystem) {
+      this.cameraSystem.addShake(intensity);
     }
   }
 

@@ -26,6 +26,9 @@ export class SystemManager {
       weapon: new WeaponSystem(),
       collision: new CollisionSystem()
     };
+    
+    // Connect camera system to collision system for screen shake
+    this.systems.collision.cameraSystem = this.systems.camera;
   }
 
   update(dt) {

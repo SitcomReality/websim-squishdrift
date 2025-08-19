@@ -36,8 +36,8 @@ export function drawTiles(r, state, layer = 'all'){
       r.ctx.fillRect(gx*ts, gy*ts, ts, ts);
     }
     
-    // Draw directional arrows for road markings
-    drawDirectionalArrow(r, gx, gy, ts, t);
+    // Only draw arrows for unidirectional lanes in intersections
+    drawIntersectionArrows(r, gx, gy, ts, t, state);
     
     if (t === Tile.BuildingWall) {
       r.ctx.fillStyle = 'rgba(0,0,0,0.2)';
@@ -88,12 +88,36 @@ function drawZebraCrossing(r, gx, gy, ts, tileType) {
   }
 }
 
-function drawDirectionalArrow(r, gx, gy, ts, tileType) {
+function drawIntersectionArrows(r, gx, gy, ts, tileType, state) {
   const { ctx } = r;
+  
+  // Only draw arrows for unidirectional road tiles in intersections
+  const uniDirectionalTiles = [Tile.RoadN, Tile.RoadE, Tile.RoadS, Tile.RoadW];
+  
+  if (!uniDirectionalTiles.includes(tileType)) return;
+  
+  // Check if this tile is part of an intersection
+  const map = state.world.map;
+  const tileX = gx;
+  const tileY = gy;
+  
+  // Check if this is near a roundabout center
+  const checkRadius = 3;
+  let isNearRoundabout = false;
+  
+  for (let y = Math.max(0, tileY - checkRadius); y <= Math.min(map.height - 1, tileY + checkRadius); y++) {
+    for (let x = Math.max(0, tileX - checkRadius); x <= Math.min(map.width - 1, tileX + checkRadius); x++) {
+      if (map.tiles[y][x] === Tile.RoundaboutCenter) {
+        isNearRoundabout = true;
+        break;
+      }
+    }
+  }
+  
+  if (!isNearRoundabout) return;
   
   // Determine direction based on tile type
   let direction = null;
-  
   switch(tileType) {
     case Tile.RoadN: direction = 'N'; break;
     case Tile.RoadE: direction = 'E'; break;
@@ -106,7 +130,7 @@ function drawDirectionalArrow(r, gx, gy, ts, tileType) {
   const cx = gx * ts + ts/2;
   const cy = gy * ts + ts/2;
   
-  // Set arrow color to match zebra crossing
+  // Use zebra crossing color for arrows
   ctx.fillStyle = TileColor[Tile.ZebraCrossingN];
   ctx.strokeStyle = TileColor[Tile.ZebraCrossingN];
   ctx.lineWidth = 2;

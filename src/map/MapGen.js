@@ -49,10 +49,6 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
   // After all generators, sanitize tiles so merged blocks override stray zebra crossings
   sanitizeMap(tiles, cityLayout.width, cityLayout.height, Tile, (t)=> (t>=Tile.RoadN && t<=Tile.RoadW) || (t>=Tile.ZebraCrossingN && t<=Tile.ZebraCrossingW));
   
-  // Add road markings (same color and drawing layer as zebra crossing lines) for lane directions
-  // for the uni-directional lanes in intersections.
-  addRoadMarkings(tiles, roundabouts, cityLayout);
-  
   // Build road and pedestrian graphs
   const graphBuilder = new GraphBuilder();
   const roads = graphBuilder.buildRoadGraph(tiles, cityLayout.width, cityLayout.height, roadGenerator.getRoundabouts());
@@ -302,37 +298,4 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
   }
   
   return map;
-}
-
-// Add road markings (same color and drawing layer as zebra crossing lines) for lane directions
-// for the uni-directional lanes in intersections.
-function addRoadMarkings(tiles, roundabouts, cityLayout) {
-  const arrows = [];
-  
-  for (const { cx, cy } of roundabouts) {
-    // Add arrows for the 8 directional lanes
-    // North arm - southbound
-    arrows.push({ x: cx, y: cy - 2, dir: 'S', type: Tile.RoadS });
-    arrows.push({ x: cx, y: cy - 1, dir: 'S', type: Tile.RoadS });
-    
-    // South arm - northbound
-    arrows.push({ x: cx, y: cy + 2, dir: 'N', type: Tile.RoadN });
-    arrows.push({ x: cx, y: cy + 1, dir: 'N', type: Tile.RoadN });
-    
-    // East arm - westbound
-    arrows.push({ x: cx + 2, y: cy, dir: 'W', type: Tile.RoadW });
-    arrows.push({ x: cx + 1, y: cy, dir: 'W', type: Tile.RoadW });
-    
-    // West arm - eastbound
-    arrows.push({ x: cx - 2, y: cy, dir: 'E', type: Tile.RoadE });
-    arrows.push({ x: cx - 1, y: cy, dir: 'E', type: Tile.RoadE });
-  }
-  
-  // Store arrows in a dedicated structure instead of tiles._arrows
-  if (!window._roadMarkings) window._roadMarkings = [];
-  for (const { x, y, dir, type } of arrows) {
-    if (y >= 0 && y < tiles.length && x >= 0 && x < tiles[0].length) {
-      window._roadMarkings.push({ x, y, dir, type });
-    }
-  }
 }

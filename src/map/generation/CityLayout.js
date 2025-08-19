@@ -11,8 +11,12 @@ export class CityLayout {
     this.cityHeight = blocksHigh * (this.W + this.MED) + this.MED;
     this.mapOffset = 2; // space for perimeter road
     
-    this.width = this.cityWidth + this.mapOffset * 2;
-    this.height = this.cityHeight + this.mapOffset * 2;
+    // Increase width/height by 2 to account for footpath border
+    this.width = this.cityWidth + this.mapOffset * 2 + 2;
+    this.height = this.cityHeight + this.mapOffset * 2 + 2;
+    
+    // Adjust offsets to account for footpath border
+    this.footpathOffset = 1; // footpath border offset
   }
 
   createEmptyTiles() {
@@ -23,16 +27,15 @@ export class CityLayout {
 
   getBlockOrigin(bx, by) {
     return {
-      x: this.mapOffset + this.MED + bx * (this.W + this.MED),
-      y: this.mapOffset + this.MED + by * (this.W + this.MED)
+      x: this.mapOffset + this.MED + bx * (this.W + this.MED) + this.footpathOffset,
+      y: this.mapOffset + this.MED + by * (this.W + this.MED) + this.footpathOffset
     };
   }
 
   getIntersectionCenter(gx, gy) {
     return {
-      x: this.mapOffset + gx * (this.W + this.MED),
-      y: this.mapOffset + gy * (this.W + this.MED)
+      x: this.mapOffset + gx * (this.W + this.MED) + this.footpathOffset,
+      y: this.mapOffset + gy * (this.W + this.MED) + this.footpathOffset
     };
   }
 }
-

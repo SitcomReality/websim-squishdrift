@@ -266,6 +266,11 @@ export class WeaponSystem {
           entity.health.hp = Math.max(0, (entity.health.hp || entity.health.hp || 100) - projectile.damage);
         }
         
+        // Track kills
+        if (entity.health.hp <= 0 && projectile.owner === 'player') {
+          state.killCount = (state.killCount || 0) + 1;
+        }
+        
         // Show damage text
         this.damageTextSystem.addDamageText(state, entity.pos, projectile.damage);
         
@@ -287,6 +292,8 @@ export class WeaponSystem {
               } else {
                 state.entities.push(bloodStain);
               }
+            } else if (entity.type === 'vehicle') {
+              state.vehiclesDestroyed = (state.vehiclesDestroyed || 0) + 1;
             }
             state.entities.splice(index, 1);
           }

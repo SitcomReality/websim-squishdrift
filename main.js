@@ -28,8 +28,16 @@ toggleBtn.addEventListener('click', () => {
   console.log('Debug overlay enabled:', next);
 });
 
-// Add click handling for debug spawning
+// Add click handling for death screen
 canvas.addEventListener('click', (e) => {
+  if (game.systems?.death?.isDead) {
+    const rect = canvas.getBoundingClientRect();
+    if (game.systems.death.handleClick(e.clientX, e.clientY)) {
+      return;
+    }
+  }
+  
+  // Existing debug spawn click handling...
   if (!game.debugOverlay?.enabled) return;
   
   const rect = canvas.getBoundingClientRect();

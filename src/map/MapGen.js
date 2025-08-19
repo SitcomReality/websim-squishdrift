@@ -10,7 +10,7 @@ import { sanitizeMap } from './MapPostProcess.js';
 export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4) {
   const rand = rng(seed);
   const cityLayout = new CityLayout(blocksWide, blocksHigh);
-  const tiles = cityLayout.createEmptyTiles();
+  let tiles = cityLayout.createEmptyTiles();
   
   // Prepare building generator first so merged blocks can use its lot creation
   const buildingGenerator = new BuildingGenerator(cityLayout, rand);
@@ -49,15 +49,18 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
   // After all generators, sanitize tiles so merged blocks override stray zebra crossings
   sanitizeMap(tiles, cityLayout.width, cityLayout.height, Tile, (t)=> (t>=Tile.RoadN && t<=Tile.RoadW) || (t>=Tile.ZebraCrossingN && t<=Tile.ZebraCrossingW));
   
+  // Add footpath border around the entire map
+  const borderedTiles = addFootpathBorder(tiles, cityLayout.width, cityLayout.height);
+  
   // Build road and pedestrian graphs
   const graphBuilder = new GraphBuilder();
-  const roads = graphBuilder.buildRoadGraph(tiles, cityLayout.width, cityLayout.height, roadGenerator.getRoundabouts());
-  const peds = graphBuilder.buildPedGraph(tiles, cityLayout.width, cityLayout.height, trees);
+  const roads = graphBuilder.buildRoadGraph(borderedTiles, cityLayout.width + 2, cityLayout.height + 2, roadGenerator.getRoundabouts());
+  const peds = graphBuilder.buildPedGraph(borderedTiles, cityLayout.width + 2, cityLayout.height + 2, trees);
   
   return {
-    tiles,
-    width: cityLayout.width,
-    height: cityLayout.height,
+    tiles: borderedTiles,
+    width: cityLayout.width + 2,
+    height: cityLayout.height + 2,
     W: cityLayout.W,
     MED: cityLayout.MED,
     seed,
@@ -66,4 +69,32 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
     buildings,
     trees
   };
+}
+
+function addFootpathBorder(tiles, originalWidth, originalHeight) {
+  const newWidth = originalWidth + 2;
+  const newHeight = originalHeight + 2;
+  const newTiles = Array.from({ length: newHeight }, () => new Uint8Array(newWidth).fill(Tile.Grass));
+  
+  // Copy original tiles into the center
+  for (let y = 0; y < originalHeight; y++) {
+    for (let x = 0; x < originalWidth; x++) {
+      newTiles[y + 1][x + 1] = tiles[y][x];
+    }
+  }
+  
+  // Add footpath border
+  // Top and bottom borders
+  for (let x = 0; x < newWidth; x++) {
+    newTiles[0][x] = Tile.Footpath;
+    newTiles[newHeight - 1][x] = Tile.Footpath;
+  }
+  
+  // Left and right borders (excluding corners already set)
+  for (let y = 1; y < newHeight - 1; y++) {
+    newTiles[y][0] = Tile.Footpath;
+    newTiles[y][newWidth - 1] = Tile.Footpath;
+  }
+  
+  return newTiles;
 }

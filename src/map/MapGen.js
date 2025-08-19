@@ -83,61 +83,30 @@ function addPerimeterFootpath(tiles, width, height) {
     tiles[y][width - 1] = Tile.Footpath;
   }
 
-  // Perimeter roads placed one tile in from the outer footpath (previously they were at the edge)
-  // Top inner road (going east)
+  // Perimeter roads placed one tile in from the outer footpath.
+  // NOTE: Use the same directions used by RoadGenerator to avoid conflicting orientations.
+  // Top inner road (one tile below outer footpath)
   for (let x = 0; x < width; x++) {
-    tiles[1][x] = Tile.RoadE;
+    tiles[1][x] = Tile.RoadW; // match RoadGenerator: top lanes go West
   }
 
-  // Bottom inner road (going west)
+  // Bottom inner road (one tile above outer footpath)
   for (let x = 0; x < width; x++) {
-    tiles[height - 2][x] = Tile.RoadW;
+    tiles[height - 2][x] = Tile.RoadE; // match RoadGenerator: bottom lanes go East
   }
 
-  // Left inner road (going north)
+  // Left inner road (one tile right of left outer footpath)
   for (let y = 0; y < height; y++) {
-    tiles[y][1] = Tile.RoadN;
+    tiles[y][1] = Tile.RoadS; // match RoadGenerator: left lanes go South
   }
 
-  // Right inner road (going south)
+  // Right inner road (one tile left of right outer footpath)
   for (let y = 0; y < height; y++) {
-    tiles[y][width - 2] = Tile.RoadS;
+    tiles[y][width - 2] = Tile.RoadN; // match RoadGenerator: right lanes go North
   }
 
-  // Add zebra crossings before intersections on the inner perimeter roads (aligned with the inner roads)
-  // Top edge zebra crossings (inner top road at row 1, so zebra sits at row 1)
-  for (let gx = 0; gx <= Math.floor(width / 12); gx++) { // approximate intersection spacing
-    const intersectionX = 3 + gx * 12; // approximate intersection positions
-    if (intersectionX >= 3 && intersectionX < width - 3) {
-      if (intersectionX - 2 >= 0) tiles[1][intersectionX - 2] = Tile.ZebraCrossingE;
-      if (intersectionX - 1 >= 0) tiles[1][intersectionX - 1] = Tile.ZebraCrossingE;
-    }
-  }
-
-  // Bottom edge zebra crossings (inner bottom road at row height-2)
-  for (let gx = 0; gx <= Math.floor(width / 12); gx++) {
-    const intersectionX = 3 + gx * 12;
-    if (intersectionX >= 3 && intersectionX < width - 3) {
-      if (intersectionX + 1 < width) tiles[height - 2][intersectionX + 1] = Tile.ZebraCrossingW;
-      if (intersectionX + 2 < width) tiles[height - 2][intersectionX + 2] = Tile.ZebraCrossingW;
-    }
-  }
-
-  // Left edge zebra crossings (inner left road at column 1)
-  for (let gy = 0; gy <= Math.floor(height / 12); gy++) {
-    const intersectionY = 3 + gy * 12;
-    if (intersectionY >= 3 && intersectionY < height - 3) {
-      if (intersectionY + 1 < height) tiles[intersectionY + 1][1] = Tile.ZebraCrossingN;
-      if (intersectionY + 2 < height) tiles[intersectionY + 2][1] = Tile.ZebraCrossingN;
-    }
-  }
-
-  // Right edge zebra crossings (inner right road at column width-2)
-  for (let gy = 0; gy <= Math.floor(height / 12); gy++) {
-    const intersectionY = 3 + gy * 12;
-    if (intersectionY >= 3 && intersectionY < height - 3) {
-      if (intersectionY - 2 >= 0) tiles[intersectionY - 2][width - 2] = Tile.ZebraCrossingS;
-      if (intersectionY - 1 >= 0) tiles[intersectionY - 1][width - 2] = Tile.ZebraCrossingS;
-    }
-  }
+  // NOTE: The zebra-crossing placement here caused zebra tiles to appear inside intersections.
+  // That logic has been removed so zebra crossings are controlled by the road/roundabout generator
+  // (which can place them in the correct relative positions). This prevents incorrect zebras
+  // overwriting intersection tiles during the final perimeter pass.
 }

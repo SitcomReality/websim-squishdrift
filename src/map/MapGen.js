@@ -13,10 +13,15 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
   
   // Generate city blocks
   const blockGenerator = new BlockGenerator(cityLayout, rand);
+  const roadGenerator = new RoadGenerator(cityLayout, rand);
+  // Provide the roadGenerator reference to the blockGenerator so merged-block
+  // bookkeeping (usedH/usedV) is attached to the road generator before zebra
+  // crossings are laid out — this prevents zebra tiles from overwriting merged
+  // footpaths.
+  blockGenerator.roadGenerator = roadGenerator;
   blockGenerator.generateBlocks(tiles);
   
   // Generate roads and intersections
-  const roadGenerator = new RoadGenerator(cityLayout, rand);
   roadGenerator.generateRoads(tiles);
   
   // Generate buildings and parks

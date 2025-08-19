@@ -1,3 +1,5 @@
+import { Health } from '../components/Health.js';
+
 // Base vehicle archetype - all vehicles inherit from this
 export const VehicleArchetype = {
   // Physics properties

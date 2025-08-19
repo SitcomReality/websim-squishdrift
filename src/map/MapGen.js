@@ -214,7 +214,7 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
     }
   }
   
-  // Connect perimeter to internal footpaths at corners
+  // Connect perimeter to internal footpaths AND zebra crossings at intersections
   const cornerConnections = [
     { px: 1, py: 1, ix: 2, iy: 2 }, // Top-left corner
     { px: newWidth - 2, py: 1, ix: newWidth - 3, iy: 2 }, // Top-right corner
@@ -222,6 +222,47 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
     { px: newWidth - 2, py: newHeight - 2, ix: newWidth - 3, iy: newHeight - 3 } // Bottom-right corner
   ];
   
+  // Additional connections for zebra crossings
+  const zebraCrossingTypes = [11, 12, 13, 14]; // Zebra crossing tile types
+  
+  // Find zebra crossings near perimeter and connect them
+  for (let y = 0; y < newHeight; y++) {
+    for (let x = 0; x < newWidth; x++) {
+      if (zebraCrossingTypes.includes(newTiles[y][x])) {
+        // Check if this zebra crossing is adjacent to perimeter footpath
+        for (const [dx, dy] of directions) {
+          const px = x + dx;
+          const py = y + dy;
+          
+          if (px >= 0 && px < newWidth && py >= 0 && py < newHeight) {
+            if (newTiles[py][px] === Tile.Footpath) {
+              // Check if the footpath is part of the perimeter
+              if (px === 1 || px === newWidth - 2 || py === 1 || py === newHeight - 2) {
+                // Connect the zebra crossing to the perimeter
+                const zebraKey = `${x},${y}`;
+                const perimeterKey = `${px},${py}`;
+                
+                const zebraNode = map.peds.nodes.get(zebraKey);
+                const perimeterNode = map.peds.nodes.get(perimeterKey);
+                
+                if (zebraNode && perimeterNode) {
+                  // Connect perimeter to zebra crossing
+                  if (!perimeterNode.neighbors.some(n => n.x === x && n.y === y)) {
+                    perimeterNode.neighbors.push({ x: x, y: y });
+                  }
+                  if (!zebraNode.neighbors.some(n => n.x === px && n.y === py)) {
+                    zebraNode.neighbors.push({ x: px, y: py });
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  // Connect corners to internal footpaths
   for (const { px, py, ix, iy } of cornerConnections) {
     const perimeterKey = `${px},${py}`;
     const internalKey = `${ix},${iy}`;

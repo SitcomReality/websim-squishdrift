@@ -66,38 +66,38 @@ export class BlockGenerator {
   }
 
   generateMedians(tiles) {
-    // Horizontal medians - skip roundabout areas
+    // Horizontal medians
     for (let gy = 0; gy <= this.cityLayout.blocksHigh; gy++) {
       const y = this.cityLayout.getIntersectionCenter(0, gy).y;
       if (y >= 0 && y < this.cityLayout.height) {
-        // Skip median in roundabout areas (±2 tiles around center)
-        const roundabouts = this.cityLayout.roundabouts || [];
-        const isInRoundabout = roundabouts.some(rb => 
-          Math.abs(rb.cy - y) <= 2
-        );
-        
-        if (!isInRoundabout) {
-          for (let x = 0; x < this.cityLayout.width; x++) {
-            tiles[y][x] = Tile.Median;
-          }
+        // Compute gap ranges (2 tiles on either side) around each intersection center along this row
+        const gaps = [];
+        for (let gx = 0; gx <= this.cityLayout.blocksWide; gx++) {
+          const cx = this.cityLayout.getIntersectionCenter(gx, gy).x;
+          gaps.push([cx - 2, cx + 2]);
+        }
+        for (let x = 0; x < this.cityLayout.width; x++) {
+          // Skip if x lies within any intersection gap
+          if (gaps.some(([a, b]) => x >= a && x <= b)) continue;
+          tiles[y][x] = Tile.Median;
         }
       }
     }
 
-    // Vertical medians - skip roundabout areas
+    // Vertical medians
     for (let gx = 0; gx <= this.cityLayout.blocksWide; gx++) {
       const x = this.cityLayout.getIntersectionCenter(gx, 0).x;
       if (x >= 0 && x < this.cityLayout.width) {
-        // Skip median in roundabout areas (±2 tiles around center)
-        const roundabouts = this.cityLayout.roundabouts || [];
-        const isInRoundabout = roundabouts.some(rb => 
-          Math.abs(rb.cx - x) <= 2
-        );
-        
-        if (!isInRoundabout) {
-          for (let y = 0; y < this.cityLayout.height; y++) {
-            tiles[y][x] = Tile.Median;
-          }
+        // Compute gap ranges (2 tiles on either side) around each intersection center along this column
+        const gaps = [];
+        for (let gy = 0; gy <= this.cityLayout.blocksHigh; gy++) {
+          const cy = this.cityLayout.getIntersectionCenter(gx, gy).y;
+          gaps.push([cy - 2, cy + 2]);
+        }
+        for (let y = 0; y < this.cityLayout.height; y++) {
+          // Skip if y lies within any intersection gap
+          if (gaps.some(([a, b]) => y >= a && y <= b)) continue;
+          tiles[y][x] = Tile.Median;
         }
       }
     }

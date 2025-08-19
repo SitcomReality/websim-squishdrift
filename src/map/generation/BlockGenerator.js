@@ -1,10 +1,11 @@
 import { Tile } from '../TileTypes.js';
 
 export class BlockGenerator {
-  constructor(cityLayout, rand, roadGenerator) {
+  constructor(cityLayout, rand) {
     this.cityLayout = cityLayout;
     this.rand = rand;
-    this.roadGenerator = roadGenerator; // Store the RoadGenerator instance
+    this.usedH = new Set();
+    this.usedV = new Set();
   }
 
   generateBlocks(tiles) {
@@ -90,23 +91,17 @@ export class BlockGenerator {
   generateMergedBlocks(tiles) {
     const W = this.cityLayout.W, MED = this.cityLayout.MED;
     const mergedChance = 0.3;
-    const usedH = new Set(), usedV = new Set(); // Internal sets for this generator
+    const usedH = this.usedH, usedV = this.usedV;
 
     // Horizontal merged pairs (bx,by) with (bx+1,by)
     for (let by = 0; by < this.cityLayout.blocksHigh; by++) {
       for (let bx = 0; bx < this.cityLayout.blocksWide - 1; bx++) {
         if (this.rand() > mergedChance) continue;
-        const key = `${bx},${by}`;
-        // Ensure no overlaps with already merged vertical blocks, or previous horizontal merges
-        if (usedH.has(key) || usedH.has(`${bx-1},${by}`) || usedV.has(key) || usedV.has(`${bx},${by-1}`)) continue; 
+        const key = `${bx},${by}`; if (usedH.has(key)) continue;
         usedH.add(key);
 
         const left = this.cityLayout.getBlockOrigin(bx, by);
-        
-        // Notify RoadGenerator of the merge
-        if (this.roadGenerator) {
-          this.roadGenerator.addHorizontalMerge(bx, by);
-        }
+        const right = this.cityLayout.getBlockOrigin(bx + 1, by);
 
         // Compute the 5x5 interior band between blocks
         const xStart = left.x + (W - 2);     // columns: W-2 .. W+2 relative to left block
@@ -153,17 +148,11 @@ export class BlockGenerator {
     for (let by = 0; by < this.cityLayout.blocksHigh - 1; by++) {
       for (let bx = 0; bx < this.cityLayout.blocksWide; bx++) {
         if (this.rand() > mergedChance) continue;
-        const key = `${bx},${by}`;
-        // Ensure no overlaps with already merged horizontal blocks, or previous vertical merges
-        if (usedV.has(key) || usedV.has(`${bx},${by-1}`) || usedH.has(key) || usedH.has(`${bx-1},${by}`)) continue; 
+        const key = `${bx},${by}`; if (usedV.has(key)) continue;
         usedV.add(key);
         
         const top = this.cityLayout.getBlockOrigin(bx, by);
-
-        // Notify RoadGenerator of the merge
-        if (this.roadGenerator) {
-          this.roadGenerator.addVerticalMerge(bx, by);
-        }
+        const bottom = this.cityLayout.getBlockOrigin(bx, by + 1);
 
         // Compute the 5x5 interior band between blocks (vertical)
         const yStart = top.y + (W - 2);      // rows W-2 .. W+2 relative to top block
@@ -215,10 +204,10 @@ export class BlockGenerator {
   }
 
   createBuilding(tiles, rect) {
-    // Implementation for creating a building (stub as it is handled by BuildingGenerator now)
+    // Implementation for creating a building
   }
 
   createPark(tiles, rect) {
-    // Implementation for creating a park (stub as it is handled by BuildingGenerator now)
+    // Implementation for creating a park
   }
 }

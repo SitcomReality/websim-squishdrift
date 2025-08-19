@@ -5,17 +5,6 @@ export class RoadGenerator {
     this.cityLayout = cityLayout;
     this.rand = rand;
     this.roundabouts = [];
-    this.mergedBlocksH = new Set(); // Stores 'bx,by' of horizontally merged left blocks
-    this.mergedBlocksV = new Set(); // Stores 'bx,by' of vertically merged top blocks
-  }
-
-  // Methods to be called by BlockGenerator to register merged blocks
-  addHorizontalMerge(bx, by) {
-    this.mergedBlocksH.add(`${bx},${by}`);
-  }
-
-  addVerticalMerge(bx, by) {
-    this.mergedBlocksV.add(`${bx},${by}`);
   }
 
   generateRoads(tiles) {
@@ -120,68 +109,65 @@ export class RoadGenerator {
   }
 
   isTileInMergedArea(x, y) {
-    const { W, MED, mapOffset } = this.cityLayout;
-
-    // Check horizontal merges
-    for (const key of this.mergedBlocksH) {
-      const [bx, by] = key.split(',').map(Number);
-      const leftBlockOrigin = this.cityLayout.getBlockOrigin(bx, by);
+    // Check if this tile position is within any merged block area
+    const roundabouts = this.roundabouts || [];
+    
+    for (const rb of roundabouts) {
+      const { cx, cy } = rb;
       
-      const xStartInterior = leftBlockOrigin.x + (W - 2); // Start of 5x5 interior merged area
-      const xEndInterior = xStartInterior + 4; // End of 5x5 interior merged area
-      const yStartInterior = leftBlockOrigin.y + 3;
-      const yEndInterior = yStartInterior + 4;
-
-      // Check if (x,y) is within the main 5x5 merged interior
-      if (x >= xStartInterior && x <= xEndInterior && y >= yStartInterior && y <= yEndInterior) {
-        return true;
-      }
-      
-      // Check the extended footpath areas (top/bottom rows and central median column)
-      const topFootpathY = leftBlockOrigin.y + 2;
-      const bottomFootpathY = leftBlockOrigin.y + (W - 3);
-      const medianX = leftBlockOrigin.x + W;
-
-      // Top and bottom extended footpaths (horizontal segments)
-      if ((y === topFootpathY || y === bottomFootpathY) && x >= xStartInterior && x <= xEndInterior) {
+      // Check if this tile is in the zebra crossing area between merged blocks
+      const isHorizontalMerge = 
+        (Math.abs(y - (cy - 3)) <= 0.5 && Math.abs(x - cx) <= 2) || // top crossings
+        (Math.abs(y - (cy + 3)) <= 0.5 && Math.abs(x - cx) <= 2);  // bottom crossings
+        
+      const isVerticalMerge = 
+        (Math.abs(x - (cx - 3)) <= 0.5 && Math.abs(y - cy) <= 2) || // left crossings
+        (Math.abs(x - (cx + 3)) <= 0.5 && Math.abs(y - cy) <= 2);   // right crossings
+        
+      if (isHorizontalMerge || isVerticalMerge) {
+        // Check if this roundabout is part of a merged block
+        const isMerged = this.isRoundaboutMerged(rb);
+        if (isMerged) {
           return true;
-      }
-      // Central median column (vertical segment)
-      if (x === medianX && y >= topFootpathY && y <= bottomFootpathY) {
-          return true;
+        }
       }
     }
+    
+    return false;
+  }
 
-    // Check vertical merges
-    for (const key of this.mergedBlocksV) {
-      const [bx, by] = key.split(',').map(Number);
-      const topBlockOrigin = this.cityLayout.getBlockOrigin(bx, by);
-
-      const yStartInterior = topBlockOrigin.y + (W - 2);
-      const yEndInterior = yStartInterior + 4;
-      const xStartInterior = topBlockOrigin.x + 3;
-      const xEndInterior = xStartInterior + 4;
-
-      // Check if (x,y) is within the main 5x5 merged interior
-      if (x >= xStartInterior && x <= xEndInterior && y >= yStartInterior && y <= yEndInterior) {
+  isRoundaboutMerged(rb) {
+    const { cx, cy } = rb;
+    
+    // Check if this roundabout has been merged horizontally or vertically
+    const cityLayout = this.cityLayout;
+    const blocksWide = cityLayout.blocksWide;
+    const blocksHigh = cityLayout.blocksHigh;
+    
+    // Get grid position of this roundabout
+    const gx = Math.round((cx - cityLayout.mapOffset) / (cityLayout.W + cityLayout.MED));
+    const gy = Math.round((cy - cityLayout.mapOffset) / (cityLayout.W + cityLayout.MED));
+    
+    // Check if there's a horizontal merge with the next block
+    if (gx < blocksWide - 1) {
+      const rightKey = `${gx},${gy}`;
+      const leftKey = `${gx-1},${gy}`;
+      // Check if usedH contains this pair (indicating horizontal merge)
+      if (this.usedH && (this.usedH.has(rightKey) || this.usedH.has(leftKey))) {
         return true;
       }
-      
-      // Check the extended footpath areas (left/right columns and central median row)
-      const leftFootpathX = topBlockOrigin.x + 2;
-      const rightFootpathX = topBlockOrigin.x + (W - 3);
-      const medianY = topBlockOrigin.y + W;
-
-      // Left and right extended footpaths (vertical segments)
-      if ((x === leftFootpathX || x === rightFootpathX) && y >= yStartInterior && y <= yEndInterior) {
-          return true;
-      }
-      // Central median row (horizontal segment)
-      if (y === medianY && x >= leftFootpathX && x <= rightFootpathX) {
-          return true;
+    }
+    
+    // Check if there's a vertical merge with the block below
+    if (gy < blocksHigh - 1) {
+      const bottomKey = `${gx},${gy}`;
+      const topKey = `${gx},${gy-1}`;
+      // Check if usedV contains this pair (indicating vertical merge)
+      if (this.usedV && (this.usedV.has(bottomKey) || this.usedV.has(topKey))) {
+        return true;
       }
     }
-
+    
     return false;
   }
 

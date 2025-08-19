@@ -11,13 +11,16 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
   const cityLayout = new CityLayout(blocksWide, blocksHigh);
   const tiles = cityLayout.createEmptyTiles();
   
-  // Generate roads and intersections first, so roadGenerator can prepare for merged block data
-  const roadGenerator = new RoadGenerator(cityLayout, rand);
-  roadGenerator.generateRoads(tiles);
-  
-  // Generate city blocks, passing roadGenerator so it can be updated with merge info
-  const blockGenerator = new BlockGenerator(cityLayout, rand, roadGenerator);
+  // Generate city blocks
+  const blockGenerator = new BlockGenerator(cityLayout, rand);
   blockGenerator.generateBlocks(tiles);
+  
+  // Generate roads and intersections
+  const roadGenerator = new RoadGenerator(cityLayout, rand);
+  // Pass merged-block metadata so zebra crossings inside merged corridors become footpaths
+  roadGenerator.usedH = blockGenerator.usedH;
+  roadGenerator.usedV = blockGenerator.usedV;
+  roadGenerator.generateRoads(tiles);
   
   // Generate buildings and parks
   const buildingGenerator = new BuildingGenerator(cityLayout, rand);

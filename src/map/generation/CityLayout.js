@@ -9,7 +9,7 @@ export class CityLayout {
     
     this.cityWidth = blocksWide * (this.W + this.MED) + this.MED;
     this.cityHeight = blocksHigh * (this.W + this.MED) + this.MED;
-    this.mapOffset = 3; // space for perimeter road + outer footpath
+    this.mapOffset = 2; // space for perimeter road
     
     this.width = this.cityWidth + this.mapOffset * 2;
     this.height = this.cityHeight + this.mapOffset * 2;
@@ -35,3 +35,4 @@ export class CityLayout {
     };
   }
 }
+

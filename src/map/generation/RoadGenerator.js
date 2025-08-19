@@ -19,20 +19,20 @@ export class RoadGenerator {
     const width = this.cityLayout.width;
     const height = this.cityLayout.height;
 
-    // Top and bottom lanes
+    // Top and bottom lanes (shifted inward by 1 so outermost border can be footpath)
     for (let i = 0; i < width; i++) {
-      tiles[0][i] = Tile.RoadW;
       tiles[1][i] = Tile.RoadW;
+      tiles[2][i] = Tile.RoadW;
+      tiles[height - 3][i] = Tile.RoadE;
       tiles[height - 2][i] = Tile.RoadE;
-      tiles[height - 1][i] = Tile.RoadE;
     }
 
-    // Left and right lanes
+    // Left and right lanes (shifted inward by 1 so outermost border can be footpath)
     for (let i = 0; i < height; i++) {
-      tiles[i][0] = Tile.RoadS;
       tiles[i][1] = Tile.RoadS;
+      tiles[i][2] = Tile.RoadS;
+      tiles[i][width - 3] = Tile.RoadN;
       tiles[i][width - 2] = Tile.RoadN;
-      tiles[i][width - 1] = Tile.RoadN;
     }
   }
 

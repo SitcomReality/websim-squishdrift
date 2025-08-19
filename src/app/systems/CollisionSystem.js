@@ -6,7 +6,7 @@ export class CollisionSystem {
     this.collisionPairs = [];
     this.cameraSystem = null; // Will be set externally
     this.lastDamageTime = 0;
-    this.invincibilityDuration = 50; // ms
+    this.invincibilityDuration = 1000; // Increased from 50ms to 1000ms
   }
 
   // Simple radius-based collision detection

@@ -36,8 +36,8 @@ export function drawTiles(r, state, layer = 'all'){
       r.ctx.fillRect(gx*ts, gy*ts, ts, ts);
     }
     
-    // Only draw arrows for unidirectional lanes in intersections
-    drawIntersectionArrows(r, gx, gy, ts, t, state);
+    // Only draw arrows for uni-directional lanes in intersections
+    drawIntersectionDirectionArrows(r, gx, gy, ts, t, state);
     
     if (t === Tile.BuildingWall) {
       r.ctx.fillStyle = 'rgba(0,0,0,0.2)';
@@ -88,44 +88,45 @@ function drawZebraCrossing(r, gx, gy, ts, tileType) {
   }
 }
 
-function drawIntersectionArrows(r, gx, gy, ts, tileType, state) {
+function drawIntersectionDirectionArrows(r, gx, gy, ts, tileType, state) {
   const { ctx } = r;
   
-  // Only draw arrows for unidirectional road tiles in intersections
+  // Only process uni-directional road tiles
   const uniDirectionalTiles = [Tile.RoadN, Tile.RoadE, Tile.RoadS, Tile.RoadW];
-  
   if (!uniDirectionalTiles.includes(tileType)) return;
   
-  // Check if this tile is inside an intersection by looking for a nearby roundabout center
+  // Check if this tile is part of an intersection
   const map = state.world.map;
-  const checkRadius = 3; // Check within 3 tiles for a roundabout center
+  const checkRadius = 3; // Check for roundabout centers within 3 tiles
   
-  let isInsideIntersection = false;
+  let isInIntersection = false;
   let centerX = -1, centerY = -1;
   
-  for (let y = Math.max(0, gy - checkRadius); y <= Math.min(map.height - 1, gy + checkRadius); y++) {
-    for (let x = Math.max(0, gx - checkRadius); x <= Math.min(map.width - 1, gx + checkRadius); x++) {
-      if (map.tiles[y][x] === Tile.RoundaboutCenter) {
-        isInsideIntersection = true;
-        centerX = x;
-        centerY = y;
+  // Look for a roundabout center nearby
+  for (let dy = -checkRadius; dy <= checkRadius; dy++) {
+    for (let dx = -checkRadius; dx <= checkRadius; dx++) {
+      const checkX = gx + dx;
+      const checkY = gy + dy;
+      
+      if (checkX >= 0 && checkX < map.width && 
+          checkY >= 0 && checkY < map.height &&
+          map.tiles[checkY][checkX] === Tile.RoundaboutCenter) {
+        isInIntersection = true;
+        centerX = checkX;
+        centerY = checkY;
         break;
       }
     }
   }
   
-  if (!isInsideIntersection) return;
+  if (!isInIntersection) return;
   
-  // Now determine if this tile is part of the 8 uni-directional lanes
-  // These are the tiles that form the "plus shape" around the central tree
-  const dx = Math.abs(gx - centerX);
-  const dy = Math.abs(gy - centerY);
+  // Determine if this tile should have an arrow
+  // Calculate distance from roundabout center
+  const distanceFromCenter = Math.max(Math.abs(gx - centerX), Math.abs(gy - centerY));
   
-  // Skip corner quadrants - only draw arrows for tiles in straight lines from center
-  // The 8 tiles are: 2 in each cardinal direction from the center
-  const isStraightLine = (dx === 1 && dy <= 1) || (dy === 1 && dx <= 1);
-  
-  if (!isStraightLine) return;
+  // Only add arrows to tiles exactly 2 tiles away from center (the 8 uni-directional lanes)
+  if (distanceFromCenter !== 2) return;
   
   // Determine direction based on tile type
   let direction = null;
@@ -138,59 +139,63 @@ function drawIntersectionArrows(r, gx, gy, ts, tileType, state) {
   
   if (!direction) return;
   
+  // Draw arrow
   const cx = gx * ts + ts/2;
   const cy = gy * ts + ts/2;
   
-  // Use zebra crossing color for arrows
   ctx.fillStyle = TileColor[Tile.ZebraCrossingN];
   ctx.strokeStyle = TileColor[Tile.ZebraCrossingN];
   ctx.lineWidth = 2;
   
-  // Draw arrow based on direction
   const arrowLength = ts * 0.4;
   const arrowHeadSize = ts * 0.1;
   
   ctx.save();
   ctx.translate(cx, cy);
   
+  // Draw arrow pointing in the correct direction
+  drawArrow(ctx, direction, arrowLength, arrowHeadSize);
+  
+  ctx.restore();
+}
+
+function drawArrow(ctx, direction, length, headSize) {
   switch(direction) {
     case 'N':
       ctx.beginPath();
-      ctx.moveTo(0, arrowLength/2);
-      ctx.lineTo(0, -arrowLength/2);
-      ctx.moveTo(-arrowHeadSize, -arrowLength/2 + arrowHeadSize);
-      ctx.lineTo(0, -arrowLength/2);
-      ctx.lineTo(arrowHeadSize, -arrowLength/2 + arrowHeadSize);
+      ctx.moveTo(0, length/2);
+      ctx.lineTo(0, -length/2);
+      ctx.moveTo(-headSize, -length/2 + headSize);
+      ctx.lineTo(0, -length/2);
+      ctx.lineTo(headSize, -length/2 + headSize);
       ctx.stroke();
       break;
     case 'S':
       ctx.beginPath();
-      ctx.moveTo(0, -arrowLength/2);
-      ctx.lineTo(0, arrowLength/2);
-      ctx.moveTo(-arrowHeadSize, arrowLength/2 - arrowHeadSize);
-      ctx.lineTo(0, arrowLength/2);
-      ctx.lineTo(arrowHeadSize, arrowLength/2 - arrowHeadSize);
+      ctx.moveTo(0, -length/2);
+      ctx.lineTo(0, length/2);
+      ctx.moveTo(-headSize, length/2 - headSize);
+      ctx.lineTo(0, length/2);
+      ctx.lineTo(headSize, length/2 - headSize);
       ctx.stroke();
       break;
     case 'E':
       ctx.beginPath();
-      ctx.moveTo(-arrowLength/2, 0);
-      ctx.lineTo(arrowLength/2, 0);
-      ctx.moveTo(arrowLength/2 - arrowHeadSize, -arrowHeadSize);
-      ctx.lineTo(arrowLength/2, 0);
-      ctx.lineTo(arrowLength/2 - arrowHeadSize, arrowHeadSize);
+      ctx.moveTo(-length/2, 0);
+      ctx.lineTo(length/2, 0);
+      ctx.moveTo(length/2 - headSize, -headSize);
+      ctx.lineTo(length/2, 0);
+      ctx.lineTo(length/2 - headSize, headSize);
       ctx.stroke();
       break;
     case 'W':
       ctx.beginPath();
-      ctx.moveTo(arrowLength/2, 0);
-      ctx.lineTo(-arrowLength/2, 0);
-      ctx.moveTo(-arrowLength/2 + arrowHeadSize, -arrowHeadSize);
-      ctx.lineTo(-arrowLength/2, 0);
-      ctx.lineTo(-arrowLength/2 + arrowHeadSize, arrowHeadSize);
+      ctx.moveTo(length/2, 0);
+      ctx.lineTo(-length/2, 0);
+      ctx.moveTo(-length/2 + headSize, -headSize);
+      ctx.lineTo(-length/2, 0);
+      ctx.lineTo(-length/2 + headSize, headSize);
       ctx.stroke();
       break;
   }
-  
-  ctx.restore();
 }

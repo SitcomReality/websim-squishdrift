@@ -1,12 +1,13 @@
 import { Vec2 } from '../../utils/Vec2.js';
 import { Health } from '../components/Health.js';
+import { isTreeTrunk } from '../entities/drawBlood.js';
 
 export class CollisionSystem {
   constructor() {
     this.collisionPairs = [];
-    this.cameraSystem = null; // Will be set externally
+    this.cameraSystem = null;
     this.lastDamageTime = 0;
-    this.invincibilityDuration = 1000; // Increased from 50ms to 1000ms
+    this.invincibilityDuration = 1000;
   }
 
   // Simple radius-based collision detection
@@ -15,30 +16,6 @@ export class CollisionSystem {
     const dy = entityA.pos.y - entityB.pos.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
     return distance < radius;
-  }
-
-  // Check if player is colliding with tree trunk specifically
-  checkTreeTrunkCollision(state, entity, x, y) {
-    if (!state.world.map.trees) return false;
-    
-    // Find if there's a tree trunk at this tile
-    const tree = state.world.map.trees.find(tree => 
-      Math.floor(tree.pos.x) === x && Math.floor(tree.pos.y) === y
-    );
-    
-    if (!tree) return false;
-    
-    // Calculate the precise trunk collision area
-    const trunkSize = 0.3; // Same as used in aabbForTrunk
-    const trunkHalf = trunkSize / 2;
-    const trunkCenterX = x + 0.5;
-    const trunkCenterY = y + 0.5;
-    
-    // Check if entity is within the trunk's precise hitbox
-    const dx = Math.abs(entity.pos.x - trunkCenterX);
-    const dy = Math.abs(entity.pos.y - trunkCenterY);
-    
-    return dx <= trunkHalf && dy <= trunkHalf;
   }
 
   // Check collisions between bullets and entities
@@ -52,11 +29,18 @@ export class CollisionSystem {
     for (const bullet of bullets) {
       for (const target of targets) {
         if (this.checkCollision(bullet, target, 0.35)) {
-          target.health.takeDamage(25);
+          // Ensure health exists for vehicles
+          if (!target.health && target.type === 'vehicle') {
+            target.health = new Health(target.maxHealth || 100);
+          }
           
-          // Trigger screen shake for player damage
           if (target.type === 'npc') {
-            this.triggerShake(state, 0.5);
+            // NPCs die instantly
+            target.health = new Health(1);
+            target.health.hp = 0;
+          } else {
+            // Vehicles take damage normally
+            target.health.takeDamage(25);
           }
           
           // Remove bullet on hit
@@ -110,26 +94,77 @@ export class CollisionSystem {
     }
   }
 
-  // Check collisions between player and vehicles
+  // Check collisions between player and tree trunks
+  checkPlayerTreeCollisions(state) {
+    const player = state.entities.find(e => e.type === 'player');
+    if (!player || state.control?.inVehicle || player.collisionDisabled) return;
+
+    const map = state.world.map;
+    const trees = map.trees || [];
+    
+    for (const tree of trees) {
+      const trunkSize = 0.3;
+      const trunkHalf = trunkSize / 2;
+      const trunkCenterX = tree.pos.x;
+      const trunkCenterY = tree.pos.y;
+      
+      const dx = player.pos.x - trunkCenterX;
+      const dy = player.pos.y - trunkCenterY;
+      const distance = Math.hypot(dx, dy);
+      
+      if (distance < trunkHalf + 0.075) {
+        // Push away from trunk
+        const pushDistance = (trunkHalf + 0.075) - distance;
+        const pushX = (dx / distance) * pushDistance;
+        const pushY = (dy / distance) * pushDistance;
+        
+        player.pos.x += pushX;
+        player.pos.y += pushY;
+      }
+    }
+  }
+
+  // Update player collision to use precise trunk detection
   checkPlayerVehicleCollisions(state) {
     const player = state.entities.find(e => e.type === 'player');
     const vehicles = state.entities.filter(e => e.type === 'vehicle');
     
     if (!player || !player.health) return;
-    if (state.control?.inVehicle) return; // disable player collisions while inside a vehicle
-    if (player.collisionDisabled) return; // Skip if player collision is disabled
+    if (state.control?.inVehicle) return;
+    if (player.collisionDisabled) return;
     
-    // invincibility frames: skip damage if recently hit
     const now = Date.now();
     if (now - this.lastDamageTime < this.invincibilityDuration) return;
     
-    // Check tree trunk collision for player
+    // Check tree trunk collision with precise hitbox
     const map = state.world.map;
+    const trees = map.trees || [];
+    
+    for (const tree of trees) {
+      const trunkSize = 0.3;
+      const trunkHalf = trunkSize / 2;
+      const trunkCenterX = tree.pos.x;
+      const trunkCenterY = tree.pos.y;
+      
+      const dx = player.pos.x - trunkCenterX;
+      const dy = player.pos.y - trunkCenterY;
+      const distance = Math.hypot(dx, dy);
+      
+      if (distance < trunkHalf + 0.075) {
+        // Push away from trunk
+        const pushDistance = (trunkHalf + 0.075) - distance;
+        const pushX = (dx / distance) * pushDistance;
+        const pushY = (dy / distance) * pushDistance;
+        
+        player.pos.x += pushX;
+        player.pos.y += pushY;
+      }
+    }
+    
+    // Check tree trunk collision for player
     const tx = Math.floor(player.pos.x);
     const ty = Math.floor(player.pos.y);
-    
-    // Only check tree trunk collision, not tree leaves
-    if (this.checkTreeTrunkCollision(state, player, tx, ty)) {
+    if (this.isTreeTrunk(tx, ty, map)) {
       // Push player away from tree trunk
       const dx = player.pos.x - (tx + 0.5);
       const dy = player.pos.y - (ty + 0.5);
@@ -152,7 +187,7 @@ export class CollisionSystem {
       const collisionRadius = playerRadius + vehicleRadius;
       
       if (this.checkCollision(player, vehicle, collisionRadius)) {
-        // Compute damage based on vehicle movement vector relative to player
+        // Damage depends on vehicle movement toward the player (no damage if moving away)
         const vx = vehicle.vel?.x || 0, vy = vehicle.vel?.y || 0;
         const speed = Math.hypot(vx, vy);
         if (speed > 0.01) {
@@ -160,27 +195,40 @@ export class CollisionSystem {
           const toPlayer = { x: player.pos.x - vehicle.pos.x, y: player.pos.y - vehicle.pos.y };
           const dist = Math.hypot(toPlayer.x, toPlayer.y) || 1;
           const toPlayerN = { x: toPlayer.x / dist, y: toPlayer.y / dist };
-          const alignment = vdir.x * toPlayerN.x + vdir.y * toPlayerN.y; // 1 => directly toward player
+          const alignment = vdir.x * toPlayerN.x + vdir.y * toPlayerN.y;
           if (alignment > 0) {
-            // Scale damage by speed and alignment; tune multiplier to keep similar feel
             const damage = Math.max(1, Math.round(speed * alignment * 20));
             const oldHealth = player.health.hp;
             player.health.takeDamage(damage);
             const damageTaken = oldHealth - player.health.hp;
             if (damageTaken > 0) {
               this.lastDamageTime = now;
-              this.triggerShake(state, Math.min(1, damageTaken / 50));
-              // Add floating damage text
               this.addDamageText(state, player.pos, damage);
+              this.triggerShake(state, Math.min(1, damageTaken / 50));
+              const k = Math.min(1, damage / 30) * 0.35;
+              player.pos.x += toPlayerN.x * k;
+              player.pos.y += toPlayerN.y * k;
             }
-            // Knockback away from vehicle (scaled by damage)
-            const k = Math.min(1, damage / 30) * 0.35;
-            player.pos.x += toPlayerN.x * k;
-            player.pos.y += toPlayerN.y * k;
           }
         }
       }
     }
+  }
+
+  addDamageText(state, pos, damage) {
+    if (!state.damageTexts) state.damageTexts = [];
+    
+    const damageText = {
+      type: 'damage_text',
+      pos: { x: pos.x, y: pos.y },
+      text: `-${damage}`,
+      color: '#ff3333',
+      age: 0,
+      lifetime: 1.5, // 1.5 seconds
+      size: 16
+    };
+    
+    state.damageTexts.push(damageText);
   }
 
   isTreeTrunk(x, y, map) {
@@ -190,28 +238,16 @@ export class CollisionSystem {
     );
   }
 
-  triggerShake(state, intensity = 1) {
-    if (this.cameraSystem) {
-      this.cameraSystem.addShake(intensity);
+  triggerShake(state, intensity) {
+    if (state.cameraSystem) {
+      state.cameraSystem.addShake(intensity);
     }
-  }
-
-  addDamageText(state, pos, damage) {
-    if (!state.damageTexts) state.damageTexts = [];
-    state.damageTexts.push({
-      type: 'damage_text',
-      pos: { x: pos.x, y: pos.y },
-      text: `-${damage}`,
-      color: '#ff3333',
-      age: 0,
-      lifetime: 1.5,
-      size: 16
-    });
   }
 
   update(state) {
     this.checkBulletCollisions(state);
     this.checkVehiclePedestrianCollisions(state);
     this.checkPlayerVehicleCollisions(state);
+    this.checkPlayerTreeCollisions(state);
   }
 }

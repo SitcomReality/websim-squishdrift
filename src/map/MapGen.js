@@ -47,7 +47,7 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
   }
   
   // After all generators, add perimeter footpath
-  addPerimeterFootpath(tiles, cityLayout.width, cityLayout.height);
+  addPerimeterFootpath(tiles, cityLayout.width, cityLayout.height, roadGenerator.getRoundabouts(), cityLayout);
   
   // After all generators, sanitize tiles so merged blocks override stray zebra crossings
   sanitizeMap(tiles, cityLayout.width, cityLayout.height, Tile, (t)=> (t>=Tile.RoadN && t<=Tile.RoadW) || (t>=Tile.ZebraCrossingN && t<=Tile.ZebraCrossingW));
@@ -71,9 +71,8 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
   };
 }
 
-function addPerimeterFootpath(tiles, width, height) {
-  // Ensure the outermost ring is footpath, and place the perimeter roads one tile inward.
-  // Outer ring (0 and width-1 / 0 and height-1) => Footpath
+function addPerimeterFootpath(tiles, width, height, roundabouts, cityLayout) {
+  // Ensure the outermost ring is footpath.
   for (let x = 0; x < width; x++) {
     tiles[0][x] = Tile.Footpath;
     tiles[height - 1][x] = Tile.Footpath;
@@ -83,44 +82,36 @@ function addPerimeterFootpath(tiles, width, height) {
     tiles[y][width - 1] = Tile.Footpath;
   }
 
-  // Perimeter roads placed one tile in from the outer footpath.
-  // NOTE: Use the same directions used by RoadGenerator to avoid conflicting orientations.
-  // IMPORTANT: Only place road tiles where there isn't already a zebra crossing
-  
+  // Get roundabout X and Y coordinates to define intersection gaps
+  const roundaboutXCoords = [...new Set(roundabouts.map(rb => rb.cx))].sort((a, b) => a - b);
+  const roundaboutYCoords = [...new Set(roundabouts.map(rb => rb.cy))].sort((a, b) => a - b);
+
   // Top inner road (one tile below outer footpath)
-  for (let x = 0; x < width; x++) {
-    // Only overwrite if it's not already a zebra crossing
-    if (!(tiles[1][x] >= Tile.ZebraCrossingN && tiles[1][x] <= Tile.ZebraCrossingW)) {
-      tiles[1][x] = Tile.RoadW; // match RoadGenerator: top lanes go West
-    }
+  for (let x = 1; x < width - 1; x++) {
+    // Skip if x is within an intersection's horizontal bounds
+    const inIntersection = roundaboutXCoords.some(cx => x >= cx - 2 && x <= cx + 2);
+    if (inIntersection) continue;
+    tiles[1][x] = Tile.RoadW;
   }
 
   // Bottom inner road (one tile above outer footpath)
-  for (let x = 0; x < width; x++) {
-    // Only overwrite if it's not already a zebra crossing
-    if (!(tiles[height - 2][x] >= Tile.ZebraCrossingN && tiles[height - 2][x] <= Tile.ZebraCrossingW)) {
-      tiles[height - 2][x] = Tile.RoadE; // match RoadGenerator: bottom lanes go East
-    }
+  for (let x = 1; x < width - 1; x++) {
+    const inIntersection = roundaboutXCoords.some(cx => x >= cx - 2 && x <= cx + 2);
+    if (inIntersection) continue;
+    tiles[height - 2][x] = Tile.RoadE;
   }
 
   // Left inner road (one tile right of left outer footpath)
-  for (let y = 0; y < height; y++) {
-    // Only overwrite if it's not already a zebra crossing
-    if (!(tiles[y][1] >= Tile.ZebraCrossingN && tiles[y][1] <= Tile.ZebraCrossingW)) {
-      tiles[y][1] = Tile.RoadS; // match RoadGenerator: left lanes go South
-    }
+  for (let y = 1; y < height - 1; y++) {
+    const inIntersection = roundaboutYCoords.some(cy => y >= cy - 2 && y <= cy + 2);
+    if (inIntersection) continue;
+    tiles[y][1] = Tile.RoadS;
   }
 
   // Right inner road (one tile left of right outer footpath)
-  for (let y = 0; y < height; y++) {
-    // Only overwrite if it's not already a zebra crossing
-    if (!(tiles[y][width - 2] >= Tile.ZebraCrossingN && tiles[y][width - 2] <= Tile.ZebraCrossingW)) {
-      tiles[y][width - 2] = Tile.RoadN; // match RoadGenerator: right lanes go North
-    }
+  for (let y = 1; y < height - 1; y++) {
+    const inIntersection = roundaboutYCoords.some(cy => y >= cy - 2 && y <= cy + 2);
+    if (inIntersection) continue;
+    tiles[y][width - 2] = Tile.RoadN;
   }
-
-  // NOTE: The zebra-crossing placement here caused zebra tiles to appear inside intersections.
-  // That logic has been removed so zebra crossings are controlled by the road/roundabout generator
-  // (which can place them in the correct relative positions). This prevents incorrect zebras
-  // overwriting intersection tiles during the final perimeter pass.
 }

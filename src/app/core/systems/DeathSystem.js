@@ -49,8 +49,8 @@ export class DeathSystem {
     `;
 
     deathOverlay.innerHTML = `
-      <div id="death-content" style="display: none; text-align: center;">
-        <h1 style="font-size: 48px; margin-bottom: 20px;">WASTED</h1>
+      <div id="death-content" style="display: none; text-align: center; opacity: 0; transition: opacity 0.5s ease;">
+        <h1 style="font-size: 48px; margin-bottom: 20px; font-weight: 700; letter-spacing: 2px;">WASTED</h1>
         <div id="death-stats" style="margin-bottom: 30px; font-size: 18px;">
           <p>Time Alive: <span id="time-alive">0:00</span></p>
           <p>Enemies Eliminated: <span id="enemies-killed">0</span></p>
@@ -64,6 +64,7 @@ export class DeathSystem {
           color: white;
           cursor: pointer;
           transition: all 0.3s ease;
+          border-radius: 4px;
         " onmouseover="this.style.background='rgba(255,255,255,0.2)'"
            onmouseout="this.style.background='rgba(255,255,255,0.1)'" >
           RESTART
@@ -93,10 +94,14 @@ export class DeathSystem {
       deathOverlay.style.background = 'rgba(0, 0, 0, 1)';
       this.blackScreen = true;
       
-      // Show death content
+      // Show death content with fade-in
       const deathContent = document.getElementById('death-content');
       if (deathContent) {
         deathContent.style.display = 'block';
+        // Trigger the fade-in
+        setTimeout(() => {
+          deathContent.style.opacity = '1';
+        }, 50);
         this.updateDeathStats(state);
       }
     }

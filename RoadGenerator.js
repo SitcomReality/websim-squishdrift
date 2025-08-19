@@ -80,29 +80,61 @@ export class RoadGenerator {
       }
     };
     
-    // Top side (horizontal zebra crossing over N/S road) - fix directions
-    set(cx - 2, cy - 3, Tile.ZebraCrossingS);
-    set(cx - 1, cy - 3, Tile.ZebraCrossingS);
-    set(cx + 1, cy - 3, Tile.ZebraCrossingN);
-    set(cx + 2, cy - 3, Tile.ZebraCrossingN);
+    // Check if this is a perimeter intersection (edge of map)
+    const isPerimeter = (cx === 2 || cx === this.cityLayout.width - 3 || 
+                        cy === 2 || cy === this.cityLayout.height - 3);
     
-    // Bottom side (horizontal zebra crossing over N/S road) - fix directions
-    set(cx - 2, cy + 3, Tile.ZebraCrossingS);
-    set(cx - 1, cy + 3, Tile.ZebraCrossingS);
-    set(cx + 1, cy + 3, Tile.ZebraCrossingN);
-    set(cx + 2, cy + 3, Tile.ZebraCrossingN);
-    
-    // Left side (vertical zebra crossing over E/W road) - these are correct
-    set(cx - 3, cy - 2, Tile.ZebraCrossingW);
-    set(cx - 3, cy - 1, Tile.ZebraCrossingW);
-    set(cx - 3, cy + 1, Tile.ZebraCrossingE);
-    set(cx - 3, cy + 2, Tile.ZebraCrossingE);
+    if (isPerimeter) {
+      // For perimeter intersections, place zebra crossings in the outermost lane
+      // Top side (outermost lane)
+      set(cx - 2, cy - 3, Tile.ZebraCrossingS);
+      set(cx - 1, cy - 3, Tile.ZebraCrossingS);
+      set(cx + 1, cy - 3, Tile.ZebraCrossingN);
+      set(cx + 2, cy - 3, Tile.ZebraCrossingN);
+      
+      // Bottom side (outermost lane)
+      set(cx - 2, cy + 3, Tile.ZebraCrossingS);
+      set(cx - 1, cy + 3, Tile.ZebraCrossingS);
+      set(cx + 1, cy + 3, Tile.ZebraCrossingN);
+      set(cx + 2, cy + 3, Tile.ZebraCrossingN);
+      
+      // Left side (outermost lane)
+      set(cx - 3, cy - 2, Tile.ZebraCrossingW);
+      set(cx - 3, cy - 1, Tile.ZebraCrossingW);
+      set(cx - 3, cy + 1, Tile.ZebraCrossingE);
+      set(cx - 3, cy + 2, Tile.ZebraCrossingE);
+      
+      // Right side (outermost lane)
+      set(cx + 3, cy - 2, Tile.ZebraCrossingW);
+      set(cx + 3, cy - 1, Tile.ZebraCrossingW);
+      set(cx + 3, cy + 1, Tile.ZebraCrossingE);
+      set(cx + 3, cy + 2, Tile.ZebraCrossingE);
+    } else {
+      // Standard zebra crossing placement for inner intersections
+      // Top side (horizontal zebra crossing over N/S road)
+      set(cx - 2, cy - 3, Tile.ZebraCrossingS);
+      set(cx - 1, cy - 3, Tile.ZebraCrossingS);
+      set(cx + 1, cy - 3, Tile.ZebraCrossingN);
+      set(cx + 2, cy - 3, Tile.ZebraCrossingN);
+      
+      // Bottom side (horizontal zebra crossing over N/S road)
+      set(cx - 2, cy + 3, Tile.ZebraCrossingS);
+      set(cx - 1, cy + 3, Tile.ZebraCrossingS);
+      set(cx + 1, cy + 3, Tile.ZebraCrossingN);
+      set(cx + 2, cy + 3, Tile.ZebraCrossingN);
+      
+      // Left side (vertical zebra crossing over E/W road)
+      set(cx - 3, cy - 2, Tile.ZebraCrossingW);
+      set(cx - 3, cy - 1, Tile.ZebraCrossingW);
+      set(cx - 3, cy + 1, Tile.ZebraCrossingE);
+      set(cx - 3, cy + 2, Tile.ZebraCrossingE);
 
-    // Right side (vertical zebra crossing over E/W road) - these are correct
-    set(cx + 3, cy - 2, Tile.ZebraCrossingW);
-    set(cx + 3, cy - 1, Tile.ZebraCrossingW);
-    set(cx + 3, cy + 1, Tile.ZebraCrossingE);
-    set(cx + 3, cy + 2, Tile.ZebraCrossingE);
+      // Right side (vertical zebra crossing over E/W road)
+      set(cx + 3, cy - 2, Tile.ZebraCrossingW);
+      set(cx + 3, cy - 1, Tile.ZebraCrossingW);
+      set(cx + 3, cy + 1, Tile.ZebraCrossingE);
+      set(cx + 3, cy + 2, Tile.ZebraCrossingE);
+    }
   }
 
   createStandardRoundabout(tiles, cx, cy, set) {
@@ -132,22 +164,6 @@ export class RoadGenerator {
     // For perimeter roundabouts, we start with a standard one and then
     // overwrite the parts that are off-map or need to connect differently.
     this.createStandardRoundabout(tiles, cx, cy, set);
-  }
-
-  adjustTopBottomPerimeter(tiles, cx, cy, set, isTop) {
-    const direction = isTop ? Tile.RoadW : Tile.RoadE;
-    for (let x = cx - 2; x <= cx + 2; x++) {
-      set(x, isTop ? cy - 2 : cy + 2, direction);
-      set(x, isTop ? cy - 1 : cy + 1, direction);
-    }
-  }
-
-  adjustLeftRightPerimeter(tiles, cx, cy, set, isLeft) {
-    const direction = isLeft ? Tile.RoadS : Tile.RoadN;
-    for (let y = cy - 2; y <= cy + 2; y++) {
-      set(isLeft ? cx - 2 : cx + 1, y, direction);
-      set(isLeft ? cx - 1 : cx + 2, y, direction);
-    }
   }
 
   getRoundabouts() {

@@ -37,6 +37,7 @@ export class RoadGenerator {
   }
 
   generateRoundabouts(tiles) {
+    const key = (bx, by) => `${bx},${by}`;
     for (let gy = 0; gy <= this.cityLayout.blocksHigh; gy++) {
       for (let gx = 0; gx <= this.cityLayout.blocksWide; gx++) {
         const center = this.cityLayout.getIntersectionCenter(gx, gy);
@@ -46,11 +47,10 @@ export class RoadGenerator {
                            gy === 0 || gy === this.cityLayout.blocksHigh);
         
         this.createRoundabout(tiles, center.x, center.y, isPerimeter);
-        this.roundabouts.push({ cx: center.x, cy: center.y, isPerimeter });
-        // After creating zebra crossings, adjust if triple blocks overlap
-        this.applyTripleAdjustmentsAtIntersection(tiles, gx, gy, center.x, center.y);
+        this.roundabouts.push({ cx: center.x, cy: center.y, isPerimeter, gx, gy });
       }
     }
+    this.adjustForMergedBlocks(tiles);
   }
 
   createRoundabout(tiles, cx, cy, isPerimeter) {
@@ -106,6 +106,73 @@ export class RoadGenerator {
     set(cx + 3, cy + 1, Tile.ZebraCrossingE);
     set(cx + 3, cy + 2, Tile.ZebraCrossingE);
   }
+  
+  adjustForMergedBlocks(tiles) {
+    const key = (bx, by) => `${bx},${by}`;
+    for (const rb of this.roundabouts) {
+        const { cx, cy, gx, gy } = rb;
+        
+        // Right side of intersection (between gx-1 and gx)
+        if (gx > 0 && this.cityLayout.mergedHorizontal.has(key(gx - 1, gy))) {
+            this.removeRoadConnection(tiles, cx, cy, 'E');
+        }
+        // Left side of intersection (between gx and gx+1)
+        if (gx < this.cityLayout.blocksWide && this.cityLayout.mergedHorizontal.has(key(gx, gy))) {
+            this.removeRoadConnection(tiles, cx, cy, 'W');
+        }
+        // Bottom side of intersection (between gy-1 and gy)
+        if (gy > 0 && this.cityLayout.mergedVertical.has(key(gx, gy - 1))) {
+            this.removeRoadConnection(tiles, cx, cy, 'S');
+        }
+        // Top side of intersection (between gy and gy+1)
+        if (gy < this.cityLayout.blocksHigh && this.cityLayout.mergedVertical.has(key(gx, gy))) {
+            this.removeRoadConnection(tiles, cx, cy, 'N');
+        }
+    }
+  }
+
+  removeRoadConnection(tiles, cx, cy, direction) {
+    const set = (x, y, t) => {
+        if (x >= 0 && y >= 0 && x < this.cityLayout.width && y < this.cityLayout.height) {
+            tiles[y][x] = t;
+        }
+    };
+
+    switch (direction) {
+        case 'N': // Removing North connection
+            set(cx - 2, cy - 3, Tile.Footpath);
+            set(cx - 1, cy - 3, Tile.Footpath);
+            set(cx + 1, cy - 3, Tile.Footpath);
+            set(cx + 2, cy - 3, Tile.Footpath);
+            for (let x = cx - 2; x <= cx + 2; x++) set(x, cy-2, Tile.Footpath);
+            for (let x = cx - 1; x <= cx + 1; x++) set(x, cy-1, Tile.Footpath);
+            break;
+        case 'S': // Removing South connection
+            set(cx - 2, cy + 3, Tile.Footpath);
+            set(cx - 1, cy + 3, Tile.Footpath);
+            set(cx + 1, cy + 3, Tile.Footpath);
+            set(cx + 2, cy + 3, Tile.Footpath);
+            for (let x = cx - 2; x <= cx + 2; x++) set(x, cy+2, Tile.Footpath);
+            for (let x = cx - 1; x <= cx + 1; x++) set(x, cy+1, Tile.Footpath);
+            break;
+        case 'W': // Removing West connection
+            set(cx - 3, cy - 2, Tile.Footpath);
+            set(cx - 3, cy - 1, Tile.Footpath);
+            set(cx - 3, cy + 1, Tile.Footpath);
+            set(cx - 3, cy + 2, Tile.Footpath);
+            for (let y = cy - 2; y <= cy + 2; y++) set(cx-2, y, Tile.Footpath);
+            for (let y = cy - 1; y <= cy + 1; y++) set(cx-1, y, Tile.Footpath);
+            break;
+        case 'E': // Removing East connection
+            set(cx + 3, cy - 2, Tile.Footpath);
+            set(cx + 3, cy - 1, Tile.Footpath);
+            set(cx + 3, cy + 1, Tile.Footpath);
+            set(cx + 3, cy + 2, Tile.Footpath);
+            for (let y = cy - 2; y <= cy + 2; y++) set(cx+2, y, Tile.Footpath);
+            for (let y = cy - 1; y <= cy + 1; y++) set(cx+1, y, Tile.Footpath);
+            break;
+    }
+  }
 
   createStandardRoundabout(tiles, cx, cy, set) {
     // Top (leftward)
@@ -160,43 +227,5 @@ export class RoadGenerator {
 
   getRoundabouts() {
     return this.roundabouts;
-  }
-
-  // Convert zebra crossings/medians within triple areas to footpaths so the new block shares boundaries correctly
-  applyTripleAdjustmentsAtIntersection(tiles, gx, gy, cx, cy) {
-    const { tripleH, tripleV, W, MED } = this.cityLayout;
-    // Horizontal triple between blocks (gx,gy-1) and (gx+1,gy-1) spans across vertical median at x=cx
-    for (let by = 0; by < this.cityLayout.blocksHigh; by++) {
-      for (let bx = 0; bx < this.cityLayout.blocksWide - 1; bx++) {
-        if (!tripleH.has(`${bx},${by}`)) continue;
-        const left = this.cityLayout.getBlockOrigin(bx, by);
-        const right = this.cityLayout.getBlockOrigin(bx + 1, by);
-        const xStart = left.x + (W - 2), xEnd = right.x + 1;
-        const yStart = left.y + 2, yEnd = left.y + (W - 2) - 1; // FOOTPATH_RING=1 => inner 5 rows (skip footpaths)
-        // Any zebra/median within the rectangle becomes Footpath
-        for (let y = yStart; y <= yEnd; y++) {
-          for (let x = xStart; x <= xEnd; x++) {
-            if (tiles[y][x] >= 11 && tiles[y][x] <= 14) tiles[y][x] = 7; // ZebraCrossing* -> Footpath
-            if (tiles[y][x] === 5) tiles[y][x] = 7; // Median -> Footpath
-          }
-        }
-      }
-    }
-    // Vertical triple between blocks (gx-1,gy) and (gx-1,gy+1) spans across horizontal median at y=cy
-    for (let by = 0; by < this.cityLayout.blocksHigh - 1; by++) {
-      for (let bx = 0; bx < this.cityLayout.blocksWide; bx++) {
-        if (!tripleV.has(`${bx},${by}`)) continue;
-        const top = this.cityLayout.getBlockOrigin(bx, by);
-        const bottom = this.cityLayout.getBlockOrigin(bx, by + 1);
-        const yStart = top.y + (W - 2), yEnd = bottom.y + 1;
-        const xStart = top.x + 2, xEnd = top.x + (W - 2) - 1; // FOOTPATH_RING=1 => inner 5 cols
-        for (let y = yStart; y <= yEnd; y++) {
-          for (let x = xStart; x <= xEnd; x++) {
-            if (tiles[y][x] >= 11 && tiles[y][x] <= 14) tiles[y][x] = 7;
-            if (tiles[y][x] === 5) tiles[y][x] = 7;
-          }
-        }
-      }
-    }
   }
 }

@@ -7,21 +7,25 @@ export class BlockGenerator {
   }
 
   generateBlocks(tiles) {
+    const key = (bx, by) => `${bx},${by}`;
     // Generate individual blocks
     for (let by = 0; by < this.cityLayout.blocksHigh; by++) {
       for (let bx = 0; bx < this.cityLayout.blocksWide; bx++) {
         const origin = this.cityLayout.getBlockOrigin(bx, by);
-        this.generateSingleBlock(tiles, origin.x, origin.y);
+        const isMergedRight = this.cityLayout.mergedHorizontal.has(key(bx, by));
+        const isMergedDown = this.cityLayout.mergedVertical.has(key(bx, by));
+        this.generateSingleBlock(tiles, origin.x, origin.y, { skipEast: isMergedRight, skipSouth: isMergedDown });
       }
     }
+    
+    // Generate the "middle" blocks in merged spaces
+    this.generateMergedBlocks(tiles);
 
     // Generate medians between blocks
     this.generateMedians(tiles);
-    // Optionally merge adjacent blocks into a "triple block"
-    this.generateTripleBlocks(tiles);
   }
 
-  generateSingleBlock(tiles, ox, oy) {
+  generateSingleBlock(tiles, ox, oy, { skipEast = false, skipSouth = false } = {}) {
     const ROAD_RING = 2;
     const FOOTPATH_RING = 1;
 
@@ -30,12 +34,16 @@ export class BlockGenerator {
       // top/bottom rows (E/W lanes)
       for (let i = t; i < this.cityLayout.W - t; i++) {
         tiles[oy + t][ox + i] = Tile.RoadE;
-        tiles[oy + this.cityLayout.W - 1 - t][ox + i] = Tile.RoadW;
+        if (!skipSouth) {
+          tiles[oy + this.cityLayout.W - 1 - t][ox + i] = Tile.RoadW;
+        }
       }
       // left/right cols (N/S lanes)
       for (let i = t; i < this.cityLayout.W - t; i++) {
         tiles[oy + i][ox + t] = Tile.RoadN;
-        tiles[oy + i][ox + this.cityLayout.W - 1 - t] = Tile.RoadS;
+        if (!skipEast) {
+          tiles[oy + i][ox + this.cityLayout.W - 1 - t] = Tile.RoadS;
+        }
       }
     }
 
@@ -62,14 +70,77 @@ export class BlockGenerator {
       }
     }
   }
+  
+  generateMergedBlocks(tiles) {
+    const key = (bx, by) => `${bx},${by}`;
+    for (let by = 0; by < this.cityLayout.blocksHigh; by++) {
+      for (let bx = 0; bx < this.cityLayout.blocksWide; bx++) {
+        const k = key(bx, by);
+        const origin = this.cityLayout.getBlockOrigin(bx, by);
+        
+        if (this.cityLayout.mergedHorizontal.has(k)) {
+          const startX = origin.x + this.cityLayout.W;
+          const startY = origin.y + 2; // Align with block interior
+          this.generateMergedBlockContent(tiles, startX, startY, 5, this.cityLayout.W - 4, 'horizontal');
+        }
+        if (this.cityLayout.mergedVertical.has(k)) {
+          const startX = origin.x + 2; // Align with block interior
+          const startY = origin.y + this.cityLayout.W;
+          this.generateMergedBlockContent(tiles, startX, startY, this.cityLayout.W - 4, 5, 'vertical');
+        }
+      }
+    }
+  }
+
+  generateMergedBlockContent(tiles, ox, oy, width, height, direction) {
+    // Fill the area with grass first
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        tiles[oy + y][ox + x] = Tile.Grass;
+      }
+    }
+
+    // Create the central footpath alley
+    if (direction === 'horizontal') {
+      const alleyX = 2; // Center of the 5-tile width
+      for (let y = 0; y < height; y++) {
+        tiles[oy + y][ox + alleyX] = Tile.Footpath;
+        // Add perpendicular alley segments
+        if (y === 2 || y === 7) {
+           tiles[oy + y][ox + alleyX - 1] = Tile.Footpath;
+           tiles[oy + y][ox + alleyX - 2] = Tile.Footpath;
+           tiles[oy + y][ox + alleyX + 1] = Tile.Footpath;
+           tiles[oy + y][ox + alleyX + 2] = Tile.Footpath;
+        }
+      }
+    } else { // vertical
+      const alleyY = 2; // Center of the 5-tile height
+      for (let x = 0; x < width; x++) {
+        tiles[oy + alleyY][ox + x] = Tile.Footpath;
+        // Add perpendicular alley segments
+        if (x === 2 || x === 7) {
+           tiles[oy + alleyY - 1][ox + x] = Tile.Footpath;
+           tiles[oy + alleyY - 2][ox + x] = Tile.Footpath;
+           tiles[oy + alleyY + 1][ox + x] = Tile.Footpath;
+           tiles[oy + alleyY + 2][ox + x] = Tile.Footpath;
+        }
+      }
+    }
+  }
 
   generateMedians(tiles) {
+    const key = (bx, by) => `${bx},${by}`;
     // Horizontal medians
     for (let gy = 0; gy <= this.cityLayout.blocksHigh; gy++) {
       const y = this.cityLayout.getIntersectionCenter(0, gy).y;
       if (y >= 0 && y < this.cityLayout.height) {
         for (let x = 0; x < this.cityLayout.width; x++) {
-          tiles[y][x] = Tile.Median;
+          // Check if this median is between two vertically merged blocks
+          const bx = Math.floor((x - this.cityLayout.mapOffset) / (this.cityLayout.W + this.cityLayout.MED));
+          const isMerged = gy > 0 && this.cityLayout.mergedVertical.has(key(bx, gy - 1));
+          if (!isMerged) {
+            tiles[y][x] = Tile.Median;
+          }
         }
       }
     }
@@ -79,87 +150,13 @@ export class BlockGenerator {
       const x = this.cityLayout.getIntersectionCenter(gx, 0).x;
       if (x >= 0 && x < this.cityLayout.width) {
         for (let y = 0; y < this.cityLayout.height; y++) {
-          tiles[y][x] = Tile.Median;
+          // Check if this median is between two horizontally merged blocks
+          const by = Math.floor((y - this.cityLayout.mapOffset) / (this.cityLayout.W + this.cityLayout.MED));
+          const isMerged = gx > 0 && this.cityLayout.mergedHorizontal.has(key(gx - 1, by));
+          if (!isMerged) {
+            tiles[y][x] = Tile.Median;
+          }
         }
-      }
-    }
-  }
-
-  generateTripleBlocks(tiles) {
-    const { blocksWide, blocksHigh, MED, W, mapOffset } = this.cityLayout;
-    const ROAD_RING = 2, FOOTPATH_RING = 1;
-    // Horizontal merges
-    for (let by = 0; by < blocksHigh; by++) {
-      for (let bx = 0; bx < blocksWide - 1; bx++) {
-        if (this.rand() < 0.25) this.carveHorizontalTriple(tiles, bx, by, ROAD_RING, FOOTPATH_RING);
-      }
-    }
-    // Vertical merges
-    for (let by = 0; by < blocksHigh - 1; by++) {
-      for (let bx = 0; bx < blocksWide; bx++) {
-        if (this.rand() < 0.25) this.carveVerticalTriple(tiles, bx, by, ROAD_RING, FOOTPATH_RING);
-      }
-    }
-  }
-
-  carveHorizontalTriple(tiles, bx, by, ROAD_RING, FOOTPATH_RING) {
-    const { W, MED } = this.cityLayout;
-    const left = this.cityLayout.getBlockOrigin(bx, by);
-    const right = this.cityLayout.getBlockOrigin(bx + 1, by);
-    const xStart = left.x + (W - 2);           // left block's rightmost road start
-    const xEnd = right.x + 1;                  // right block's leftmost road end
-    const yStart = left.y + ROAD_RING;         // share existing footpaths as top/bottom
-    const yEnd = left.y + (W - ROAD_RING) - 1;
-    // Mark merged pair
-    this.cityLayout.tripleH.add(`${bx},${by}`);
-    // Top/bottom boundaries as footpath
-    for (let x = xStart; x <= xEnd; x++) { tiles[yStart][x] = Tile.Footpath; tiles[yEnd][x] = Tile.Footpath; }
-    // Center column (former median) as footpath
-    const cx = left.x + W;
-    for (let y = yStart; y <= yEnd; y++) tiles[y][cx] = Tile.Footpath;
-    // Plus shape arms at center row
-    const cy = yStart + 2; // middle of 5 rows
-    tiles[cy][xStart + 1] = Tile.Footpath;
-    tiles[cy][xEnd - 1] = Tile.Footpath;
-    // Fill remaining 5x5 area with lots (parks/buildings)
-    for (let y = yStart; y <= yEnd; y++) {
-      for (let x = xStart; x <= xEnd; x++) {
-        const isBoundary = (y === yStart || y === yEnd);
-        const isCenter = (x === cx || y === cy);
-        const isArm = (y === cy && (x === xStart + 1 || x === xEnd - 1));
-        if (isBoundary || isCenter || isArm) continue;
-        tiles[y][x] = (this.rand() < 0.3) ? Tile.Park : Tile.BuildingFloor;
-      }
-    }
-  }
-
-  carveVerticalTriple(tiles, bx, by, ROAD_RING, FOOTPATH_RING) {
-    const { W, MED } = this.cityLayout;
-    const top = this.cityLayout.getBlockOrigin(bx, by);
-    const bottom = this.cityLayout.getBlockOrigin(bx, by + 1);
-    const yStart = top.y + (W - 2);            // top block's bottom road start
-    const yEnd = bottom.y + 1;                 // bottom block's top road end
-    const xStart = top.x + ROAD_RING;
-    const xEnd = top.x + (W - ROAD_RING) - 1;
-    // Mark merged pair
-    this.cityLayout.tripleV.add(`${bx},${by}`);
-    // Left/right boundaries as footpath
-    for (let y = yStart; y <= yEnd; y++) { tiles[y][xStart] = Tile.Footpath; tiles[y][xEnd] = Tile.Footpath; }
-    // Center row (former median) as footpath
-    const cy = top.y + W;
-    for (let x = xStart; x <= xEnd; x++) tiles[cy][x] = Tile.Footpath;
-    // Plus shape arms at center column
-    const cx = xStart + 2; // middle of 5 cols
-    tiles[yStart + 1][cx] = Tile.Footpath;
-    tiles[yEnd - 1][cx] = Tile.Footpath;
-    // Fill remaining 5x5 area with lots (parks/buildings)
-    for (let y = yStart; y <= yEnd; y++) {
-      for (let x = xStart; x <= xEnd; x++) {
-        const isBoundary = (x === xStart || x === xEnd);
-        const isCenter = (y === cy || x === cx);
-        const isArm = ((x === cx) && (y === yStart + 1 || y === yEnd - 1));
-        if (isBoundary || isCenter || isArm) continue;
-        tiles[y][x] = (this.rand() < 0.3) ? Tile.Park : Tile.BuildingFloor;
       }
     }
   }

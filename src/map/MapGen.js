@@ -54,66 +54,96 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
   const roads = graphBuilder.buildRoadGraph(tiles, cityLayout.width, cityLayout.height, roadGenerator.getRoundabouts());
   const peds = graphBuilder.buildPedGraph(tiles, cityLayout.width, cityLayout.height, trees);
   
-  // Add beach border around the entire map
-  const borderedTiles = addBeachBorder(tiles);
-  
-  return {
-    tiles: borderedTiles,
-    width: borderedTiles[0].length,
-    height: borderedTiles.length,
+  // Return preliminary map (we will expand with border next)
+  let map = {
+    tiles,
+    width: cityLayout.width,
+    height: cityLayout.height,
     W: cityLayout.W,
     MED: cityLayout.MED,
     seed,
     roads,
     peds,
     buildings,
-    trees,
-    originalWidth: cityLayout.width,
-    originalHeight: cityLayout.height
+    trees
   };
-}
 
-function addBeachBorder(tiles) {
-  const originalHeight = tiles.length;
-  const originalWidth = tiles[0].length;
-  const newHeight = originalHeight + 4; // +2 top, +2 bottom
-  const newWidth = originalWidth + 4;   // +2 left, +2 right
+  // --- NEW: expand map with 2-tile border (shift = 2)
+  const shift = 2;
+  const newWidth = map.width + shift * 2;
+  const newHeight = map.height + shift * 2;
   
-  const newTiles = Array.from({ length: newHeight }, () => new Uint8Array(newWidth));
+  // Create new tiles filled with Beach
+  const newTiles = Array.from({ length: newHeight }, () => new Uint8Array(newWidth).fill(Tile.Beach));
   
-  // Fill the new map with grass
-  for (let y = 0; y < newHeight; y++) {
-    for (let x = 0; x < newWidth; x++) {
-      newTiles[y][x] = Tile.Grass;
+  // Copy old tiles into center offset by shift
+  for (let y = 0; y < map.height; y++) {
+    for (let x = 0; x < map.width; x++) {
+      newTiles[y + shift][x + shift] = map.tiles[y][x];
     }
   }
   
-  // Copy original map into center
-  for (let y = 0; y < originalHeight; y++) {
-    for (let x = 0; x < originalWidth; x++) {
-      newTiles[y + 2][x + 2] = tiles[y][x];
+  // Place a 1-cell footpath ring immediately outside the original map area (inside the beach)
+  // Top & Bottom
+  for (let x = shift; x < shift + map.width; x++) {
+    newTiles[shift - 1][x] = Tile.Footpath;
+    newTiles[shift + map.height][x] = Tile.Footpath;
+  }
+  // Left & Right
+  for (let y = shift; y < shift + map.height; y++) {
+    newTiles[y][shift - 1] = Tile.Footpath;
+    newTiles[y][shift + map.width] = Tile.Footpath;
+  }
+  // Corners (ensure continuous ring)
+  newTiles[shift - 1][shift - 1] = Tile.Footpath;
+  newTiles[shift - 1][shift + map.width] = Tile.Footpath;
+  newTiles[shift + map.height][shift - 1] = Tile.Footpath;
+  newTiles[shift + map.height][shift + map.width] = Tile.Footpath;
+  
+  // Update map metadata and assign newTiles
+  map.tiles = newTiles;
+  map.width = newWidth;
+  map.height = newHeight;
+  
+  // Shift all roads/ped nodes and rebuild roads.byKey and peds.nodes keys
+  // Shift road nodes
+  for (const n of map.roads.nodes) {
+    n.x += shift;
+    n.y += shift;
+  }
+  // Rebuild byKey with shifted coordinates
+  const newByKey = new Map();
+  for (const n of map.roads.nodes) {
+    newByKey.set(`${n.x},${n.y},${n.dir}`, n);
+  }
+  map.roads.byKey = newByKey;
+  
+  // Shift peds nodes (Map keys)
+  const shiftedPedMap = new Map();
+  for (const [key, node] of map.peds.nodes) {
+    const shifted = { ...node, x: node.x + shift, y: node.y + shift, neighbors: node.neighbors.map(nb => ({ x: nb.x + shift, y: nb.y + shift })) };
+    shiftedPedMap.set(`${shifted.x},${shifted.y}`, shifted);
+  }
+  // Also update list
+  const shiftedPedList = (map.peds.list || []).map(n => ({ x: n.x + shift, y: n.y + shift, neighbors: (n.neighbors || []).map(nb => ({ x: nb.x + shift, y: nb.y + shift })) }));
+  map.peds.nodes = shiftedPedMap;
+  map.peds.list = shiftedPedList;
+  
+  // Shift buildings' rects
+  for (const b of map.buildings) {
+    if (b.rect) {
+      b.rect.x += shift;
+      b.rect.y += shift;
     }
   }
   
-  // Add footpath ring (1 tile from edge)
-  for (let x = 1; x < newWidth - 1; x++) {
-    newTiles[1][x] = Tile.Footpath; // Top footpath
-    newTiles[newHeight - 2][x] = Tile.Footpath; // Bottom footpath
-  }
-  for (let y = 1; y < newHeight - 1; y++) {
-    newTiles[y][1] = Tile.Footpath; // Left footpath
-    newTiles[y][newWidth - 2] = Tile.Footpath; // Right footpath
+  // Shift trees
+  for (const t of map.trees) {
+    if (t.pos) {
+      t.pos.x += shift;
+      t.pos.y += shift;
+    }
   }
   
-  // Add beach tiles (outer edge)
-  for (let x = 0; x < newWidth; x++) {
-    newTiles[0][x] = Tile.Park; // Top beach (using Park as beach)
-    newTiles[newHeight - 1][x] = Tile.Park; // Bottom beach
-  }
-  for (let y = 0; y < newHeight; y++) {
-    newTiles[y][0] = Tile.Park; // Left beach
-    newTiles[y][newWidth - 1] = Tile.Park; // Right beach
-  }
-  
-  return newTiles;
+  return map;
 }

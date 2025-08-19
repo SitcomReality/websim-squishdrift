@@ -1,9 +1,10 @@
 import { Tile } from '../TileTypes.js';
 
 export class BlockGenerator {
-  constructor(cityLayout, rand) {
+  constructor(cityLayout, rand, lotFactory = null) {
     this.cityLayout = cityLayout;
     this.rand = rand;
+    this.lotFactory = lotFactory; // use BuildingGenerator methods when available
   }
 
   generateBlocks(tiles) {
@@ -197,8 +198,13 @@ export class BlockGenerator {
   placeLot(tiles, x, y) {
     const isBuilding = this.rand() < 0.7;
     const rect = { x, y, width: 2, height: 2 };
-    if (isBuilding) this.createBuilding(tiles, rect);
-    else this.createPark(tiles, rect);
+    if (this.lotFactory && typeof this.lotFactory.createBuilding === 'function' && typeof this.lotFactory.createPark === 'function') {
+      if (isBuilding) this.lotFactory.createBuilding(tiles, rect);
+      else this.lotFactory.createPark(tiles, rect);
+    } else {
+      if (isBuilding) this.createBuilding(tiles, rect);
+      else this.createPark(tiles, rect);
+    }
   }
 
   createBuilding(tiles, rect) {

@@ -12,16 +12,17 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
   const cityLayout = new CityLayout(blocksWide, blocksHigh);
   const tiles = cityLayout.createEmptyTiles();
   
-  // Generate city blocks
-  const blockGenerator = new BlockGenerator(cityLayout, rand);
+  // Prepare building generator first so merged blocks can use its lot creation
+  const buildingGenerator = new BuildingGenerator(cityLayout, rand);
+  // Generate city blocks (pass buildingGenerator so merged blocks use the same lot template)
+  const blockGenerator = new BlockGenerator(cityLayout, rand, buildingGenerator);
   blockGenerator.generateBlocks(tiles);
   
   // Generate roads and intersections
   const roadGenerator = new RoadGenerator(cityLayout, rand);
   roadGenerator.generateRoads(tiles);
   
-  // Generate buildings and parks
-  const buildingGenerator = new BuildingGenerator(cityLayout, rand);
+  // Generate buildings and parks for standard blocks
   const buildings = buildingGenerator.generateBuildings(tiles);
   
   // Get trees from building generator

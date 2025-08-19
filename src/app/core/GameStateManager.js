@@ -10,7 +10,9 @@ export class GameStateManager {
   }
 
   initialize() {
-    this.state = createInitialState();
+    // Generate a new random seed for each initialization
+    const randomSeed = Math.random().toString(36).substring(2, 15);
+    this.state = createInitialState(randomSeed);
     this.state.control = { inVehicle: false, vehicle: null, equipped: null };
     this.state.canvas = null;
     
@@ -27,4 +29,3 @@ export class GameStateManager {
     return this.state;
   }
 }
-

@@ -4,11 +4,25 @@ import { rng } from '../../utils/RNG.js';
 import { Vec2 } from '../../utils/Vec2.js';
 import { createVehicle } from '../vehicles/VehicleTypes.js';
 
-export function createInitialState() {
-  const map = generateCity('alpha-seed', 4, 4);
-  const rand = rng('alpha-seed');
+export function createInitialState(seed = null) {
+  // Use provided seed or generate new random one
+  const finalSeed = seed || Math.random().toString(36).substring(2, 15);
+  const rand = rng(finalSeed);
+  
+  // Randomize city dimensions between 3-6 blocks
+  const blocksWide = 3 + Math.floor(rand() * 4); // 3-6 blocks
+  const blocksHigh = 3 + Math.floor(rand() * 4); // 3-6 blocks
+  
+  const map = generateCity(finalSeed, blocksWide, blocksHigh);
   const player = { type: 'player', pos: new Vec2(), facing: new Vec2(1,0), moveSpeed: 6 };
-  const state = { time: 0, entities: [player], camera: { x: map.width/2, y: map.height/2, zoom: 4 }, world: { tileSize: 24, map }, rand };
+  const state = { 
+    time: 0, 
+    entities: [player], 
+    camera: { x: map.width/2, y: map.height/2, zoom: 4 }, 
+    world: { tileSize: 24, map }, 
+    rand,
+    seed: finalSeed // Store seed for debugging
+  };
   let spawnX = map.width / 2, spawnY = map.height / 2, bestDist = Infinity;
   for (let y = 0; y < map.height; y++) for (let x = 0; x < map.width; x++) {
     const t = map.tiles[y][x];
@@ -80,17 +94,13 @@ export function createInitialState() {
   
   // Create pickup spots at the center of each block and spawn an initial pickup (pistol)
   // Use map properties instead of cityLayout
-  const blocksWide = 4;
-  const blocksHigh = 4;
-  const W = 11; // block width from CityLayout
-  const MED = 1; // median width from CityLayout
   const mapOffset = 2;
   
   state.pickupSpots = [];
   for (let by = 0; by < blocksHigh; by++) {
     for (let bx = 0; bx < blocksWide; bx++) {
-      const originX = mapOffset + MED + bx * (W + MED);
-      const originY = mapOffset + MED + by * (W + MED);
+      const originX = mapOffset + bx * (W + MED);
+      const originY = mapOffset + by * (W + MED);
       const centerX = originX + Math.floor(W / 2) + 0.5;
       const centerY = originY + Math.floor(W / 2) + 0.5;
       const spotId = state.pickupSpots.length;

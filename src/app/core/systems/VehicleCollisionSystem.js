@@ -12,6 +12,7 @@ export class VehicleCollisionSystem {
       this.handleBuildingCollisions(state, v);
       this.handlePlayerCollision(state, v);
       this.handlePedestrianCollision(state, v);
+      this.handleMapBoundaries(state, v); // Add map boundary check
     }
   }
 
@@ -133,6 +134,27 @@ export class VehicleCollisionSystem {
     
     // Apply damping
     this.applyCollisionDamping(v, player);
+  }
+
+  handleMapBoundaries(state, v) {
+    const map = state.world?.map;
+    if (!map) return;
+    
+    // Check if vehicle is outside map boundaries
+    if (v.pos.x < 0 || v.pos.x >= map.width || 
+        v.pos.y < 0 || v.pos.y >= map.height) {
+      
+      // Mark vehicle as destroyed
+      if (!v.health) {
+        v.health = new (require('../../components/Health.js').Health)(1);
+      }
+      v.health.hp = 0;
+      
+      // Check if this is the player's vehicle
+      if (state.control?.inVehicle && state.control.vehicle === v) {
+        // Player death will be handled by DeathSystem
+      }
+    }
   }
 
   smoothCollisionNormal(normal, objA, objB) {

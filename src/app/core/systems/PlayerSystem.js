@@ -213,7 +213,15 @@ export class PlayerSystem {
         y: vehicle.pos.y + Math.sin(vehicle.rot || 0) * spawnOffset
       };
       
-      if (this.isWalkableTile(state, exitPos.x, exitPos.y)) {
+      // Check if exit position is outside map
+      const map = state.world?.map;
+      if (map && (exitPos.x < 0 || exitPos.x >= map.width || 
+                  exitPos.y < 0 || exitPos.y >= map.height)) {
+        // Find safe exit position inside map
+        const safeExitPos = this.findSafeExitPosition(state, vehicle);
+        player.pos.x = safeExitPos.x;
+        player.pos.y = safeExitPos.y;
+      } else if (this.isWalkableTile(state, exitPos.x, exitPos.y)) {
         player.pos.x = exitPos.x;
         player.pos.y = exitPos.y;
       } else {
@@ -235,6 +243,34 @@ export class PlayerSystem {
     if (vehicleStateEl) {
       vehicleStateEl.textContent = 'on foot';
     }
+  }
+
+  findSafeExitPosition(state, vehicle) {
+    const map = state.world?.map;
+    if (!map) return { x: vehicle.pos.x, y: vehicle.pos.y };
+    
+    // Try positions around the vehicle
+    const positions = [
+      { x: vehicle.pos.x + 1, y: vehicle.pos.y },
+      { x: vehicle.pos.x - 1, y: vehicle.pos.y },
+      { x: vehicle.pos.x, y: vehicle.pos.y + 1 },
+      { x: vehicle.pos.x, y: vehicle.pos.y - 1 },
+      { x: vehicle.pos.x + 1, y: vehicle.pos.y + 1 },
+      { x: vehicle.pos.x + 1, y: vehicle.pos.y - 1 },
+      { x: vehicle.pos.x - 1, y: vehicle.pos.y + 1 },
+      { x: vehicle.pos.x - 1, y: vehicle.pos.y - 1 }
+    ];
+    
+    for (const pos of positions) {
+      if (pos.x >= 0 && pos.x < map.width && 
+          pos.y >= 0 && pos.y < map.height && 
+          this.isWalkableTile(state, pos.x, pos.y)) {
+        return pos;
+      }
+    }
+    
+    // Fallback to vehicle position if no safe position found
+    return { x: vehicle.pos.x, y: vehicle.pos.y };
   }
 
   pickupItem(state, player) {

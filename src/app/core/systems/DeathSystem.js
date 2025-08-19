@@ -1,3 +1,5 @@
+import { Vec2 } from '../../utils/Vec2.js';
+
 export class DeathSystem {
   constructor() {
     this.isDead = false;
@@ -15,9 +17,52 @@ export class DeathSystem {
       this.handlePlayerDeath(state);
     }
 
+    // Check if player is in a vehicle that gets destroyed
+    this.checkVehicleDestruction(state);
+
+    // Check if vehicles (including player vehicle) go outside map
+    this.checkMapBoundaries(state);
+
     // Update death screen if player is dead
     if (this.isDead) {
       this.updateDeathScreen(state, dt);
+    }
+  }
+
+  checkVehicleDestruction(state) {
+    if (!state.control?.inVehicle) return;
+    
+    const vehicle = state.control.vehicle;
+    if (!vehicle || !vehicle.health) return;
+    
+    if (!vehicle.health.isAlive()) {
+      // Vehicle destroyed while player is inside - instant death
+      this.handlePlayerDeath(state);
+    }
+  }
+
+  checkMapBoundaries(state) {
+    const map = state.world?.map;
+    if (!map) return;
+    
+    // Check all vehicles
+    for (let i = state.entities.length - 1; i >= 0; i--) {
+      const entity = state.entities[i];
+      if (entity.type === 'vehicle') {
+        // Check if vehicle is outside map boundaries
+        if (entity.pos.x < 0 || entity.pos.x >= map.width || 
+            entity.pos.y < 0 || entity.pos.y >= map.height) {
+          
+          // Special check for player vehicle
+          if (state.control?.inVehicle && state.control.vehicle === entity) {
+            // Player drove off map - instant death
+            this.handlePlayerDeath(state);
+          }
+          
+          // Remove vehicle regardless
+          state.entities.splice(i, 1);
+        }
+      }
     }
   }
 

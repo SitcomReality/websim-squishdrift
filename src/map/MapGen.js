@@ -90,7 +90,7 @@ function addPerimeterFootpath(tiles, width, height) {
   // Top inner road (one tile below outer footpath)
   for (let x = 0; x < width; x++) {
     // Only overwrite if it's not already a zebra crossing
-    if (tiles[1][x] < Tile.ZebraCrossingN || tiles[1][x] > Tile.ZebraCrossingW) {
+    if (!(tiles[1][x] >= Tile.ZebraCrossingN && tiles[1][x] <= Tile.ZebraCrossingW)) {
       tiles[1][x] = Tile.RoadW; // match RoadGenerator: top lanes go West
     }
   }
@@ -98,7 +98,7 @@ function addPerimeterFootpath(tiles, width, height) {
   // Bottom inner road (one tile above outer footpath)
   for (let x = 0; x < width; x++) {
     // Only overwrite if it's not already a zebra crossing
-    if (tiles[height - 2][x] < Tile.ZebraCrossingN || tiles[height - 2][x] > Tile.ZebraCrossingW) {
+    if (!(tiles[height - 2][x] >= Tile.ZebraCrossingN && tiles[height - 2][x] <= Tile.ZebraCrossingW)) {
       tiles[height - 2][x] = Tile.RoadE; // match RoadGenerator: bottom lanes go East
     }
   }
@@ -106,7 +106,7 @@ function addPerimeterFootpath(tiles, width, height) {
   // Left inner road (one tile right of left outer footpath)
   for (let y = 0; y < height; y++) {
     // Only overwrite if it's not already a zebra crossing
-    if (tiles[y][1] < Tile.ZebraCrossingN || tiles[y][1] > Tile.ZebraCrossingW) {
+    if (!(tiles[y][1] >= Tile.ZebraCrossingN && tiles[y][1] <= Tile.ZebraCrossingW)) {
       tiles[y][1] = Tile.RoadS; // match RoadGenerator: left lanes go South
     }
   }
@@ -114,7 +114,7 @@ function addPerimeterFootpath(tiles, width, height) {
   // Right inner road (one tile left of right outer footpath)
   for (let y = 0; y < height; y++) {
     // Only overwrite if it's not already a zebra crossing
-    if (tiles[y][width - 2] < Tile.ZebraCrossingN || tiles[y][width - 2] > Tile.ZebraCrossingW) {
+    if (!(tiles[y][width - 2] >= Tile.ZebraCrossingN && tiles[y][width - 2] <= Tile.ZebraCrossingW)) {
       tiles[y][width - 2] = Tile.RoadN; // match RoadGenerator: right lanes go North
     }
   }

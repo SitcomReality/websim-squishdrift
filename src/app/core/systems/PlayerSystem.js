@@ -186,6 +186,13 @@ export class PlayerSystem {
     delete vehicle.node;
     delete vehicle.next;
     delete vehicle.t;
+
+    // Update HUD to show vehicle type
+    const vehicleStateEl = document.getElementById('vehicle-state');
+    if (vehicleStateEl) {
+      const vehicleType = vehicle.vehicleType || 'Vehicle';
+      vehicleStateEl.textContent = vehicleType.charAt(0).toUpperCase() + vehicleType.slice(1);
+    }
   }
 
   exitVehicle(state, player) {
@@ -217,6 +224,12 @@ export class PlayerSystem {
     
     state.control.inVehicle = false;
     state.control.vehicle = null;
+
+    // Update HUD to show "on foot"
+    const vehicleStateEl = document.getElementById('vehicle-state');
+    if (vehicleStateEl) {
+      vehicleStateEl.textContent = 'on foot';
+    }
   }
 
   pickupItem(state, player) {

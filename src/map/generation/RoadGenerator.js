@@ -80,53 +80,29 @@ export class RoadGenerator {
       }
     };
     
-    // Top side (horizontal zebra crossing over N/S road) - fix directions
+    // Top side (crossing N/S road)
     set(cx - 2, cy - 3, Tile.ZebraCrossingS);
     set(cx - 1, cy - 3, Tile.ZebraCrossingS);
     set(cx + 1, cy - 3, Tile.ZebraCrossingN);
     set(cx + 2, cy - 3, Tile.ZebraCrossingN);
     
-    // Outermost top zebra (one tile further out) - ensures perimeter lane has crossings
-    set(cx - 2, cy - 4, Tile.ZebraCrossingS);
-    set(cx - 1, cy - 4, Tile.ZebraCrossingS);
-    set(cx + 1, cy - 4, Tile.ZebraCrossingN);
-    set(cx + 2, cy - 4, Tile.ZebraCrossingN);
-
-    // Bottom side (horizontal zebra crossing over N/S road) - fix directions
+    // Bottom side (crossing N/S road)
     set(cx - 2, cy + 3, Tile.ZebraCrossingS);
     set(cx - 1, cy + 3, Tile.ZebraCrossingS);
     set(cx + 1, cy + 3, Tile.ZebraCrossingN);
     set(cx + 2, cy + 3, Tile.ZebraCrossingN);
     
-    // Outermost bottom zebra (one tile further out) - ensures perimeter lane has crossings
-    set(cx - 2, cy + 4, Tile.ZebraCrossingS);
-    set(cx - 1, cy + 4, Tile.ZebraCrossingS);
-    set(cx + 1, cy + 4, Tile.ZebraCrossingN);
-    set(cx + 2, cy + 4, Tile.ZebraCrossingN);
-
-    // Left side (vertical zebra crossing over E/W road) - these are correct
+    // Left side (crossing E/W road)
     set(cx - 3, cy - 2, Tile.ZebraCrossingW);
     set(cx - 3, cy - 1, Tile.ZebraCrossingW);
     set(cx - 3, cy + 1, Tile.ZebraCrossingE);
     set(cx - 3, cy + 2, Tile.ZebraCrossingE);
 
-    // Outermost left zebra (one tile further out) - ensures perimeter lane has crossings
-    set(cx - 4, cy - 2, Tile.ZebraCrossingW);
-    set(cx - 4, cy - 1, Tile.ZebraCrossingW);
-    set(cx - 4, cy + 1, Tile.ZebraCrossingE);
-    set(cx - 4, cy + 2, Tile.ZebraCrossingE);
-
-    // Right side (vertical zebra crossing over E/W road) - these are correct
+    // Right side (crossing E/W road)
     set(cx + 3, cy - 2, Tile.ZebraCrossingW);
     set(cx + 3, cy - 1, Tile.ZebraCrossingW);
     set(cx + 3, cy + 1, Tile.ZebraCrossingE);
     set(cx + 3, cy + 2, Tile.ZebraCrossingE);
-
-    // Outermost right zebra (one tile further out) - ensures perimeter lane has crossings
-    set(cx + 4, cy - 2, Tile.ZebraCrossingW);
-    set(cx + 4, cy - 1, Tile.ZebraCrossingW);
-    set(cx + 4, cy + 1, Tile.ZebraCrossingE);
-    set(cx + 4, cy + 2, Tile.ZebraCrossingE);
   }
 
   createStandardRoundabout(tiles, cx, cy, set) {

@@ -66,13 +66,17 @@ export class BlockGenerator {
   }
 
   generateMedians(tiles) {
-    // Horizontal medians - skip intersections on ring road
+    // Horizontal medians - skip roundabout areas
     for (let gy = 0; gy <= this.cityLayout.blocksHigh; gy++) {
       const y = this.cityLayout.getIntersectionCenter(0, gy).y;
       if (y >= 0 && y < this.cityLayout.height) {
-        // Check if this is NOT a perimeter intersection
-        const isPerimeter = (gy === 0 || gy === this.cityLayout.blocksHigh);
-        if (!isPerimeter) {
+        // Skip median in roundabout areas (±2 tiles around center)
+        const roundabouts = this.cityLayout.roundabouts || [];
+        const isInRoundabout = roundabouts.some(rb => 
+          Math.abs(rb.cy - y) <= 2
+        );
+        
+        if (!isInRoundabout) {
           for (let x = 0; x < this.cityLayout.width; x++) {
             tiles[y][x] = Tile.Median;
           }
@@ -80,13 +84,17 @@ export class BlockGenerator {
       }
     }
 
-    // Vertical medians - skip intersections on ring road
+    // Vertical medians - skip roundabout areas
     for (let gx = 0; gx <= this.cityLayout.blocksWide; gx++) {
       const x = this.cityLayout.getIntersectionCenter(gx, 0).x;
       if (x >= 0 && x < this.cityLayout.width) {
-        // Check if this is NOT a perimeter intersection
-        const isPerimeter = (gx === 0 || gx === this.cityLayout.blocksWide);
-        if (!isPerimeter) {
+        // Skip median in roundabout areas (±2 tiles around center)
+        const roundabouts = this.cityLayout.roundabouts || [];
+        const isInRoundabout = roundabouts.some(rb => 
+          Math.abs(rb.cx - x) <= 2
+        );
+        
+        if (!isInRoundabout) {
           for (let y = 0; y < this.cityLayout.height; y++) {
             tiles[y][x] = Tile.Median;
           }

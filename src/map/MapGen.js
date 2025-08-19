@@ -22,6 +22,9 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
   const roadGenerator = new RoadGenerator(cityLayout, rand);
   roadGenerator.generateRoads(tiles);
   
+  // Store roundabouts on cityLayout for median generation
+  cityLayout.roundabouts = roadGenerator.getRoundabouts();
+  
   // Generate buildings and parks for standard blocks
   const buildings = buildingGenerator.generateBuildings(tiles);
   

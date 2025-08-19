@@ -18,8 +18,8 @@ export class BlockGenerator {
     // Generate medians between blocks
     this.generateMedians(tiles);
 
-    // After base layout, randomly convert some corridors into triple blocks
-    this.generateTripleBlocks(tiles);
+    // After base layout, randomly convert some corridors into merged blocks
+    this.generateMergedBlocks(tiles);
   }
 
   generateSingleBlock(tiles, ox, oy) {
@@ -86,15 +86,15 @@ export class BlockGenerator {
     }
   }
 
-  generateTripleBlocks(tiles) {
+  generateMergedBlocks(tiles) {
     const W = this.cityLayout.W, MED = this.cityLayout.MED;
-    const tripleChance = 0.3;
+    const mergedChance = 0.3;
     const usedH = new Set(), usedV = new Set();
 
-    // Horizontal pairs (bx,by) with (bx+1,by)
+    // Horizontal merged pairs (bx,by) with (bx+1,by)
     for (let by = 0; by < this.cityLayout.blocksHigh; by++) {
       for (let bx = 0; bx < this.cityLayout.blocksWide - 1; bx++) {
-        if (this.rand() > tripleChance) continue;
+        if (this.rand() > mergedChance) continue;
         const key = `${bx},${by}`; if (usedH.has(key)) continue;
         usedH.add(key);
 
@@ -142,10 +142,10 @@ export class BlockGenerator {
       }
     }
 
-    // Vertical pairs (bx,by) with (bx,by+1)
+    // Vertical merged pairs (bx,by) with (bx,by+1)
     for (let by = 0; by < this.cityLayout.blocksHigh - 1; by++) {
       for (let bx = 0; bx < this.cityLayout.blocksWide; bx++) {
-        if (this.rand() > tripleChance) continue;
+        if (this.rand() > mergedChance) continue;
         const key = `${bx},${by}`; if (usedV.has(key)) continue;
         usedV.add(key);
 

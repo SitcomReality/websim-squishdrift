@@ -111,8 +111,21 @@ export class CollisionSystem {
       const playerRadius = Math.hypot(playerHw, playerHh);
       const vehicleRadius = Math.hypot(vehicleHw, vehicleHh);
       const collisionRadius = playerRadius + vehicleRadius;
+      
       if (this.checkCollision(player, vehicle, collisionRadius)) {
-        player.health.takeDamage(10);
+        // Calculate damage based on relative motion
+        const damage = this.calculateCollisionDamage(player, vehicle);
+        
+        if (damage > 0) {
+          const oldHealth = player.health.hp;
+          player.health.takeDamage(damage);
+          
+          // Trigger screen shake when player takes damage
+          const damageTaken = oldHealth - player.health.hp;
+          if (damageTaken > 0) {
+            this.triggerShake(state, damageTaken / 100); // Scale shake by damage amount
+          }
+        }
         
         // Simple knockback
         const dx = player.pos.x - vehicle.pos.x;
@@ -126,11 +139,58 @@ export class CollisionSystem {
     }
   }
 
+  calculateCollisionDamage(player, vehicle) {
+    // If vehicle has no velocity, no damage
+    if (!vehicle.vel || (Math.abs(vehicle.vel.x) < 0.1 && Math.abs(vehicle.vel.y) < 0.1)) {
+      return 0;
+    }
+
+    // Calculate vector from vehicle to player
+    const toPlayer = {
+      x: player.pos.x - vehicle.pos.x,
+      y: player.pos.y - vehicle.pos.y
+    };
+    
+    // Normalize the toPlayer vector
+    const playerDistance = Math.hypot(toPlayer.x, toPlayer.y);
+    if (playerDistance < 0.01) return 0;
+    
+    toPlayer.x /= playerDistance;
+    toPlayer.y /= playerDistance;
+    
+    // Normalize vehicle velocity
+    const vehicleSpeed = Math.hypot(vehicle.vel.x, vehicle.vel.y);
+    const normalizedVelocity = {
+      x: vehicle.vel.x / vehicleSpeed,
+      y: vehicle.vel.y / vehicleSpeed
+    };
+    
+    // Calculate dot product (projection of vehicle velocity onto player direction)
+    const dotProduct = normalizedVelocity.x * toPlayer.x + normalizedVelocity.y * toPlayer.y;
+    
+    // If vehicle is moving away from player (negative dot product), no damage
+    if (dotProduct <= 0) {
+      return 0;
+    }
+    
+    // Damage scales with speed and alignment
+    const baseDamage = 15;
+    const speedMultiplier = Math.min(2, vehicleSpeed / 3); // Cap at 2x for high speeds
+    
+    return Math.floor(baseDamage * dotProduct * speedMultiplier);
+  }
+
   isTreeTrunk(x, y, map) {
     if (!map.trees) return false;
     return map.trees.some(tree => 
       Math.floor(tree.pos.x) === x && Math.floor(tree.pos.y) === y
     );
+  }
+
+  triggerShake(state, intensity = 1) {
+    if (this.cameraSystem) {
+      this.cameraSystem.addShake(intensity);
+    }
   }
 
   update(state) {

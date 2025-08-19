@@ -1,9 +1,10 @@
 import { Tile } from '../TileTypes.js';
 
 export class BlockGenerator {
-  constructor(cityLayout, rand) {
+  constructor(cityLayout, rand, roadGenerator) {
     this.cityLayout = cityLayout;
     this.rand = rand;
+    this.roadGenerator = roadGenerator; // Store the RoadGenerator instance
   }
 
   generateBlocks(tiles) {
@@ -89,22 +90,22 @@ export class BlockGenerator {
   generateMergedBlocks(tiles) {
     const W = this.cityLayout.W, MED = this.cityLayout.MED;
     const mergedChance = 0.3;
-    const usedH = new Set(), usedV = new Set();
+    const usedH = new Set(), usedV = new Set(); // Internal sets for this generator
 
     // Horizontal merged pairs (bx,by) with (bx+1,by)
     for (let by = 0; by < this.cityLayout.blocksHigh; by++) {
       for (let bx = 0; bx < this.cityLayout.blocksWide - 1; bx++) {
         if (this.rand() > mergedChance) continue;
-        const key = `${bx},${by}`; if (usedH.has(key)) continue;
+        const key = `${bx},${by}`;
+        // Ensure no overlaps with already merged vertical blocks, or previous horizontal merges
+        if (usedH.has(key) || usedH.has(`${bx-1},${by}`) || usedV.has(key) || usedV.has(`${bx},${by-1}`)) continue; 
         usedH.add(key);
 
         const left = this.cityLayout.getBlockOrigin(bx, by);
-        const right = this.cityLayout.getBlockOrigin(bx + 1, by);
-
-        // Store the used sets in the RoadGenerator for zebra crossing checks
+        
+        // Notify RoadGenerator of the merge
         if (this.roadGenerator) {
-          this.roadGenerator.usedH = usedH;
-          this.roadGenerator.usedV = usedV;
+          this.roadGenerator.addHorizontalMerge(bx, by);
         }
 
         // Compute the 5x5 interior band between blocks
@@ -152,17 +153,17 @@ export class BlockGenerator {
     for (let by = 0; by < this.cityLayout.blocksHigh - 1; by++) {
       for (let bx = 0; bx < this.cityLayout.blocksWide; bx++) {
         if (this.rand() > mergedChance) continue;
-        const key = `${bx},${by}`; if (usedV.has(key)) continue;
+        const key = `${bx},${by}`;
+        // Ensure no overlaps with already merged horizontal blocks, or previous vertical merges
+        if (usedV.has(key) || usedV.has(`${bx},${by-1}`) || usedH.has(key) || usedH.has(`${bx-1},${by}`)) continue; 
         usedV.add(key);
         
-        // Store the used sets in the RoadGenerator
-        if (this.roadGenerator) {
-          this.roadGenerator.usedH = usedH;
-          this.roadGenerator.usedV = usedV;
-        }
-
         const top = this.cityLayout.getBlockOrigin(bx, by);
-        const bottom = this.cityLayout.getBlockOrigin(bx, by + 1);
+
+        // Notify RoadGenerator of the merge
+        if (this.roadGenerator) {
+          this.roadGenerator.addVerticalMerge(bx, by);
+        }
 
         // Compute the 5x5 interior band between blocks (vertical)
         const yStart = top.y + (W - 2);      // rows W-2 .. W+2 relative to top block
@@ -214,10 +215,10 @@ export class BlockGenerator {
   }
 
   createBuilding(tiles, rect) {
-    // Implementation for creating a building
+    // Implementation for creating a building (stub as it is handled by BuildingGenerator now)
   }
 
   createPark(tiles, rect) {
-    // Implementation for creating a park
+    // Implementation for creating a park (stub as it is handled by BuildingGenerator now)
   }
 }

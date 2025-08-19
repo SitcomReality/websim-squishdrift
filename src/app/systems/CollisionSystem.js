@@ -1,9 +1,12 @@
 import { Vec2 } from '../../utils/Vec2.js';
+import { Health } from '../../components/Health.js';
 
 export class CollisionSystem {
   constructor() {
     this.collisionPairs = [];
     this.cameraSystem = null; // Will be set externally
+    this.lastDamageTime = 0;
+    this.invincibilityDuration = 50; // ms
   }
 
   // Simple radius-based collision detection
@@ -55,6 +58,10 @@ export class CollisionSystem {
     if (state.control?.inVehicle) return; // disable player collisions while inside a vehicle
     if (player.collisionDisabled) return; // Skip if player collision is disabled
     
+    // invincibility frames: skip damage if recently hit
+    const now = Date.now();
+    if (now - this.lastDamageTime < this.invincibilityDuration) return;
+    
     // Check tree trunk collision for player
     const map = state.world.map;
     const tx = Math.floor(player.pos.x);
@@ -97,7 +104,12 @@ export class CollisionSystem {
             const oldHealth = player.health.hp;
             player.health.takeDamage(damage);
             const damageTaken = oldHealth - player.health.hp;
-            if (damageTaken > 0) this.triggerShake(state, Math.min(1, damageTaken / 50));
+            if (damageTaken > 0) {
+              this.lastDamageTime = now;
+              this.triggerShake(state, Math.min(1, damageTaken / 50));
+              // Add floating damage text
+              this.addDamageText(state, player.pos, damage);
+            }
             // Knockback away from vehicle (scaled by damage)
             const k = Math.min(1, damage / 30) * 0.35;
             player.pos.x += toPlayerN.x * k;
@@ -119,6 +131,19 @@ export class CollisionSystem {
     if (this.cameraSystem) {
       this.cameraSystem.addShake(intensity);
     }
+  }
+
+  addDamageText(state, pos, damage) {
+    if (!state.damageTexts) state.damageTexts = [];
+    state.damageTexts.push({
+      type: 'damage_text',
+      pos: { x: pos.x, y: pos.y },
+      text: `-${damage}`,
+      color: '#ff3333',
+      age: 0,
+      lifetime: 1.5,
+      size: 16
+    });
   }
 
   update(state) {

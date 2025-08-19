@@ -76,33 +76,99 @@ export class RoadGenerator {
   createZebraCrossings(tiles, cx, cy) {
     const set = (x, y, t) => {
       if (x >= 0 && y >= 0 && x < this.cityLayout.width && y < this.cityLayout.height) {
-        tiles[y][x] = t;
+        // Check if this tile is part of a merged block - if so, use footpath instead
+        const isMerged = this.isTileInMergedArea(x, y);
+        const finalType = isMerged ? Tile.Footpath : t;
+        tiles[y][x] = finalType;
       }
     };
     
-    // Top side (horizontal zebra crossing over N/S road) - fix directions
+    // Top side (horizontal zebra crossing over N/S road)
     set(cx - 2, cy - 3, Tile.ZebraCrossingS);
     set(cx - 1, cy - 3, Tile.ZebraCrossingS);
     set(cx + 1, cy - 3, Tile.ZebraCrossingN);
     set(cx + 2, cy - 3, Tile.ZebraCrossingN);
     
-    // Bottom side (horizontal zebra crossing over N/S road) - fix directions
+    // Bottom side (horizontal zebra crossing over N/S road)
     set(cx - 2, cy + 3, Tile.ZebraCrossingS);
     set(cx - 1, cy + 3, Tile.ZebraCrossingS);
     set(cx + 1, cy + 3, Tile.ZebraCrossingN);
     set(cx + 2, cy + 3, Tile.ZebraCrossingN);
     
-    // Left side (vertical zebra crossing over E/W road) - these are correct
+    // Left side (vertical zebra crossing over E/W road)
     set(cx - 3, cy - 2, Tile.ZebraCrossingW);
     set(cx - 3, cy - 1, Tile.ZebraCrossingW);
     set(cx - 3, cy + 1, Tile.ZebraCrossingE);
     set(cx - 3, cy + 2, Tile.ZebraCrossingE);
 
-    // Right side (vertical zebra crossing over E/W road) - these are correct
+    // Right side (vertical zebra crossing over E/W road)
     set(cx + 3, cy - 2, Tile.ZebraCrossingW);
     set(cx + 3, cy - 1, Tile.ZebraCrossingW);
     set(cx + 3, cy + 1, Tile.ZebraCrossingE);
     set(cx + 3, cy + 2, Tile.ZebraCrossingE);
+  }
+
+  isTileInMergedArea(x, y) {
+    // Check if this tile position is within any merged block area
+    const roundabouts = this.roundabouts || [];
+    
+    for (const rb of roundabouts) {
+      const { cx, cy } = rb;
+      
+      // Check if this tile is in the zebra crossing area between merged blocks
+      const isHorizontalMerge = 
+        (Math.abs(y - (cy - 3)) <= 0.5 && Math.abs(x - cx) <= 2) || // top crossings
+        (Math.abs(y - (cy + 3)) <= 0.5 && Math.abs(x - cx) <= 2);  // bottom crossings
+        
+      const isVerticalMerge = 
+        (Math.abs(x - (cx - 3)) <= 0.5 && Math.abs(y - cy) <= 2) || // left crossings
+        (Math.abs(x - (cx + 3)) <= 0.5 && Math.abs(y - cy) <= 2);   // right crossings
+        
+      if (isHorizontalMerge || isVerticalMerge) {
+        // Check if this roundabout is part of a merged block
+        const isMerged = this.isRoundaboutMerged(rb);
+        if (isMerged) {
+          return true;
+        }
+      }
+    }
+    
+    return false;
+  }
+
+  isRoundaboutMerged(rb) {
+    const { cx, cy } = rb;
+    
+    // Check if this roundabout has been merged horizontally or vertically
+    const cityLayout = this.cityLayout;
+    const blocksWide = cityLayout.blocksWide;
+    const blocksHigh = cityLayout.blocksHigh;
+    
+    // Get grid position of this roundabout
+    const gx = Math.round((cx - cityLayout.mapOffset) / (cityLayout.W + cityLayout.MED));
+    const gy = Math.round((cy - cityLayout.mapOffset) / (cityLayout.W + cityLayout.MED));
+    
+    // Check if there's a horizontal merge with the next block
+    if (gx < blocksWide - 1) {
+      const rightKey = `${gx},${gy}`;
+      const leftKey = `${gx-1},${gy}`;
+      // Check if usedH contains this pair (indicating horizontal merge)
+      if (this.usedH && (this.usedH.has(rightKey) || this.usedH.has(leftKey))) {
+        return true;
+      }
+    }
+    
+    // Check if there's a vertical merge with the block below
+    if (gy < blocksHigh - 1) {
+      const bottomKey = `${gx},${gy}`;
+      const topKey = `${gx},${gy-1}`;
+      // Check if usedV contains this pair (indicating vertical merge)
+      if (this.usedV && (this.usedV.has(bottomKey) || this.usedV.has(topKey))) {
+        return true;
+      }
+    }
+    
+    return false;
   }
 
   createStandardRoundabout(tiles, cx, cy, set) {

@@ -82,22 +82,27 @@ export class CollisionSystem {
       const collisionRadius = playerRadius + vehicleRadius;
       
       if (this.checkCollision(player, vehicle, collisionRadius)) {
-        const oldHealth = player.health.hp;
-        player.health.takeDamage(10);
-        
-        // Trigger screen shake when player takes damage
-        const damageTaken = oldHealth - player.health.hp;
-        if (damageTaken > 0) {
-          this.triggerShake(state, damageTaken / 100); // Scale shake by damage amount
-        }
-        
-        // Simple knockback
-        const dx = player.pos.x - vehicle.pos.x;
-        const dy = player.pos.y - vehicle.pos.y;
-        const len = Math.sqrt(dx * dx + dy * dy);
-        if (len > 0) {
-          player.pos.x += (dx / len) * 0.2;
-          player.pos.y += (dy / len) * 0.2;
+        // Compute damage based on vehicle movement vector relative to player
+        const vx = vehicle.vel?.x || 0, vy = vehicle.vel?.y || 0;
+        const speed = Math.hypot(vx, vy);
+        if (speed > 0.01) {
+          const vdir = { x: vx / speed, y: vy / speed };
+          const toPlayer = { x: player.pos.x - vehicle.pos.x, y: player.pos.y - vehicle.pos.y };
+          const dist = Math.hypot(toPlayer.x, toPlayer.y) || 1;
+          const toPlayerN = { x: toPlayer.x / dist, y: toPlayer.y / dist };
+          const alignment = vdir.x * toPlayerN.x + vdir.y * toPlayerN.y; // 1 => directly toward player
+          if (alignment > 0) {
+            // Scale damage by speed and alignment; tune multiplier to keep similar feel
+            const damage = Math.max(1, Math.round(speed * alignment * 20));
+            const oldHealth = player.health.hp;
+            player.health.takeDamage(damage);
+            const damageTaken = oldHealth - player.health.hp;
+            if (damageTaken > 0) this.triggerShake(state, Math.min(1, damageTaken / 50));
+            // Knockback away from vehicle (scaled by damage)
+            const k = Math.min(1, damage / 30) * 0.35;
+            player.pos.x += toPlayerN.x * k;
+            player.pos.y += toPlayerN.y * k;
+          }
         }
       }
     }

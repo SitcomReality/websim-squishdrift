@@ -17,9 +17,6 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
   
   // Generate roads and intersections
   const roadGenerator = new RoadGenerator(cityLayout, rand);
-  // Pass merged-block metadata so zebra crossings inside merged corridors become footpaths
-  roadGenerator.usedH = blockGenerator.usedH;
-  roadGenerator.usedV = blockGenerator.usedV;
   roadGenerator.generateRoads(tiles);
   
   // Generate buildings and parks

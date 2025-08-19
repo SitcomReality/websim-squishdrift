@@ -4,8 +4,6 @@ export class BlockGenerator {
   constructor(cityLayout, rand) {
     this.cityLayout = cityLayout;
     this.rand = rand;
-    this.usedH = new Set();
-    this.usedV = new Set();
   }
 
   generateBlocks(tiles) {
@@ -91,7 +89,7 @@ export class BlockGenerator {
   generateMergedBlocks(tiles) {
     const W = this.cityLayout.W, MED = this.cityLayout.MED;
     const mergedChance = 0.3;
-    const usedH = this.usedH, usedV = this.usedV;
+    const usedH = new Set(), usedV = new Set();
 
     // Horizontal merged pairs (bx,by) with (bx+1,by)
     for (let by = 0; by < this.cityLayout.blocksHigh; by++) {
@@ -102,6 +100,12 @@ export class BlockGenerator {
 
         const left = this.cityLayout.getBlockOrigin(bx, by);
         const right = this.cityLayout.getBlockOrigin(bx + 1, by);
+
+        // Store the used sets in the RoadGenerator for zebra crossing checks
+        if (this.roadGenerator) {
+          this.roadGenerator.usedH = usedH;
+          this.roadGenerator.usedV = usedV;
+        }
 
         // Compute the 5x5 interior band between blocks
         const xStart = left.x + (W - 2);     // columns: W-2 .. W+2 relative to left block
@@ -151,6 +155,12 @@ export class BlockGenerator {
         const key = `${bx},${by}`; if (usedV.has(key)) continue;
         usedV.add(key);
         
+        // Store the used sets in the RoadGenerator
+        if (this.roadGenerator) {
+          this.roadGenerator.usedH = usedH;
+          this.roadGenerator.usedV = usedV;
+        }
+
         const top = this.cityLayout.getBlockOrigin(bx, by);
         const bottom = this.cityLayout.getBlockOrigin(bx, by + 1);
 

@@ -7,8 +7,8 @@ const canvas = document.getElementById('game');
 const debugEl = document.getElementById('debug');
 const toggleBtn = document.getElementById('toggle-debug');
 
-const game = new GameEngine(canvas, { debugEl });
-const loop = createLoop({
+let game = new GameEngine(canvas, { debugEl });
+let loop = createLoop({
   update: (dt) => game.update(dt),
   render: (interp) => game.render(interp),
 });
@@ -28,16 +28,8 @@ toggleBtn.addEventListener('click', () => {
   console.log('Debug overlay enabled:', next);
 });
 
-// Add click handling for death screen
+// Add click handling for debug spawning
 canvas.addEventListener('click', (e) => {
-  if (game.systems?.death?.isDead) {
-    const rect = canvas.getBoundingClientRect();
-    if (game.systems.death.handleClick(e.clientX, e.clientY)) {
-      return;
-    }
-  }
-  
-  // Existing debug spawn click handling...
   if (!game.debugOverlay?.enabled) return;
   
   const rect = canvas.getBoundingClientRect();

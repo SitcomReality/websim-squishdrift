@@ -266,13 +266,15 @@ export class WeaponSystem {
           entity.health.hp = Math.max(0, (entity.health.hp || entity.health.hp || 100) - projectile.damage);
         }
         
-        // Track kills
-        if (entity.health.hp <= 0 && projectile.owner === 'player') {
-          state.killCount = (state.killCount || 0) + 1;
-        }
-        
         // Show damage text
         this.damageTextSystem.addDamageText(state, entity.pos, projectile.damage);
+        
+        // Update stats
+        if (entity.type === 'npc') {
+          state.stats.enemiesKilled = (state.stats.enemiesKilled || 0) + 1;
+        } else if (entity.type === 'vehicle') {
+          state.stats.vehiclesDestroyed = (state.stats.vehiclesDestroyed || 0) + 1;
+        }
         
         // Handle entity destruction
         if ((entity.health.hp || entity.health.hp || 100) <= 0) {
@@ -292,8 +294,6 @@ export class WeaponSystem {
               } else {
                 state.entities.push(bloodStain);
               }
-            } else if (entity.type === 'vehicle') {
-              state.vehiclesDestroyed = (state.vehiclesDestroyed || 0) + 1;
             }
             state.entities.splice(index, 1);
           }

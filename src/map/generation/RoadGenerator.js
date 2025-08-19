@@ -47,6 +47,8 @@ export class RoadGenerator {
         
         this.createRoundabout(tiles, center.x, center.y, isPerimeter);
         this.roundabouts.push({ cx: center.x, cy: center.y, isPerimeter });
+        // After creating zebra crossings, adjust if triple blocks overlap
+        this.applyTripleAdjustmentsAtIntersection(tiles, gx, gy, center.x, center.y);
       }
     }
   }
@@ -158,5 +160,43 @@ export class RoadGenerator {
 
   getRoundabouts() {
     return this.roundabouts;
+  }
+
+  // Convert zebra crossings/medians within triple areas to footpaths so the new block shares boundaries correctly
+  applyTripleAdjustmentsAtIntersection(tiles, gx, gy, cx, cy) {
+    const { tripleH, tripleV, W, MED } = this.cityLayout;
+    // Horizontal triple between blocks (gx,gy-1) and (gx+1,gy-1) spans across vertical median at x=cx
+    for (let by = 0; by < this.cityLayout.blocksHigh; by++) {
+      for (let bx = 0; bx < this.cityLayout.blocksWide - 1; bx++) {
+        if (!tripleH.has(`${bx},${by}`)) continue;
+        const left = this.cityLayout.getBlockOrigin(bx, by);
+        const right = this.cityLayout.getBlockOrigin(bx + 1, by);
+        const xStart = left.x + (W - 2), xEnd = right.x + 1;
+        const yStart = left.y + 2, yEnd = left.y + (W - 2) - 1; // FOOTPATH_RING=1 => inner 5 rows (skip footpaths)
+        // Any zebra/median within the rectangle becomes Footpath
+        for (let y = yStart; y <= yEnd; y++) {
+          for (let x = xStart; x <= xEnd; x++) {
+            if (tiles[y][x] >= 11 && tiles[y][x] <= 14) tiles[y][x] = 7; // ZebraCrossing* -> Footpath
+            if (tiles[y][x] === 5) tiles[y][x] = 7; // Median -> Footpath
+          }
+        }
+      }
+    }
+    // Vertical triple between blocks (gx-1,gy) and (gx-1,gy+1) spans across horizontal median at y=cy
+    for (let by = 0; by < this.cityLayout.blocksHigh - 1; by++) {
+      for (let bx = 0; bx < this.cityLayout.blocksWide; bx++) {
+        if (!tripleV.has(`${bx},${by}`)) continue;
+        const top = this.cityLayout.getBlockOrigin(bx, by);
+        const bottom = this.cityLayout.getBlockOrigin(bx, by + 1);
+        const yStart = top.y + (W - 2), yEnd = bottom.y + 1;
+        const xStart = top.x + 2, xEnd = top.x + (W - 2) - 1; // FOOTPATH_RING=1 => inner 5 cols
+        for (let y = yStart; y <= yEnd; y++) {
+          for (let x = xStart; x <= xEnd; x++) {
+            if (tiles[y][x] >= 11 && tiles[y][x] <= 14) tiles[y][x] = 7;
+            if (tiles[y][x] === 5) tiles[y][x] = 7;
+          }
+        }
+      }
+    }
   }
 }

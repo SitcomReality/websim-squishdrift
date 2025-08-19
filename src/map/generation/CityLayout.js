@@ -13,6 +13,10 @@ export class CityLayout {
     
     this.width = this.cityWidth + this.mapOffset * 2;
     this.height = this.cityHeight + this.mapOffset * 2;
+    
+    // Track merged "triple block" pairs
+    this.tripleH = new Set(); // keys: `${bx},${by}` merged with (bx+1,by)
+    this.tripleV = new Set(); // keys: `${bx},${by}` merged with (bx,by+1)
   }
 
   createEmptyTiles() {
@@ -35,4 +39,3 @@ export class CityLayout {
     };
   }
 }
-

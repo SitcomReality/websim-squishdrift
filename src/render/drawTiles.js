@@ -1,4 +1,4 @@
-import { Tile, TileColor, roadDir } from '../map/TileTypes.js';
+import { Tile, TileColor } from '../map/TileTypes.js';
 
 export function drawTiles(r, state, layer = 'all'){
   const { ctx, canvas } = r, ts = state.world.tileSize, map = state.world.map;
@@ -34,14 +34,15 @@ export function drawTiles(r, state, layer = 'all'){
     } else {
       r.ctx.fillStyle = TileColor[t] || '#f5f5f5';
       r.ctx.fillRect(gx*ts, gy*ts, ts, ts);
-      // Draw permanent lane-direction arrow for single-outlet road tiles (intersection arms)
-      try {
-        const d = roadDir(t);
-        const node = d && map.roads && map.roads.byKey && map.roads.byKey.get(`${gx},${gy},${d}`);
-        if (node && Array.isArray(node.next) && node.next.length === 1) {
-          drawRoadArrow(r.ctx, gx*ts + ts/2, gy*ts + ts/2, d, Math.min(ts*0.28, 18), TileColor[Tile.ZebraCrossingN] || '#6a6a6a');
+    }
+    
+    // Draw directional arrows for road markings
+    if (map.tiles._arrows) {
+      for (const arrow of map.tiles._arrows) {
+        if (arrow.x === gx && arrow.y === gy) {
+          drawDirectionalArrow(r, gx, gy, ts, arrow.dir);
         }
-      } catch(e) { /* defensive: don't break rendering on graph issues */ }
+      }
     }
     
     if (t === Tile.BuildingWall) {
@@ -93,21 +94,61 @@ function drawZebraCrossing(r, gx, gy, ts, tileType) {
   }
 }
 
-// Add helper to draw a small filled arrow used as road marking
-function drawRoadArrow(ctx, cx, cy, dir, len, color) {
-  const ang = dir==='N'? -Math.PI/2 : dir==='E'? 0 : dir==='S'? Math.PI/2 : Math.PI;
+function drawDirectionalArrow(r, gx, gy, ts, direction) {
+  const { ctx } = r;
+  const cx = gx * ts + ts/2;
+  const cy = gy * ts + ts/2;
+  
+  // Set arrow color to match zebra crossing
+  ctx.fillStyle = TileColor[Tile.ZebraCrossingN];
+  ctx.strokeStyle = TileColor[Tile.ZebraCrossingN];
+  ctx.lineWidth = 2;
+  
+  // Draw arrow based on direction
+  const arrowLength = ts * 0.4;
+  const arrowHeadSize = ts * 0.1;
+  
   ctx.save();
   ctx.translate(cx, cy);
-  ctx.rotate(ang);
-  ctx.fillStyle = color;
-  ctx.beginPath();
-  // arrow shaft
-  ctx.rect(-len*0.45, -2, len*0.9, 4);
-  // arrow head
-  ctx.moveTo(len*0.45, 0);
-  ctx.lineTo(len*0.9, -6);
-  ctx.lineTo(len*0.9, 6);
-  ctx.closePath();
-  ctx.fill();
+  
+  switch(direction) {
+    case 'N':
+      ctx.beginPath();
+      ctx.moveTo(0, arrowLength/2);
+      ctx.lineTo(0, -arrowLength/2);
+      ctx.moveTo(-arrowHeadSize, -arrowLength/2 + arrowHeadSize);
+      ctx.lineTo(0, -arrowLength/2);
+      ctx.lineTo(arrowHeadSize, -arrowLength/2 + arrowHeadSize);
+      ctx.stroke();
+      break;
+    case 'S':
+      ctx.beginPath();
+      ctx.moveTo(0, -arrowLength/2);
+      ctx.lineTo(0, arrowLength/2);
+      ctx.moveTo(-arrowHeadSize, arrowLength/2 - arrowHeadSize);
+      ctx.lineTo(0, arrowLength/2);
+      ctx.lineTo(arrowHeadSize, arrowLength/2 - arrowHeadSize);
+      ctx.stroke();
+      break;
+    case 'E':
+      ctx.beginPath();
+      ctx.moveTo(-arrowLength/2, 0);
+      ctx.lineTo(arrowLength/2, 0);
+      ctx.moveTo(arrowLength/2 - arrowHeadSize, -arrowHeadSize);
+      ctx.lineTo(arrowLength/2, 0);
+      ctx.lineTo(arrowLength/2 - arrowHeadSize, arrowHeadSize);
+      ctx.stroke();
+      break;
+    case 'W':
+      ctx.beginPath();
+      ctx.moveTo(arrowLength/2, 0);
+      ctx.lineTo(-arrowLength/2, 0);
+      ctx.moveTo(-arrowLength/2 + arrowHeadSize, -arrowHeadSize);
+      ctx.lineTo(-arrowLength/2, 0);
+      ctx.lineTo(-arrowLength/2 + arrowHeadSize, arrowHeadSize);
+      ctx.stroke();
+      break;
+  }
+  
   ctx.restore();
 }

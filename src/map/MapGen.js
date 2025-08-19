@@ -49,6 +49,9 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
   // After all generators, sanitize tiles so merged blocks override stray zebra crossings
   sanitizeMap(tiles, cityLayout.width, cityLayout.height, Tile, (t)=> (t>=Tile.RoadN && t<=Tile.RoadW) || (t>=Tile.ZebraCrossingN && t<=Tile.ZebraCrossingW));
   
+  // Add directional arrows to intersections
+  addRoadMarkings(tiles, roundabouts, cityLayout);
+  
   // Build road and pedestrian graphs
   const graphBuilder = new GraphBuilder();
   const roads = graphBuilder.buildRoadGraph(tiles, cityLayout.width, cityLayout.height, roadGenerator.getRoundabouts());
@@ -298,4 +301,41 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
   }
   
   return map;
+}
+
+// Add directional arrows to intersections
+function addRoadMarkings(tiles, roundabouts, cityLayout) {
+  const arrows = [];
+  
+  for (const { cx, cy } of roundabouts) {
+    // Add arrows for the 8 directional lanes
+    // North arm - southbound
+    arrows.push({ x: cx, y: cy - 2, dir: 'S' });
+    arrows.push({ x: cx, y: cy - 1, dir: 'S' });
+    
+    // South arm - northbound
+    arrows.push({ x: cx, y: cy + 2, dir: 'N' });
+    arrows.push({ x: cx, y: cy + 1, dir: 'N' });
+    
+    // East arm - westbound
+    arrows.push({ x: cx + 2, y: cy, dir: 'W' });
+    arrows.push({ x: cx + 1, y: cy, dir: 'W' });
+    
+    // West arm - eastbound
+    arrows.push({ x: cx - 2, y: cy, dir: 'E' });
+    arrows.push({ x: cx - 1, y: cy, dir: 'E' });
+  }
+  
+  // Store arrows in tiles with special marking type
+  for (const { x, y, dir } of arrows) {
+    if (y >= 0 && y < tiles.length && x >= 0 && x < tiles[0].length) {
+      // Use the same approach as zebra crossings - store as road tile with direction
+      const baseTile = tiles[y][x];
+      if (baseTile >= 1 && baseTile <= 4) { // Road tiles
+        // Add arrow marking as metadata
+        if (!tiles._arrows) tiles._arrows = [];
+        tiles._arrows.push({ x, y, dir });
+      }
+    }
+  }
 }

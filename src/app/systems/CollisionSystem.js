@@ -66,10 +66,17 @@ export class CollisionSystem {
     const map = state.world.map;
     const tx = Math.floor(player.pos.x);
     const ty = Math.floor(player.pos.y);
-    if (this.isTreeTrunk(tx, ty, map)) {
-      // Push player away from tree trunk
-      const dx = player.pos.x - (tx + 0.5);
-      const dy = player.pos.y - (ty + 0.5);
+    // Only treat the small trunk area as solid (same size used elsewhere)
+    const trunkHalf = 0.3 / 2; // trunkSize / 2
+    const playerHw = (player.hitboxW || 0.15) / 2;
+    const playerHh = (player.hitboxH || 0.15) / 2;
+    const trunkCenterX = tx + 0.5, trunkCenterY = ty + 0.5;
+    const overlapX = Math.abs(player.pos.x - trunkCenterX) < (trunkHalf + playerHw);
+    const overlapY = Math.abs(player.pos.y - trunkCenterY) < (trunkHalf + playerHh);
+    if (this.isTreeTrunk(tx, ty, map) && overlapX && overlapY) {
+      // push player away from trunk center only when overlapping trunk AABB
+      const dx = player.pos.x - trunkCenterX;
+      const dy = player.pos.y - trunkCenterY;
       const len = Math.hypot(dx, dy) || 1;
       player.pos.x += (dx / len) * 0.2;
       player.pos.y += (dy / len) * 0.2;

@@ -1,13 +1,11 @@
 import { Vec2 } from '../../utils/Vec2.js';
 import { Health } from '../components/Health.js';
-import { isTreeTrunk } from '../entities/drawBlood.js';
 
 export class CollisionSystem {
   constructor() {
     this.collisionPairs = [];
-    this.cameraSystem = null;
     this.lastDamageTime = 0;
-    this.invincibilityDuration = 1000;
+    this.invincibilityDuration = 50; // 50ms invincibility frames
   }
 
   // Simple radius-based collision detection
@@ -94,80 +92,32 @@ export class CollisionSystem {
     }
   }
 
-  // Check collisions between player and tree trunks
-  checkPlayerTreeCollisions(state) {
-    const player = state.entities.find(e => e.type === 'player');
-    if (!player || state.control?.inVehicle || player.collisionDisabled) return;
-
-    const map = state.world.map;
-    const trees = map.trees || [];
-    
-    for (const tree of trees) {
-      const trunkSize = 0.3;
-      const trunkHalf = trunkSize / 2;
-      const trunkCenterX = tree.pos.x;
-      const trunkCenterY = tree.pos.y;
-      
-      const dx = player.pos.x - trunkCenterX;
-      const dy = player.pos.y - trunkCenterY;
-      const distance = Math.hypot(dx, dy);
-      
-      if (distance < trunkHalf + 0.075) {
-        // Push away from trunk
-        const pushDistance = (trunkHalf + 0.075) - distance;
-        const pushX = (dx / distance) * pushDistance;
-        const pushY = (dy / distance) * pushDistance;
-        
-        player.pos.x += pushX;
-        player.pos.y += pushY;
-      }
-    }
-  }
-
-  // Update player collision to use precise trunk detection
+  // Check collisions between player and vehicles
   checkPlayerVehicleCollisions(state) {
     const player = state.entities.find(e => e.type === 'player');
     const vehicles = state.entities.filter(e => e.type === 'vehicle');
     
     if (!player || !player.health) return;
-    if (state.control?.inVehicle) return;
-    if (player.collisionDisabled) return;
+    if (state.control?.inVehicle) return; // disable player collisions while inside a vehicle
+    if (player.collisionDisabled) return; // Skip if player collision is disabled
     
+    // Check invincibility frames
     const now = Date.now();
-    if (now - this.lastDamageTime < this.invincibilityDuration) return;
-    
-    // Check tree trunk collision with precise hitbox
-    const map = state.world.map;
-    const trees = map.trees || [];
-    
-    for (const tree of trees) {
-      const trunkSize = 0.3;
-      const trunkHalf = trunkSize / 2;
-      const trunkCenterX = tree.pos.x;
-      const trunkCenterY = tree.pos.y;
-      
-      const dx = player.pos.x - trunkCenterX;
-      const dy = player.pos.y - trunkCenterY;
-      const distance = Math.hypot(dx, dy);
-      
-      if (distance < trunkHalf + 0.075) {
-        // Push away from trunk
-        const pushDistance = (trunkHalf + 0.075) - distance;
-        const pushX = (dx / distance) * pushDistance;
-        const pushY = (dy / distance) * pushDistance;
-        
-        player.pos.x += pushX;
-        player.pos.y += pushY;
-      }
+    if (now - this.lastDamageTime < this.invincibilityDuration) {
+      return; // Player is invincible
     }
     
-    // Check tree trunk collision for player
-    const tx = Math.floor(player.pos.x);
-    const ty = Math.floor(player.pos.y);
-    if (this.isTreeTrunk(tx, ty, map)) {
-      // Push player away from tree trunk
-      const dx = player.pos.x - (tx + 0.5);
-      const dy = player.pos.y - (ty + 0.5);
+    // Only treat the small trunk area as solid (same size used elsewhere)
+    const trunkHalf = 0.3 / 2; // trunkSize / 2
+    const playerHw = (player.hitboxW || 0.15) / 2;
+    const playerHh = (player.hitboxH || 0.15) / 2;
+    const trunkCenterX = Math.floor(player.pos.x) + 0.5, trunkCenterY = Math.floor(player.pos.y) + 0.5;
+    const overlapX = Math.abs(player.pos.x - trunkCenterX) < (trunkHalf + playerHw);
+    const overlapY = Math.abs(player.pos.y - trunkCenterY) < (trunkHalf + playerHh);
+    if (this.isTreeTrunk(Math.floor(player.pos.x), Math.floor(player.pos.y), state.world.map) && overlapX && overlapY) {
+      // push player away from trunk center only when overlapping trunk AABB
+      const dx = player.pos.x - trunkCenterX;
+      const dy = player.pos.y - trunkCenterY;
       const len = Math.hypot(dx, dy) || 1;
       player.pos.x += (dx / len) * 0.2;
       player.pos.y += (dy / len) * 0.2;
@@ -248,6 +198,5 @@ export class CollisionSystem {
     this.checkBulletCollisions(state);
     this.checkVehiclePedestrianCollisions(state);
     this.checkPlayerVehicleCollisions(state);
-    this.checkPlayerTreeCollisions(state);
   }
 }

@@ -3,6 +3,8 @@ import { Vec2 } from '../../utils/Vec2.js';
 export class CollisionSystem {
   constructor() {
     this.collisionPairs = [];
+    this.lastDamageTime = 0;
+    this.invincibilityDuration = 50; // 50ms invincibility frames
   }
 
   // Simple radius-based collision detection
@@ -98,6 +100,12 @@ export class CollisionSystem {
     if (state.control?.inVehicle) return; // disable player collisions while inside a vehicle
     if (player.collisionDisabled) return; // Skip if player collision is disabled
     
+    // Check invincibility frames
+    const now = Date.now();
+    if (now - this.lastDamageTime < this.invincibilityDuration) {
+      return; // Player is invincible
+    }
+    
     // Check tree trunk collision for player
     const map = state.world.map;
     const tx = Math.floor(player.pos.x);
@@ -123,6 +131,7 @@ export class CollisionSystem {
       const playerRadius = Math.hypot(playerHw, playerHh);
       const vehicleRadius = Math.hypot(vehicleHw, vehicleHh);
       const collisionRadius = playerRadius + vehicleRadius;
+      
       if (this.checkCollision(player, vehicle, collisionRadius)) {
         // Damage depends on vehicle movement toward the player (no damage if moving away)
         const vx = vehicle.vel?.x || 0, vy = vehicle.vel?.y || 0;
@@ -135,11 +144,16 @@ export class CollisionSystem {
           const alignment = vdir.x * toPlayerN.x + vdir.y * toPlayerN.y;
           if (alignment > 0) {
             const damage = Math.max(1, Math.round(speed * alignment * 20));
+            const oldHealth = player.health.hp;
             player.health.takeDamage(damage);
-            // Knockback proportional to damage
-            const k = Math.min(1, damage / 30) * 0.35;
-            player.pos.x += toPlayerN.x * k;
-            player.pos.y += toPlayerN.y * k;
+            const damageTaken = oldHealth - player.health.hp;
+            if (damageTaken > 0) {
+              this.lastDamageTime = now;
+              this.triggerShake(state, Math.min(1, damageTaken / 50));
+              const k = Math.min(1, damage / 30) * 0.35;
+              player.pos.x += toPlayerN.x * k;
+              player.pos.y += toPlayerN.y * k;
+            }
           }
         }
       }
@@ -151,6 +165,10 @@ export class CollisionSystem {
     return map.trees.some(tree => 
       Math.floor(tree.pos.x) === x && Math.floor(tree.pos.y) === y
     );
+  }
+
+  triggerShake(state, intensity) {
+    // Implementation for triggering shake effect
   }
 
   update(state) {

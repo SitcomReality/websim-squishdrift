@@ -45,7 +45,7 @@ export function drawVehicle(renderer, state, v) {
   ctx.fill();
   
   // Draw cabin - darker rectangle in central area
-  const cabinLength = lengthPx * 0.65; // Reduced from 0.75 to 0.65
+  const cabinLength = lengthPx * 0.55; // Reduced from 0.65 to 0.55
   const cabinWidth  = widthPx  * 0.6;  // 60% of vehicle width (breadth)
   const cabinX = -cabinLength / 2;
   const cabinY = -cabinWidth  / 2;

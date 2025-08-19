@@ -19,20 +19,20 @@ export class RoadGenerator {
     const width = this.cityLayout.width;
     const height = this.cityLayout.height;
 
-    // Top and bottom lanes (shifted inward by 1 so outermost border can be footpath)
-    for (let i = 0; i < width; i++) {
-      tiles[1][i] = Tile.RoadW;
-      tiles[2][i] = Tile.RoadW;
-      tiles[height - 3][i] = Tile.RoadE;
-      tiles[height - 2][i] = Tile.RoadE;
+    // Inner ring road (clockwise): top and bottom lanes
+    for (let i = 1; i < width - 1; i++) { // start from 1 to leave room for outer footpath
+      tiles[1][i] = Tile.RoadW; // top lane going west
+      tiles[2][i] = Tile.RoadW; // second top lane going west
+      tiles[height - 3][i] = Tile.RoadE; // second bottom lane going east
+      tiles[height - 2][i] = Tile.RoadE; // bottom lane going east
     }
 
-    // Left and right lanes (shifted inward by 1 so outermost border can be footpath)
-    for (let i = 0; i < height; i++) {
-      tiles[i][1] = Tile.RoadS;
-      tiles[i][2] = Tile.RoadS;
-      tiles[i][width - 3] = Tile.RoadN;
-      tiles[i][width - 2] = Tile.RoadN;
+    // Inner ring road (clockwise): left and right lanes
+    for (let i = 1; i < height - 1; i++) { // start from 1 to leave room for outer footpath
+      tiles[i][1] = Tile.RoadS; // left lane going south
+      tiles[i][2] = Tile.RoadS; // second left lane going south
+      tiles[i][width - 3] = Tile.RoadN; // second right lane going north
+      tiles[i][width - 2] = Tile.RoadN; // right lane going north
     }
   }
 

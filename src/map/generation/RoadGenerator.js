@@ -70,35 +70,39 @@ export class RoadGenerator {
       this.createPerimeterRoundabout(tiles, cx, cy, set);
     }
 
-    this.createZebraCrossings(tiles, cx, cy);
+    this.createZebraCrossings(tiles, cx, cy, isPerimeter);
   }
 
-  createZebraCrossings(tiles, cx, cy) {
+  createZebraCrossings(tiles, cx, cy, isPerimeter) {
     const set = (x, y, t) => {
       if (x >= 0 && y >= 0 && x < this.cityLayout.width && y < this.cityLayout.height) {
-        tiles[y][x] = t;
+        // Only place zebra crossing if on a road tile, to avoid overwriting footpaths
+        const currentTile = tiles[y][x];
+        if (currentTile >= Tile.RoadN && currentTile <= Tile.RoadW) {
+            tiles[y][x] = t;
+        }
       }
     };
     
-    // Top side (horizontal zebra crossing over N/S road) - fix directions
+    // Top side (crossing N/S roads)
     set(cx - 2, cy - 3, Tile.ZebraCrossingS);
     set(cx - 1, cy - 3, Tile.ZebraCrossingS);
     set(cx + 1, cy - 3, Tile.ZebraCrossingN);
     set(cx + 2, cy - 3, Tile.ZebraCrossingN);
     
-    // Bottom side (horizontal zebra crossing over N/S road) - fix directions
+    // Bottom side (crossing N/S roads)
     set(cx - 2, cy + 3, Tile.ZebraCrossingS);
     set(cx - 1, cy + 3, Tile.ZebraCrossingS);
     set(cx + 1, cy + 3, Tile.ZebraCrossingN);
     set(cx + 2, cy + 3, Tile.ZebraCrossingN);
     
-    // Left side (vertical zebra crossing over E/W road) - these are correct
+    // Left side (crossing E/W roads)
     set(cx - 3, cy - 2, Tile.ZebraCrossingW);
     set(cx - 3, cy - 1, Tile.ZebraCrossingW);
     set(cx - 3, cy + 1, Tile.ZebraCrossingE);
     set(cx - 3, cy + 2, Tile.ZebraCrossingE);
 
-    // Right side (vertical zebra crossing over E/W road) - these are correct
+    // Right side (crossing E/W roads)
     set(cx + 3, cy - 2, Tile.ZebraCrossingW);
     set(cx + 3, cy - 1, Tile.ZebraCrossingW);
     set(cx + 3, cy + 1, Tile.ZebraCrossingE);

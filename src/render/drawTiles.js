@@ -1,9 +1,10 @@
 import { Tile, TileColor } from '../map/TileTypes.js';
+import { roadDir } from '../map/TileTypes.js';
 
 export function drawTiles(r, state, layer = 'all'){
-  const { ctx } = r, ts = state.world.tileSize, map = state.world.map;
+  const { ctx, canvas } = r, ts = state.world.tileSize, map = state.world.map;
   const z = state.camera.zoom || 1;
-  const wTiles = Math.ceil(r.canvas.width/(ts*z))+2, hTiles = Math.ceil(r.canvas.height/(ts*z))+2;
+  const wTiles = Math.ceil(canvas.width/(ts*z))+2, hTiles = Math.ceil(canvas.height/(ts*z))+2;
   const sx = Math.floor(state.camera.x - wTiles/2), sy = Math.floor(state.camera.y - hTiles/2);
   const floorTypes = new Set([Tile.BuildingFloor]);
   
@@ -31,16 +32,31 @@ export function drawTiles(r, state, layer = 'all'){
       r.ctx.fillStyle = TileColor[Tile.Grass] || '#90EE90';
       r.ctx.fill();
       r.ctx.restore();
-    } else if (isRoadMarked(t)) {
-      // Draw road background
-      r.ctx.fillStyle = TileColor[Tile.RoadN];
-      r.ctx.fillRect(gx*ts, gy*ts, ts, ts);
-      
-      // Draw road markings (arrows)
-      drawRoadMarking(r, gx, gy, ts, t);
     } else {
       r.ctx.fillStyle = TileColor[t] || '#f5f5f5';
       r.ctx.fillRect(gx*ts, gy*ts, ts, ts);
+    }
+    
+    // Permanent road direction markings: draw arrow on uni-directional road tiles adjacent
+    // to a median strip or roundabout center (use same lighter color as zebra crossings).
+    const isRoadTile = (tt) => (tt >= Tile.RoadN && tt <= Tile.RoadW);
+    if (isRoadTile(t)) {
+      // Check adjacency to median or roundabout center
+      const neighs = [
+        { x: gx - 1, y: gy },
+        { x: gx + 1, y: gy },
+        { x: gx, y: gy - 1 },
+        { x: gx, y: gy + 1 }
+      ];
+      let adjacentToSpecial = false;
+      for (const n of neighs) {
+        if (n.x < 0 || n.y < 0 || n.x >= map.width || n.y >= map.height) continue;
+        const nt = map.tiles[n.y][n.x];
+        if (nt === Tile.Median || nt === Tile.RoundaboutCenter) { adjacentToSpecial = true; break; }
+      }
+      if (adjacentToSpecial) {
+        drawRoadArrow(r.ctx, gx*ts, gy*ts, ts, roadDir(t));
+      }
     }
     
     if (t === Tile.BuildingWall) {
@@ -52,10 +68,6 @@ export function drawTiles(r, state, layer = 'all'){
 
 function isZebraCrossing(tile) {
   return tile >= Tile.ZebraCrossingN && tile <= Tile.ZebraCrossingW;
-}
-
-function isRoadMarked(tile) {
-  return tile >= Tile.RoadNMarked && tile <= Tile.RoadWMarked;
 }
 
 function drawZebraCrossing(r, gx, gy, ts, tileType) {
@@ -96,73 +108,38 @@ function drawZebraCrossing(r, gx, gy, ts, tileType) {
   }
 }
 
-function drawRoadMarking(r, gx, gy, ts, tileType) {
-  const { ctx } = r;
-  
-  // Draw arrow based on direction
-  const arrowColor = '#FFFFFF';
-  const arrowSize = ts * 0.3;
-  
-  ctx.fillStyle = arrowColor;
-  ctx.beginPath();
-  
-  // Determine direction from tile type
-  let direction = null;
-  if (tileType === Tile.RoadNMarked) direction = 'N';
-  else if (tileType === Tile.RoadEMarked) direction = 'E';
-  else if (tileType === Tile.RoadSMarked) direction = 'S';
-  else if (tileType === Tile.RoadWMarked) direction = 'W';
-  
-  if (!direction) return;
-  
-  const centerX = gx * ts + ts/2;
-  const centerY = gy * ts + ts/2;
-  
-  // Draw arrow pointing in the correct direction
+function drawRoadArrow(ctx, x, y, ts, dir) {
+  if (!dir) return;
+  // Use same color as zebra stripes (light grey)
+  const color = TileColor[Tile.ZebraCrossingN] || '#6a6a6a';
   ctx.save();
-  ctx.translate(centerX, centerY);
+  ctx.translate(x + ts/2, y + ts/2);
+  // arrow size relative to tile
+  const len = ts * 0.28;
+  const w = ts * 0.12;
+  let ang = 0;
+  if (dir === 'N') ang = -Math.PI/2;
+  if (dir === 'E') ang = 0;
+  if (dir === 'S') ang = Math.PI/2;
+  if (dir === 'W') ang = Math.PI;
+  ctx.rotate(ang);
   
-  switch(direction) {
-    case 'N':
-      // Arrow pointing up (north)
-      ctx.beginPath();
-      ctx.moveTo(0, -arrowSize/2);
-      ctx.lineTo(-arrowSize/4, -arrowSize/2 + arrowSize/3);
-      ctx.lineTo(arrowSize/4, -arrowSize/2 + arrowSize/3);
-      ctx.closePath();
-      break;
-      
-    case 'E':
-      // Arrow pointing right (east)
-      ctx.rotate(Math.PI/2);
-      ctx.beginPath();
-      ctx.moveTo(0, -arrowSize/2);
-      ctx.lineTo(-arrowSize/4, -arrowSize/2 + arrowSize/3);
-      ctx.lineTo(arrowSize/4, -arrowSize/2 + arrowSize/3);
-      ctx.closePath();
-      break;
-      
-    case 'S':
-      // Arrow pointing down (south)
-      ctx.rotate(Math.PI);
-      ctx.beginPath();
-      ctx.moveTo(0, -arrowSize/2);
-      ctx.lineTo(-arrowSize/4, -arrowSize/2 + arrowSize/3);
-      ctx.lineTo(arrowSize/4, -arrowSize/2 + arrowSize/3);
-      ctx.closePath();
-      break;
-      
-    case 'W':
-      // Arrow pointing left (west)
-      ctx.rotate(-Math.PI/2);
-      ctx.beginPath();
-      ctx.moveTo(0, -arrowSize/2);
-      ctx.lineTo(-arrowSize/4, -arrowSize/2 + arrowSize/3);
-      ctx.lineTo(arrowSize/4, -arrowSize/2 + arrowSize/3);
-      ctx.closePath();
-      break;
-  }
-  
+  // Draw simple filled arrow pointing right (after rotation)
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(-len, -w/2);
+  ctx.lineTo(0, -w/2);
+  ctx.lineTo(0, -w);
+  ctx.lineTo(len, 0);
+  ctx.lineTo(0, w);
+  ctx.lineTo(0, w/2);
+  ctx.lineTo(-len, w/2);
+  ctx.closePath();
   ctx.fill();
+  
+  // Slight outline for contrast
+  ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
   ctx.restore();
 }

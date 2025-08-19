@@ -16,7 +16,7 @@ export class BlockGenerator {
       }
     }
 
-    // Generate medians between blocks
+    // Generate medians between blocks, avoiding intersection areas
     this.generateMedians(tiles);
 
     // After base layout, randomly convert some corridors into merged blocks
@@ -66,20 +66,30 @@ export class BlockGenerator {
   }
 
   generateMedians(tiles) {
+    const intersectionCenters = [];
+    for (let gy = 0; gy <= this.cityLayout.blocksHigh; gy++) {
+      for (let gx = 0; gx <= this.cityLayout.blocksWide; gx++) {
+        intersectionCenters.push(this.cityLayout.getIntersectionCenter(gx, gy));
+      }
+    }
+
+    const isNearIntersection = (x, y) => {
+      for (const center of intersectionCenters) {
+        if (Math.abs(x - center.x) <= 2 && Math.abs(y - center.y) <= 2) {
+          return true;
+        }
+      }
+      return false;
+    };
+
     // Horizontal medians
     for (let gy = 0; gy <= this.cityLayout.blocksHigh; gy++) {
       const y = this.cityLayout.getIntersectionCenter(0, gy).y;
       if (y >= 0 && y < this.cityLayout.height) {
-        // Compute gap ranges (2 tiles on either side) around each intersection center along this row
-        const gaps = [];
-        for (let gx = 0; gx <= this.cityLayout.blocksWide; gx++) {
-          const cx = this.cityLayout.getIntersectionCenter(gx, gy).x;
-          gaps.push([cx - 2, cx + 2]);
-        }
         for (let x = 0; x < this.cityLayout.width; x++) {
-          // Skip if x lies within any intersection gap
-          if (gaps.some(([a, b]) => x >= a && x <= b)) continue;
-          tiles[y][x] = Tile.Median;
+          if (!isNearIntersection(x, y)) {
+            tiles[y][x] = Tile.Median;
+          }
         }
       }
     }
@@ -88,16 +98,10 @@ export class BlockGenerator {
     for (let gx = 0; gx <= this.cityLayout.blocksWide; gx++) {
       const x = this.cityLayout.getIntersectionCenter(gx, 0).x;
       if (x >= 0 && x < this.cityLayout.width) {
-        // Compute gap ranges (2 tiles on either side) around each intersection center along this column
-        const gaps = [];
-        for (let gy = 0; gy <= this.cityLayout.blocksHigh; gy++) {
-          const cy = this.cityLayout.getIntersectionCenter(gx, gy).y;
-          gaps.push([cy - 2, cy + 2]);
-        }
         for (let y = 0; y < this.cityLayout.height; y++) {
-          // Skip if y lies within any intersection gap
-          if (gaps.some(([a, b]) => y >= a && y <= b)) continue;
-          tiles[y][x] = Tile.Median;
+          if (!isNearIntersection(x, y)) {
+            tiles[y][x] = Tile.Median;
+          }
         }
       }
     }

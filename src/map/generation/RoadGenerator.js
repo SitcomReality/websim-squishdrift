@@ -19,20 +19,20 @@ export class RoadGenerator {
     const width = this.cityLayout.width;
     const height = this.cityLayout.height;
 
-    // Inner ring road (clockwise): top and bottom lanes
-    for (let i = 1; i < width - 1; i++) { // start from 1 to leave room for outer footpath
-      tiles[1][i] = Tile.RoadW; // top lane going west
-      tiles[2][i] = Tile.RoadW; // second top lane going west
-      tiles[height - 3][i] = Tile.RoadE; // second bottom lane going east
-      tiles[height - 2][i] = Tile.RoadE; // bottom lane going east
+    // Top and bottom lanes
+    for (let i = 0; i < width; i++) {
+      tiles[0][i] = Tile.RoadW;
+      tiles[1][i] = Tile.RoadW;
+      tiles[height - 2][i] = Tile.RoadE;
+      tiles[height - 1][i] = Tile.RoadE;
     }
 
-    // Inner ring road (clockwise): left and right lanes
-    for (let i = 1; i < height - 1; i++) { // start from 1 to leave room for outer footpath
-      tiles[i][1] = Tile.RoadS; // left lane going south
-      tiles[i][2] = Tile.RoadS; // second left lane going south
-      tiles[i][width - 3] = Tile.RoadN; // second right lane going north
-      tiles[i][width - 2] = Tile.RoadN; // right lane going north
+    // Left and right lanes
+    for (let i = 0; i < height; i++) {
+      tiles[i][0] = Tile.RoadS;
+      tiles[i][1] = Tile.RoadS;
+      tiles[i][width - 2] = Tile.RoadN;
+      tiles[i][width - 1] = Tile.RoadN;
     }
   }
 
@@ -67,84 +67,42 @@ export class RoadGenerator {
       this.createStandardRoundabout(tiles, cx, cy, set);
     } else {
       // Perimeter roundabout with adjusted connections
-      this.createPerimeterRoundabout(tiles, cx, cy, set);
+      this.createPerimeterRoundabout(tiles, cx, cy, set, isPerimeter);
     }
 
     this.createZebraCrossings(tiles, cx, cy);
   }
 
   createZebraCrossings(tiles, cx, cy) {
-    const { width, height } = this.cityLayout;
     const set = (x, y, t) => {
-      if (x >= 1 && y >= 1 && x < width - 1 && y < height - 1) {
-        // Only place zebra crossing if on a road tile, to avoid overwriting footpaths
-        const currentTile = tiles[y][x];
-        if (currentTile >= Tile.RoadN && currentTile <= Tile.RoadW) {
-            tiles[y][x] = t;
-        }
+      if (x >= 0 && y >= 0 && x < this.cityLayout.width && y < this.cityLayout.height) {
+        tiles[y][x] = t;
       }
     };
-
-    const isTopEdge = cy - 3 < 1;
-    const isBottomEdge = cy + 3 >= height - 1;
-    const isLeftEdge = cx - 3 < 1;
-    const isRightEdge = cx + 3 >= width - 1;
-
-    // Top side (crossing N/S roads)
-    if (!isTopEdge) {
-        set(cx - 2, cy - 3, Tile.ZebraCrossingS);
-        set(cx - 1, cy - 3, Tile.ZebraCrossingS);
-        set(cx + 1, cy - 3, Tile.ZebraCrossingN);
-        set(cx + 2, cy - 3, Tile.ZebraCrossingN);
-    } else {
-        // Edge case: place on the outermost lane adjacent to footpath
-        set(cx - 2, cy - 2, Tile.ZebraCrossingS);
-        set(cx - 1, cy - 2, Tile.ZebraCrossingS);
-        set(cx + 1, cy - 2, Tile.ZebraCrossingN);
-        set(cx + 2, cy - 2, Tile.ZebraCrossingN);
-    }
     
-    // Bottom side (crossing N/S roads)
-    if (!isBottomEdge) {
-        set(cx - 2, cy + 3, Tile.ZebraCrossingS);
-        set(cx - 1, cy + 3, Tile.ZebraCrossingS);
-        set(cx + 1, cy + 3, Tile.ZebraCrossingN);
-        set(cx + 2, cy + 3, Tile.ZebraCrossingN);
-    } else {
-        // Edge case: place on the outermost lane adjacent to footpath
-        set(cx - 2, cy + 2, Tile.ZebraCrossingS);
-        set(cx - 1, cy + 2, Tile.ZebraCrossingS);
-        set(cx + 1, cy + 2, Tile.ZebraCrossingN);
-        set(cx + 2, cy + 2, Tile.ZebraCrossingN);
-    }
+    // Top side (horizontal zebra crossing over N/S road) - fix directions
+    set(cx - 2, cy - 3, Tile.ZebraCrossingS);
+    set(cx - 1, cy - 3, Tile.ZebraCrossingS);
+    set(cx + 1, cy - 3, Tile.ZebraCrossingN);
+    set(cx + 2, cy - 3, Tile.ZebraCrossingN);
     
-    // Left side (crossing E/W roads)
-    if (!isLeftEdge) {
-        set(cx - 3, cy - 2, Tile.ZebraCrossingW);
-        set(cx - 3, cy - 1, Tile.ZebraCrossingW);
-        set(cx - 3, cy + 1, Tile.ZebraCrossingE);
-        set(cx - 3, cy + 2, Tile.ZebraCrossingE);
-    } else {
-        // Edge case: place on the outermost lane adjacent to footpath
-        set(cx - 2, cy - 2, Tile.ZebraCrossingW);
-        set(cx - 2, cy - 1, Tile.ZebraCrossingW);
-        set(cx - 2, cy + 1, Tile.ZebraCrossingE);
-        set(cx - 2, cy + 2, Tile.ZebraCrossingE);
-    }
+    // Bottom side (horizontal zebra crossing over N/S road) - fix directions
+    set(cx - 2, cy + 3, Tile.ZebraCrossingS);
+    set(cx - 1, cy + 3, Tile.ZebraCrossingS);
+    set(cx + 1, cy + 3, Tile.ZebraCrossingN);
+    set(cx + 2, cy + 3, Tile.ZebraCrossingN);
+    
+    // Left side (vertical zebra crossing over E/W road) - these are correct
+    set(cx - 3, cy - 2, Tile.ZebraCrossingW);
+    set(cx - 3, cy - 1, Tile.ZebraCrossingW);
+    set(cx - 3, cy + 1, Tile.ZebraCrossingE);
+    set(cx - 3, cy + 2, Tile.ZebraCrossingE);
 
-    // Right side (crossing E/W roads)
-    if (!isRightEdge) {
-        set(cx + 3, cy - 2, Tile.ZebraCrossingW);
-        set(cx + 3, cy - 1, Tile.ZebraCrossingW);
-        set(cx + 3, cy + 1, Tile.ZebraCrossingE);
-        set(cx + 3, cy + 2, Tile.ZebraCrossingE);
-    } else {
-        // Edge case: place on the outermost lane adjacent to footpath
-        set(cx + 2, cy - 2, Tile.ZebraCrossingW);
-        set(cx + 2, cy - 1, Tile.ZebraCrossingW);
-        set(cx + 2, cy + 1, Tile.ZebraCrossingE);
-        set(cx + 2, cy + 2, Tile.ZebraCrossingE);
-    }
+    // Right side (vertical zebra crossing over E/W road) - these are correct
+    set(cx + 3, cy - 2, Tile.ZebraCrossingW);
+    set(cx + 3, cy - 1, Tile.ZebraCrossingW);
+    set(cx + 3, cy + 1, Tile.ZebraCrossingE);
+    set(cx + 3, cy + 2, Tile.ZebraCrossingE);
   }
 
   createStandardRoundabout(tiles, cx, cy, set) {
@@ -170,10 +128,16 @@ export class RoadGenerator {
     }
   }
 
-  createPerimeterRoundabout(tiles, cx, cy, set) {
-    // For perimeter roundabouts, we start with a standard one and then
-    // overwrite the parts that are off-map or need to connect differently.
-    this.createStandardRoundabout(tiles, cx, cy, set);
+  createPerimeterRoundabout(tiles, cx, cy, set, isPerimeter) {
+    // Adjust connections for perimeter roundabouts
+    if (cy === 1 || cy === this.cityLayout.height - 2) {
+      // Top/bottom perimeter
+      this.adjustTopBottomPerimeter(tiles, cx, cy, set, cy === 1);
+    }
+    if (cx === 1 || cx === this.cityLayout.width - 2) {
+      // Left/right perimeter
+      this.adjustLeftRightPerimeter(tiles, cx, cy, set, cx === 1);
+    }
   }
 
   adjustTopBottomPerimeter(tiles, cx, cy, set, isTop) {

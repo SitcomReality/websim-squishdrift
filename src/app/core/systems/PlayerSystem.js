@@ -25,10 +25,15 @@ export class PlayerSystem {
       const promptEl = document.getElementById('interaction-prompt');
       const actionEl = document.getElementById('interaction-action');
       if (promptEl && actionEl && player.pos && !state.control.inVehicle) {
-        const nearby = state.entities.find(e => e.type === 'vehicle' && !e.controlled && e.pos && Math.hypot(e.pos.x - player.pos.x, e.pos.y - player.pos.y) < 1.5);
-        if (nearby) { actionEl.textContent = 'enter vehicle'; promptEl.style.display = ''; } else { promptEl.style.display = 'none'; }
-      } else if (document.getElementById('interaction-prompt')) {
-        document.getElementById('interaction-prompt').style.display = 'none';
+        const nearbyVehicle = this.findNearbyVehicle(state, player);
+        if (nearbyVehicle) {
+          actionEl.textContent = 'enter vehicle';
+          promptEl.style.display = '';
+        } else {
+          promptEl.style.display = 'none';
+        }
+      } else if (promptEl) {
+        promptEl.style.display = 'none';
       }
     } catch (e) { /* DOM may be unavailable in some contexts */ }
     

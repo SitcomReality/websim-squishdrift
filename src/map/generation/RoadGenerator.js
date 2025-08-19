@@ -34,6 +34,63 @@ export class RoadGenerator {
       tiles[i][width - 3] = Tile.RoadN; // second right lane going north
       tiles[i][width - 2] = Tile.RoadN; // right lane going north
     }
+
+    // Add zebra crossings to the outermost lane (edge lane) before each intersection
+    this.addPerimeterZebraCrossings(tiles);
+  }
+
+  addPerimeterZebraCrossings(tiles) {
+    const width = this.cityLayout.width;
+    const height = this.cityLayout.height;
+
+    // Add zebra crossings on the outermost lane (edge lane) before each intersection
+    // Top edge - zebra crossings before each intersection
+    for (let gx = 0; gx <= this.cityLayout.blocksWide; gx++) {
+      const cx = this.cityLayout.getIntersectionCenter(gx, 0).x;
+      if (cx >= 0 && cx < width) {
+        // Add zebra crossing before intersection on top edge lane
+        if (cx - 2 >= 0) tiles[0][cx - 2] = Tile.ZebraCrossingW;
+        if (cx - 1 >= 0) tiles[0][cx - 1] = Tile.ZebraCrossingW;
+        if (cx + 1 < width) tiles[0][cx + 1] = Tile.ZebraCrossingE;
+        if (cx + 2 < width) tiles[0][cx + 2] = Tile.ZebraCrossingE;
+      }
+    }
+
+    // Bottom edge - zebra crossings before each intersection
+    for (let gx = 0; gx <= this.cityLayout.blocksWide; gx++) {
+      const cx = this.cityLayout.getIntersectionCenter(gx, this.cityLayout.blocksHigh).x;
+      if (cx >= 0 && cx < width) {
+        // Add zebra crossing before intersection on bottom edge lane
+        if (cx - 2 >= 0) tiles[height - 1][cx - 2] = Tile.ZebraCrossingW;
+        if (cx - 1 >= 0) tiles[height - 1][cx - 1] = Tile.ZebraCrossingW;
+        if (cx + 1 < width) tiles[height - 1][cx + 1] = Tile.ZebraCrossingE;
+        if (cx + 2 < width) tiles[height - 1][cx + 2] = Tile.ZebraCrossingE;
+      }
+    }
+
+    // Left edge - zebra crossings before each intersection
+    for (let gy = 0; gy <= this.cityLayout.blocksHigh; gy++) {
+      const cy = this.cityLayout.getIntersectionCenter(0, gy).y;
+      if (cy >= 0 && cy < height) {
+        // Add zebra crossing before intersection on left edge lane
+        if (cy - 2 >= 0) tiles[cy - 2][0] = Tile.ZebraCrossingN;
+        if (cy - 1 >= 0) tiles[cy - 1][0] = Tile.ZebraCrossingN;
+        if (cy + 1 < height) tiles[cy + 1][0] = Tile.ZebraCrossingS;
+        if (cy + 2 < height) tiles[cy + 2][0] = Tile.ZebraCrossingS;
+      }
+    }
+
+    // Right edge - zebra crossings before each intersection
+    for (let gy = 0; gy <= this.cityLayout.blocksHigh; gy++) {
+      const cy = this.cityLayout.getIntersectionCenter(this.cityLayout.blocksWide, gy).y;
+      if (cy >= 0 && cy < height) {
+        // Add zebra crossing before intersection on right edge lane
+        if (cy - 2 >= 0) tiles[cy - 2][width - 1] = Tile.ZebraCrossingN;
+        if (cy - 1 >= 0) tiles[cy - 1][width - 1] = Tile.ZebraCrossingN;
+        if (cy + 1 < height) tiles[cy + 1][width - 1] = Tile.ZebraCrossingS;
+        if (cy + 2 < height) tiles[cy + 2][width - 1] = Tile.ZebraCrossingS;
+      }
+    }
   }
 
   generateRoundabouts(tiles) {
@@ -81,28 +138,16 @@ export class RoadGenerator {
     };
     
     // Top side (horizontal zebra crossing over N/S road) - fix directions
-    set(cx - 2, cy - 3, Tile.ZebraCrossingS);
-    set(cx - 1, cy - 3, Tile.ZebraCrossingS);
-    set(cx + 1, cy - 3, Tile.ZebraCrossingN);
-    set(cx + 2, cy - 3, Tile.ZebraCrossingN);
-    
-    // Bottom side (horizontal zebra crossing over N/S road) - fix directions
-    set(cx - 2, cy + 3, Tile.ZebraCrossingS);
-    set(cx - 1, cy + 3, Tile.ZebraCrossingS);
-    set(cx + 1, cy + 3, Tile.ZebraCrossingN);
-    set(cx + 2, cy + 3, Tile.ZebraCrossingN);
+    for (let x = cx - 2; x <= cx + 2; x++) {
+      set(x, cy - 3, Tile.ZebraCrossingS);
+      set(x, cy + 3, Tile.ZebraCrossingN);
+    }
     
     // Left side (vertical zebra crossing over E/W road) - these are correct
-    set(cx - 3, cy - 2, Tile.ZebraCrossingW);
-    set(cx - 3, cy - 1, Tile.ZebraCrossingW);
-    set(cx - 3, cy + 1, Tile.ZebraCrossingE);
-    set(cx - 3, cy + 2, Tile.ZebraCrossingE);
-
-    // Right side (vertical zebra crossing over E/W road) - these are correct
-    set(cx + 3, cy - 2, Tile.ZebraCrossingW);
-    set(cx + 3, cy - 1, Tile.ZebraCrossingW);
-    set(cx + 3, cy + 1, Tile.ZebraCrossingE);
-    set(cx + 3, cy + 2, Tile.ZebraCrossingE);
+    for (let y = cy - 2; y <= cy + 2; y++) {
+      set(cx - 3, y, Tile.ZebraCrossingW);
+      set(cx + 3, y, Tile.ZebraCrossingE);
+    }
   }
 
   createStandardRoundabout(tiles, cx, cy, set) {

@@ -44,14 +44,14 @@ export class RoadGenerator {
         
         const isPerimeter = (gx === 0 || gx === this.cityLayout.blocksWide || 
                            gy === 0 || gy === this.cityLayout.blocksHigh);
-        const sides = { top: gy===0, bottom: gy===this.cityLayout.blocksHigh, left: gx===0, right: gx===this.cityLayout.blocksWide };
-        this.createRoundabout(tiles, center.x, center.y, isPerimeter, sides);
+        
+        this.createRoundabout(tiles, center.x, center.y, isPerimeter);
         this.roundabouts.push({ cx: center.x, cy: center.y, isPerimeter });
       }
     }
   }
 
-  createRoundabout(tiles, cx, cy, isPerimeter, sides) {
+  createRoundabout(tiles, cx, cy, isPerimeter) {
     // Mark center as a special roundabout center tile (will be drawn as road background
     // with a circular grass patch). We keep separate metadata via roundabouts array.
     tiles[cy][cx] = Tile.RoundaboutCenter;
@@ -70,48 +70,72 @@ export class RoadGenerator {
       this.createPerimeterRoundabout(tiles, cx, cy, set);
     }
 
-    this.createZebraCrossings(tiles, cx, cy, isPerimeter, sides);
+    this.createZebraCrossings(tiles, cx, cy);
   }
 
-  createZebraCrossings(tiles, cx, cy, isPerimeter = false, sides = {}) {
+  createZebraCrossings(tiles, cx, cy) {
+    const { width, height } = this.cityLayout;
     const set = (x, y, t) => {
-      if (x >= 0 && y >= 0 && x < this.cityLayout.width && y < this.cityLayout.height) {
+      if (x >= 0 && y >= 0 && x < width && y < height) {
         tiles[y][x] = t;
       }
     };
-    
-    // Top side (horizontal zebra crossing over N/S road) - fix directions
-    set(cx - 2, cy - 3, Tile.ZebraCrossingS);
-    set(cx - 1, cy - 3, Tile.ZebraCrossingS);
-    set(cx + 1, cy - 3, Tile.ZebraCrossingN);
-    set(cx + 2, cy - 3, Tile.ZebraCrossingN);
-    
-    // Bottom side (horizontal zebra crossing over N/S road) - fix directions
-    set(cx - 2, cy + 3, Tile.ZebraCrossingS);
-    set(cx - 1, cy + 3, Tile.ZebraCrossingS);
-    set(cx + 1, cy + 3, Tile.ZebraCrossingN);
-    set(cx + 2, cy + 3, Tile.ZebraCrossingN);
-    
-    // Left side (vertical zebra crossing over E/W road) - these are correct
-    set(cx - 3, cy - 2, Tile.ZebraCrossingW);
-    set(cx - 3, cy - 1, Tile.ZebraCrossingW);
-    set(cx - 3, cy + 1, Tile.ZebraCrossingE);
-    set(cx - 3, cy + 2, Tile.ZebraCrossingE);
 
-    // Right side (vertical zebra crossing over E/W road) - these are correct
-    set(cx + 3, cy - 2, Tile.ZebraCrossingW);
-    set(cx + 3, cy - 1, Tile.ZebraCrossingW);
-    set(cx + 3, cy + 1, Tile.ZebraCrossingE);
-    set(cx + 3, cy + 2, Tile.ZebraCrossingE);
+    const isTopEdge = cy === this.cityLayout.getIntersectionCenter(0,0).y;
+    const isBottomEdge = cy === this.cityLayout.getIntersectionCenter(0, this.cityLayout.blocksHigh).y;
+    const isLeftEdge = cx === this.cityLayout.getIntersectionCenter(0,0).x;
+    const isRightEdge = cx === this.cityLayout.getIntersectionCenter(this.cityLayout.blocksWide, 0).x;
+    
+    // Crossings on inner lanes (distance 3)
+    if (!isTopEdge) {
+      set(cx - 2, cy - 3, Tile.ZebraCrossingS);
+      set(cx - 1, cy - 3, Tile.ZebraCrossingS);
+      set(cx + 1, cy - 3, Tile.ZebraCrossingN);
+      set(cx + 2, cy - 3, Tile.ZebraCrossingN);
+    }
+    if (!isBottomEdge) {
+      set(cx - 2, cy + 3, Tile.ZebraCrossingS);
+      set(cx - 1, cy + 3, Tile.ZebraCrossingS);
+      set(cx + 1, cy + 3, Tile.ZebraCrossingN);
+      set(cx + 2, cy + 3, Tile.ZebraCrossingN);
+    }
+    if (!isLeftEdge) {
+      set(cx - 3, cy - 2, Tile.ZebraCrossingW);
+      set(cx - 3, cy - 1, Tile.ZebraCrossingW);
+      set(cx - 3, cy + 1, Tile.ZebraCrossingE);
+      set(cx - 3, cy + 2, Tile.ZebraCrossingE);
+    }
+    if (!isRightEdge) {
+      set(cx + 3, cy - 2, Tile.ZebraCrossingW);
+      set(cx + 3, cy - 1, Tile.ZebraCrossingW);
+      set(cx + 3, cy + 1, Tile.ZebraCrossingE);
+      set(cx + 3, cy + 2, Tile.ZebraCrossingE);
+    }
 
-    // Add zebra crossings on the outermost ring-road lane before perimeter intersections
-    if (isPerimeter) {
-      const topY = 1, bottomY = this.cityLayout.height - 2;
-      const leftX = 1, rightX = this.cityLayout.width - 2;
-      if (sides.bottom) set(cx - 3, bottomY, Tile.ZebraCrossingE);   // bottom lane runs East
-      if (sides.top)    set(cx + 3, topY,    Tile.ZebraCrossingW);   // top lane runs West
-      if (sides.left)   set(leftX,  cy - 3,  Tile.ZebraCrossingS);   // left lane runs South
-      if (sides.right)  set(rightX, cy + 3,  Tile.ZebraCrossingN);   // right lane runs North
+    // Crossings on outermost lanes (distance 2) for perimeter intersections
+    if (isTopEdge) {
+      set(cx - 1, cy - 2, Tile.ZebraCrossingS);
+      set(cx, cy - 2, Tile.ZebraCrossingS);
+      set(cx, cy - 2, Tile.ZebraCrossingS);
+      set(cx + 1, cy - 2, Tile.ZebraCrossingN);
+    }
+    if (isBottomEdge) {
+      set(cx - 1, cy + 2, Tile.ZebraCrossingS);
+      set(cx, cy + 2, Tile.ZebraCrossingN);
+      set(cx, cy + 2, Tile.ZebraCrossingN);
+      set(cx + 1, cy + 2, Tile.ZebraCrossingN);
+    }
+    if (isLeftEdge) {
+      set(cx - 2, cy - 1, Tile.ZebraCrossingW);
+      set(cx - 2, cy, Tile.ZebraCrossingW);
+      set(cx - 2, cy, Tile.ZebraCrossingW);
+      set(cx - 2, cy + 1, Tile.ZebraCrossingE);
+    }
+    if (isRightEdge) {
+      set(cx + 2, cy - 1, Tile.ZebraCrossingW);
+      set(cx + 2, cy, Tile.ZebraCrossingE);
+      set(cx + 2, cy, Tile.ZebraCrossingE);
+      set(cx + 2, cy + 1, Tile.ZebraCrossingE);
     }
   }
 

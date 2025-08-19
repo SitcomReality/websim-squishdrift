@@ -1,5 +1,4 @@
-import { Tile, TileColor } from '../map/TileTypes.js';
-import { roadDir } from '../map/TileTypes.js';
+import { Tile, TileColor, roadDir } from '../map/TileTypes.js';
 
 export function drawTiles(r, state, layer = 'all'){
   const { ctx, canvas } = r, ts = state.world.tileSize, map = state.world.map;
@@ -35,28 +34,14 @@ export function drawTiles(r, state, layer = 'all'){
     } else {
       r.ctx.fillStyle = TileColor[t] || '#f5f5f5';
       r.ctx.fillRect(gx*ts, gy*ts, ts, ts);
-    }
-    
-    // Permanent road direction markings: draw arrow on uni-directional road tiles adjacent
-    // to a median strip or roundabout center (use same lighter color as zebra crossings).
-    const isRoadTile = (tt) => (tt >= Tile.RoadN && tt <= Tile.RoadW);
-    if (isRoadTile(t)) {
-      // Check adjacency to median or roundabout center
-      const neighs = [
-        { x: gx - 1, y: gy },
-        { x: gx + 1, y: gy },
-        { x: gx, y: gy - 1 },
-        { x: gx, y: gy + 1 }
-      ];
-      let adjacentToSpecial = false;
-      for (const n of neighs) {
-        if (n.x < 0 || n.y < 0 || n.x >= map.width || n.y >= map.height) continue;
-        const nt = map.tiles[n.y][n.x];
-        if (nt === Tile.Median || nt === Tile.RoundaboutCenter) { adjacentToSpecial = true; break; }
-      }
-      if (adjacentToSpecial) {
-        drawRoadArrow(r.ctx, gx*ts, gy*ts, ts, roadDir(t));
-      }
+      // Draw permanent lane-direction arrow for single-outlet road tiles (intersection arms)
+      try {
+        const d = roadDir(t);
+        const node = d && map.roads && map.roads.byKey && map.roads.byKey.get(`${gx},${gy},${d}`);
+        if (node && Array.isArray(node.next) && node.next.length === 1) {
+          drawRoadArrow(r.ctx, gx*ts + ts/2, gy*ts + ts/2, d, Math.min(ts*0.28, 18), TileColor[Tile.ZebraCrossingN] || '#6a6a6a');
+        }
+      } catch(e) { /* defensive: don't break rendering on graph issues */ }
     }
     
     if (t === Tile.BuildingWall) {
@@ -108,38 +93,21 @@ function drawZebraCrossing(r, gx, gy, ts, tileType) {
   }
 }
 
-function drawRoadArrow(ctx, x, y, ts, dir) {
-  if (!dir) return;
-  // Use same color as zebra stripes (light grey)
-  const color = TileColor[Tile.ZebraCrossingN] || '#6a6a6a';
+// Add helper to draw a small filled arrow used as road marking
+function drawRoadArrow(ctx, cx, cy, dir, len, color) {
+  const ang = dir==='N'? -Math.PI/2 : dir==='E'? 0 : dir==='S'? Math.PI/2 : Math.PI;
   ctx.save();
-  ctx.translate(x + ts/2, y + ts/2);
-  // arrow size relative to tile
-  const len = ts * 0.28;
-  const w = ts * 0.12;
-  let ang = 0;
-  if (dir === 'N') ang = -Math.PI/2;
-  if (dir === 'E') ang = 0;
-  if (dir === 'S') ang = Math.PI/2;
-  if (dir === 'W') ang = Math.PI;
+  ctx.translate(cx, cy);
   ctx.rotate(ang);
-  
-  // Draw simple filled arrow pointing right (after rotation)
   ctx.fillStyle = color;
   ctx.beginPath();
-  ctx.moveTo(-len, -w/2);
-  ctx.lineTo(0, -w/2);
-  ctx.lineTo(0, -w);
-  ctx.lineTo(len, 0);
-  ctx.lineTo(0, w);
-  ctx.lineTo(0, w/2);
-  ctx.lineTo(-len, w/2);
+  // arrow shaft
+  ctx.rect(-len*0.45, -2, len*0.9, 4);
+  // arrow head
+  ctx.moveTo(len*0.45, 0);
+  ctx.lineTo(len*0.9, -6);
+  ctx.lineTo(len*0.9, 6);
   ctx.closePath();
   ctx.fill();
-  
-  // Slight outline for contrast
-  ctx.strokeStyle = 'rgba(0,0,0,0.15)';
-  ctx.lineWidth = 1;
-  ctx.stroke();
   ctx.restore();
 }

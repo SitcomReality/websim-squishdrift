@@ -70,12 +70,13 @@ export class RoadGenerator {
       this.createPerimeterRoundabout(tiles, cx, cy, set);
     }
 
-    this.createZebraCrossings(tiles, cx, cy, isPerimeter);
+    this.createZebraCrossings(tiles, cx, cy);
   }
 
-  createZebraCrossings(tiles, cx, cy, isPerimeter) {
+  createZebraCrossings(tiles, cx, cy) {
+    const { width, height } = this.cityLayout;
     const set = (x, y, t) => {
-      if (x >= 0 && y >= 0 && x < this.cityLayout.width && y < this.cityLayout.height) {
+      if (x >= 1 && y >= 1 && x < width - 1 && y < height - 1) {
         // Only place zebra crossing if on a road tile, to avoid overwriting footpaths
         const currentTile = tiles[y][x];
         if (currentTile >= Tile.RoadN && currentTile <= Tile.RoadW) {
@@ -83,30 +84,43 @@ export class RoadGenerator {
         }
       }
     };
-    
+
+    const isTopEdge = cy - 3 < 1;
+    const isBottomEdge = cy + 3 >= height - 1;
+    const isLeftEdge = cx - 3 < 1;
+    const isRightEdge = cx + 3 >= width - 1;
+
     // Top side (crossing N/S roads)
-    set(cx - 2, cy - 3, Tile.ZebraCrossingS);
-    set(cx - 1, cy - 3, Tile.ZebraCrossingS);
-    set(cx + 1, cy - 3, Tile.ZebraCrossingN);
-    set(cx + 2, cy - 3, Tile.ZebraCrossingN);
+    if (!isTopEdge) {
+        set(cx - 2, cy - 3, Tile.ZebraCrossingS);
+        set(cx - 1, cy - 3, Tile.ZebraCrossingS);
+        set(cx + 1, cy - 3, Tile.ZebraCrossingN);
+        set(cx + 2, cy - 3, Tile.ZebraCrossingN);
+    }
     
     // Bottom side (crossing N/S roads)
-    set(cx - 2, cy + 3, Tile.ZebraCrossingS);
-    set(cx - 1, cy + 3, Tile.ZebraCrossingS);
-    set(cx + 1, cy + 3, Tile.ZebraCrossingN);
-    set(cx + 2, cy + 3, Tile.ZebraCrossingN);
+    if (!isBottomEdge) {
+        set(cx - 2, cy + 3, Tile.ZebraCrossingS);
+        set(cx - 1, cy + 3, Tile.ZebraCrossingS);
+        set(cx + 1, cy + 3, Tile.ZebraCrossingN);
+        set(cx + 2, cy + 3, Tile.ZebraCrossingN);
+    }
     
     // Left side (crossing E/W roads)
-    set(cx - 3, cy - 2, Tile.ZebraCrossingW);
-    set(cx - 3, cy - 1, Tile.ZebraCrossingW);
-    set(cx - 3, cy + 1, Tile.ZebraCrossingE);
-    set(cx - 3, cy + 2, Tile.ZebraCrossingE);
+    if (!isLeftEdge) {
+        set(cx - 3, cy - 2, Tile.ZebraCrossingW);
+        set(cx - 3, cy - 1, Tile.ZebraCrossingW);
+        set(cx - 3, cy + 1, Tile.ZebraCrossingE);
+        set(cx - 3, cy + 2, Tile.ZebraCrossingE);
+    }
 
     // Right side (crossing E/W roads)
-    set(cx + 3, cy - 2, Tile.ZebraCrossingW);
-    set(cx + 3, cy - 1, Tile.ZebraCrossingW);
-    set(cx + 3, cy + 1, Tile.ZebraCrossingE);
-    set(cx + 3, cy + 2, Tile.ZebraCrossingE);
+    if (!isRightEdge) {
+        set(cx + 3, cy - 2, Tile.ZebraCrossingW);
+        set(cx + 3, cy - 1, Tile.ZebraCrossingW);
+        set(cx + 3, cy + 1, Tile.ZebraCrossingE);
+        set(cx + 3, cy + 2, Tile.ZebraCrossingE);
+    }
   }
 
   createStandardRoundabout(tiles, cx, cy, set) {

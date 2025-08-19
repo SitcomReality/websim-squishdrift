@@ -34,49 +34,6 @@ export class RoadGenerator {
       tiles[i][width - 3] = Tile.RoadN; // second right lane going north
       tiles[i][width - 2] = Tile.RoadN; // right lane going north
     }
-
-    // --- Add zebra crossings on the outermost perimeter lane before each intersection ---
-    // Place zebra tiles one tile outward from the intersection center so pedestrians
-    // can cross the outermost ring road. Use same direction semantics as roundabout zebra placement.
-    for (let gy = 0; gy <= this.cityLayout.blocksHigh; gy++) {
-      for (let gx = 0; gx <= this.cityLayout.blocksWide; gx++) {
-        const center = this.cityLayout.getIntersectionCenter(gx, gy);
-        const cx = center.x, cy = center.y;
-
-        // Top side (horizontal crossing on the top outermost lane)
-        if (cy - 3 >= 0) {
-          tiles[cy - 3][cx - 2] = Tile.ZebraCrossingS;
-          tiles[cy - 3][cx - 1] = Tile.ZebraCrossingS;
-          tiles[cy - 3][cx + 1] = Tile.ZebraCrossingN;
-          tiles[cy - 3][cx + 2] = Tile.ZebraCrossingN;
-        }
-
-        // Bottom side (horizontal crossing on the bottom outermost lane)
-        if (cy + 3 < this.cityLayout.height) {
-          tiles[cy + 3][cx - 2] = Tile.ZebraCrossingS;
-          tiles[cy + 3][cx - 1] = Tile.ZebraCrossingS;
-          tiles[cy + 3][cx + 1] = Tile.ZebraCrossingN;
-          tiles[cy + 3][cx + 2] = Tile.ZebraCrossingN;
-        }
-
-        // Left side (vertical crossing on the left outermost lane)
-        if (cx - 3 >= 0) {
-          tiles[cy - 2][cx - 3] = Tile.ZebraCrossingW;
-          tiles[cy - 1][cx - 3] = Tile.ZebraCrossingW;
-          tiles[cy + 1][cx - 3] = Tile.ZebraCrossingE;
-          tiles[cy + 2][cx - 3] = Tile.ZebraCrossingE;
-        }
-
-        // Right side (vertical crossing on the right outermost lane)
-        if (cx + 3 < this.cityLayout.width) {
-          tiles[cy - 2][cx + 3] = Tile.ZebraCrossingW;
-          tiles[cy - 1][cx + 3] = Tile.ZebraCrossingW;
-          tiles[cy + 1][cx + 3] = Tile.ZebraCrossingE;
-          tiles[cy + 2][cx + 3] = Tile.ZebraCrossingE;
-        }
-      }
-    }
-    // --- end zebra additions ---
   }
 
   generateRoundabouts(tiles) {
@@ -87,14 +44,14 @@ export class RoadGenerator {
         
         const isPerimeter = (gx === 0 || gx === this.cityLayout.blocksWide || 
                            gy === 0 || gy === this.cityLayout.blocksHigh);
-        
-        this.createRoundabout(tiles, center.x, center.y, isPerimeter);
+        const sides = { top: gy===0, bottom: gy===this.cityLayout.blocksHigh, left: gx===0, right: gx===this.cityLayout.blocksWide };
+        this.createRoundabout(tiles, center.x, center.y, isPerimeter, sides);
         this.roundabouts.push({ cx: center.x, cy: center.y, isPerimeter });
       }
     }
   }
 
-  createRoundabout(tiles, cx, cy, isPerimeter) {
+  createRoundabout(tiles, cx, cy, isPerimeter, sides) {
     // Mark center as a special roundabout center tile (will be drawn as road background
     // with a circular grass patch). We keep separate metadata via roundabouts array.
     tiles[cy][cx] = Tile.RoundaboutCenter;
@@ -113,10 +70,10 @@ export class RoadGenerator {
       this.createPerimeterRoundabout(tiles, cx, cy, set);
     }
 
-    this.createZebraCrossings(tiles, cx, cy);
+    this.createZebraCrossings(tiles, cx, cy, isPerimeter, sides);
   }
 
-  createZebraCrossings(tiles, cx, cy) {
+  createZebraCrossings(tiles, cx, cy, isPerimeter = false, sides = {}) {
     const set = (x, y, t) => {
       if (x >= 0 && y >= 0 && x < this.cityLayout.width && y < this.cityLayout.height) {
         tiles[y][x] = t;
@@ -146,6 +103,16 @@ export class RoadGenerator {
     set(cx + 3, cy - 1, Tile.ZebraCrossingW);
     set(cx + 3, cy + 1, Tile.ZebraCrossingE);
     set(cx + 3, cy + 2, Tile.ZebraCrossingE);
+
+    // Add zebra crossings on the outermost ring-road lane before perimeter intersections
+    if (isPerimeter) {
+      const topY = 1, bottomY = this.cityLayout.height - 2;
+      const leftX = 1, rightX = this.cityLayout.width - 2;
+      if (sides.bottom) set(cx - 3, bottomY, Tile.ZebraCrossingE);   // bottom lane runs East
+      if (sides.top)    set(cx + 3, topY,    Tile.ZebraCrossingW);   // top lane runs West
+      if (sides.left)   set(leftX,  cy - 3,  Tile.ZebraCrossingS);   // left lane runs South
+      if (sides.right)  set(rightX, cy + 3,  Tile.ZebraCrossingN);   // right lane runs North
+    }
   }
 
   createStandardRoundabout(tiles, cx, cy, set) {

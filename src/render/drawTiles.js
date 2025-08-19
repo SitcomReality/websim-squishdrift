@@ -36,8 +36,8 @@ export function drawTiles(r, state, layer = 'all'){
       r.ctx.fillRect(gx*ts, gy*ts, ts, ts);
     }
     
-    // Only draw directional arrows for single-direction lanes in intersections
-    drawIntersectionDirectionArrows(r, gx, gy, ts, t, state);
+    // Only draw arrows for unidirectional lanes in intersections
+    drawIntersectionArrows(r, gx, gy, ts, t, state);
     
     if (t === Tile.BuildingWall) {
       r.ctx.fillStyle = 'rgba(0,0,0,0.2)';
@@ -88,63 +88,46 @@ function drawZebraCrossing(r, gx, gy, ts, tileType) {
   }
 }
 
-function drawIntersectionDirectionArrows(r, gx, gy, ts, tileType, state) {
+function drawIntersectionArrows(r, gx, gy, ts, tileType, state) {
   const { ctx } = r;
   
-  // Only draw arrows for specific unidirectional road tiles in intersections
-  const uniDirectionalTiles = new Set([Tile.RoadN, Tile.RoadE, Tile.RoadS, Tile.RoadW]);
+  // Only draw arrows for unidirectional road tiles in intersections
+  const uniDirectionalTiles = [Tile.RoadN, Tile.RoadE, Tile.RoadS, Tile.RoadW];
   
-  if (!uniDirectionalTiles.has(tileType)) return;
+  if (!uniDirectionalTiles.includes(tileType)) return;
   
-  // Check if this tile is part of an intersection
+  // Check if this tile is inside an intersection by looking for a nearby roundabout center
   const map = state.world.map;
-  const tileX = gx;
-  const tileY = gy;
+  const checkRadius = 3; // Check within 3 tiles for a roundabout center
   
-  // First check if this is near a roundabout center
-  const checkRadius = 3;
-  let isNearRoundabout = false;
-  let roundaboutCenter = null;
+  let isInsideIntersection = false;
+  let centerX = -1, centerY = -1;
   
-  for (let y = Math.max(0, tileY - checkRadius); y <= Math.min(map.height - 1, tileY + checkRadius); y++) {
-    for (let x = Math.max(0, tileX - checkRadius); x <= Math.min(map.width - 1, tileX + checkRadius); x++) {
+  for (let y = Math.max(0, gy - checkRadius); y <= Math.min(map.height - 1, gy + checkRadius); y++) {
+    for (let x = Math.max(0, gx - checkRadius); x <= Math.min(map.width - 1, gx + checkRadius); x++) {
       if (map.tiles[y][x] === Tile.RoundaboutCenter) {
-        isNearRoundabout = true;
-        roundaboutCenter = { x, y };
+        isInsideIntersection = true;
+        centerX = x;
+        centerY = y;
         break;
       }
     }
   }
   
-  if (!isNearRoundabout || !roundaboutCenter) return;
+  if (!isInsideIntersection) return;
   
-  // Now check if this tile is one of the 8 specific directional lanes
-  // These are the tiles that form the "plus shape" arms from the central tree
+  // Now determine if this tile is part of the 8 uni-directional lanes
+  // These are the tiles that form the "plus shape" around the central tree
+  const dx = Math.abs(gx - centerX);
+  const dy = Math.abs(gy - centerY);
   
-  // Calculate relative position to roundabout center
-  const relX = tileX - roundaboutCenter.x;
-  const relY = tileY - roundaboutCenter.y;
+  // Skip corner quadrants - only draw arrows for tiles in straight lines from center
+  // The 8 tiles are: 2 in each cardinal direction from the center
+  const isStraightLine = (dx === 1 && dy <= 1) || (dy === 1 && dx <= 1);
   
-  // Check if this is one of the 8 tiles we want arrows on
-  // These are the tiles that form the straight arms of the plus shape
-  const isValidArrowTile = (
-    // North arm (vertical lanes)
-    (relY === -2 && relX >= -2 && relX <= 2) ||
-    (relY === -1 && relX >= -2 && relX <= 2) ||
-    // South arm (vertical lanes)  
-    (relY === 2 && relX >= -2 && relX <= 2) ||
-    (relY === 1 && relX >= -2 && relX <= 2) ||
-    // East arm (horizontal lanes)
-    (relX === 2 && relY >= -2 && relY <= 2) ||
-    (relX === 1 && relY >= -2 && relY <= 2) ||
-    // West arm (horizontal lanes)
-    (relX === -2 && relY >= -2 && relY <= 2) ||
-    (relX === -1 && relY >= -2 && relY <= 2)
-  );
+  if (!isStraightLine) return;
   
-  if (!isValidArrowTile) return;
-  
-  // Check if this tile has the correct direction
+  // Determine direction based on tile type
   let direction = null;
   switch(tileType) {
     case Tile.RoadN: direction = 'N'; break;
@@ -155,17 +138,17 @@ function drawIntersectionDirectionArrows(r, gx, gy, ts, tileType, state) {
   
   if (!direction) return;
   
-  // Draw the directional arrow
-  ctx.fillStyle = TileColor[Tile.ZebraCrossingN]; // Same color as zebra crossings
-  ctx.strokeStyle = TileColor[Tile.ZebraCrossingN];
-  ctx.lineWidth = 2;
-  
   const cx = gx * ts + ts/2;
   const cy = gy * ts + ts/2;
   
+  // Use zebra crossing color for arrows
+  ctx.fillStyle = TileColor[Tile.ZebraCrossingN];
+  ctx.strokeStyle = TileColor[Tile.ZebraCrossingN];
+  ctx.lineWidth = 2;
+  
   // Draw arrow based on direction
-  const arrowLength = ts * 0.3;
-  const arrowHeadSize = ts * 0.08;
+  const arrowLength = ts * 0.4;
+  const arrowHeadSize = ts * 0.1;
   
   ctx.save();
   ctx.translate(cx, cy);

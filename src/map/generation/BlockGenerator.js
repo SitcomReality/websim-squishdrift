@@ -134,11 +134,8 @@ export class BlockGenerator {
           }
         }
 
-        // Lots: NW (0..1,0..1), NE (3..4,0..1), SW (0..1,3..4), SE (3..4,3..4)
-        this.placeLot(tiles, xStart + 0, yStart + 0);
-        this.placeLot(tiles, xStart + 3, yStart + 0);
-        this.placeLot(tiles, xStart + 0, yStart + 3);
-        this.placeLot(tiles, xStart + 3, yStart + 3);
+        // Generate actual lots using the same system as regular blocks
+        this.generateMergedBlockLots(tiles, xStart, yStart);
       }
     }
 
@@ -185,27 +182,60 @@ export class BlockGenerator {
           }
         }
 
-        // Lots: NW (0..1,0..1), NE (3..4,0..1), SW (0..1,3..4), SE (3..4,3..4)
-        this.placeLot(tiles, xStart + 0, yStart + 0);
-        this.placeLot(tiles, xStart + 3, yStart + 0);
-        this.placeLot(tiles, xStart + 0, yStart + 3);
-        this.placeLot(tiles, xStart + 3, yStart + 3);
+        // Generate actual lots using the same system as regular blocks
+        this.generateMergedBlockLots(tiles, xStart, yStart);
       }
     }
   }
 
-  placeLot(tiles, x, y) {
-    const isBuilding = this.rand() < 0.7;
-    const rect = { x, y, width: 2, height: 2 };
-    if (isBuilding) this.createBuilding(tiles, rect);
-    else this.createPark(tiles, rect);
+  generateMergedBlockLots(tiles, ox, oy) {
+    // Define 4 lots (2x2 each) for merged blocks
+    const lots = [
+      { x: 0, y: 0 }, { x: 3, y: 0 },
+      { x: 0, y: 3 }, { x: 3, y: 3 }
+    ];
+
+    // Fill lots with buildings or parks using same logic as regular blocks
+    for (const lot of lots) {
+      const isBuilding = this.rand() < 0.7; // 70% buildings, 30% parks
+      
+      const buildingRect = {
+        x: ox + lot.x,
+        y: oy + lot.y,
+        width: 2,
+        height: 2,
+      };
+
+      if (isBuilding) {
+        this.createBuilding(tiles, buildingRect);
+      } else {
+        this.createPark(tiles, buildingRect);
+      }
+    }
   }
 
   createBuilding(tiles, rect) {
-    // Implementation for creating a building
+    // Create building with floor and walls
+    for (let ly = 0; ly < rect.height; ly++) {
+      for (let lx = 0; lx < rect.width; lx++) {
+        const tx = rect.x + lx;
+        const ty = rect.y + ly;
+        
+        const isWall = (lx === 0 || lx === rect.width - 1 || 
+                       ly === 0 || ly === rect.height - 1);
+        tiles[ty][tx] = isWall ? Tile.BuildingWall : Tile.BuildingFloor;
+      }
+    }
   }
 
   createPark(tiles, rect) {
-    // Implementation for creating a park
+    // Create park tiles
+    for (let ly = 0; ly < rect.height; ly++) {
+      for (let lx = 0; lx < rect.width; lx++) {
+        const tx = rect.x + lx;
+        const ty = rect.y + ly;
+        tiles[ty][tx] = Tile.Park;
+      }
+    }
   }
 }

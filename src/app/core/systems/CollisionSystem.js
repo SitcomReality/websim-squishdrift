@@ -1,4 +1,5 @@
 import { Vec2 } from '../../utils/Vec2.js';
+import { Health } from '../components/Health.js';
 
 export class CollisionSystem {
   constructor() {
@@ -149,6 +150,7 @@ export class CollisionSystem {
             const damageTaken = oldHealth - player.health.hp;
             if (damageTaken > 0) {
               this.lastDamageTime = now;
+              this.addDamageText(state, player.pos, damage);
               this.triggerShake(state, Math.min(1, damageTaken / 50));
               const k = Math.min(1, damage / 30) * 0.35;
               player.pos.x += toPlayerN.x * k;
@@ -160,6 +162,22 @@ export class CollisionSystem {
     }
   }
 
+  addDamageText(state, pos, damage) {
+    if (!state.damageTexts) state.damageTexts = [];
+    
+    const damageText = {
+      type: 'damage_text',
+      pos: { x: pos.x, y: pos.y },
+      text: `-${damage}`,
+      color: '#ff3333',
+      age: 0,
+      lifetime: 1.5, // 1.5 seconds
+      size: 16
+    };
+    
+    state.damageTexts.push(damageText);
+  }
+
   isTreeTrunk(x, y, map) {
     if (!map.trees) return false;
     return map.trees.some(tree => 
@@ -168,7 +186,9 @@ export class CollisionSystem {
   }
 
   triggerShake(state, intensity) {
-    // Implementation for triggering shake effect
+    if (state.cameraSystem) {
+      state.cameraSystem.addShake(intensity);
+    }
   }
 
   update(state) {

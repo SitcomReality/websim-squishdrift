@@ -40,6 +40,17 @@ export function drawVehicle(renderer, state, v) {
   ctx.closePath();
   ctx.fill();
   
+  // Draw cabin - darker rectangle in central area
+  const cabinWidth = w * 0.75; // 75% of vehicle width
+  const cabinHeight = h * 0.6; // 60% of vehicle height
+  const cabinX = -cabinWidth / 2;
+  const cabinY = -cabinHeight / 2;
+  
+  // Create a darker version of the base color
+  const darkerColor = darkenColor(color, 0.3);
+  ctx.fillStyle = darkerColor;
+  ctx.fillRect(cabinX, cabinY, cabinWidth, cabinHeight);
+  
   // Get lighting properties
   const headlights = { ...VehicleArchetype.headlights, ...typeProps.headlights, ...(v.headlights || {}) };
   const brakeLights = { ...VehicleArchetype.brakeLights, ...typeProps.brakeLights, ...(v.brakeLights || {}) };
@@ -127,4 +138,35 @@ export function drawVehicle(renderer, state, v) {
   }
   
   ctx.restore();
+}
+
+// Helper function to darken a color
+function darkenColor(color, amount) {
+  // Handle hex colors
+  if (color.startsWith('#')) {
+    let hex = color.slice(1);
+    let r = parseInt(hex.substr(0, 2), 16);
+    let g = parseInt(hex.substr(2, 2), 16);
+    let b = parseInt(hex.substr(4, 2), 16);
+    
+    r = Math.floor(r * (1 - amount));
+    g = Math.floor(g * (1 - amount));
+    b = Math.floor(b * (1 - amount));
+    
+    return `rgb(${r}, ${g}, ${b})`;
+  }
+  
+  // Handle hsl colors
+  if (color.startsWith('hsl')) {
+    const match = color.match(/\d+/g);
+    if (match && match.length >= 3) {
+      const h = match[0];
+      const s = match[1];
+      const l = Math.max(0, Math.floor(parseInt(match[2]) * (1 - amount)));
+      return `hsl(${h}, ${s}%, ${l}%)`;
+    }
+  }
+  
+  // Fallback
+  return color;
 }

@@ -49,8 +49,8 @@ export class DeathSystem {
     `;
 
     deathOverlay.innerHTML = `
-      <div id="death-content" style="display: none; text-align: center; opacity: 0; transition: opacity 0.5s ease;">
-        <h1 style="font-size: 48px; margin-bottom: 20px; font-weight: 700; letter-spacing: 2px;">WASTED</h1>
+      <div id="death-content" style="display: none; text-align: center;">
+        <h1 style="font-size: 48px; margin-bottom: 20px;">WASTED</h1>
         <div id="death-stats" style="margin-bottom: 30px; font-size: 18px;">
           <p>Time Alive: <span id="time-alive">0:00</span></p>
           <p>Enemies Eliminated: <span id="enemies-killed">0</span></p>
@@ -64,7 +64,6 @@ export class DeathSystem {
           color: white;
           cursor: pointer;
           transition: all 0.3s ease;
-          border-radius: 4px;
         " onmouseover="this.style.background='rgba(255,255,255,0.2)'"
            onmouseout="this.style.background='rgba(255,255,255,0.1)'" >
           RESTART
@@ -74,37 +73,34 @@ export class DeathSystem {
 
     document.body.appendChild(deathOverlay);
 
+    // Use setTimeout to trigger the fade-in animation
+    setTimeout(() => {
+      deathOverlay.style.background = 'rgba(0, 0, 0, 0.8)';
+      
+      // After fade completes, show content
+      setTimeout(() => {
+        const deathContent = document.getElementById('death-content');
+        if (deathContent) {
+          deathContent.style.display = 'block';
+          this.updateDeathStats(state);
+        }
+      }, 2000);
+    }, 100);
+
     // Add restart button listener
     setTimeout(() => {
-      document.getElementById('restart-button').addEventListener('click', () => {
-        this.restartGame();
-      });
-    }, 100);
+      const restartBtn = document.getElementById('restart-button');
+      if (restartBtn) {
+        restartBtn.addEventListener('click', () => {
+          this.restartGame();
+        });
+      }
+    }, 2100);
   }
 
   updateDeathScreen(state, dt) {
-    const elapsed = Date.now() - this.deathTime;
-    
-    // Fade to black
-    const deathOverlay = document.getElementById('death-overlay');
-    if (deathOverlay && elapsed < this.fadeDuration) {
-      const fadeProgress = elapsed / this.fadeDuration;
-      deathOverlay.style.background = `rgba(0, 0, 0, ${fadeProgress})`;
-    } else if (deathOverlay && elapsed >= this.fadeDuration && !this.blackScreen) {
-      deathOverlay.style.background = 'rgba(0, 0, 0, 1)';
-      this.blackScreen = true;
-      
-      // Show death content with fade-in
-      const deathContent = document.getElementById('death-content');
-      if (deathContent) {
-        deathContent.style.display = 'block';
-        // Trigger the fade-in
-        setTimeout(() => {
-          deathContent.style.opacity = '1';
-        }, 50);
-        this.updateDeathStats(state);
-      }
-    }
+    // This method is now just for ongoing updates, not for the fade animation
+    // The actual fade is handled by CSS transitions and setTimeout
   }
 
   updateDeathStats(state) {
@@ -113,14 +109,20 @@ export class DeathSystem {
     const minutes = Math.floor(timeAlive / 60);
     const seconds = timeAlive % 60;
     
-    document.getElementById('time-alive').textContent = 
-      `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    const timeAliveEl = document.getElementById('time-alive');
+    if (timeAliveEl) {
+      timeAliveEl.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
     
-    document.getElementById('enemies-killed').textContent = 
-      state.stats?.enemiesKilled || 0;
+    const enemiesKilledEl = document.getElementById('enemies-killed');
+    if (enemiesKilledEl) {
+      enemiesKilledEl.textContent = state.stats?.enemiesKilled || 0;
+    }
     
-    document.getElementById('vehicles-destroyed').textContent = 
-      state.stats?.vehiclesDestroyed || 0;
+    const vehiclesDestroyedEl = document.getElementById('vehicles-destroyed');
+    if (vehiclesDestroyedEl) {
+      vehiclesDestroyedEl.textContent = state.stats?.vehiclesDestroyed || 0;
+    }
   }
 
   restartGame() {

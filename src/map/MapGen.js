@@ -5,6 +5,7 @@ import { BlockGenerator } from './generation/BlockGenerator.js';
 import { RoadGenerator } from './generation/RoadGenerator.js';
 import { BuildingGenerator } from './generation/BuildingGenerator.js';
 import { GraphBuilder } from './generation/GraphBuilder.js';
+import { sanitizeMap } from './MapPostProcess.js';
 
 export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4) {
   const rand = rng(seed);
@@ -43,6 +44,9 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
       });
     }
   }
+  
+  // After all generators, sanitize tiles so merged blocks override stray zebra crossings
+  sanitizeMap(tiles, cityLayout.width, cityLayout.height, Tile, (t)=> (t>=Tile.RoadN && t<=Tile.RoadW) || (t>=Tile.ZebraCrossingN && t<=Tile.ZebraCrossingW));
   
   // Build road and pedestrian graphs
   const graphBuilder = new GraphBuilder();

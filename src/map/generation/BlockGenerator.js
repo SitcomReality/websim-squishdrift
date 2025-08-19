@@ -101,16 +101,10 @@ export class BlockGenerator {
         const left = this.cityLayout.getBlockOrigin(bx, by);
         const right = this.cityLayout.getBlockOrigin(bx + 1, by);
 
-        // Store the used sets in the RoadGenerator for zebra crossing checks
-        if (this.roadGenerator) {
-          this.roadGenerator.usedH = usedH;
-          this.roadGenerator.usedV = usedV;
-        }
-
         // Compute the 5x5 interior band between blocks
         const xStart = left.x + (W - 2);     // columns: W-2 .. W+2 relative to left block
         const yStart = left.y + 3;           // rows: 3..7 (5 rows) inside block's interior
-        const centerX = left.x + W;           // former median
+        const centerX = left.x + W;          // former median
         const topY = left.y + 2, bottomY = left.y + (W - 3); // shared footpaths rows
 
         // Extend top/bottom footpaths across the gap
@@ -154,12 +148,6 @@ export class BlockGenerator {
         if (this.rand() > mergedChance) continue;
         const key = `${bx},${by}`; if (usedV.has(key)) continue;
         usedV.add(key);
-        
-        // Store the used sets in the RoadGenerator
-        if (this.roadGenerator) {
-          this.roadGenerator.usedH = usedH;
-          this.roadGenerator.usedV = usedV;
-        }
 
         const top = this.cityLayout.getBlockOrigin(bx, by);
         const bottom = this.cityLayout.getBlockOrigin(bx, by + 1);

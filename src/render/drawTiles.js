@@ -37,7 +37,7 @@ export function drawTiles(r, state, layer = 'all'){
     }
     
     // Only draw arrows for uni-directional lanes in intersections
-    drawIntersectionDirectionArrows(r, gx, gy, ts, t, state);
+    drawIntersectionArrows(r, gx, gy, ts, t, state);
     
     if (t === Tile.BuildingWall) {
       r.ctx.fillStyle = 'rgba(0,0,0,0.2)';
@@ -88,45 +88,58 @@ function drawZebraCrossing(r, gx, gy, ts, tileType) {
   }
 }
 
-function drawIntersectionDirectionArrows(r, gx, gy, ts, tileType, state) {
+function drawIntersectionArrows(r, gx, gy, ts, tileType, state) {
   const { ctx } = r;
   
-  // Only process uni-directional road tiles
+  // Only draw arrows for specific uni-directional road tiles in intersections
   const uniDirectionalTiles = [Tile.RoadN, Tile.RoadE, Tile.RoadS, Tile.RoadW];
+  
   if (!uniDirectionalTiles.includes(tileType)) return;
   
-  // Check if this tile is part of an intersection
+  // Check if this is part of an intersection by checking for roundabout center
   const map = state.world.map;
-  const checkRadius = 3; // Check for roundabout centers within 3 tiles
   
+  // Check for a roundabout center within 2 tiles
   let isInIntersection = false;
-  let centerX = -1, centerY = -1;
+  const checkRadius = 2;
   
-  // Look for a roundabout center nearby
   for (let dy = -checkRadius; dy <= checkRadius; dy++) {
     for (let dx = -checkRadius; dx <= checkRadius; dx++) {
       const checkX = gx + dx;
       const checkY = gy + dy;
       
       if (checkX >= 0 && checkX < map.width && 
-          checkY >= 0 && checkY < map.height &&
-          map.tiles[checkY][checkX] === Tile.RoundaboutCenter) {
-        isInIntersection = true;
-        centerX = checkX;
-        centerY = checkY;
-        break;
+          checkY >= 0 && checkY < map.height) {
+        if (map.tiles[checkY][checkX] === Tile.RoundaboutCenter) {
+          isInIntersection = true;
+          break;
+        }
       }
     }
   }
   
   if (!isInIntersection) return;
   
-  // Determine if this tile should have an arrow
-  // Calculate distance from roundabout center
-  const distanceFromCenter = Math.max(Math.abs(gx - centerX), Math.abs(gy - centerY));
+  // Calculate Manhattan distance to nearest roundabout center
+  let minDistance = Infinity;
+  for (let dy = -checkRadius; dy <= checkRadius; dy++) {
+    for (let dx = -checkRadius; dx <= checkRadius; dx++) {
+      const checkX = gx + dx;
+      const checkY = gy + dy;
+      
+      if (checkX >= 0 && checkX < map.width && 
+          checkY >= 0 && checkY < map.height) {
+        if (map.tiles[checkY][checkX] === Tile.RoundaboutCenter) {
+          const distance = Math.abs(dx) + Math.abs(dy);
+          minDistance = Math.min(minDistance, distance);
+        }
+      }
+    }
+  }
   
-  // Only add arrows to tiles exactly 2 tiles away from center (the 8 uni-directional lanes)
-  if (distanceFromCenter !== 2) return;
+  // Only draw arrows on tiles that are adjacent to the roundabout center
+  // This ensures we only get the 8 tiles forming the plus shape
+  if (minDistance !== 1) return;
   
   // Determine direction based on tile type
   let direction = null;
@@ -139,63 +152,59 @@ function drawIntersectionDirectionArrows(r, gx, gy, ts, tileType, state) {
   
   if (!direction) return;
   
-  // Draw arrow
   const cx = gx * ts + ts/2;
   const cy = gy * ts + ts/2;
   
+  // Use zebra crossing color for arrows
   ctx.fillStyle = TileColor[Tile.ZebraCrossingN];
   ctx.strokeStyle = TileColor[Tile.ZebraCrossingN];
   ctx.lineWidth = 2;
   
+  // Draw arrow based on direction
   const arrowLength = ts * 0.4;
   const arrowHeadSize = ts * 0.1;
   
   ctx.save();
   ctx.translate(cx, cy);
   
-  // Draw arrow pointing in the correct direction
-  drawArrow(ctx, direction, arrowLength, arrowHeadSize);
-  
-  ctx.restore();
-}
-
-function drawArrow(ctx, direction, length, headSize) {
   switch(direction) {
     case 'N':
       ctx.beginPath();
-      ctx.moveTo(0, length/2);
-      ctx.lineTo(0, -length/2);
-      ctx.moveTo(-headSize, -length/2 + headSize);
-      ctx.lineTo(0, -length/2);
-      ctx.lineTo(headSize, -length/2 + headSize);
+      ctx.moveTo(0, arrowLength/2);
+      ctx.lineTo(0, -arrowLength/2);
+      ctx.moveTo(-arrowHeadSize, -arrowLength/2 + arrowHeadSize);
+      ctx.lineTo(0, -arrowLength/2);
+      ctx.lineTo(arrowHeadSize, -arrowLength/2 + arrowHeadSize);
       ctx.stroke();
       break;
     case 'S':
       ctx.beginPath();
-      ctx.moveTo(0, -length/2);
-      ctx.lineTo(0, length/2);
-      ctx.moveTo(-headSize, length/2 - headSize);
-      ctx.lineTo(0, length/2);
-      ctx.lineTo(headSize, length/2 - headSize);
+      ctx.moveTo(0, -arrowLength/2);
+      ctx.lineTo(0, arrowLength/2);
+      ctx.moveTo(-arrowHeadSize, arrowLength/2 - arrowHeadSize);
+      ctx.lineTo(0, arrowLength/2);
+      ctx.lineTo(arrowHeadSize, arrowLength/2 - arrowHeadSize);
       ctx.stroke();
       break;
     case 'E':
       ctx.beginPath();
-      ctx.moveTo(-length/2, 0);
-      ctx.lineTo(length/2, 0);
-      ctx.moveTo(length/2 - headSize, -headSize);
-      ctx.lineTo(length/2, 0);
-      ctx.lineTo(length/2 - headSize, headSize);
+      ctx.moveTo(-arrowLength/2, 0);
+      ctx.lineTo(arrowLength/2, 0);
+      ctx.moveTo(arrowLength/2 - arrowHeadSize, -arrowHeadSize);
+      ctx.lineTo(arrowLength/2, 0);
+      ctx.lineTo(arrowLength/2 - arrowHeadSize, arrowHeadSize);
       ctx.stroke();
       break;
     case 'W':
       ctx.beginPath();
-      ctx.moveTo(length/2, 0);
-      ctx.lineTo(-length/2, 0);
-      ctx.moveTo(-length/2 + headSize, -headSize);
-      ctx.lineTo(-length/2, 0);
-      ctx.lineTo(-length/2 + headSize, headSize);
+      ctx.moveTo(arrowLength/2, 0);
+      ctx.lineTo(-arrowLength/2, 0);
+      ctx.moveTo(-arrowLength/2 + arrowHeadSize, -arrowHeadSize);
+      ctx.lineTo(-arrowLength/2, 0);
+      ctx.lineTo(-arrowLength/2 + arrowHeadSize, arrowHeadSize);
       ctx.stroke();
       break;
   }
+  
+  ctx.restore();
 }

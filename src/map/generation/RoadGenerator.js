@@ -13,6 +13,9 @@ export class RoadGenerator {
     
     // Generate roundabouts at intersections
     this.generateRoundabouts(tiles);
+    
+    // Add road markings to intersections
+    this.addRoadMarkings(tiles);
   }
 
   generatePerimeterRoad(tiles) {
@@ -196,6 +199,131 @@ export class RoadGenerator {
     set(cx + 3, cy - 1, Tile.ZebraCrossingW);
     set(cx + 3, cy + 1, Tile.ZebraCrossingE);
     set(cx + 3, cy + 2, Tile.ZebraCrossingE);
+  }
+
+  addRoadMarkings(tiles) {
+    const set = (x, y, t) => {
+      if (x >= 0 && y >= 0 && x < this.cityLayout.width && y < this.cityLayout.height) {
+        tiles[y][x] = t;
+      }
+    };
+
+    for (const roundabout of this.roundabouts) {
+      const { cx, cy, isPerimeter } = roundabout;
+      
+      // Define the 8 tiles that need road markings (uni-directional lanes)
+      const markings = this.getRoadMarkings(cx, cy, isPerimeter);
+      
+      for (const { x, y, direction } of markings) {
+        if (x >= 0 && y >= 0 && x < this.cityLayout.width && y < this.cityLayout.height) {
+          // Create a new tile type for each direction with markings
+          const baseTile = tiles[y][x];
+          if (baseTile === Tile.RoadN) {
+            tiles[y][x] = Tile.RoadN + 100; // RoadN with markings
+          } else if (baseTile === Tile.RoadE) {
+            tiles[y][x] = Tile.RoadE + 100; // RoadE with markings
+          } else if (baseTile === Tile.RoadS) {
+            tiles[y][x] = Tile.RoadS + 100; // RoadS with markings
+          } else if (baseTile === Tile.RoadW) {
+            tiles[y][x] = Tile.RoadW + 100; // RoadW with markings
+          }
+        }
+      }
+    }
+  }
+
+  getRoadMarkings(cx, cy, isPerimeter) {
+    const markings = [];
+    
+    if (!isPerimeter) {
+      // Standard roundabout markings
+      // Top lanes (westbound)
+      markings.push({ x: cx - 2, y: cy - 2, direction: 'W' });
+      markings.push({ x: cx - 1, y: cy - 2, direction: 'W' });
+      markings.push({ x: cx + 1, y: cy - 2, direction: 'W' });
+      markings.push({ x: cx + 2, y: cy - 2, direction: 'W' });
+      
+      // Right lanes (northbound)
+      markings.push({ x: cx + 2, y: cy - 2, direction: 'N' });
+      markings.push({ x: cx + 2, y: cy - 1, direction: 'N' });
+      markings.push({ x: cx + 2, y: cy + 1, direction: 'N' });
+      markings.push({ x: cx + 2, y: cy + 2, direction: 'N' });
+      
+      // Bottom lanes (eastbound)
+      markings.push({ x: cx - 2, y: cy + 2, direction: 'E' });
+      markings.push({ x: cx - 1, y: cy + 2, direction: 'E' });
+      markings.push({ x: cx + 1, y: cy + 2, direction: 'E' });
+      markings.push({ x: cx + 2, y: cy + 2, direction: 'E' });
+      
+      // Left lanes (southbound)
+      markings.push({ x: cx - 2, y: cy - 2, direction: 'S' });
+      markings.push({ x: cx - 2, y: cy - 1, direction: 'S' });
+      markings.push({ x: cx - 2, y: cy + 1, direction: 'S' });
+      markings.push({ x: cx - 2, y: cy + 2, direction: 'S' });
+    } else {
+      // Perimeter roundabout markings - adjust for edge cases
+      const width = this.cityLayout.width;
+      const height = this.cityLayout.height;
+      
+      const isTopEdge = cy <= 1;
+      const isBottomEdge = cy >= height - 2;
+      const isLeftEdge = cx <= 1;
+      const isRightEdge = cx >= width - 2;
+      
+      // Top lanes
+      if (!isTopEdge) {
+        markings.push({ x: cx - 2, y: cy - 2, direction: 'W' });
+        markings.push({ x: cx - 1, y: cy - 2, direction: 'W' });
+        markings.push({ x: cx + 1, y: cy - 2, direction: 'W' });
+        markings.push({ x: cx + 2, y: cy - 2, direction: 'W' });
+      } else {
+        markings.push({ x: cx - 2, y: cy - 2, direction: 'E' });
+        markings.push({ x: cx - 1, y: cy - 2, direction: 'E' });
+        markings.push({ x: cx + 1, y: cy - 2, direction: 'E' });
+        markings.push({ x: cx + 2, y: cy - 2, direction: 'E' });
+      }
+      
+      // Right lanes
+      if (!isRightEdge) {
+        markings.push({ x: cx + 2, y: cy - 2, direction: 'N' });
+        markings.push({ x: cx + 2, y: cy - 1, direction: 'N' });
+        markings.push({ x: cx + 2, y: cy + 1, direction: 'N' });
+        markings.push({ x: cx + 2, y: cy + 2, direction: 'N' });
+      } else {
+        markings.push({ x: cx + 2, y: cy - 2, direction: 'S' });
+        markings.push({ x: cx + 2, y: cy - 1, direction: 'S' });
+        markings.push({ x: cx + 2, y: cy + 1, direction: 'S' });
+        markings.push({ x: cx + 2, y: cy + 2, direction: 'S' });
+      }
+      
+      // Bottom lanes
+      if (!isBottomEdge) {
+        markings.push({ x: cx - 2, y: cy + 2, direction: 'E' });
+        markings.push({ x: cx - 1, y: cy + 2, direction: 'E' });
+        markings.push({ x: cx + 1, y: cy + 2, direction: 'E' });
+        markings.push({ x: cx + 2, y: cy + 2, direction: 'E' });
+      } else {
+        markings.push({ x: cx - 2, y: cy + 2, direction: 'W' });
+        markings.push({ x: cx - 1, y: cy + 2, direction: 'W' });
+        markings.push({ x: cx + 1, y: cy + 2, direction: 'W' });
+        markings.push({ x: cx + 2, y: cy + 2, direction: 'W' });
+      }
+      
+      // Left lanes
+      if (!isLeftEdge) {
+        markings.push({ x: cx - 2, y: cy - 2, direction: 'S' });
+        markings.push({ x: cx - 2, y: cy - 1, direction: 'S' });
+        markings.push({ x: cx - 2, y: cy + 1, direction: 'S' });
+        markings.push({ x: cx - 2, y: cy + 2, direction: 'S' });
+      } else {
+        markings.push({ x: cx - 2, y: cy - 2, direction: 'N' });
+        markings.push({ x: cx - 2, y: cy - 1, direction: 'N' });
+        markings.push({ x: cx - 2, y: cy + 1, direction: 'N' });
+        markings.push({ x: cx - 2, y: cy + 2, direction: 'N' });
+      }
+    }
+    
+    return markings;
   }
 
   getRoundabouts() {

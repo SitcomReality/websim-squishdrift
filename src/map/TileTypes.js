@@ -15,7 +15,12 @@ export const Tile = {
   ZebraCrossingS: 13,
   ZebraCrossingW: 14,
   RoundaboutCenter: 15, // new: special center tile with circular grass + tree
-  Beach: 16 // new: shallow water / sand border tile
+  Beach: 16, // new: shallow water / sand border tile
+  // Road with markings
+  RoadNMarked: 101,
+  RoadEMarked: 102,
+  RoadSMarked: 103,
+  RoadWMarked: 104
 };
 
 export const TileColor = {
@@ -35,18 +40,28 @@ export const TileColor = {
   [Tile.ZebraCrossingS]: '#6a6a6a',
   [Tile.ZebraCrossingW]: '#6a6a6a',
   [Tile.RoundaboutCenter]: '#2F2F2F', // base road background for roundabout center
-  [Tile.Beach]: '#F4E7C2' // light sand/beach color
+  [Tile.Beach]: '#F4E7C2', // light sand/beach color
+  // Road with markings
+  [Tile.RoadNMarked]: '#2F2F2F',
+  [Tile.RoadEMarked]: '#2F2F2F',
+  [Tile.RoadSMarked]: '#2F2F2F',
+  [Tile.RoadWMarked]: '#2F2F2F'
 };
 
 export function isWalkable(t) { 
   return t !== Tile.BuildingWall && t !== Tile.BuildingFloor;
 }
 
-export function isRoad(t){ return (t>=Tile.RoadN && t<=Tile.RoadW) || (t>=Tile.ZebraCrossingN && t<=Tile.ZebraCrossingW); }
+export function isRoad(t){ 
+  return (t>=Tile.RoadN && t<=Tile.RoadW) || 
+         (t>=Tile.ZebraCrossingN && t<=Tile.ZebraCrossingW) ||
+         (t>=Tile.RoadNMarked && t<=Tile.RoadWMarked);
+}
+
 export function roadDir(t){
-  if (t===Tile.RoadN || t===Tile.ZebraCrossingN) return 'N';
-  if (t===Tile.RoadE || t===Tile.ZebraCrossingE) return 'E';
-  if (t===Tile.RoadS || t===Tile.ZebraCrossingS) return 'S';
-  if (t===Tile.RoadW || t===Tile.ZebraCrossingW) return 'W';
+  if (t===Tile.RoadN || t===Tile.ZebraCrossingN || t===Tile.RoadNMarked) return 'N';
+  if (t===Tile.RoadE || t===Tile.ZebraCrossingE || t===Tile.RoadEMarked) return 'E';
+  if (t===Tile.RoadS || t===Tile.ZebraCrossingS || t===Tile.RoadSMarked) return 'S';
+  if (t===Tile.RoadW || t===Tile.ZebraCrossingW || t===Tile.RoadWMarked) return 'W';
   return null;
 }

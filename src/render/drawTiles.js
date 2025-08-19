@@ -1,9 +1,9 @@
 import { Tile, TileColor } from '../map/TileTypes.js';
 
 export function drawTiles(r, state, layer = 'all'){
-  const { ctx, canvas } = r, ts = state.world.tileSize, map = state.world.map;
+  const { ctx } = r, ts = state.world.tileSize, map = state.world.map;
   const z = state.camera.zoom || 1;
-  const wTiles = Math.ceil(canvas.width/(ts*z))+2, hTiles = Math.ceil(canvas.height/(ts*z))+2;
+  const wTiles = Math.ceil(r.canvas.width/(ts*z))+2, hTiles = Math.ceil(r.canvas.height/(ts*z))+2;
   const sx = Math.floor(state.camera.x - wTiles/2), sy = Math.floor(state.camera.y - hTiles/2);
   const floorTypes = new Set([Tile.BuildingFloor]);
   
@@ -31,6 +31,13 @@ export function drawTiles(r, state, layer = 'all'){
       r.ctx.fillStyle = TileColor[Tile.Grass] || '#90EE90';
       r.ctx.fill();
       r.ctx.restore();
+    } else if (isRoadMarked(t)) {
+      // Draw road background
+      r.ctx.fillStyle = TileColor[Tile.RoadN];
+      r.ctx.fillRect(gx*ts, gy*ts, ts, ts);
+      
+      // Draw road markings (arrows)
+      drawRoadMarking(r, gx, gy, ts, t);
     } else {
       r.ctx.fillStyle = TileColor[t] || '#f5f5f5';
       r.ctx.fillRect(gx*ts, gy*ts, ts, ts);
@@ -45,6 +52,10 @@ export function drawTiles(r, state, layer = 'all'){
 
 function isZebraCrossing(tile) {
   return tile >= Tile.ZebraCrossingN && tile <= Tile.ZebraCrossingW;
+}
+
+function isRoadMarked(tile) {
+  return tile >= Tile.RoadNMarked && tile <= Tile.RoadWMarked;
 }
 
 function drawZebraCrossing(r, gx, gy, ts, tileType) {
@@ -83,4 +94,75 @@ function drawZebraCrossing(r, gx, gy, ts, tileType) {
       }
       break;
   }
+}
+
+function drawRoadMarking(r, gx, gy, ts, tileType) {
+  const { ctx } = r;
+  
+  // Draw arrow based on direction
+  const arrowColor = '#FFFFFF';
+  const arrowSize = ts * 0.3;
+  
+  ctx.fillStyle = arrowColor;
+  ctx.beginPath();
+  
+  // Determine direction from tile type
+  let direction = null;
+  if (tileType === Tile.RoadNMarked) direction = 'N';
+  else if (tileType === Tile.RoadEMarked) direction = 'E';
+  else if (tileType === Tile.RoadSMarked) direction = 'S';
+  else if (tileType === Tile.RoadWMarked) direction = 'W';
+  
+  if (!direction) return;
+  
+  const centerX = gx * ts + ts/2;
+  const centerY = gy * ts + ts/2;
+  
+  // Draw arrow pointing in the correct direction
+  ctx.save();
+  ctx.translate(centerX, centerY);
+  
+  switch(direction) {
+    case 'N':
+      // Arrow pointing up (north)
+      ctx.beginPath();
+      ctx.moveTo(0, -arrowSize/2);
+      ctx.lineTo(-arrowSize/4, -arrowSize/2 + arrowSize/3);
+      ctx.lineTo(arrowSize/4, -arrowSize/2 + arrowSize/3);
+      ctx.closePath();
+      break;
+      
+    case 'E':
+      // Arrow pointing right (east)
+      ctx.rotate(Math.PI/2);
+      ctx.beginPath();
+      ctx.moveTo(0, -arrowSize/2);
+      ctx.lineTo(-arrowSize/4, -arrowSize/2 + arrowSize/3);
+      ctx.lineTo(arrowSize/4, -arrowSize/2 + arrowSize/3);
+      ctx.closePath();
+      break;
+      
+    case 'S':
+      // Arrow pointing down (south)
+      ctx.rotate(Math.PI);
+      ctx.beginPath();
+      ctx.moveTo(0, -arrowSize/2);
+      ctx.lineTo(-arrowSize/4, -arrowSize/2 + arrowSize/3);
+      ctx.lineTo(arrowSize/4, -arrowSize/2 + arrowSize/3);
+      ctx.closePath();
+      break;
+      
+    case 'W':
+      // Arrow pointing left (west)
+      ctx.rotate(-Math.PI/2);
+      ctx.beginPath();
+      ctx.moveTo(0, -arrowSize/2);
+      ctx.lineTo(-arrowSize/4, -arrowSize/2 + arrowSize/3);
+      ctx.lineTo(arrowSize/4, -arrowSize/2 + arrowSize/3);
+      ctx.closePath();
+      break;
+  }
+  
+  ctx.fill();
+  ctx.restore();
 }

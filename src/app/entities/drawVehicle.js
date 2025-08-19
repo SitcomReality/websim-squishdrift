@@ -15,6 +15,10 @@ export function drawVehicle(renderer, state, v) {
   const w = ts * width;
   const h = ts * height;
   
+  // Normalize semantics: length = larger body dimension (forward axis), width = smaller (cross axis)
+  const lengthPx = Math.max(w, h);
+  const widthPx  = Math.min(w, h);
+  
   ctx.save();
   ctx.translate(v.pos.x * ts, v.pos.y * ts);
   ctx.rotate(v.rot || 0);
@@ -24,7 +28,7 @@ export function drawVehicle(renderer, state, v) {
   
   // Calculate rounded rectangle path
   const cx = 0, cy = 0;
-  const hw = w/2, hh = h/2;
+  const hw = lengthPx/2, hh = widthPx/2;
   const r = Math.min(hw * cornerRadius, hh * cornerRadius);
   
   ctx.beginPath();
@@ -41,15 +45,15 @@ export function drawVehicle(renderer, state, v) {
   ctx.fill();
   
   // Draw cabin - darker rectangle in central area
-  const cabinWidth = w * 0.75; // 75% of vehicle width
-  const cabinHeight = h * 0.6; // 60% of vehicle height
-  const cabinX = -cabinWidth / 2;
-  const cabinY = -cabinHeight / 2;
+  const cabinLength = lengthPx * 0.75; // 75% of vehicle length
+  const cabinWidth  = widthPx  * 0.6;  // 60% of vehicle width (breadth)
+  const cabinX = -cabinLength / 2;
+  const cabinY = -cabinWidth  / 2;
   
   // Create a darker version of the base color
   const darkerColor = darkenColor(color, 0.3);
   ctx.fillStyle = darkerColor;
-  ctx.fillRect(cabinX, cabinY, cabinWidth, cabinHeight);
+  ctx.fillRect(cabinX, cabinY, cabinLength, cabinWidth);
   
   // Get lighting properties
   const headlights = { ...VehicleArchetype.headlights, ...typeProps.headlights, ...(v.headlights || {}) };
@@ -97,9 +101,9 @@ export function drawVehicle(renderer, state, v) {
       const win = windows.front;
       ctx.fillRect(
         headX - hw * win.width/2,
-        -h * win.height/2,
+        -widthPx * win.height/2,
         hw * win.width,
-        h * win.height
+        widthPx * win.height
       );
     }
     
@@ -107,9 +111,9 @@ export function drawVehicle(renderer, state, v) {
       const win = windows.rear;
       ctx.fillRect(
         brakeX - hw * win.width/2,
-        -h * win.height/2,
+        -widthPx * win.height/2,
         hw * win.width,
-        h * win.height
+        widthPx * win.height
       );
     }
   }

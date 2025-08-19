@@ -66,22 +66,30 @@ export class BlockGenerator {
   }
 
   generateMedians(tiles) {
-    // Horizontal medians
+    // Horizontal medians - skip intersections on ring road
     for (let gy = 0; gy <= this.cityLayout.blocksHigh; gy++) {
       const y = this.cityLayout.getIntersectionCenter(0, gy).y;
       if (y >= 0 && y < this.cityLayout.height) {
-        for (let x = 0; x < this.cityLayout.width; x++) {
-          tiles[y][x] = Tile.Median;
+        // Check if this is NOT a perimeter intersection
+        const isPerimeter = (gy === 0 || gy === this.cityLayout.blocksHigh);
+        if (!isPerimeter) {
+          for (let x = 0; x < this.cityLayout.width; x++) {
+            tiles[y][x] = Tile.Median;
+          }
         }
       }
     }
 
-    // Vertical medians
+    // Vertical medians - skip intersections on ring road
     for (let gx = 0; gx <= this.cityLayout.blocksWide; gx++) {
       const x = this.cityLayout.getIntersectionCenter(gx, 0).x;
       if (x >= 0 && x < this.cityLayout.width) {
-        for (let y = 0; y < this.cityLayout.height; y++) {
-          tiles[y][x] = Tile.Median;
+        // Check if this is NOT a perimeter intersection
+        const isPerimeter = (gx === 0 || gx === this.cityLayout.blocksWide);
+        if (!isPerimeter) {
+          for (let y = 0; y < this.cityLayout.height; y++) {
+            tiles[y][x] = Tile.Median;
+          }
         }
       }
     }

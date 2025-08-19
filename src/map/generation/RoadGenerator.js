@@ -13,45 +13,29 @@ export class RoadGenerator {
     
     // Generate roundabouts at intersections
     this.generateRoundabouts(tiles);
+
+    // After roundabouts, fix inner perimeter lanes: convert 7-length runs to 5 road + 2 zebra
+    this.adjustPerimeterZebras(tiles);
   }
 
   generatePerimeterRoad(tiles) {
-    const { width, height, blocksWide, blocksHigh } = this.cityLayout;
-
-    const set = (x, y, t) => {
-      if (x >= 0 && y >= 0 && x < width && y < height) {
-        tiles[y][x] = t;
-      }
-    };
-
-    const gaps = [];
-    for (let gy = 0; gy <= blocksHigh; gy++) {
-      for (let gx = 0; gx <= blocksWide; gx++) {
-        const center = this.cityLayout.getIntersectionCenter(gx, gy);
-        gaps.push({ cx: center.x, cy: center.y });
-      }
-    }
+    const width = this.cityLayout.width;
+    const height = this.cityLayout.height;
 
     // Top and bottom lanes
-    for (let i = 1; i < width - 1; i++) {
-      if (gaps.some(g => i >= g.cx - 2 && i <= g.cx + 2)) continue;
-      
-      set(i, 1, Tile.RoadW);
-      set(i, 2, Tile.RoadW);
-
-      set(i, height - 3, Tile.RoadE);
-      set(i, height - 2, Tile.RoadE);
+    for (let i = 0; i < width; i++) {
+      tiles[0][i] = Tile.RoadW;
+      tiles[1][i] = Tile.RoadW;
+      tiles[height - 2][i] = Tile.RoadE;
+      tiles[height - 1][i] = Tile.RoadE;
     }
 
     // Left and right lanes
-    for (let i = 1; i < height - 1; i++) {
-      if (gaps.some(g => i >= g.cy - 2 && i <= g.cy + 2)) continue;
-
-      set(1, i, Tile.RoadS);
-      set(2, i, Tile.RoadS);
-
-      set(width - 3, i, Tile.RoadN);
-      set(width - 2, i, Tile.RoadN);
+    for (let i = 0; i < height; i++) {
+      tiles[i][0] = Tile.RoadS;
+      tiles[i][1] = Tile.RoadS;
+      tiles[i][width - 2] = Tile.RoadN;
+      tiles[i][width - 1] = Tile.RoadN;
     }
   }
 
@@ -171,5 +155,62 @@ export class RoadGenerator {
 
   getRoundabouts() {
     return this.roundabouts;
+  }
+
+  // Add zebra crossings to inner perimeter lanes at each segment between intersections
+  adjustPerimeterZebras(tiles) {
+    const W = this.cityLayout.width, H = this.cityLayout.height;
+    // Inner perimeter lane indices (adjacent to median)
+    const topY = 1, bottomY = H - 2, leftX = 1, rightX = W - 2;
+
+    // Scan helpers: find contiguous runs of the given road tile and if length==7, set ends to zebra
+    const scanHorizontal = (y, roadTile, zebraTile) => {
+      let runStart = -1;
+      for (let x = 0; x <= W; x++) {
+        const t = (x < W) ? tiles[y][x] : 255;
+        if (t === roadTile) {
+          if (runStart === -1) runStart = x;
+        } else {
+          if (runStart !== -1) {
+            const runEnd = x - 1;
+            const len = runEnd - runStart + 1;
+            if (len === 7) {
+              tiles[y][runStart] = zebraTile;
+              tiles[y][runEnd] = zebraTile;
+            }
+            runStart = -1;
+          }
+        }
+      }
+    };
+
+    const scanVertical = (x, roadTile, zebraTile) => {
+      let runStart = -1;
+      for (let y = 0; y <= H; y++) {
+        const t = (y < H) ? tiles[y][x] : 255;
+        if (t === roadTile) {
+          if (runStart === -1) runStart = y;
+        } else {
+          if (runStart !== -1) {
+            const runEnd = y - 1;
+            const len = runEnd - runStart + 1;
+            if (len === 7) {
+              tiles[runStart][x] = zebraTile;
+              tiles[runEnd][x] = zebraTile;
+            }
+            runStart = -1;
+          }
+        }
+      }
+    };
+
+    // Top inner lane: westbound
+    scanHorizontal(topY, Tile.RoadW, Tile.ZebraCrossingW);
+    // Bottom inner lane: eastbound
+    scanHorizontal(bottomY, Tile.RoadE, Tile.ZebraCrossingE);
+    // Left inner lane: southbound
+    scanVertical(leftX, Tile.RoadS, Tile.ZebraCrossingS);
+    // Right inner lane: northbound
+    scanVertical(rightX, Tile.RoadN, Tile.ZebraCrossingN);
   }
 }

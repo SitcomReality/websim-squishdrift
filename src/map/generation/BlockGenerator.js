@@ -67,7 +67,7 @@ export class BlockGenerator {
 
   generateMedians(tiles) {
     // Horizontal medians
-    for (let gy = 1; gy < this.cityLayout.blocksHigh; gy++) {
+    for (let gy = 0; gy <= this.cityLayout.blocksHigh; gy++) {
       const y = this.cityLayout.getIntersectionCenter(0, gy).y;
       if (y >= 0 && y < this.cityLayout.height) {
         // Compute gap ranges (2 tiles on either side) around each intersection center along this row
@@ -85,7 +85,7 @@ export class BlockGenerator {
     }
 
     // Vertical medians
-    for (let gx = 1; gx < this.cityLayout.blocksWide; gx++) {
+    for (let gx = 0; gx <= this.cityLayout.blocksWide; gx++) {
       const x = this.cityLayout.getIntersectionCenter(gx, 0).x;
       if (x >= 0 && x < this.cityLayout.width) {
         // Compute gap ranges (2 tiles on either side) around each intersection center along this column

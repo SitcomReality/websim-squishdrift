@@ -111,6 +111,15 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
     n.x += shift;
     n.y += shift;
   }
+  // ALSO shift each node's 'next' targets so links remain correct after the map shift
+  for (const n of map.roads.nodes) {
+    if (n.next && n.next.length) {
+      for (const nx of n.next) {
+        nx.x += shift;
+        nx.y += shift;
+      }
+    }
+  }
   // Rebuild byKey with shifted coordinates
   const newByKey = new Map();
   for (const n of map.roads.nodes) {

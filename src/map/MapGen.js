@@ -54,10 +54,13 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
   const roads = graphBuilder.buildRoadGraph(tiles, cityLayout.width, cityLayout.height, roadGenerator.getRoundabouts());
   const peds = graphBuilder.buildPedGraph(tiles, cityLayout.width, cityLayout.height, trees);
   
+  // Add the perimeter border (footpath + beach)
+  const result = addPerimeterBorder(tiles, cityLayout.width, cityLayout.height);
+  
   return {
-    tiles,
-    width: cityLayout.width,
-    height: cityLayout.height,
+    tiles: result.tiles,
+    width: result.width,
+    height: result.height,
     W: cityLayout.W,
     MED: cityLayout.MED,
     seed,
@@ -65,5 +68,58 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
     peds,
     buildings,
     trees
+  };
+}
+
+function addPerimeterBorder(originalTiles, originalWidth, originalHeight) {
+  const borderWidth = 2;
+  const newWidth = originalWidth + borderWidth * 2;
+  const newHeight = originalHeight + borderWidth * 2;
+  
+  // Create new tiles array with expanded dimensions
+  const newTiles = Array.from({ length: newHeight }, () => 
+    new Uint8Array(newWidth).fill(Tile.Grass)
+  );
+  
+  // Copy original map into center
+  for (let y = 0; y < originalHeight; y++) {
+    for (let x = 0; x < originalWidth; x++) {
+      newTiles[y + borderWidth][x + borderWidth] = originalTiles[y][x];
+    }
+  }
+  
+  // Add the perimeter layers
+  // Layer 1: Footpath (1 tile wide)
+  for (let y = 0; y < newHeight; y++) {
+    for (let x = 0; x < newWidth; x++) {
+      const isBorderLayer1 = 
+        (y === borderWidth - 1 || y === newHeight - borderWidth) || // Top/bottom footpath
+        (x === borderWidth - 1 || x === newWidth - borderWidth);   // Left/right footpath
+      
+      if (isBorderLayer1) {
+        newTiles[y][x] = Tile.Footpath;
+      }
+    }
+  }
+  
+  // Layer 2: Beach (outermost layer)
+  for (let y = 0; y < newHeight; y++) {
+    for (let x = 0; x < newWidth; x++) {
+      const isBeach = 
+        y < borderWidth - 1 || 
+        y >= newHeight - borderWidth + 1 || 
+        x < borderWidth - 1 || 
+        x >= newWidth - borderWidth + 1;
+      
+      if (isBeach) {
+        newTiles[y][x] = Tile.Park; // Using Park tile for beach/sand
+      }
+    }
+  }
+  
+  return {
+    tiles: newTiles,
+    width: newWidth,
+    height: newHeight
   };
 }

@@ -13,9 +13,6 @@ export class RoadGenerator {
     
     // Generate roundabouts at intersections
     this.generateRoundabouts(tiles);
-
-    // After roundabouts, fix inner perimeter lanes: convert 7-length runs to 5 road + 2 zebra
-    this.adjustPerimeterZebras(tiles);
   }
 
   generatePerimeterRoad(tiles) {
@@ -155,62 +152,5 @@ export class RoadGenerator {
 
   getRoundabouts() {
     return this.roundabouts;
-  }
-
-  // Add zebra crossings to inner perimeter lanes at each segment between intersections
-  adjustPerimeterZebras(tiles) {
-    const W = this.cityLayout.width, H = this.cityLayout.height;
-    // Inner perimeter lane indices (adjacent to median)
-    const topY = 1, bottomY = H - 2, leftX = 1, rightX = W - 2;
-
-    // Scan helpers: find contiguous runs of the given road tile and if length==7, set ends to zebra
-    const scanHorizontal = (y, roadTile, zebraTile) => {
-      let runStart = -1;
-      for (let x = 0; x <= W; x++) {
-        const t = (x < W) ? tiles[y][x] : 255;
-        if (t === roadTile) {
-          if (runStart === -1) runStart = x;
-        } else {
-          if (runStart !== -1) {
-            const runEnd = x - 1;
-            const len = runEnd - runStart + 1;
-            if (len === 7) {
-              tiles[y][runStart] = zebraTile;
-              tiles[y][runEnd] = zebraTile;
-            }
-            runStart = -1;
-          }
-        }
-      }
-    };
-
-    const scanVertical = (x, roadTile, zebraTile) => {
-      let runStart = -1;
-      for (let y = 0; y <= H; y++) {
-        const t = (y < H) ? tiles[y][x] : 255;
-        if (t === roadTile) {
-          if (runStart === -1) runStart = y;
-        } else {
-          if (runStart !== -1) {
-            const runEnd = y - 1;
-            const len = runEnd - runStart + 1;
-            if (len === 7) {
-              tiles[runStart][x] = zebraTile;
-              tiles[runEnd][x] = zebraTile;
-            }
-            runStart = -1;
-          }
-        }
-      }
-    };
-
-    // Top inner lane: westbound
-    scanHorizontal(topY, Tile.RoadW, Tile.ZebraCrossingW);
-    // Bottom inner lane: eastbound
-    scanHorizontal(bottomY, Tile.RoadE, Tile.ZebraCrossingE);
-    // Left inner lane: southbound
-    scanVertical(leftX, Tile.RoadS, Tile.ZebraCrossingS);
-    // Right inner lane: northbound
-    scanVertical(rightX, Tile.RoadN, Tile.ZebraCrossingN);
   }
 }

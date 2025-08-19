@@ -46,26 +46,16 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
     }
   }
   
-  // After all generators, add perimeter footpath outside the road ring
+  // After all generators, add perimeter footpath
   addPerimeterFootpath(tiles, cityLayout.width, cityLayout.height);
   
   // After all generators, sanitize tiles so merged blocks override stray zebra crossings
   sanitizeMap(tiles, cityLayout.width, cityLayout.height, Tile, (t)=> (t>=Tile.RoadN && t<=Tile.RoadW) || (t>=Tile.ZebraCrossingN && t<=Tile.ZebraCrossingW));
   
-  // Build road and pedestrian graphs (adjust for footpath offset)
+  // Build road and pedestrian graphs
   const graphBuilder = new GraphBuilder();
-  const roads = graphBuilder.buildRoadGraph(
-    tiles, 
-    cityLayout.width, 
-    cityLayout.height, 
-    roadGenerator.getRoundabouts()
-  );
-  const peds = graphBuilder.buildPedGraph(
-    tiles, 
-    cityLayout.width, 
-    cityLayout.height, 
-    trees
-  );
+  const roads = graphBuilder.buildRoadGraph(tiles, cityLayout.width, cityLayout.height, roadGenerator.getRoundabouts());
+  const peds = graphBuilder.buildPedGraph(tiles, cityLayout.width, cityLayout.height, trees);
   
   return {
     tiles,
@@ -82,12 +72,13 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
 }
 
 function addPerimeterFootpath(tiles, width, height) {
-  // Add footpath as the outermost layer, one tile beyond the road ring
+  // Add footpath to top and bottom
   for (let x = 0; x < width; x++) {
     tiles[0][x] = Tile.Footpath;
     tiles[height - 1][x] = Tile.Footpath;
   }
   
+  // Add footpath to left and right sides
   for (let y = 0; y < height; y++) {
     tiles[y][0] = Tile.Footpath;
     tiles[y][width - 1] = Tile.Footpath;

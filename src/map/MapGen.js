@@ -138,6 +138,108 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
   map.peds.nodes = shiftedPedMap;
   map.peds.list = shiftedPedList;
   
+  // Add the perimeter footpath to the pedestrian graph
+  const perimeterNodes = [];
+  
+  // Top perimeter path
+  for (let x = 1; x < newWidth - 1; x++) {
+    if (newTiles[1][x] === Tile.Footpath) {
+      perimeterNodes.push({ x: x, y: 1 });
+    }
+  }
+  
+  // Bottom perimeter path
+  for (let x = 1; x < newWidth - 1; x++) {
+    if (newTiles[newHeight - 2][x] === Tile.Footpath) {
+      perimeterNodes.push({ x: x, y: newHeight - 2 });
+    }
+  }
+  
+  // Left perimeter path
+  for (let y = 1; y < newHeight - 1; y++) {
+    if (newTiles[y][1] === Tile.Footpath) {
+      perimeterNodes.push({ x: 1, y: y });
+    }
+  }
+  
+  // Right perimeter path
+  for (let y = 1; y < newHeight - 1; y++) {
+    if (newTiles[y][newWidth - 2] === Tile.Footpath) {
+      perimeterNodes.push({ x: newWidth - 2, y: y });
+    }
+  }
+  
+  // Add perimeter nodes to the pedestrian graph
+  for (const node of perimeterNodes) {
+    const key = `${node.x},${node.y}`;
+    if (!map.peds.nodes.has(key)) {
+      const newNode = { x: node.x, y: node.y, neighbors: [] };
+      map.peds.nodes.set(key, newNode);
+      map.peds.list.push(newNode);
+    }
+  }
+  
+  // Connect perimeter nodes to form a continuous path
+  const perimeterMap = new Map();
+  for (const node of perimeterNodes) {
+    perimeterMap.set(`${node.x},${node.y}`, node);
+  }
+  
+  // Connect adjacent perimeter nodes
+  const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+  for (const node of perimeterNodes) {
+    const currentKey = `${node.x},${node.y}`;
+    const currentNode = map.peds.nodes.get(currentKey);
+    
+    for (const [dx, dy] of directions) {
+      const nx = node.x + dx;
+      const ny = node.y + dy;
+      
+      if (nx >= 0 && nx < newWidth && ny >= 0 && ny < newHeight) {
+        if (newTiles[ny][nx] === Tile.Footpath) {
+          const neighborKey = `${nx},${ny}`;
+          const neighborNode = map.peds.nodes.get(neighborKey);
+          
+          if (neighborNode && currentNode) {
+            // Add bidirectional connections
+            if (!currentNode.neighbors.some(n => n.x === nx && n.y === ny)) {
+              currentNode.neighbors.push({ x: nx, y: ny });
+            }
+            if (!neighborNode.neighbors.some(n => n.x === node.x && n.y === node.y)) {
+              neighborNode.neighbors.push({ x: node.x, y: node.y });
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  // Connect perimeter to internal footpaths at corners
+  const cornerConnections = [
+    { px: 1, py: 1, ix: 2, iy: 2 }, // Top-left corner
+    { px: newWidth - 2, py: 1, ix: newWidth - 3, iy: 2 }, // Top-right corner
+    { px: 1, py: newHeight - 2, ix: 2, iy: newHeight - 3 }, // Bottom-left corner
+    { px: newWidth - 2, py: newHeight - 2, ix: newWidth - 3, iy: newHeight - 3 } // Bottom-right corner
+  ];
+  
+  for (const { px, py, ix, iy } of cornerConnections) {
+    const perimeterKey = `${px},${py}`;
+    const internalKey = `${ix},${iy}`;
+    
+    const perimeterNode = map.peds.nodes.get(perimeterKey);
+    const internalNode = map.peds.nodes.get(internalKey);
+    
+    if (perimeterNode && internalNode) {
+      // Connect perimeter to internal footpaths
+      if (!perimeterNode.neighbors.some(n => n.x === ix && n.y === iy)) {
+        perimeterNode.neighbors.push({ x: ix, y: iy });
+      }
+      if (!internalNode.neighbors.some(n => n.x === px && n.y === py)) {
+        internalNode.neighbors.push({ x: px, y: py });
+      }
+    }
+  }
+  
   // Shift buildings' rects
   for (const b of map.buildings) {
     if (b.rect) {

@@ -14,6 +14,7 @@ export class GraphBuilder {
     const byKey = new Map();
     
     const get = (x, y) => (x >= 0 && y >= 0 && x < width && y < height) ? tiles[y][x] : 255;
+    // Use shared roadDir so zebra crossings are included as directed road nodes
     const tileDir = (t) => roadDir(t);
     const keyOf = (x, y, d) => `${x},${y},${d}`;
     
@@ -86,6 +87,7 @@ export class GraphBuilder {
   }
 
   tileDirFor(t) {
+    // Delegate to shared roadDir so both roads and zebra crossings resolve
     return roadDir(t);
   }
 
@@ -123,53 +125,55 @@ export class GraphBuilder {
       }
     }
     
-    // Add perimeter footpath nodes
-    const PERIMETER_START = 2; // Where perimeter footpath starts
-    const PERIMETER_END_X = width - PERIMETER_START - 1;
-    const PERIMETER_END_Y = height - PERIMETER_START - 1;
-    
-    // Top and bottom perimeter footpaths
-    for (let x = 0; x < width; x++) {
-      if (x >= PERIMETER_START && x <= PERIMETER_END_X) {
-        // Top perimeter footpath
-        if (tiles[PERIMETER_START - 1] && tiles[PERIMETER_START - 1][x] === Tile.Footpath) {
-          nodes.set(key(x, PERIMETER_START - 1), { x, y: PERIMETER_START - 1, neighbors: [] });
-        }
-        // Bottom perimeter footpath
-        if (tiles[PERIMETER_END_Y + 1] && tiles[PERIMETER_END_Y + 1][x] === Tile.Footpath) {
-          nodes.set(key(x, PERIMETER_END_Y + 1), { x, y: PERIMETER_END_Y + 1, neighbors: [] });
-        }
-      }
-    }
-    
-    // Left and right perimeter footpaths
-    for (let y = 0; y < height; y++) {
-      if (y >= PERIMETER_START && y <= PERIMETER_END_Y) {
-        // Left perimeter footpath
-        if (tiles[y][PERIMETER_START - 1] === Tile.Footpath) {
-          nodes.set(key(PERIMETER_START - 1, y), { x: PERIMETER_START - 1, y, neighbors: [] });
-        }
-        // Right perimeter footpath
-        if (tiles[y][PERIMETER_END_X + 1] === Tile.Footpath) {
-          nodes.set(key(PERIMETER_END_X + 1, y), { x: PERIMETER_END_X + 1, y, neighbors: [] });
-        }
-      }
-    }
-    
-    // Link neighbors for all nodes
+    // Link neighbors
     const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
-    for (const [keyStr, node] of nodes) {
+    for (const n of nodes.values()) {
+      const n_tile = tiles[n.y][n.x];
+
       for (const [dx, dy] of dirs) {
-        const nx = node.x + dx;
-        const ny = node.y + dy;
+        const nx = n.x + dx, ny = n.y + dy;
         const neighborKey = key(nx, ny);
-        
-        if (nodes.has(neighborKey)) {
-          const neighbor = nodes.get(neighborKey);
+        const neighbor = nodes.get(neighborKey);
+
+        if (neighbor) {
+          const neighbor_tile = tiles[ny][nx];
           
-          // Don't link if blocked by tree
-          if (!isTreeTrunk(nx, ny)) {
-            node.neighbors.push({ x: nx, y: ny });
+          let connect = false;
+
+          // Standard walkable connections
+          if (baseWalkable(n_tile) && baseWalkable(neighbor_tile)) {
+            connect = true;
+          }
+          // Footpath to Zebra crossing (start of crosswalk)
+          else if (n_tile === Tile.Footpath && isZebraCrossing(neighbor_tile)) {
+            connect = true;
+          }
+          // Zebra crossing to Median (middle of crosswalk)
+          else if (isZebraCrossing(n_tile) && neighbor_tile === Tile.Median) {
+            connect = true;
+          }
+          // Zebra crossing to Zebra crossing (same direction)
+          else if (isZebraCrossing(n_tile) && isZebraCrossing(neighbor_tile)) {
+             // Only connect if perpendicular to road direction
+             const dir = roadDir(n_tile);
+             if((dir === 'N' || dir === 'S') && dx !== 0 && dy === 0) connect = true; // Horizontal connection for N/S road
+             if((dir === 'E' || dir === 'W') && dy !== 0 && dx === 0) connect = true; // Vertical connection for E/W road
+          }
+          // Median to Zebra crossing (resuming crosswalk)
+          else if (n_tile === Tile.Median && isZebraCrossing(neighbor_tile)) {
+            connect = true;
+          }
+          
+          if(connect) {
+             // Symmetrical connection
+             const alreadyExists = n.neighbors.some(node => node.x === nx && node.y === ny);
+             if(!alreadyExists) {
+                n.neighbors.push({ x: neighbor.x, y: neighbor.y });
+             }
+             const neighborAlreadyExists = neighbor.neighbors.some(node => node.x === n.x && node.y === n.y);
+             if(!neighborAlreadyExists) {
+                neighbor.neighbors.push({ x: n.x, y: n.y });
+             }
           }
         }
       }

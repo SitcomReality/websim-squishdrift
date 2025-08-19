@@ -19,6 +19,18 @@ export class WeaponSystem {
     this.damageTextSystem = new DamageTextSystem();
   }
 
+  initialize(state) {
+    // Ensure weapon-related state is reset
+    state.equippedWeapon = null;
+    state.weaponUI = null;
+    
+    // Remove any existing ammo bar
+    const ammoContainer = document.getElementById('ammo-container');
+    if (ammoContainer) {
+      ammoContainer.remove();
+    }
+  }
+
   update(state, input, dt) {
     const player = state.entities.find(e => e.type === 'player');
     if (!player) return;

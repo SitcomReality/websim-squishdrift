@@ -84,5 +84,28 @@ export class GameEngine {
     };
     this.stateManager.state.debugOverlay = this.debugOverlay;
     this.stateManager.inputManager = this.inputManager;
+    
+    // Reset HUD elements
+    this.resetHUD();
+  }
+
+  resetHUD() {
+    // Reset item display
+    const itemNameEl = document.getElementById('item-name');
+    if (itemNameEl) {
+      itemNameEl.textContent = 'None';
+    }
+    
+    // Reset vehicle state display
+    const vehicleStateEl = document.getElementById('vehicle-state');
+    if (vehicleStateEl) {
+      vehicleStateEl.textContent = 'on foot';
+    }
+    
+    // Remove ammo bar if it exists
+    const ammoContainer = document.getElementById('ammo-container');
+    if (ammoContainer) {
+      ammoContainer.remove();
+    }
   }
 }

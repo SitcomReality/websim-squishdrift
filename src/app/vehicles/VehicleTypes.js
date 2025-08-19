@@ -153,7 +153,7 @@ export const VehicleTypes = {
 // Helper function to create a vehicle with type
 export function createVehicle(type, pos, options = {}) {
   const base = VehicleTypes[type] || VehicleTypes.sedan;
-  return {
+  const vehicle = {
     type: 'vehicle',
     vehicleType: type,
     pos: { x: pos.x, y: pos.y },
@@ -164,8 +164,15 @@ export function createVehicle(type, pos, options = {}) {
     ...base,
     ...options,
     color: options.color || randomColorForType(base),
-    health: { hp: base.maxHealth, maxHp: base.maxHealth, getPercent: () => 1, isAlive: () => true }
+    health: new Health(options.maxHealth || base.maxHealth || 75)
   };
+  
+  // Ensure health has proper methods
+  if (!vehicle.health.takeDamage) {
+    vehicle.health = new Health(options.maxHealth || base.maxHealth || 75);
+  }
+  
+  return vehicle;
 }
 
 function randomColorForType(base){

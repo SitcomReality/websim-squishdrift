@@ -28,6 +28,27 @@ export function createInitialState() {
   });
   state.entities.push(emptyVehicle);
   
+  // Spawn simple NPC pedestrians on ped graph near player
+  const pedNodes = map.peds?.list || [];
+  const spawnCount = Math.min(30, pedNodes.length);
+  const sortedByDist = pedNodes.slice().sort((a,b)=> (Math.hypot(a.x+0.5-spawnX,a.y+0.5-spawnY) - Math.hypot(b.x+0.5-spawnX,b.y+0.5-spawnY)));
+  for (let i=0;i<spawnCount;i++){
+    const n = sortedByDist[i];
+    // Skip spawning on median strips
+    if (map.tiles[Math.floor(n.y)][Math.floor(n.x)] === Tile.Median) continue;
+    
+    const next = (n.neighbors && n.neighbors.length) ? n.neighbors[Math.floor(state.rand()*n.neighbors.length)] : { x:n.x, y:n.y };
+    state.entities.push({ 
+      type:'npc', 
+      pos:new Vec2(n.x+0.5, n.y+0.5), 
+      from:{x:n.x,y:n.y}, 
+      to: next, 
+      t: 0, 
+      speed: 0.2 + state.rand()*0.15,
+      health: new Health(50) // Add health to NPCs
+    });
+  }
+  
   // Spawn different vehicle types on road graph
   const maxVehicles = 5;
   const roads = state.world.map.roads;
@@ -40,7 +61,7 @@ export function createInitialState() {
   const vehicleTypes = ['compact', 'sedan', 'truck', 'sports'];
   for (let i = 0; i < validSpawns.length; i++) {
     const spawnNode = validSpawns[i];
-    const next = spawnNode.next[Math.floor(rand() * spawnNode.next.length)];
+    const next = spawnNode.next[Math.floor(state.rand() * spawnNode.next.length)];
     const vehicleType = vehicleTypes[i % vehicleTypes.length];
     
     // Determine rotation based on road direction
@@ -59,23 +80,11 @@ export function createInitialState() {
       speed: 0.25 * 1.5,
       vel: { x: 0, y: 0 },
       angularVel: 0,
-      ctrl: { throttle: 0, brake: 0, steer: 0 }
+      ctrl: { throttle: 0, brake: 0, steer: 0 },
+      health: new Health(75) // Add health to vehicles
     });
     
     state.entities.push(vehicle);
-  }
-  
-  // Spawn simple NPC pedestrians on ped graph near player
-  const pedNodes = map.peds?.list || [];
-  const spawnCount = Math.min(30, pedNodes.length);
-  const sortedByDist = pedNodes.slice().sort((a,b)=> (Math.hypot(a.x+0.5-spawnX,a.y+0.5-spawnY) - Math.hypot(b.x+0.5-spawnX,b.y+0.5-spawnY)));
-  for (let i=0;i<spawnCount;i++){
-    const n = sortedByDist[i];
-    // Skip spawning on median strips
-    if (map.tiles[Math.floor(n.y)][Math.floor(n.x)] === Tile.Median) continue;
-    
-    const next = (n.neighbors && n.neighbors.length) ? n.neighbors[Math.floor(rand()*n.neighbors.length)] : { x:n.x, y:n.y };
-    state.entities.push({ type:'npc', pos:new Vec2(n.x+0.5, n.y+0.5), from:{x:n.x,y:n.y}, to: next, t: 0, speed: 0.2 + rand()*0.15 });
   }
   
   // Create pickup spots at the center of each block and spawn an initial pickup (pistol)

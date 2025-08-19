@@ -54,72 +54,66 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
   const roads = graphBuilder.buildRoadGraph(tiles, cityLayout.width, cityLayout.height, roadGenerator.getRoundabouts());
   const peds = graphBuilder.buildPedGraph(tiles, cityLayout.width, cityLayout.height, trees);
   
-  // Add the perimeter border (footpath + beach)
-  const result = addPerimeterBorder(tiles, cityLayout.width, cityLayout.height);
+  // Add beach border around the entire map
+  const borderedTiles = addBeachBorder(tiles);
   
   return {
-    tiles: result.tiles,
-    width: result.width,
-    height: result.height,
+    tiles: borderedTiles,
+    width: borderedTiles[0].length,
+    height: borderedTiles.length,
     W: cityLayout.W,
     MED: cityLayout.MED,
     seed,
     roads,
     peds,
     buildings,
-    trees
+    trees,
+    originalWidth: cityLayout.width,
+    originalHeight: cityLayout.height
   };
 }
 
-function addPerimeterBorder(originalTiles, originalWidth, originalHeight) {
-  const borderWidth = 2;
-  const newWidth = originalWidth + borderWidth * 2;
-  const newHeight = originalHeight + borderWidth * 2;
+function addBeachBorder(tiles) {
+  const originalHeight = tiles.length;
+  const originalWidth = tiles[0].length;
+  const newHeight = originalHeight + 4; // +2 top, +2 bottom
+  const newWidth = originalWidth + 4;   // +2 left, +2 right
   
-  // Create new tiles array with expanded dimensions
-  const newTiles = Array.from({ length: newHeight }, () => 
-    new Uint8Array(newWidth).fill(Tile.Grass)
-  );
+  const newTiles = Array.from({ length: newHeight }, () => new Uint8Array(newWidth));
+  
+  // Fill the new map with grass
+  for (let y = 0; y < newHeight; y++) {
+    for (let x = 0; x < newWidth; x++) {
+      newTiles[y][x] = Tile.Grass;
+    }
+  }
   
   // Copy original map into center
   for (let y = 0; y < originalHeight; y++) {
     for (let x = 0; x < originalWidth; x++) {
-      newTiles[y + borderWidth][x + borderWidth] = originalTiles[y][x];
+      newTiles[y + 2][x + 2] = tiles[y][x];
     }
   }
   
-  // Add the perimeter layers
-  // Layer 1: Footpath (1 tile wide)
+  // Add footpath ring (1 tile from edge)
+  for (let x = 1; x < newWidth - 1; x++) {
+    newTiles[1][x] = Tile.Footpath; // Top footpath
+    newTiles[newHeight - 2][x] = Tile.Footpath; // Bottom footpath
+  }
+  for (let y = 1; y < newHeight - 1; y++) {
+    newTiles[y][1] = Tile.Footpath; // Left footpath
+    newTiles[y][newWidth - 2] = Tile.Footpath; // Right footpath
+  }
+  
+  // Add beach tiles (outer edge)
+  for (let x = 0; x < newWidth; x++) {
+    newTiles[0][x] = Tile.Park; // Top beach (using Park as beach)
+    newTiles[newHeight - 1][x] = Tile.Park; // Bottom beach
+  }
   for (let y = 0; y < newHeight; y++) {
-    for (let x = 0; x < newWidth; x++) {
-      const isBorderLayer1 = 
-        (y === borderWidth - 1 || y === newHeight - borderWidth) || // Top/bottom footpath
-        (x === borderWidth - 1 || x === newWidth - borderWidth);   // Left/right footpath
-      
-      if (isBorderLayer1) {
-        newTiles[y][x] = Tile.Footpath;
-      }
-    }
+    newTiles[y][0] = Tile.Park; // Left beach
+    newTiles[y][newWidth - 1] = Tile.Park; // Right beach
   }
   
-  // Layer 2: Beach (outermost layer)
-  for (let y = 0; y < newHeight; y++) {
-    for (let x = 0; x < newWidth; x++) {
-      const isBeach = 
-        y < borderWidth - 1 || 
-        y >= newHeight - borderWidth + 1 || 
-        x < borderWidth - 1 || 
-        x >= newWidth - borderWidth + 1;
-      
-      if (isBeach) {
-        newTiles[y][x] = Tile.Park; // Using Park tile for beach/sand
-      }
-    }
-  }
-  
-  return {
-    tiles: newTiles,
-    width: newWidth,
-    height: newHeight
-  };
+  return newTiles;
 }

@@ -28,7 +28,7 @@ export const TileColor = {
   [Tile.Footpath]: '#D3D3D3', // light grey
   [Tile.BuildingFloor]: '#f8f9fa',
   [Tile.BuildingWall]: '#9ca3af',
-  [Tile.Park]: '#228B22', // dark green
+  [Tile.Park]: '#F5DEB3', // Changed from '#228B22' to light sandy color for beach
   [Tile.ZebraCrossingN]: '#6a6a6a', // Slightly lighter road with a hint of white
   [Tile.ZebraCrossingE]: '#6a6a6a',
   [Tile.ZebraCrossingS]: '#6a6a6a',

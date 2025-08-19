@@ -74,69 +74,59 @@ export class RoadGenerator {
   }
 
   createZebraCrossings(tiles, cx, cy) {
-    const { width, height } = this.cityLayout;
     const set = (x, y, t) => {
-      if (x >= 0 && y >= 0 && x < width && y < height) {
+      if (x >= 0 && y >= 0 && x < this.cityLayout.width && y < this.cityLayout.height) {
         tiles[y][x] = t;
       }
     };
-
-    const isTopEdge = cy === this.cityLayout.getIntersectionCenter(0,0).y;
-    const isBottomEdge = cy === this.cityLayout.getIntersectionCenter(0, this.cityLayout.blocksHigh).y;
-    const isLeftEdge = cx === this.cityLayout.getIntersectionCenter(0,0).x;
-    const isRightEdge = cx === this.cityLayout.getIntersectionCenter(this.cityLayout.blocksWide, 0).x;
     
-    // Crossings on inner lanes (distance 3)
-    if (!isTopEdge) {
-      set(cx - 2, cy - 3, Tile.ZebraCrossingS);
-      set(cx - 1, cy - 3, Tile.ZebraCrossingS);
-      set(cx + 1, cy - 3, Tile.ZebraCrossingN);
-      set(cx + 2, cy - 3, Tile.ZebraCrossingN);
-    }
-    if (!isBottomEdge) {
-      set(cx - 2, cy + 3, Tile.ZebraCrossingS);
-      set(cx - 1, cy + 3, Tile.ZebraCrossingS);
-      set(cx + 1, cy + 3, Tile.ZebraCrossingN);
-      set(cx + 2, cy + 3, Tile.ZebraCrossingN);
-    }
-    if (!isLeftEdge) {
-      set(cx - 3, cy - 2, Tile.ZebraCrossingW);
-      set(cx - 3, cy - 1, Tile.ZebraCrossingW);
-      set(cx - 3, cy + 1, Tile.ZebraCrossingE);
-      set(cx - 3, cy + 2, Tile.ZebraCrossingE);
-    }
-    if (!isRightEdge) {
-      set(cx + 3, cy - 2, Tile.ZebraCrossingW);
-      set(cx + 3, cy - 1, Tile.ZebraCrossingW);
-      set(cx + 3, cy + 1, Tile.ZebraCrossingE);
-      set(cx + 3, cy + 2, Tile.ZebraCrossingE);
-    }
+    // Top side (horizontal zebra crossing over N/S road) - fix directions
+    set(cx - 2, cy - 3, Tile.ZebraCrossingS);
+    set(cx - 1, cy - 3, Tile.ZebraCrossingS);
+    set(cx + 1, cy - 3, Tile.ZebraCrossingN);
+    set(cx + 2, cy - 3, Tile.ZebraCrossingN);
+    
+    // Outermost top zebra (one tile further out) - ensures perimeter lane has crossings
+    set(cx - 2, cy - 4, Tile.ZebraCrossingS);
+    set(cx - 1, cy - 4, Tile.ZebraCrossingS);
+    set(cx + 1, cy - 4, Tile.ZebraCrossingN);
+    set(cx + 2, cy - 4, Tile.ZebraCrossingN);
 
-    // Crossings on outermost lanes (distance 2) for perimeter intersections
-    if (isTopEdge) {
-      set(cx - 1, cy - 2, Tile.ZebraCrossingS);
-      set(cx, cy - 2, Tile.ZebraCrossingS);
-      set(cx, cy - 2, Tile.ZebraCrossingS);
-      set(cx + 1, cy - 2, Tile.ZebraCrossingN);
-    }
-    if (isBottomEdge) {
-      set(cx - 1, cy + 2, Tile.ZebraCrossingS);
-      set(cx, cy + 2, Tile.ZebraCrossingN);
-      set(cx, cy + 2, Tile.ZebraCrossingN);
-      set(cx + 1, cy + 2, Tile.ZebraCrossingN);
-    }
-    if (isLeftEdge) {
-      set(cx - 2, cy - 1, Tile.ZebraCrossingW);
-      set(cx - 2, cy, Tile.ZebraCrossingW);
-      set(cx - 2, cy, Tile.ZebraCrossingW);
-      set(cx - 2, cy + 1, Tile.ZebraCrossingE);
-    }
-    if (isRightEdge) {
-      set(cx + 2, cy - 1, Tile.ZebraCrossingW);
-      set(cx + 2, cy, Tile.ZebraCrossingE);
-      set(cx + 2, cy, Tile.ZebraCrossingE);
-      set(cx + 2, cy + 1, Tile.ZebraCrossingE);
-    }
+    // Bottom side (horizontal zebra crossing over N/S road) - fix directions
+    set(cx - 2, cy + 3, Tile.ZebraCrossingS);
+    set(cx - 1, cy + 3, Tile.ZebraCrossingS);
+    set(cx + 1, cy + 3, Tile.ZebraCrossingN);
+    set(cx + 2, cy + 3, Tile.ZebraCrossingN);
+    
+    // Outermost bottom zebra (one tile further out) - ensures perimeter lane has crossings
+    set(cx - 2, cy + 4, Tile.ZebraCrossingS);
+    set(cx - 1, cy + 4, Tile.ZebraCrossingS);
+    set(cx + 1, cy + 4, Tile.ZebraCrossingN);
+    set(cx + 2, cy + 4, Tile.ZebraCrossingN);
+
+    // Left side (vertical zebra crossing over E/W road) - these are correct
+    set(cx - 3, cy - 2, Tile.ZebraCrossingW);
+    set(cx - 3, cy - 1, Tile.ZebraCrossingW);
+    set(cx - 3, cy + 1, Tile.ZebraCrossingE);
+    set(cx - 3, cy + 2, Tile.ZebraCrossingE);
+
+    // Outermost left zebra (one tile further out) - ensures perimeter lane has crossings
+    set(cx - 4, cy - 2, Tile.ZebraCrossingW);
+    set(cx - 4, cy - 1, Tile.ZebraCrossingW);
+    set(cx - 4, cy + 1, Tile.ZebraCrossingE);
+    set(cx - 4, cy + 2, Tile.ZebraCrossingE);
+
+    // Right side (vertical zebra crossing over E/W road) - these are correct
+    set(cx + 3, cy - 2, Tile.ZebraCrossingW);
+    set(cx + 3, cy - 1, Tile.ZebraCrossingW);
+    set(cx + 3, cy + 1, Tile.ZebraCrossingE);
+    set(cx + 3, cy + 2, Tile.ZebraCrossingE);
+
+    // Outermost right zebra (one tile further out) - ensures perimeter lane has crossings
+    set(cx + 4, cy - 2, Tile.ZebraCrossingW);
+    set(cx + 4, cy - 1, Tile.ZebraCrossingW);
+    set(cx + 4, cy + 1, Tile.ZebraCrossingE);
+    set(cx + 4, cy + 2, Tile.ZebraCrossingE);
   }
 
   createStandardRoundabout(tiles, cx, cy, set) {

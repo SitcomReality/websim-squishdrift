@@ -37,7 +37,6 @@ export class RoadGenerator {
   }
 
   generateRoundabouts(tiles) {
-    const key = (bx, by) => `${bx},${by}`;
     for (let gy = 0; gy <= this.cityLayout.blocksHigh; gy++) {
       for (let gx = 0; gx <= this.cityLayout.blocksWide; gx++) {
         const center = this.cityLayout.getIntersectionCenter(gx, gy);
@@ -47,10 +46,9 @@ export class RoadGenerator {
                            gy === 0 || gy === this.cityLayout.blocksHigh);
         
         this.createRoundabout(tiles, center.x, center.y, isPerimeter);
-        this.roundabouts.push({ cx: center.x, cy: center.y, isPerimeter, gx, gy });
+        this.roundabouts.push({ cx: center.x, cy: center.y, isPerimeter });
       }
     }
-    this.adjustForMergedBlocks(tiles);
   }
 
   createRoundabout(tiles, cx, cy, isPerimeter) {
@@ -105,73 +103,6 @@ export class RoadGenerator {
     set(cx + 3, cy - 1, Tile.ZebraCrossingW);
     set(cx + 3, cy + 1, Tile.ZebraCrossingE);
     set(cx + 3, cy + 2, Tile.ZebraCrossingE);
-  }
-  
-  adjustForMergedBlocks(tiles) {
-    const key = (bx, by) => `${bx},${by}`;
-    for (const rb of this.roundabouts) {
-        const { cx, cy, gx, gy } = rb;
-        
-        // Right side of intersection (between gx-1 and gx)
-        if (gx > 0 && this.cityLayout.mergedHorizontal.has(key(gx - 1, gy))) {
-            this.removeRoadConnection(tiles, cx, cy, 'E');
-        }
-        // Left side of intersection (between gx and gx+1)
-        if (gx < this.cityLayout.blocksWide && this.cityLayout.mergedHorizontal.has(key(gx, gy))) {
-            this.removeRoadConnection(tiles, cx, cy, 'W');
-        }
-        // Bottom side of intersection (between gy-1 and gy)
-        if (gy > 0 && this.cityLayout.mergedVertical.has(key(gx, gy - 1))) {
-            this.removeRoadConnection(tiles, cx, cy, 'S');
-        }
-        // Top side of intersection (between gy and gy+1)
-        if (gy < this.cityLayout.blocksHigh && this.cityLayout.mergedVertical.has(key(gx, gy))) {
-            this.removeRoadConnection(tiles, cx, cy, 'N');
-        }
-    }
-  }
-
-  removeRoadConnection(tiles, cx, cy, direction) {
-    const set = (x, y, t) => {
-        if (x >= 0 && y >= 0 && x < this.cityLayout.width && y < this.cityLayout.height) {
-            tiles[y][x] = t;
-        }
-    };
-
-    switch (direction) {
-        case 'N': // Removing North connection
-            set(cx - 2, cy - 3, Tile.Footpath);
-            set(cx - 1, cy - 3, Tile.Footpath);
-            set(cx + 1, cy - 3, Tile.Footpath);
-            set(cx + 2, cy - 3, Tile.Footpath);
-            for (let x = cx - 2; x <= cx + 2; x++) set(x, cy-2, Tile.Footpath);
-            for (let x = cx - 1; x <= cx + 1; x++) set(x, cy-1, Tile.Footpath);
-            break;
-        case 'S': // Removing South connection
-            set(cx - 2, cy + 3, Tile.Footpath);
-            set(cx - 1, cy + 3, Tile.Footpath);
-            set(cx + 1, cy + 3, Tile.Footpath);
-            set(cx + 2, cy + 3, Tile.Footpath);
-            for (let x = cx - 2; x <= cx + 2; x++) set(x, cy+2, Tile.Footpath);
-            for (let x = cx - 1; x <= cx + 1; x++) set(x, cy+1, Tile.Footpath);
-            break;
-        case 'W': // Removing West connection
-            set(cx - 3, cy - 2, Tile.Footpath);
-            set(cx - 3, cy - 1, Tile.Footpath);
-            set(cx - 3, cy + 1, Tile.Footpath);
-            set(cx - 3, cy + 2, Tile.Footpath);
-            for (let y = cy - 2; y <= cy + 2; y++) set(cx-2, y, Tile.Footpath);
-            for (let y = cy - 1; y <= cy + 1; y++) set(cx-1, y, Tile.Footpath);
-            break;
-        case 'E': // Removing East connection
-            set(cx + 3, cy - 2, Tile.Footpath);
-            set(cx + 3, cy - 1, Tile.Footpath);
-            set(cx + 3, cy + 1, Tile.Footpath);
-            set(cx + 3, cy + 2, Tile.Footpath);
-            for (let y = cy - 2; y <= cy + 2; y++) set(cx+2, y, Tile.Footpath);
-            for (let y = cy - 1; y <= cy + 1; y++) set(cx+1, y, Tile.Footpath);
-            break;
-    }
   }
 
   createStandardRoundabout(tiles, cx, cy, set) {

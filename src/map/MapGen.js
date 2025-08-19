@@ -8,7 +8,7 @@ import { GraphBuilder } from './generation/GraphBuilder.js';
 
 export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4) {
   const rand = rng(seed);
-  const cityLayout = new CityLayout(blocksWide, blocksHigh, rand);
+  const cityLayout = new CityLayout(blocksWide, blocksHigh);
   const tiles = cityLayout.createEmptyTiles();
   
   // Generate city blocks

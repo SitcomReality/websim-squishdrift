@@ -85,24 +85,38 @@ function addPerimeterFootpath(tiles, width, height) {
 
   // Perimeter roads placed one tile in from the outer footpath.
   // NOTE: Use the same directions used by RoadGenerator to avoid conflicting orientations.
+  // IMPORTANT: Only place road tiles where there isn't already a zebra crossing
+  
   // Top inner road (one tile below outer footpath)
   for (let x = 0; x < width; x++) {
-    tiles[1][x] = Tile.RoadW; // match RoadGenerator: top lanes go West
+    // Only overwrite if it's not already a zebra crossing
+    if (tiles[1][x] < Tile.ZebraCrossingN || tiles[1][x] > Tile.ZebraCrossingW) {
+      tiles[1][x] = Tile.RoadW; // match RoadGenerator: top lanes go West
+    }
   }
 
   // Bottom inner road (one tile above outer footpath)
   for (let x = 0; x < width; x++) {
-    tiles[height - 2][x] = Tile.RoadE; // match RoadGenerator: bottom lanes go East
+    // Only overwrite if it's not already a zebra crossing
+    if (tiles[height - 2][x] < Tile.ZebraCrossingN || tiles[height - 2][x] > Tile.ZebraCrossingW) {
+      tiles[height - 2][x] = Tile.RoadE; // match RoadGenerator: bottom lanes go East
+    }
   }
 
   // Left inner road (one tile right of left outer footpath)
   for (let y = 0; y < height; y++) {
-    tiles[y][1] = Tile.RoadS; // match RoadGenerator: left lanes go South
+    // Only overwrite if it's not already a zebra crossing
+    if (tiles[y][1] < Tile.ZebraCrossingN || tiles[y][1] > Tile.ZebraCrossingW) {
+      tiles[y][1] = Tile.RoadS; // match RoadGenerator: left lanes go South
+    }
   }
 
   // Right inner road (one tile left of right outer footpath)
   for (let y = 0; y < height; y++) {
-    tiles[y][width - 2] = Tile.RoadN; // match RoadGenerator: right lanes go North
+    // Only overwrite if it's not already a zebra crossing
+    if (tiles[y][width - 2] < Tile.ZebraCrossingN || tiles[y][width - 2] > Tile.ZebraCrossingW) {
+      tiles[y][width - 2] = Tile.RoadN; // match RoadGenerator: right lanes go North
+    }
   }
 
   // NOTE: The zebra-crossing placement here caused zebra tiles to appear inside intersections.

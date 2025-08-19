@@ -72,63 +72,82 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
 }
 
 function addPerimeterFootpath(tiles, width, height) {
-  // Add outer perimeter footpath (counter-clockwise)
-  // Top edge - going east (counter-clockwise)
+  // Ensure a protective outer ring of footpath so roads and zebra crossings never
+  // overwrite the very edge. We will place footpath on the outermost row/column (0 and height-1 / width-1)
+  // and place the perimeter road one tile inward (row/col = 1 and height-2 / width-2).
+  // This prevents zebra/road tiles from occupying the final outside tile.
+  // Outer footpath (top/bottom rows, left/right columns)
   for (let x = 0; x < width; x++) {
-    tiles[0][x] = Tile.RoadE;
+    tiles[0][x] = Tile.Footpath;
+    tiles[height - 1][x] = Tile.Footpath;
   }
-  
-  // Bottom edge - going west (counter-clockwise)
-  for (let x = 0; x < width; x++) {
-    tiles[height - 1][x] = Tile.RoadW;
-  }
-  
-  // Left edge - going north (counter-clockwise)
   for (let y = 0; y < height; y++) {
-    tiles[y][0] = Tile.RoadN;
+    tiles[y][0] = Tile.Footpath;
+    tiles[y][width - 1] = Tile.Footpath;
   }
-  
-  // Right edge - going south (counter-clockwise)
-  for (let y = 0; y < height; y++) {
-    tiles[y][width - 1] = Tile.RoadS;
+
+  // Place the perimeter road one tile inward so the final outside tile remains footpath.
+  // Top inward road (going east)
+  for (let x = 1; x < width - 1; x++) {
+    tiles[1][x] = Tile.RoadE;
   }
-  
-  // Add zebra crossings before intersections on the outer perimeter
-  // We need to place zebra crossings just before each intersection center
-  // Top edge zebra crossings (going east, so zebra crossings are RoadE type)
-  for (let gx = 0; gx <= Math.floor(width / 12); gx++) { // approximate intersection spacing
-    const intersectionX = 3 + gx * 12; // approximate intersection positions
-    if (intersectionX >= 3 && intersectionX < width - 3) {
-      // Place zebra crossing 2 tiles before intersection
-      if (intersectionX - 2 >= 0) tiles[0][intersectionX - 2] = Tile.ZebraCrossingE;
-      if (intersectionX - 1 >= 0) tiles[0][intersectionX - 1] = Tile.ZebraCrossingE;
-    }
+  // Bottom inward road (going west)
+  for (let x = 1; x < width - 1; x++) {
+    tiles[height - 2][x] = Tile.RoadW;
   }
-  
-  // Bottom edge zebra crossings (going west, so zebra crossings are RoadW type)
+  // Left inward road (going north)
+  for (let y = 1; y < height - 1; y++) {
+    tiles[y][1] = Tile.RoadN;
+  }
+  // Right inward road (going south)
+  for (let y = 1; y < height - 1; y++) {
+    tiles[y][width - 2] = Tile.RoadS;
+  }
+
+  // Add zebra crossings immediately adjacent to the inward road (i.e., on the road tiles),
+  // but never on the outermost footpath tile. We compute approximate intersection spacing
+  // similarly to previous logic but ensure indexes are clamped within [1, width-2]/[1,height-2].
+  // Top edge zebra crossings (on row 1, going east)
   for (let gx = 0; gx <= Math.floor(width / 12); gx++) {
     const intersectionX = 3 + gx * 12;
     if (intersectionX >= 3 && intersectionX < width - 3) {
-      if (intersectionX + 1 < width) tiles[height - 1][intersectionX + 1] = Tile.ZebraCrossingW;
-      if (intersectionX + 2 < width) tiles[height - 1][intersectionX + 2] = Tile.ZebraCrossingW;
+      const x1 = Math.max(1, intersectionX - 2);
+      const x2 = Math.max(1, intersectionX - 1);
+      tiles[1][x1] = Tile.ZebraCrossingE;
+      tiles[1][x2] = Tile.ZebraCrossingE;
     }
   }
-  
-  // Left edge zebra crossings (going north, so zebra crossings are RoadN type)
+
+  // Bottom edge zebra crossings (on row height-2, going west)
+  for (let gx = 0; gx <= Math.floor(width / 12); gx++) {
+    const intersectionX = 3 + gx * 12;
+    if (intersectionX >= 3 && intersectionX < width - 3) {
+      const x1 = Math.min(width - 2, intersectionX + 1);
+      const x2 = Math.min(width - 2, intersectionX + 2);
+      tiles[height - 2][x1] = Tile.ZebraCrossingW;
+      tiles[height - 2][x2] = Tile.ZebraCrossingW;
+    }
+  }
+
+  // Left edge zebra crossings (on column 1, going north)
   for (let gy = 0; gy <= Math.floor(height / 12); gy++) {
     const intersectionY = 3 + gy * 12;
     if (intersectionY >= 3 && intersectionY < height - 3) {
-      if (intersectionY + 1 < height) tiles[intersectionY + 1][0] = Tile.ZebraCrossingN;
-      if (intersectionY + 2 < height) tiles[intersectionY + 2][0] = Tile.ZebraCrossingN;
+      const y1 = Math.min(height - 2, intersectionY + 1);
+      const y2 = Math.min(height - 2, intersectionY + 2);
+      tiles[y1][1] = Tile.ZebraCrossingN;
+      tiles[y2][1] = Tile.ZebraCrossingN;
     }
   }
-  
-  // Right edge zebra crossings (going south, so zebra crossings are RoadS type)
+
+  // Right edge zebra crossings (on column width-2, going south)
   for (let gy = 0; gy <= Math.floor(height / 12); gy++) {
     const intersectionY = 3 + gy * 12;
     if (intersectionY >= 3 && intersectionY < height - 3) {
-      if (intersectionY - 2 >= 0) tiles[intersectionY - 2][width - 1] = Tile.ZebraCrossingS;
-      if (intersectionY - 1 >= 0) tiles[intersectionY - 1][width - 1] = Tile.ZebraCrossingS;
+      const y1 = Math.max(1, intersectionY - 2);
+      const y2 = Math.max(1, intersectionY - 1);
+      tiles[y1][width - 2] = Tile.ZebraCrossingS;
+      tiles[y2][width - 2] = Tile.ZebraCrossingS;
     }
   }
 }

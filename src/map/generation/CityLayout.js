@@ -9,12 +9,10 @@ export class CityLayout {
     
     this.cityWidth = blocksWide * (this.W + this.MED) + this.MED;
     this.cityHeight = blocksHigh * (this.W + this.MED) + this.MED;
-    this.mapOffset = 2; // Reduced from 3 to 2 to fit footpath outside
+    this.mapOffset = 3; // increased from 2 to 3 to make room for outer footpath
     
-    // Add footpath border
-    this.footpathBorder = 1;
-    this.width = this.cityWidth + this.mapOffset * 2 + this.footpathBorder * 2;
-    this.height = this.cityHeight + this.mapOffset * 2 + this.footpathBorder * 2;
+    this.width = this.cityWidth + this.mapOffset * 2;
+    this.height = this.cityHeight + this.mapOffset * 2;
   }
 
   createEmptyTiles() {
@@ -25,24 +23,15 @@ export class CityLayout {
 
   getBlockOrigin(bx, by) {
     return {
-      x: this.mapOffset + this.footpathBorder + this.MED + bx * (this.W + this.MED),
-      y: this.mapOffset + this.footpathBorder + this.MED + by * (this.W + this.MED)
+      x: this.mapOffset + this.MED + bx * (this.W + this.MED),
+      y: this.mapOffset + this.MED + by * (this.W + this.MED)
     };
   }
 
   getIntersectionCenter(gx, gy) {
     return {
-      x: this.mapOffset + this.footpathBorder + gx * (this.W + this.MED),
-      y: this.mapOffset + this.footpathBorder + gy * (this.W + this.MED)
-    };
-  }
-
-  getPerimeterFootpathBounds() {
-    return {
-      top: this.mapOffset,
-      bottom: this.height - this.mapOffset - 1,
-      left: this.mapOffset,
-      right: this.width - this.mapOffset - 1
+      x: this.mapOffset + gx * (this.W + this.MED),
+      y: this.mapOffset + gy * (this.W + this.MED)
     };
   }
 }

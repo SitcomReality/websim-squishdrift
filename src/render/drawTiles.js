@@ -37,13 +37,7 @@ export function drawTiles(r, state, layer = 'all'){
     }
     
     // Draw directional arrows for road markings
-    if (map.tiles._arrows) {
-      for (const arrow of map.tiles._arrows) {
-        if (arrow.x === gx && arrow.y === gy) {
-          drawDirectionalArrow(r, gx, gy, ts, arrow.dir);
-        }
-      }
-    }
+    drawDirectionalArrow(r, gx, gy, ts, t);
     
     if (t === Tile.BuildingWall) {
       r.ctx.fillStyle = 'rgba(0,0,0,0.2)';
@@ -94,8 +88,21 @@ function drawZebraCrossing(r, gx, gy, ts, tileType) {
   }
 }
 
-function drawDirectionalArrow(r, gx, gy, ts, direction) {
+function drawDirectionalArrow(r, gx, gy, ts, tileType) {
   const { ctx } = r;
+  
+  // Determine direction based on tile type
+  let direction = null;
+  
+  switch(tileType) {
+    case Tile.RoadN: direction = 'N'; break;
+    case Tile.RoadE: direction = 'E'; break;
+    case Tile.RoadS: direction = 'S'; break;
+    case Tile.RoadW: direction = 'W'; break;
+  }
+  
+  if (!direction) return;
+  
   const cx = gx * ts + ts/2;
   const cy = gy * ts + ts/2;
   

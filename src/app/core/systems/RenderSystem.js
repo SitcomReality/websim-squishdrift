@@ -105,12 +105,12 @@ export class RenderSystem {
       }
     }
     
-    // Draw damage text
-    drawDamageText(renderer, state);
-    
     // Draw buildings (walls and roofs) in front
     drawBuildings(renderer, state, 'walls');
     drawBuildings(renderer, state, 'roofs');
+    
+    // Draw damage text and floating text ON TOP of everything
+    drawDamageText(renderer, state);
     
     // Draw debug overlay if enabled
     if (debugOverlay && debugOverlay.enabled) {

@@ -62,6 +62,7 @@ export const VehicleTypes = {
     height: 0.4,
     cornerRadius: 0.2,
     color: '#ff4444',
+    maxHealth: 75,
     headlights: {
       ...VehicleArchetype.headlights,
       size: 0.06,
@@ -75,6 +76,7 @@ export const VehicleTypes = {
     // Standard car
     ...VehicleArchetype,
     color: '#4444ff',
+    maxHealth: 100,
     colorScheme: { hue:[20,50], sat:[22,35], light:[28,42] }
   },
   
@@ -90,6 +92,7 @@ export const VehicleTypes = {
     height: 0.7,
     cornerRadius: 0.1,
     color: '#8B4513',
+    maxHealth: 150,
     headlights: {
       ...VehicleArchetype.headlights,
       size: 0.09,
@@ -119,6 +122,7 @@ export const VehicleTypes = {
     height: 0.45,
     cornerRadius: 0.25,
     color: '#ffff00',
+    maxHealth: 80,
     headlights: {
       ...VehicleArchetype.headlights,
       size: 0.05,
@@ -140,6 +144,7 @@ export const VehicleTypes = {
     width: 1.0,
     height: 0.55,
     color: '#0000ff', // Default to police blue
+    maxHealth: 120,
     headlights: {
       ...VehicleArchetype.headlights,
       size: 0.08,
@@ -164,13 +169,8 @@ export function createVehicle(type, pos, options = {}) {
     ...base,
     ...options,
     color: options.color || randomColorForType(base),
-    health: new Health(options.maxHealth || base.maxHealth || 75)
+    health: new Health(base.maxHealth)
   };
-  
-  // Ensure health has proper methods
-  if (!vehicle.health.takeDamage) {
-    vehicle.health = new Health(options.maxHealth || base.maxHealth || 75);
-  }
   
   return vehicle;
 }

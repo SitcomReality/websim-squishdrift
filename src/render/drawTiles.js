@@ -38,9 +38,9 @@ export function drawTiles(r, state, layer = 'all'){
     
     // Only draw arrows for uni-directional lanes in intersections
     drawIntersectionArrows(r, gx, gy, ts, t, state);
-    
-    // Draw dotted lines for straight roads
-    drawDottedLines(r, gx, gy, ts, t, state);
+
+    // Draw dashed center line for straight non-intersection roads adjacent to footpath/median
+    drawDashedCenterLineIfNeeded(r, gx, gy, ts, t, map);
     
     if (t === Tile.BuildingWall) {
       r.ctx.fillStyle = 'rgba(0,0,0,0.2)';
@@ -61,15 +61,15 @@ function drawZebraCrossing(r, gx, gy, ts, tileType) {
   ctx.fillRect(gx*ts, gy*ts, ts, ts);
   
   // Zebra crossing stripes
-  ctx.fillStyle = TileColor[tileType];
+  ctx.fillStyle = TileColor[tileType]; // Use the lighter grey for stripes
   
-  const stripeWidth = ts * 0.15;
-  const gapWidth = stripeWidth;
+  const stripeWidth = ts * 0.15; // 15% of tile width
+  const gapWidth = stripeWidth; // Equal gap between stripes
   
   switch(tileType) {
     case Tile.ZebraCrossingN:
     case Tile.ZebraCrossingS:
-      // Vertical stripes for N/S roads
+      // Vertical stripes for N/S roads (rotated 90 degrees)
       for (let i = 0; i < 5; i++) {
         const x = gx*ts + (i * (stripeWidth + gapWidth)) + gapWidth/2;
         if (x + stripeWidth <= (gx+1)*ts) {
@@ -80,7 +80,7 @@ function drawZebraCrossing(r, gx, gy, ts, tileType) {
       
     case Tile.ZebraCrossingE:
     case Tile.ZebraCrossingW:
-      // Horizontal stripes for E/W roads
+      // Horizontal stripes for E/W roads (rotated 90 degrees)
       for (let i = 0; i < 5; i++) {
         const y = gy*ts + (i * (stripeWidth + gapWidth)) + gapWidth/2;
         if (y + stripeWidth <= (gy+1)*ts) {
@@ -91,107 +91,87 @@ function drawZebraCrossing(r, gx, gy, ts, tileType) {
   }
 }
 
-function drawDottedLines(r, gx, gy, ts, tileType, state) {
-  const { ctx } = r;
-  const map = state.world.map;
-  
-  // Only draw on road tiles
-  if (![Tile.RoadN, Tile.RoadE, Tile.RoadS, Tile.RoadW].includes(tileType)) return;
-  
-  // Check if this is a straight road outside intersections
-  if (!isStraightRoad(gx, gy, map)) return;
-  
-  ctx.fillStyle = '#FFFFFF'; // White dashed lines
-  
-  switch(tileType) {
-    case Tile.RoadN:
-    case Tile.RoadS:
-      // Vertical dashed line between lanes
-      drawVerticalDottedLine(r, gx, gy, ts);
-      break;
-    case Tile.RoadE:
-    case Tile.RoadW:
-      // Horizontal dashed line between lanes
-      drawHorizontalDottedLine(r, gx, gy, ts);
-      break;
-  }
-}
-
-function isStraightRoad(x, y, map) {
-  // Check if this road tile is part of a straight road outside intersections
-  const t = map.tiles[y][x];
-  if (![Tile.RoadN, Tile.RoadE, Tile.RoadS, Tile.RoadW].includes(t)) return false;
-  
-  // Check adjacent tiles to determine if it's a straight road
-  const up = y > 0 ? map.tiles[y-1][x] : -1;
-  const down = y < map.height - 1 ? map.tiles[y+1][x] : -1;
-  const left = x > 0 ? map.tiles[y][x-1] : -1;
-  const right = x < map.width - 1 ? map.tiles[y][x+1] : -1;
-  
-  // Check if adjacent to footpath or median
-  const adjacentToFootpath = [left, right, up, down].includes(Tile.Footpath);
-  const adjacentToMedian = [left, right, up, down].includes(Tile.Median);
-  
-  return adjacentToFootpath || adjacentToMedian;
-}
-
-function drawVerticalDottedLine(r, gx, gy, ts) {
-  const { ctx } = r;
-  const dashLength = ts * 0.3;
-  const gapLength = ts * 0.2;
-  const lineWidth = ts * 0.05;
-  
-  ctx.fillStyle = '#FFFFFF';
-  
-  for (let y = gy * ts; y < (gy + 1) * ts; y += dashLength + gapLength) {
-    ctx.fillRect(gx * ts + ts/2 - lineWidth/2, y, lineWidth, dashLength);
-  }
-}
-
-function drawHorizontalDottedLine(r, gx, gy, ts) {
-  const { ctx } = r;
-  const dashLength = ts * 0.3;
-  const gapLength = ts * 0.2;
-  const lineWidth = ts * 0.05;
-  
-  ctx.fillStyle = '#FFFFFF';
-  
-  for (let x = gx * ts; x < (gx + 1) * ts; x += dashLength + gapLength) {
-    ctx.fillRect(x, gy * ts + ts/2 - lineWidth/2, dashLength, lineWidth);
-  }
-}
-
 function drawIntersectionArrows(r, gx, gy, ts, tileType, state) {
   const { ctx } = r;
-  const map = state.world.map;
   
-  // Only draw arrows for uni-directional lanes in intersections
+  // Only draw arrows for specific uni-directional road tiles in intersections
   const uniDirectionalTiles = [Tile.RoadN, Tile.RoadE, Tile.RoadS, Tile.RoadW];
   
   if (!uniDirectionalTiles.includes(tileType)) return;
   
-  // Check if this is part of an intersection
-  if (!isInIntersection(gx, gy, map)) return;
+  // Check if this is part of an intersection by checking for roundabout center
+  const map = state.world.map;
   
-  // Check if this is adjacent to roundabout center
-  if (!isAdjacentToRoundabout(gx, gy, map)) return;
+  // Check for a roundabout center within 2 tiles
+  let isInIntersection = false;
+  const checkRadius = 2;
   
-  ctx.fillStyle = TileColor[Tile.ZebraCrossingN]; // Use zebra crossing color
+  for (let dy = -checkRadius; dy <= checkRadius; dy++) {
+    for (let dx = -checkRadius; dx <= checkRadius; dx++) {
+      const checkX = gx + dx;
+      const checkY = gy + dy;
+      
+      if (checkX >= 0 && checkX < map.width && 
+          checkY >= 0 && checkY < map.height) {
+        if (map.tiles[checkY][checkX] === Tile.RoundaboutCenter) {
+          isInIntersection = true;
+          break;
+        }
+      }
+    }
+  }
+  
+  if (!isInIntersection) return;
+  
+  // Calculate Manhattan distance to nearest roundabout center
+  let minDistance = Infinity;
+  for (let dy = -checkRadius; dy <= checkRadius; dy++) {
+    for (let dx = -checkRadius; dx <= checkRadius; dx++) {
+      const checkX = gx + dx;
+      const checkY = gy + dy;
+      
+      if (checkX >= 0 && checkX < map.width && 
+          checkY >= 0 && checkY < map.height) {
+        if (map.tiles[checkY][checkX] === Tile.RoundaboutCenter) {
+          const distance = Math.abs(dx) + Math.abs(dy);
+          minDistance = Math.min(minDistance, distance);
+        }
+      }
+    }
+  }
+  
+  // Only draw arrows on tiles that are adjacent to the roundabout center
+  // This ensures we only get the 8 tiles forming the plus shape
+  if (minDistance !== 1) return;
+  
+  // Determine direction based on tile type
+  let direction = null;
+  switch(tileType) {
+    case Tile.RoadN: direction = 'N'; break;
+    case Tile.RoadE: direction = 'E'; break;
+    case Tile.RoadS: direction = 'S'; break;
+    case Tile.RoadW: direction = 'W'; break;
+  }
+  
+  if (!direction) return;
+  
+  const cx = gx * ts + ts/2;
+  const cy = gy * ts + ts/2;
+  
+  // Use zebra crossing color for arrows
+  ctx.fillStyle = TileColor[Tile.ZebraCrossingN];
   ctx.strokeStyle = TileColor[Tile.ZebraCrossingN];
   ctx.lineWidth = 2;
   
-  // Calculate arrow direction based on tile type
-  const cx = gx * ts + ts/2;
-  const cy = gy * ts + ts/2;
+  // Draw arrow based on direction
   const arrowLength = ts * 0.4;
   const arrowHeadSize = ts * 0.1;
   
   ctx.save();
   ctx.translate(cx, cy);
   
-  switch(tileType) {
-    case Tile.RoadN:
-      // Arrow pointing North
+  switch(direction) {
+    case 'N':
       ctx.beginPath();
       ctx.moveTo(0, arrowLength/2);
       ctx.lineTo(0, -arrowLength/2);
@@ -200,8 +180,7 @@ function drawIntersectionArrows(r, gx, gy, ts, tileType, state) {
       ctx.lineTo(arrowHeadSize, -arrowLength/2 + arrowHeadSize);
       ctx.stroke();
       break;
-    case Tile.RoadS:
-      // Arrow pointing South
+    case 'S':
       ctx.beginPath();
       ctx.moveTo(0, -arrowLength/2);
       ctx.lineTo(0, arrowLength/2);
@@ -210,8 +189,7 @@ function drawIntersectionArrows(r, gx, gy, ts, tileType, state) {
       ctx.lineTo(arrowHeadSize, arrowLength/2 - arrowHeadSize);
       ctx.stroke();
       break;
-    case Tile.RoadE:
-      // Arrow pointing East
+    case 'E':
       ctx.beginPath();
       ctx.moveTo(-arrowLength/2, 0);
       ctx.lineTo(arrowLength/2, 0);
@@ -220,8 +198,7 @@ function drawIntersectionArrows(r, gx, gy, ts, tileType, state) {
       ctx.lineTo(arrowLength/2 - arrowHeadSize, arrowHeadSize);
       ctx.stroke();
       break;
-    case Tile.RoadW:
-      // Arrow pointing West
+    case 'W':
       ctx.beginPath();
       ctx.moveTo(arrowLength/2, 0);
       ctx.lineTo(-arrowLength/2, 0);
@@ -235,36 +212,67 @@ function drawIntersectionArrows(r, gx, gy, ts, tileType, state) {
   ctx.restore();
 }
 
-function isInIntersection(x, y, map) {
-  // Check if this tile is within 2 tiles of a roundabout center
-  const checkRadius = 2;
-  for (let dy = -checkRadius; dy <= checkRadius; dy++) {
-    for (let dx = -checkRadius; dx <= checkRadius; dx++) {
-      const checkX = x + dx;
-      const checkY = y + dy;
-      if (checkX >= 0 && checkX < map.width && 
-          checkY >= 0 && checkY < map.height) {
-        if (map.tiles[checkY][checkX] === Tile.RoundaboutCenter) {
-          return true;
-        }
-      }
-    }
-  }
-  return false;
-}
+/* New: draw dashed center line on straight road tiles outside intersections */
+function drawDashedCenterLineIfNeeded(r, gx, gy, ts, tileType, map) {
+  const { ctx } = r;
+  // Only consider road tiles (uni-directional types)
+  const verticalTypes = [Tile.RoadN, Tile.RoadS];
+  const horizontalTypes = [Tile.RoadE, Tile.RoadW];
+  const isVertical = verticalTypes.includes(tileType);
+  const isHorizontal = horizontalTypes.includes(tileType);
+  if (!isVertical && !isHorizontal) return;
 
-function isAdjacentToRoundabout(x, y, map) {
-  // Check if this tile is adjacent to a roundabout center
-  const directions = [[-1,0], [1,0], [0,-1], [0,1], [-1,-1], [-1,1], [1,-1], [1,1]];
-  for (const [dx, dy] of directions) {
-    const checkX = x + dx;
-    const checkY = y + dy;
-    if (checkX >= 0 && checkX < map.width && 
-        checkY >= 0 && checkY < map.height) {
-      if (map.tiles[checkY][checkX] === Tile.RoundaboutCenter) {
-        return true;
-      }
+  // Determine if tile is part of an intersection: simple heuristic - nearby roundabout center or zebra crossing
+  const nearbyIsIntersection = (() => {
+    for (let dy=-2; dy<=2; dy++) for (let dx=-2; dx<=2; dx++) {
+      const nx = gx+dx, ny = gy+dy;
+      if (nx<0||ny<0||nx>=map.width||ny>=map.height) continue;
+      const t = map.tiles[ny][nx];
+      if (t === Tile.RoundaboutCenter) return true;
+      if (t >= Tile.ZebraCrossingN && t <= Tile.ZebraCrossingW) return true;
     }
+    return false;
+  })();
+  if (nearbyIsIntersection) return;
+
+  // Only draw on straight road segments that are adjacent to footpath or median (outside intersections)
+  const adjFootOrMed = (() => {
+    const left = (gx-1>=0) ? map.tiles[gy][gx-1] : null;
+    const right = (gx+1<map.width) ? map.tiles[gy][gx+1] : null;
+    const up = (gy-1>=0) ? map.tiles[gy-1][gx] : null;
+    const down = (gy+1<map.height) ? map.tiles[gy+1][gx] : null;
+    const isAdj = (v)=> v === Tile.Footpath || v === Tile.Median;
+    if (isVertical) return isAdj(left) || isAdj(right);
+    if (isHorizontal) return isAdj(up) || isAdj(down);
+    return false;
+  })();
+  if (!adjFootOrMed) return;
+
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,255,255,0.65)';
+  ctx.lineWidth = Math.max(1, Math.floor(ts * 0.06));
+  ctx.setLineDash([Math.max(2, Math.floor(ts * 0.06)), Math.max(2, Math.floor(ts * 0.06))]);
+
+  // Draw short dashes centered on tile so adjacent tiles render continuous dashed stripe.
+  if (isVertical) {
+    // vertical dashes centered horizontally in tile (will line up when drawn on both lane tiles)
+    const cx = gx * ts + ts * 0.5;
+    // draw a short vertical segment in the middle of the tile
+    const segH = ts * 0.35;
+    ctx.beginPath();
+    ctx.moveTo(cx, gy * ts + (ts - segH) / 2);
+    ctx.lineTo(cx, gy * ts + (ts + segH) / 2);
+    ctx.stroke();
+  } else if (isHorizontal) {
+    // horizontal dashes centered vertically in tile
+    const cy = gy * ts + ts * 0.5;
+    const segW = ts * 0.35;
+    ctx.beginPath();
+    ctx.moveTo(gx * ts + (ts - segW) / 2, cy);
+    ctx.lineTo(gx * ts + (ts + segW) / 2, cy);
+    ctx.stroke();
   }
-  return false;
+
+  ctx.setLineDash([]);
+  ctx.restore();
 }

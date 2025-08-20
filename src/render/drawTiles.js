@@ -73,7 +73,7 @@ function drawZebraCrossing(r, gx, gy, ts, tileType) {
       for (let i = 0; i < 5; i++) {
         const x = gx*ts + ts/2 - (stripeWidth * 2.5) + i * (stripeWidth + gapWidth) + gapWidth/2;
         if (x + stripeWidth <= (gx+1)*ts && x >= gx*ts) {
-          ctx.fillRect(x, gy*ts + ts*0.1, stripeWidth, ts*0.8); // Centered vertically
+          ctx.fillRect(x, gy*ts, stripeWidth, ts);
         }
       }
       break;
@@ -84,7 +84,7 @@ function drawZebraCrossing(r, gx, gy, ts, tileType) {
       for (let i = 0; i < 5; i++) {
         const y = gy*ts + ts/2 - (stripeWidth * 2.5) + i * (stripeWidth + gapWidth) + gapWidth/2;
         if (y + stripeWidth <= (gy+1)*ts && y >= gy*ts) {
-          ctx.fillRect(gx*ts + ts*0.1, y, ts*0.8, stripeWidth); // Centered horizontally
+          ctx.fillRect(gx*ts, y, ts, stripeWidth);
         }
       }
       break;

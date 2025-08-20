@@ -38,9 +38,9 @@ export function drawTiles(r, state, layer = 'all'){
     
     // Only draw arrows for uni-directional lanes in intersections
     drawIntersectionArrows(r, gx, gy, ts, t, state);
-
-    // Draw dashed center line for straight non-intersection roads adjacent to footpath/median
-    drawDashedCenterLineIfNeeded(r, gx, gy, ts, t, map);
+    
+    // Draw dotted lines for straight roads
+    drawDottedLines(r, gx, gy, ts, t, state);
     
     if (t === Tile.BuildingWall) {
       r.ctx.fillStyle = 'rgba(0,0,0,0.2)';
@@ -212,67 +212,83 @@ function drawIntersectionArrows(r, gx, gy, ts, tileType, state) {
   ctx.restore();
 }
 
-/* New: draw dashed center line on straight road tiles outside intersections */
-function drawDashedCenterLineIfNeeded(r, gx, gy, ts, tileType, map) {
+function drawDottedLines(r, gx, gy, ts, tileType, state) {
   const { ctx } = r;
-  // Only consider road tiles (uni-directional types)
-  const verticalTypes = [Tile.RoadN, Tile.RoadS];
-  const horizontalTypes = [Tile.RoadE, Tile.RoadW];
-  const isVertical = verticalTypes.includes(tileType);
-  const isHorizontal = horizontalTypes.includes(tileType);
-  if (!isVertical && !isHorizontal) return;
-
-  // Determine if tile is part of an intersection: simple heuristic - nearby roundabout center or zebra crossing
-  const nearbyIsIntersection = (() => {
-    for (let dy=-2; dy<=2; dy++) for (let dx=-2; dx<=2; dx++) {
-      const nx = gx+dx, ny = gy+dy;
-      if (nx<0||ny<0||nx>=map.width||ny>=map.height) continue;
-      const t = map.tiles[ny][nx];
-      if (t === Tile.RoundaboutCenter) return true;
-      if (t >= Tile.ZebraCrossingN && t <= Tile.ZebraCrossingW) return true;
-    }
-    return false;
-  })();
-  if (nearbyIsIntersection) return;
-
-  // Only draw on straight road segments that are adjacent to footpath or median (outside intersections)
-  const adjFootOrMed = (() => {
-    const left = (gx-1>=0) ? map.tiles[gy][gx-1] : null;
-    const right = (gx+1<map.width) ? map.tiles[gy][gx+1] : null;
-    const up = (gy-1>=0) ? map.tiles[gy-1][gx] : null;
-    const down = (gy+1<map.height) ? map.tiles[gy+1][gx] : null;
-    const isAdj = (v)=> v === Tile.Footpath || v === Tile.Median;
-    if (isVertical) return isAdj(left) || isAdj(right);
-    if (isHorizontal) return isAdj(up) || isAdj(down);
-    return false;
-  })();
-  if (!adjFootOrMed) return;
-
+  const map = state.world.map;
+  
+  // Only draw on road tiles in straight sections
+  const roadTiles = [Tile.RoadN, Tile.RoadE, Tile.RoadS, Tile.RoadW];
+  if (!roadTiles.includes(tileType)) return;
+  
+  // Check if this is in an intersection
+  const isInIntersection = checkIntersection(gx, gy, map);
+  if (isInIntersection) return;
+  
+  // Check if this is adjacent to footpath or median
+  const isAdjacentToNonRoad = checkAdjacentToNonRoad(gx, gy, map);
+  if (!isAdjacentToNonRoad) return;
+  
   ctx.save();
-  ctx.strokeStyle = 'rgba(255,255,255,0.65)';
-  ctx.lineWidth = Math.max(1, Math.floor(ts * 0.06));
-  ctx.setLineDash([Math.max(2, Math.floor(ts * 0.06)), Math.max(2, Math.floor(ts * 0.06))]);
-
-  // Draw short dashes centered on tile so adjacent tiles render continuous dashed stripe.
-  if (isVertical) {
-    // vertical dashes centered horizontally in tile (will line up when drawn on both lane tiles)
-    const cx = gx * ts + ts * 0.5;
-    // draw a short vertical segment in the middle of the tile
-    const segH = ts * 0.35;
-    ctx.beginPath();
-    ctx.moveTo(cx, gy * ts + (ts - segH) / 2);
-    ctx.lineTo(cx, gy * ts + (ts + segH) / 2);
-    ctx.stroke();
-  } else if (isHorizontal) {
-    // horizontal dashes centered vertically in tile
-    const cy = gy * ts + ts * 0.5;
-    const segW = ts * 0.35;
-    ctx.beginPath();
-    ctx.moveTo(gx * ts + (ts - segW) / 2, cy);
-    ctx.lineTo(gx * ts + (ts + segW) / 2, cy);
-    ctx.stroke();
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([6, 6]); // Dotted line pattern
+  
+  const x = gx * ts;
+  const y = gy * ts;
+  
+  switch(tileType) {
+    case Tile.RoadN:
+    case Tile.RoadS:
+      // Vertical road - draw horizontal dotted line in middle
+      ctx.beginPath();
+      ctx.moveTo(x + ts * 0.25, y + ts * 0.5);
+      ctx.lineTo(x + ts * 0.75, y + ts * 0.5);
+      ctx.stroke();
+      break;
+      
+    case Tile.RoadE:
+    case Tile.RoadW:
+      // Horizontal road - draw vertical dotted line in middle
+      ctx.beginPath();
+      ctx.moveTo(x + ts * 0.5, y + ts * 0.25);
+      ctx.lineTo(x + ts * 0.5, y + ts * 0.75);
+      ctx.stroke();
+      break;
   }
-
-  ctx.setLineDash([]);
+  
   ctx.restore();
+}
+
+function checkIntersection(x, y, map) {
+  const checkRadius = 3;
+  for (let dy = -checkRadius; dy <= checkRadius; dy++) {
+    for (let dx = -checkRadius; dx <= checkRadius; dx++) {
+      const checkX = x + dx;
+      const checkY = y + dy;
+      if (checkX >= 0 && checkX < map.width && 
+          checkY >= 0 && checkY < map.height) {
+        if (map.tiles[checkY][checkX] === Tile.RoundaboutCenter) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+function checkAdjacentToNonRoad(x, y, map) {
+  const nonRoadTiles = [Tile.Footpath, Tile.Median, Tile.Grass, Tile.Park, Tile.BuildingWall, Tile.BuildingFloor, Tile.Beach];
+  const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+  
+  for (const [dx, dy] of directions) {
+    const checkX = x + dx;
+    const checkY = y + dy;
+    if (checkX >= 0 && checkX < map.width && 
+        checkY >= 0 && checkY < map.height) {
+      if (nonRoadTiles.includes(map.tiles[checkY][checkX])) {
+        return true;
+      }
+    }
+  }
+  return false;
 }

@@ -82,9 +82,9 @@ function drawZebraCrossing(r, gx, gy, ts, tileType, map) {
       if (map && gx+1 < map.width) {
         const right = map.tiles[gy][gx+1];
         if (right === Tile.ZebraCrossingN || right === Tile.ZebraCrossingS) {
-          // Make the shared central vertical stripe twice as wide so both halves are visible
-          const sharedX = (gx + 1) * ts - stripeWidth;
-          ctx.fillRect(sharedX, gy*ts, stripeWidth * 2, ts);
+          // Make the shared central vertical stripe centered on the tile boundary so it straddles both tiles
+          const sharedX = (gx + 1) * ts - stripeWidth; // center at boundary, width = 2*stripeWidth
+          ctx.fillRect(sharedX, gy * ts, stripeWidth * 2, ts);
         }
       }
       break;
@@ -103,9 +103,9 @@ function drawZebraCrossing(r, gx, gy, ts, tileType, map) {
       if (map && gy+1 < map.height) {
         const below = map.tiles[gy+1][gx];
         if (below === Tile.ZebraCrossingE || below === Tile.ZebraCrossingW) {
-          // Make the shared central horizontal stripe twice as tall so both halves are visible
-          const sharedY = (gy + 1) * ts - stripeWidth;
-          ctx.fillRect(gx*ts, sharedY, ts, stripeWidth * 2);
+          // Make the shared central horizontal stripe centered on the tile boundary so it straddles both tiles
+          const sharedY = (gy + 1) * ts - stripeWidth; // center at boundary, height = 2*stripeWidth
+          ctx.fillRect(gx * ts, sharedY, ts, stripeWidth * 2);
         }
       }
       break;

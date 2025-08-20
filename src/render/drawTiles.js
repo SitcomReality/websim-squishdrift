@@ -231,37 +231,44 @@ function drawDashedLines(r, state) {
       
       const tile = map.tiles[gy][gx];
       
-      // Check for horizontal roads (East/West lanes)
+      // Only draw on road tiles adjacent to median strip
       if (tile === Tile.RoadE || tile === Tile.RoadW) {
-        // Check if this is a straight road section (not in intersection)
-        const leftTile = gx > 0 ? map.tiles[gy][gx-1] : null;
-        const rightTile = gx < map.width-1 ? map.tiles[gy][gx+1] : null;
+        // Check if this tile is adjacent to median strip
+        const isNextToMedian = (gy > 0 && map.tiles[gy-1][gx] === Tile.Median) || 
+                              (gy < map.height-1 && map.tiles[gy+1][gx] === Tile.Median);
         
-        const isIntersection = isIntersectionArea(map, gx, gy);
-        if (!isIntersection) {
-          // Draw horizontal dashed line in the middle
-          const lineY = gy * ts + ts/2;
-          ctx.beginPath();
-          ctx.moveTo(gx * ts, lineY);
-          ctx.lineTo((gx + 1) * ts, lineY);
-          ctx.stroke();
+        if (isNextToMedian) {
+          // Determine which side the median is on to position line correctly
+          const medianIsAbove = gy > 0 && map.tiles[gy-1][gx] === Tile.Median;
+          
+          if (!isIntersectionArea(map, gx, gy)) {
+            // Horizontal road, draw line on bottom edge if median is above, top if below
+            const lineY = medianIsAbove ? (gy + 1) * ts : gy * ts;
+            ctx.beginPath();
+            ctx.moveTo(gx * ts, lineY);
+            ctx.lineTo((gx + 1) * ts, lineY);
+            ctx.stroke();
+          }
         }
       }
       
-      // Check for vertical roads (North/South lanes)
       if (tile === Tile.RoadN || tile === Tile.RoadS) {
-        // Check if this is a straight road section (not in intersection)
-        const topTile = gy > 0 ? map.tiles[gy-1][gx] : null;
-        const bottomTile = gy < map.height-1 ? map.tiles[gy+1][gx] : null;
+        // Check if this tile is adjacent to median strip
+        const isNextToMedian = (gx > 0 && map.tiles[gy][gx-1] === Tile.Median) || 
+                              (gx < map.width-1 && map.tiles[gy][gx+1] === Tile.Median);
         
-        const isIntersection = isIntersectionArea(map, gx, gy);
-        if (!isIntersection) {
-          // Draw vertical dashed line in the middle
-          const lineX = gx * ts + ts/2;
-          ctx.beginPath();
-          ctx.moveTo(lineX, gy * ts);
-          ctx.lineTo(lineX, (gy + 1) * ts);
-          ctx.stroke();
+        if (isNextToMedian) {
+          // Determine which side the median is on to position line correctly
+          const medianIsLeft = gx > 0 && map.tiles[gy][gx-1] === Tile.Median;
+          
+          if (!isIntersectionArea(map, gx, gy)) {
+            // Vertical road, draw line on right edge if median is left, left if right
+            const lineX = medianIsLeft ? (gx + 1) * ts : gx * ts;
+            ctx.beginPath();
+            ctx.moveTo(lineX, gy * ts);
+            ctx.lineTo(lineX, (gy + 1) * ts);
+            ctx.stroke();
+          }
         }
       }
     }

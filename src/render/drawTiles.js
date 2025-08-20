@@ -34,10 +34,15 @@ export function drawTiles(r, state, layer = 'all'){
     } else {
       r.ctx.fillStyle = TileColor[t] || '#f5f5f5';
       r.ctx.fillRect(gx*ts, gy*ts, ts, ts);
+      
+      // Add dotted road markings for straight roads
+      if (isStraightRoad(t)) {
+        drawDottedRoadMarkings(r, gx, gy, ts, t);
+      }
+      
+      // Draw intersection arrows for uni-directional lanes
+      drawIntersectionArrows(r, gx, gy, ts, t, state);
     }
-    
-    // Only draw arrows for uni-directional lanes in intersections
-    drawIntersectionArrows(r, gx, gy, ts, t, state);
     
     if (t === Tile.BuildingWall) {
       r.ctx.fillStyle = 'rgba(0,0,0,0.2)';
@@ -50,6 +55,45 @@ function isZebraCrossing(tile) {
   return tile >= Tile.ZebraCrossingN && tile <= Tile.ZebraCrossingW;
 }
 
+function isStraightRoad(tile) {
+  return tile === Tile.RoadN || tile === Tile.RoadE || tile === Tile.RoadS || tile === Tile.RoadW;
+}
+
+function drawDottedRoadMarkings(r, gx, gy, ts, tileType) {
+  const { ctx } = r;
+  
+  // Set color for road markings (same as zebra crossings)
+  ctx.fillStyle = TileColor[Tile.ZebraCrossingN];
+  
+  const segmentLength = ts * 0.15; // Length of each dash
+  const gapLength = ts * 0.1; // Gap between dashes
+  const lineWidth = ts * 0.05; // Width of the marking line
+  
+  switch(tileType) {
+    case Tile.RoadN:
+    case Tile.RoadS:
+      // Vertical road - draw vertical dashed line in center
+      for (let y = 0; y < ts; y += segmentLength + gapLength) {
+        const startY = gy * ts + y;
+        if (startY + segmentLength <= (gy + 1) * ts) {
+          ctx.fillRect(gx * ts + ts/2 - lineWidth/2, startY, lineWidth, segmentLength);
+        }
+      }
+      break;
+      
+    case Tile.RoadE:
+    case Tile.RoadW:
+      // Horizontal road - draw horizontal dashed line in center
+      for (let x = 0; x < ts; x += segmentLength + gapLength) {
+        const startX = gx * ts + x;
+        if (startX + segmentLength <= (gx + 1) * ts) {
+          ctx.fillRect(startX, gy * ts + ts/2 - lineWidth/2, segmentLength, lineWidth);
+        }
+      }
+      break;
+  }
+}
+
 function drawZebraCrossing(r, gx, gy, ts, tileType) {
   const { ctx } = r;
   
@@ -58,15 +102,15 @@ function drawZebraCrossing(r, gx, gy, ts, tileType) {
   ctx.fillRect(gx*ts, gy*ts, ts, ts);
   
   // Zebra crossing stripes
-  ctx.fillStyle = TileColor[tileType]; // Use the lighter grey for stripes
+  ctx.fillStyle = TileColor[tileType];
   
-  const stripeWidth = ts * 0.15; // 15% of tile width
-  const gapWidth = stripeWidth; // Equal gap between stripes
+  const stripeWidth = ts * 0.15;
+  const gapWidth = stripeWidth;
   
   switch(tileType) {
     case Tile.ZebraCrossingN:
     case Tile.ZebraCrossingS:
-      // Vertical stripes for N/S roads (rotated 90 degrees)
+      // Vertical stripes for N/S roads
       for (let i = 0; i < 5; i++) {
         const x = gx*ts + (i * (stripeWidth + gapWidth)) + gapWidth/2;
         if (x + stripeWidth <= (gx+1)*ts) {
@@ -77,7 +121,7 @@ function drawZebraCrossing(r, gx, gy, ts, tileType) {
       
     case Tile.ZebraCrossingE:
     case Tile.ZebraCrossingW:
-      // Horizontal stripes for E/W roads (rotated 90 degrees)
+      // Horizontal stripes for E/W roads
       for (let i = 0; i < 5; i++) {
         const y = gy*ts + (i * (stripeWidth + gapWidth)) + gapWidth/2;
         if (y + stripeWidth <= (gy+1)*ts) {
@@ -91,20 +135,19 @@ function drawZebraCrossing(r, gx, gy, ts, tileType) {
 function drawIntersectionArrows(r, gx, gy, ts, tileType, state) {
   const { ctx } = r;
   
-  // Only draw arrows for specific uni-directional road tiles in intersections
+  // Only draw arrows for uni-directional road tiles in intersections
   const uniDirectionalTiles = [Tile.RoadN, Tile.RoadE, Tile.RoadS, Tile.RoadW];
   
   if (!uniDirectionalTiles.includes(tileType)) return;
   
-  // Check if this is part of an intersection by checking for roundabout center
+  // Check if this is part of an intersection
   const map = state.world.map;
-  
-  // Check for a roundabout center within 2 tiles
   let isInIntersection = false;
-  const checkRadius = 2;
+  let roundaboutCenter = null;
   
-  for (let dy = -checkRadius; dy <= checkRadius; dy++) {
-    for (let dx = -checkRadius; dx <= checkRadius; dx++) {
+  // Check for roundabout center within 2 tiles
+  for (let dy = -2; dy <= 2; dy++) {
+    for (let dx = -2; dx <= 2; dx++) {
       const checkX = gx + dx;
       const checkY = gy + dy;
       
@@ -112,34 +155,20 @@ function drawIntersectionArrows(r, gx, gy, ts, tileType, state) {
           checkY >= 0 && checkY < map.height) {
         if (map.tiles[checkY][checkX] === Tile.RoundaboutCenter) {
           isInIntersection = true;
+          roundaboutCenter = { x: checkX, y: checkY };
           break;
         }
       }
     }
   }
   
-  if (!isInIntersection) return;
+  if (!isInIntersection || !roundaboutCenter) return;
   
-  // Calculate Manhattan distance to nearest roundabout center
-  let minDistance = Infinity;
-  for (let dy = -checkRadius; dy <= checkRadius; dy++) {
-    for (let dx = -checkRadius; dx <= checkRadius; dx++) {
-      const checkX = gx + dx;
-      const checkY = gy + dy;
-      
-      if (checkX >= 0 && checkX < map.width && 
-          checkY >= 0 && checkY < map.height) {
-        if (map.tiles[checkY][checkX] === Tile.RoundaboutCenter) {
-          const distance = Math.abs(dx) + Math.abs(dy);
-          minDistance = Math.min(minDistance, distance);
-        }
-      }
-    }
-  }
+  // Calculate Manhattan distance to roundabout center
+  const distance = Math.abs(gx - roundaboutCenter.x) + Math.abs(gy - roundaboutCenter.y);
   
-  // Only draw arrows on tiles that are adjacent to the roundabout center
-  // This ensures we only get the 8 tiles forming the plus shape
-  if (minDistance !== 1) return;
+  // Only draw arrows on tiles exactly 1 tile away from center (forming the plus shape)
+  if (distance !== 1) return;
   
   // Determine direction based on tile type
   let direction = null;
@@ -161,8 +190,8 @@ function drawIntersectionArrows(r, gx, gy, ts, tileType, state) {
   ctx.lineWidth = 2;
   
   // Draw arrow based on direction
-  const arrowLength = ts * 0.4;
-  const arrowHeadSize = ts * 0.1;
+  const arrowLength = ts * 0.3;
+  const arrowHeadSize = ts * 0.08;
   
   ctx.save();
   ctx.translate(cx, cy);

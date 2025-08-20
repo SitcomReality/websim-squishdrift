@@ -79,12 +79,13 @@ function drawZebraCrossing(r, gx, gy, ts, tileType, map) {
         }
       }
       // Draw shared central vertical stripe if adjacent tile horizontally is also a N/S zebra
-      if (map && gx+1 < map.width) {
-        const right = map.tiles[gy][gx+1];
+      if (map && gx + 1 < map.width) {
+        const right = map.tiles[gy][gx + 1];
         if (right === Tile.ZebraCrossingN || right === Tile.ZebraCrossingS) {
-          // Make the shared central vertical stripe centered on the tile boundary so it straddles both tiles
-          const sharedX = (gx + 1) * ts - (stripeWidth / 2); // left edge so stripe is centered on the boundary
-          ctx.fillRect(sharedX, gy * ts, stripeWidth, ts);
+          // Center the shared stripe exactly on the tile boundary so it straddles both tiles
+          const boundaryX = (gx + 1) * ts;
+          const sharedX = boundaryX - (stripeWidth); // left edge so width centers on boundary
+          ctx.fillRect(sharedX, gy * ts, stripeWidth * 2, ts);
         }
       }
       break;
@@ -100,12 +101,13 @@ function drawZebraCrossing(r, gx, gy, ts, tileType, map) {
         }
       }
       // Draw shared central horizontal stripe if adjacent tile vertically is also an E/W zebra
-      if (map && gy+1 < map.height) {
-        const below = map.tiles[gy+1][gx];
+      if (map && gy + 1 < map.height) {
+        const below = map.tiles[gy + 1][gx];
         if (below === Tile.ZebraCrossingE || below === Tile.ZebraCrossingW) {
-          // Make the shared central horizontal stripe centered on the tile boundary so it straddles both tiles
-          const sharedY = (gy + 1) * ts - (stripeWidth / 2); // top edge so stripe is centered on the boundary
-          ctx.fillRect(gx * ts, sharedY, ts, stripeWidth);
+          // Center the shared stripe exactly on the tile boundary so it straddles both tiles
+          const boundaryY = (gy + 1) * ts;
+          const sharedY = boundaryY - (stripeWidth); // top edge so height centers on boundary
+          ctx.fillRect(gx * ts, sharedY, ts, stripeWidth * 2);
         }
       }
       break;

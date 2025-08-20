@@ -65,34 +65,29 @@ function drawZebraCrossing(r, gx, gy, ts, tileType) {
   
   const stripeWidth = ts * 0.15; // 15% of tile width
   const gapWidth = stripeWidth; // Equal gap between stripes
+  const centerOffset = ts * 0.5; // Center of tile
   
   switch(tileType) {
     case Tile.ZebraCrossingN:
     case Tile.ZebraCrossingS:
-      // Vertical stripes for N/S roads
-      // Draw 2 stripes plus a central line that spans to adjacent tile
-      for (let i = 0; i < 2; i++) {
-        const x = gx*ts + ts * 0.25 + (i * (ts * 0.25)); // More centered positioning
-        ctx.fillRect(x, gy*ts, stripeWidth, ts);
+      // Vertical stripes for N/S roads - 3 stripes total
+      for (let i = 0; i < 3; i++) {
+        const x = gx*ts + centerOffset - (1.0 * stripeWidth) + (i * (stripeWidth + gapWidth));
+        if (x + stripeWidth <= (gx+1)*ts && x >= gx*ts) {
+          ctx.fillRect(x, gy*ts, stripeWidth, ts);
+        }
       }
-      
-      // Draw central line that extends to adjacent tile
-      const centerX = gx*ts + ts/2 - stripeWidth/2;
-      ctx.fillRect(centerX, gy*ts, stripeWidth, ts);
       break;
       
     case Tile.ZebraCrossingE:
     case Tile.ZebraCrossingW:
-      // Horizontal stripes for E/W roads
-      // Draw 2 stripes plus a central line that spans to adjacent tile
-      for (let i = 0; i < 2; i++) {
-        const y = gy*ts + ts * 0.25 + (i * (ts * 0.25)); // More centered positioning
-        ctx.fillRect(gx*ts, y, ts, stripeWidth);
+      // Horizontal stripes for E/W roads - 3 stripes total
+      for (let i = 0; i < 3; i++) {
+        const y = gy*ts + centerOffset - (1.0 * stripeWidth) + (i * (stripeWidth + gapWidth));
+        if (y + stripeWidth <= (gy+1)*ts && y >= gy*ts) {
+          ctx.fillRect(gx*ts, y, ts, stripeWidth);
+        }
       }
-      
-      // Draw central line that extends to adjacent tile
-      const centerY = gy*ts + ts/2 - stripeWidth/2;
-      ctx.fillRect(gx*ts, centerY, ts, stripeWidth);
       break;
   }
 }

@@ -15,7 +15,7 @@ export function drawTiles(r, state, layer = 'all'){
     
     // Handle zebra crossings with special rendering
     if (isZebraCrossing(t)) {
-      drawZebraCrossing(r, gx, gy, ts, t);
+      drawZebraCrossing(r, gx, gy, ts, t, map);
     } else if (t === Tile.RoundaboutCenter) {
       // Draw road background first
       r.ctx.fillStyle = TileColor[Tile.RoadN];
@@ -53,7 +53,7 @@ function isZebraCrossing(tile) {
   return tile >= Tile.ZebraCrossingN && tile <= Tile.ZebraCrossingW;
 }
 
-function drawZebraCrossing(r, gx, gy, ts, tileType) {
+function drawZebraCrossing(r, gx, gy, ts, tileType, map) {
   const { ctx } = r;
   
   // Base road color
@@ -61,7 +61,7 @@ function drawZebraCrossing(r, gx, gy, ts, tileType) {
   ctx.fillRect(gx*ts, gy*ts, ts, ts);
   
   // Zebra crossing stripes
-  ctx.fillStyle = TileColor[tileType];
+  ctx.fillStyle = TileColor[tileType]; // Use the lighter grey for stripes
   
   const stripeWidth = ts * 0.15; // 15% of tile width
   const gapWidth = stripeWidth; // Equal gap between stripes
@@ -71,29 +71,41 @@ function drawZebraCrossing(r, gx, gy, ts, tileType) {
     case Tile.ZebraCrossingN:
     case Tile.ZebraCrossingS:
       // Vertical stripes for N/S roads
-      for (let i = 0; i < 2; i++) {
-        const x = gx*ts + centerOffset - (1.25 * stripeWidth) + (i * (stripeWidth + gapWidth)) + gapWidth/2;
+      for (let i = 0; i < 5; i++) {
+        // Adjusted positioning - half of previous magnitude
+        const x = gx*ts + centerOffset - (1.25 * stripeWidth) + (i * (stripeWidth + gapWidth));
         if (x + stripeWidth <= (gx+1)*ts && x >= gx*ts) {
           ctx.fillRect(x, gy*ts, stripeWidth, ts);
         }
       }
-      
-      // Add central line spanning between adjacent tiles
-      ctx.fillRect(gx*ts + centerOffset - (stripeWidth/2), gy*ts, stripeWidth, ts);
+      // Draw shared central vertical stripe if adjacent tile horizontally is also a N/S zebra
+      if (map && gx+1 < map.width) {
+        const right = map.tiles[gy][gx+1];
+        if (right === Tile.ZebraCrossingN || right === Tile.ZebraCrossingS) {
+          const sharedX = (gx + 1) * ts - stripeWidth / 2;
+          ctx.fillRect(sharedX, gy*ts, stripeWidth, ts);
+        }
+      }
       break;
       
     case Tile.ZebraCrossingE:
     case Tile.ZebraCrossingW:
       // Horizontal stripes for E/W roads
-      for (let i = 0; i < 2; i++) {
-        const y = gy*ts + centerOffset - (1.25 * stripeWidth) + (i * (stripeWidth + gapWidth)) + gapWidth/2;
+      for (let i = 0; i < 5; i++) {
+        // Adjusted positioning - half of previous magnitude
+        const y = gy*ts + centerOffset - (1.25 * stripeWidth) + (i * (stripeWidth + gapWidth));
         if (y + stripeWidth <= (gy+1)*ts && y >= gy*ts) {
           ctx.fillRect(gx*ts, y, ts, stripeWidth);
         }
       }
-      
-      // Add central line spanning between adjacent tiles
-      ctx.fillRect(gx*ts, gy*ts + centerOffset - (stripeWidth/2), ts, stripeWidth);
+      // Draw shared central horizontal stripe if adjacent tile vertically is also an E/W zebra
+      if (map && gy+1 < map.height) {
+        const below = map.tiles[gy+1][gx];
+        if (below === Tile.ZebraCrossingE || below === Tile.ZebraCrossingW) {
+          const sharedY = (gy + 1) * ts - stripeWidth / 2;
+          ctx.fillRect(gx*ts, sharedY, ts, stripeWidth);
+        }
+      }
       break;
   }
 }

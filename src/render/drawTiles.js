@@ -221,7 +221,7 @@ function drawDashedLines(r, state) {
   ctx.save();
   ctx.strokeStyle = '#FFFFFF';
   ctx.lineWidth = 2;
-  ctx.setLineDash([6, 4]);
+  ctx.setLineDash([12, 8]); // Changed from [6, 4] to [12, 8] for single longer dash
   
   // Check each tile for straight road sections
   for (let y = 0; y < hTiles; y++) {
@@ -245,8 +245,8 @@ function drawDashedLines(r, state) {
             // Horizontal road, draw line on bottom edge if median is above, top if below
             const lineY = medianIsAbove ? (gy + 1) * ts : gy * ts;
             ctx.beginPath();
-            ctx.moveTo(gx * ts, lineY);
-            ctx.lineTo((gx + 1) * ts, lineY);
+            ctx.moveTo(gx * ts + ts * 0.25, lineY); // Start 25% into tile
+            ctx.lineTo((gx + 1) * ts - ts * 0.25, lineY); // End 25% before tile end
             ctx.stroke();
           }
         }
@@ -265,8 +265,8 @@ function drawDashedLines(r, state) {
             // Vertical road, draw line on right edge if median is left, left if right
             const lineX = medianIsLeft ? (gx + 1) * ts : gx * ts;
             ctx.beginPath();
-            ctx.moveTo(lineX, gy * ts);
-            ctx.lineTo(lineX, (gy + 1) * ts);
+            ctx.moveTo(lineX, gy * ts + ts * 0.25); // Start 25% into tile
+            ctx.lineTo(lineX, (gy + 1) * ts - ts * 0.25); // End 25% before tile end
             ctx.stroke();
           }
         }

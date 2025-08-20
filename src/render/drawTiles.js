@@ -61,7 +61,7 @@ function drawZebraCrossing(r, gx, gy, ts, tileType) {
   ctx.fillRect(gx*ts, gy*ts, ts, ts);
   
   // Zebra crossing stripes
-  ctx.fillStyle = TileColor[tileType]; // Use the lighter grey for stripes
+  ctx.fillStyle = TileColor[tileType];
   
   const stripeWidth = ts * 0.15; // 15% of tile width
   const gapWidth = stripeWidth; // Equal gap between stripes
@@ -71,85 +71,31 @@ function drawZebraCrossing(r, gx, gy, ts, tileType) {
     case Tile.ZebraCrossingN:
     case Tile.ZebraCrossingS:
       // Vertical stripes for N/S roads
-      for (let i = 0; i < 5; i++) {
-        // Adjusted positioning - half of the previous change
-        const x = gx*ts + centerOffset - (1.25 * stripeWidth) + (i * (stripeWidth + gapWidth));
+      for (let i = 0; i < 2; i++) {
+        const x = gx*ts + centerOffset - (1.25 * stripeWidth) + (i * (stripeWidth + gapWidth)) + gapWidth/2;
         if (x + stripeWidth <= (gx+1)*ts && x >= gx*ts) {
           ctx.fillRect(x, gy*ts, stripeWidth, ts);
         }
       }
+      
+      // Add central line spanning between adjacent tiles
+      ctx.fillRect(gx*ts + centerOffset - (stripeWidth/2), gy*ts, stripeWidth, ts);
       break;
       
     case Tile.ZebraCrossingE:
     case Tile.ZebraCrossingW:
       // Horizontal stripes for E/W roads
-      for (let i = 0; i < 5; i++) {
-        // Adjusted positioning - half of the previous change
-        const y = gy*ts + centerOffset - (1.25 * stripeWidth) + (i * (stripeWidth + gapWidth));
+      for (let i = 0; i < 2; i++) {
+        const y = gy*ts + centerOffset - (1.25 * stripeWidth) + (i * (stripeWidth + gapWidth)) + gapWidth/2;
         if (y + stripeWidth <= (gy+1)*ts && y >= gy*ts) {
           ctx.fillRect(gx*ts, y, ts, stripeWidth);
         }
       }
+      
+      // Add central line spanning between adjacent tiles
+      ctx.fillRect(gx*ts, gy*ts + centerOffset - (stripeWidth/2), ts, stripeWidth);
       break;
   }
-
-  // Add shared half-stripe on the tile edge when adjacent tile is same-orientation zebra,
-  // producing a single continuous central stripe between the two tiles.
-  (function drawSharedHalfStripe(){
-    const map = r && r.canvas ? r.canvas._mapRef : null; // fallback: we use state via r if available
-    // safer access: use r._state if present, else use global state through r (the renderer passes state elsewhere)
-    // We'll rely on r.state if provided
-    const stateMap = (r && r.state && r.state.world && r.state.world.map) ? r.state.world.map : (r._map || null);
-    if (!stateMap) {
-      // fallback: try to access via r.ctx's canvas attached map reference (not guaranteed)
-    }
-    const tiles = stateMap ? stateMap.tiles : null;
-    if (!tiles) return;
-    const inBounds = (x,y) => x>=0 && y>=0 && y<stateMap.height && x<stateMap.width;
-    // Vertical stripes share with left/right zebra tiles
-    if (tileType === Tile.ZebraCrossingN || tileType === Tile.ZebraCrossingS) {
-      // Right neighbor
-      if (inBounds(gx+1, gy)) {
-        const neigh = tiles[gy][gx+1];
-        if (neigh === Tile.ZebraCrossingN || neigh === Tile.ZebraCrossingS) {
-          // draw half-stripe on right edge (half of stripeWidth)
-          const halfW = stripeWidth * 0.5;
-          const x = (gx+1)*ts - halfW;
-          ctx.fillRect(x, gy*ts, halfW, ts);
-        }
-      }
-      // Left neighbor
-      if (inBounds(gx-1, gy)) {
-        const neigh = tiles[gy][gx-1];
-        if (neigh === Tile.ZebraCrossingN || neigh === Tile.ZebraCrossingS) {
-          const halfW = stripeWidth * 0.5;
-          const x = gx*ts;
-          ctx.fillRect(x, gy*ts, halfW, ts);
-        }
-      }
-    }
-    // Horizontal stripes share with top/bottom zebra tiles
-    if (tileType === Tile.ZebraCrossingE || tileType === Tile.ZebraCrossingW) {
-      // Bottom neighbor
-      if (inBounds(gx, gy+1)) {
-        const neigh = tiles[gy+1][gx];
-        if (neigh === Tile.ZebraCrossingE || neigh === Tile.ZebraCrossingW) {
-          const halfH = stripeWidth * 0.5;
-          const y = (gy+1)*ts - halfH;
-          ctx.fillRect(gx*ts, y, ts, halfH);
-        }
-      }
-      // Top neighbor
-      if (inBounds(gx, gy-1)) {
-        const neigh = tiles[gy-1][gx];
-        if (neigh === Tile.ZebraCrossingE || neigh === Tile.ZebraCrossingW) {
-          const halfH = stripeWidth * 0.5;
-          const y = gy*ts;
-          ctx.fillRect(gx*ts, y, ts, halfH);
-        }
-      }
-    }
-  })();
 }
 
 function drawIntersectionArrows(r, gx, gy, ts, tileType, state) {

@@ -72,28 +72,44 @@ function drawZebraCrossing(r, gx, gy, ts, tileType, map) {
     case Tile.ZebraCrossingS:
       // Vertical stripes for N/S roads
       for (let i = 0; i < 5; i++) {
+        // Adjusted positioning - half of previous magnitude
         const x = gx*ts + centerOffset - (1.25 * stripeWidth) + (i * (stripeWidth + gapWidth));
         if (x + stripeWidth <= (gx+1)*ts && x >= gx*ts) {
           ctx.fillRect(x, gy*ts, stripeWidth, ts);
         }
       }
-      // Draw shared central vertical stripe that straddles the middle
-      const sharedX = (gx + 1) * ts - stripeWidth * 0.5; // Center of shared edge
-      ctx.fillRect(sharedX, gy*ts, stripeWidth, ts);
+      // Draw shared central vertical stripe if adjacent tile horizontally is also a N/S zebra
+      if (map && gx+1 < map.width) {
+        const right = map.tiles[gy][gx+1];
+        if (right === Tile.ZebraCrossingN || right === Tile.ZebraCrossingS) {
+          // Center a shared stripe on the boundary between the two tiles so it straddles both tiles
+          const boundaryX = (gx + 1) * ts;
+          const sharedStartX = boundaryX - (stripeWidth / 2);
+          ctx.fillRect(sharedStartX, gy * ts, stripeWidth, ts);
+        }
+      }
       break;
       
     case Tile.ZebraCrossingE:
     case Tile.ZebraCrossingW:
       // Horizontal stripes for E/W roads
       for (let i = 0; i < 5; i++) {
+        // Adjusted positioning - half of previous magnitude
         const y = gy*ts + centerOffset - (1.25 * stripeWidth) + (i * (stripeWidth + gapWidth));
         if (y + stripeWidth <= (gy+1)*ts && y >= gy*ts) {
           ctx.fillRect(gx*ts, y, ts, stripeWidth);
         }
       }
-      // Draw shared central horizontal stripe that straddles the middle
-      const sharedY = (gy + 1) * ts - stripeWidth * 0.5; // Center of shared edge
-      ctx.fillRect(gx*ts, sharedY, ts, stripeWidth);
+      // Draw shared central horizontal stripe if adjacent tile vertically is also an E/W zebra
+      if (map && gy+1 < map.height) {
+        const below = map.tiles[gy+1][gx];
+        if (below === Tile.ZebraCrossingE || below === Tile.ZebraCrossingW) {
+          // Center a shared stripe on the boundary between the two tiles so it straddles both tiles
+          const boundaryY = (gy + 1) * ts;
+          const sharedStartY = boundaryY - (stripeWidth / 2);
+          ctx.fillRect(gx * ts, sharedStartY, ts, stripeWidth);
+        }
+      }
       break;
   }
 }

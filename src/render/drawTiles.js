@@ -39,14 +39,14 @@ export function drawTiles(r, state, layer = 'all'){
     // Only draw arrows for uni-directional lanes in intersections
     drawIntersectionArrows(r, gx, gy, ts, t, state);
     
-    // Draw dotted lines for straight roads
-    drawDottedLines(r, gx, gy, ts, t, state);
-    
     if (t === Tile.BuildingWall) {
       r.ctx.fillStyle = 'rgba(0,0,0,0.2)';
       r.ctx.fillRect(gx*ts, gy*ts + ts*0.7, ts, ts*0.3);
     }
   }
+
+  // Draw dashed lines on straight roads
+  drawDashedLines(r, state);
 }
 
 function isZebraCrossing(tile) {
@@ -212,36 +212,82 @@ function drawIntersectionArrows(r, gx, gy, ts, tileType, state) {
   ctx.restore();
 }
 
-function checkIntersection(x, y, map) {
-  const checkRadius = 3;
+function drawDashedLines(r, state) {
+  const { ctx } = r, ts = state.world.tileSize, map = state.world.map;
+  const z = state.camera.zoom || 1;
+  const wTiles = Math.ceil(r.canvas.width/(ts*z))+2, hTiles = Math.ceil(r.canvas.height/(ts*z))+2;
+  const sx = Math.floor(state.camera.x - wTiles/2), sy = Math.floor(state.camera.y - hTiles/2);
+  
+  ctx.save();
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([6, 4]);
+  
+  // Check each tile for straight road sections
+  for (let y = 0; y < hTiles; y++) {
+    for (let x = 0; x < wTiles; x++) {
+      const gx = sx + x, gy = sy + y;
+      if (gy < 0 || gx < 0 || gy >= map.height || gx >= map.width) continue;
+      
+      const tile = map.tiles[gy][gx];
+      
+      // Check for horizontal roads (East/West lanes)
+      if (tile === Tile.RoadE || tile === Tile.RoadW) {
+        // Check if this is a straight road section (not in intersection)
+        const leftTile = gx > 0 ? map.tiles[gy][gx-1] : null;
+        const rightTile = gx < map.width-1 ? map.tiles[gy][gx+1] : null;
+        
+        const isIntersection = isIntersectionArea(map, gx, gy);
+        if (!isIntersection) {
+          // Draw horizontal dashed line in the middle
+          const lineY = gy * ts + ts/2;
+          ctx.beginPath();
+          ctx.moveTo(gx * ts, lineY);
+          ctx.lineTo((gx + 1) * ts, lineY);
+          ctx.stroke();
+        }
+      }
+      
+      // Check for vertical roads (North/South lanes)
+      if (tile === Tile.RoadN || tile === Tile.RoadS) {
+        // Check if this is a straight road section (not in intersection)
+        const topTile = gy > 0 ? map.tiles[gy-1][gx] : null;
+        const bottomTile = gy < map.height-1 ? map.tiles[gy+1][gx] : null;
+        
+        const isIntersection = isIntersectionArea(map, gx, gy);
+        if (!isIntersection) {
+          // Draw vertical dashed line in the middle
+          const lineX = gx * ts + ts/2;
+          ctx.beginPath();
+          ctx.moveTo(lineX, gy * ts);
+          ctx.lineTo(lineX, (gy + 1) * ts);
+          ctx.stroke();
+        }
+      }
+    }
+  }
+  
+  ctx.restore();
+}
+
+function isIntersectionArea(map, x, y) {
+  // Check if this tile is near an intersection (within 2 tiles of a roundabout center)
+  const checkRadius = 2;
+  
   for (let dy = -checkRadius; dy <= checkRadius; dy++) {
     for (let dx = -checkRadius; dx <= checkRadius; dx++) {
       const checkX = x + dx;
       const checkY = y + dy;
+      
       if (checkX >= 0 && checkX < map.width && 
           checkY >= 0 && checkY < map.height) {
-        if (map.tiles[checkY][checkX] === Tile.RoundaboutCenter) {
+        const tile = map.tiles[checkY][checkX];
+        if (tile === Tile.RoundaboutCenter || tile === Tile.Intersection) {
           return true;
         }
       }
     }
   }
-  return false;
-}
-
-function checkAdjacentToNonRoad(x, y, map) {
-  const nonRoadTiles = [Tile.Footpath, Tile.Median, Tile.Grass, Tile.Park, Tile.BuildingWall, Tile.BuildingFloor, Tile.Beach];
-  const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
   
-  for (const [dx, dy] of directions) {
-    const checkX = x + dx;
-    const checkY = y + dy;
-    if (checkX >= 0 && checkX < map.width && 
-        checkY >= 0 && checkY < map.height) {
-      if (nonRoadTiles.includes(map.tiles[checkY][checkX])) {
-        return true;
-      }
-    }
-  }
   return false;
 }

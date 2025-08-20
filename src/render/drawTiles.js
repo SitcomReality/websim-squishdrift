@@ -212,53 +212,6 @@ function drawIntersectionArrows(r, gx, gy, ts, tileType, state) {
   ctx.restore();
 }
 
-function drawDottedLines(r, gx, gy, ts, tileType, state) {
-  const { ctx } = r;
-  const map = state.world.map;
-  
-  // Only draw on road tiles in straight sections
-  const roadTiles = [Tile.RoadN, Tile.RoadE, Tile.RoadS, Tile.RoadW];
-  if (!roadTiles.includes(tileType)) return;
-  
-  // Check if this is in an intersection
-  const isInIntersection = checkIntersection(gx, gy, map);
-  if (isInIntersection) return;
-  
-  // Check if this is adjacent to footpath or median
-  const isAdjacentToNonRoad = checkAdjacentToNonRoad(gx, gy, map);
-  if (!isAdjacentToNonRoad) return;
-  
-  ctx.save();
-  ctx.strokeStyle = '#FFFFFF';
-  ctx.lineWidth = 2;
-  ctx.setLineDash([6, 6]); // Dotted line pattern
-  
-  const x = gx * ts;
-  const y = gy * ts;
-  
-  switch(tileType) {
-    case Tile.RoadN:
-    case Tile.RoadS:
-      // Vertical road - draw horizontal dotted line in middle
-      ctx.beginPath();
-      ctx.moveTo(x + ts * 0.25, y + ts * 0.5);
-      ctx.lineTo(x + ts * 0.75, y + ts * 0.5);
-      ctx.stroke();
-      break;
-      
-    case Tile.RoadE:
-    case Tile.RoadW:
-      // Horizontal road - draw vertical dotted line in middle
-      ctx.beginPath();
-      ctx.moveTo(x + ts * 0.5, y + ts * 0.25);
-      ctx.lineTo(x + ts * 0.5, y + ts * 0.75);
-      ctx.stroke();
-      break;
-  }
-  
-  ctx.restore();
-}
-
 function checkIntersection(x, y, map) {
   const checkRadius = 3;
   for (let dy = -checkRadius; dy <= checkRadius; dy++) {

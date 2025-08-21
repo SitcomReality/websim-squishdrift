@@ -93,16 +93,16 @@ export function createInitialState(seed = null) {
   }
   
   // Create pickup spots at the center of each block and spawn an initial pickup (pistol)
-  // Use map properties instead of cityLayout
-  const mapOffset = 2;
+  // Account for the 2-tile shift in map generation
+  const shift = 2;
   
   state.pickupSpots = [];
   for (let by = 0; by < blocksHigh; by++) {
     for (let bx = 0; bx < blocksWide; bx++) {
       const W = map.W; // Get W from the generated map
       const MED = map.MED; // Get MED from the generated map
-      const originX = mapOffset + bx * (W + MED);
-      const originY = mapOffset + by * (W + MED);
+      const originX = shift + MED + bx * (W + MED); // Account for shift
+      const originY = shift + MED + by * (W + MED); // Account for shift
       const centerX = originX + Math.floor(W / 2) + 0.5;
       const centerY = originY + Math.floor(W / 2) + 0.5;
       const spotId = state.pickupSpots.length;

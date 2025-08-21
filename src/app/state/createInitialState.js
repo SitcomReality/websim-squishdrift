@@ -92,27 +92,38 @@ export function createInitialState(seed = null) {
     state.entities.push({ type:'npc', pos:new Vec2(n.x+0.5, n.y+0.5), from:{x:n.x,y:n.y}, to: next, t: 0, speed: 0.2 + rand()*0.15 });
   }
   
-  // Create pickup spots at the center of each block and spawn an initial pickup (pistol)
-  // Account for the 2-tile shift in map generation
-  const shift = 2;
+  // Create pickup spots at the center of each block
+  // Use original city layout coordinates before perimeter expansion
+  const cityLayout = new CityLayout(blocksWide, blocksHigh);
+  const pickupSpots = [];
   
-  state.pickupSpots = [];
   for (let by = 0; by < blocksHigh; by++) {
     for (let bx = 0; bx < blocksWide; bx++) {
-      const W = map.W; // Get W from the generated map
-      const MED = map.MED; // Get MED from the generated map
-      const originX = shift + MED + bx * (W + MED); // Account for shift
-      const originY = shift + MED + by * (W + MED); // Account for shift
-      const centerX = originX + Math.floor(W / 2) + 0.5;
-      const centerY = originY + Math.floor(W / 2) + 0.5;
-      const spotId = state.pickupSpots.length;
-      state.pickupSpots.push({ x: centerX, y: centerY, hasItem: false });
-      // Spawn initial pistol at each spot
-      const item = { type: 'item', pos: new Vec2(centerX, centerY), name: 'Pistol', color: '#FFD700', spotId };
+      const origin = cityLayout.getBlockOrigin(bx, by);
+      const centerX = origin.x + Math.floor(cityLayout.W / 2) + 0.5;
+      const centerY = origin.y + Math.floor(cityLayout.W / 2) + 0.5;
+      
+      // Adjust for the perimeter expansion
+      const adjustedX = centerX + shift;
+      const adjustedY = centerY + shift;
+      
+      const spotId = pickupSpots.length;
+      pickupSpots.push({ x: adjustedX, y: adjustedY, hasItem: false });
+      
+      // Spawn initial pistol at this spot
+      const item = { 
+        type: 'item', 
+        pos: new Vec2(adjustedX, adjustedY), 
+        name: 'Pistol', 
+        color: '#FFD700', 
+        spotId 
+      };
       state.entities.push(item);
-      state.pickupSpots[spotId].hasItem = true;
+      pickupSpots[spotId].hasItem = true;
     }
   }
+  
+  state.pickupSpots = pickupSpots;
   
   return state;
 }

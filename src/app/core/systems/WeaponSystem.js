@@ -26,69 +26,8 @@ export class WeaponSystem {
     // Skip weapon handling if player is in vehicle
     if (player.inVehicle) return;
 
-    // Handle health pack pickup first
-    const healthPacks = state.entities.filter(e => 
-      e.type === 'item' && e.name === 'Health Pack'
-    );
-    
-    for (let i = healthPacks.length - 1; i >= 0; i--) {
-      const healthPack = healthPacks[i];
-      if (Math.hypot(player.pos.x - healthPack.pos.x, player.pos.y - healthPack.pos.y) < 1) {
-        // Instant heal
-        if (!player.health) {
-          player.health = new Health(100);
-        }
-        player.health.heal(15);
-        
-        // Show pickup text
-        this.damageTextSystem.addPickupText(state, healthPack.pos, '+15', '#4CAF50');
-        
-        // Remove the health pack
-        const index = state.entities.indexOf(healthPack);
-        if (index > -1) {
-          state.entities.splice(index, 1);
-        }
-        
-        // Mark spot empty for respawn
-        if (typeof healthPack.spotId === 'number' && state?.pickupSpots?.[healthPack.spotId]) {
-          state.pickupSpots[healthPack.spotId].hasItem = false;
-        }
-      }
-    }
-
     // Handle weapon pickup
-    const items = state.entities.filter(e => 
-      (e.type === 'item' && e.name === 'Pistol') || 
-      (e.type === 'weapon' && e.weaponType === 'pistol')
-    );
-    
-    for (let i = items.length - 1; i >= 0; i--) {
-      const item = items[i];
-      if (Math.hypot(player.pos.x - item.pos.x, player.pos.y - item.pos.y) < 1) {
-        player.equippedWeapon = { ...this.weapons['pistol'] };
-        player.equippedWeapon.ammo = player.equippedWeapon.maxAmmo;
-        player.equippedWeapon.lastFireTime = 0;
-        player.equippedWeapon.isReloading = false;
-        
-        // Show pickup text
-        this.damageTextSystem.addPickupText(state, item.pos, 'PISTOL');
-        
-        // Remove the item from entities
-        const index = state.entities.indexOf(item);
-        if (index > -1) {
-          state.entities.splice(index, 1);
-        }
-        
-        // Create ammo bar if it doesn't exist
-        this.createAmmoBar();
-        
-        const itemNameEl = document.getElementById('item-name');
-        if (itemNameEl) itemNameEl.textContent = player.equippedWeapon.name;
-        
-        // Break after picking up one weapon
-        break;
-      }
-    }
+    this.handleWeaponPickup(state, player);
     
     // Handle firing
     if (player.equippedWeapon && !player.inVehicle) {
@@ -133,6 +72,42 @@ export class WeaponSystem {
     const ammoTextEl = document.getElementById('ammo-text');
     if (ammoTextEl) {
       ammoTextEl.textContent = weapon.isReloading ? 'Reloading...' : `${weapon.ammo}/${weapon.maxAmmo}`;
+    }
+  }
+
+  handleWeaponPickup(state, player) {
+    // Handle both 'item' and 'weapon' types
+    const items = state.entities.filter(e => 
+      (e.type === 'item' && e.name === 'Pistol') || 
+      (e.type === 'weapon' && e.weaponType === 'pistol')
+    );
+    
+    for (let i = items.length - 1; i >= 0; i--) {
+      const item = items[i];
+      if (Math.hypot(player.pos.x - item.pos.x, player.pos.y - item.pos.y) < 1) {
+        player.equippedWeapon = { ...this.weapons['pistol'] };
+        player.equippedWeapon.ammo = player.equippedWeapon.maxAmmo;
+        player.equippedWeapon.lastFireTime = 0;
+        player.equippedWeapon.isReloading = false;
+        
+        // Show pickup text
+        this.damageTextSystem.addPickupText(state, item.pos, 'PISTOL');
+        
+        // Remove the item from entities
+        const index = state.entities.indexOf(item);
+        if (index > -1) {
+          state.entities.splice(index, 1);
+        }
+        
+        // Create ammo bar if it doesn't exist
+        this.createAmmoBar();
+        
+        const itemNameEl = document.getElementById('item-name');
+        if (itemNameEl) itemNameEl.textContent = player.equippedWeapon.name;
+        
+        // Break after picking up one weapon
+        break;
+      }
     }
   }
 

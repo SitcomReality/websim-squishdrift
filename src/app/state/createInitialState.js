@@ -93,26 +93,21 @@ export function createInitialState(seed = null) {
   }
   
   // Create pickup spots at the center of each block and spawn an initial pickup (pistol)
-  // Updated to account for the 2-tile shift added by the map generation process
-  const mapOffset = 2;
-  const shift = 2; // This matches the shift value used in MapGen.js
+  // Use map properties instead of cityLayout
+  const originalMapOffset = 2; // Original offset before expansion
+  const expansionShift = 2; // Additional shift from map expansion
   
   state.pickupSpots = [];
   for (let by = 0; by < blocksHigh; by++) {
     for (let bx = 0; bx < blocksWide; bx++) {
       const W = map.W; // Get W from the generated map
       const MED = map.MED; // Get MED from the generated map
-      
-      // Account for the 2-tile shift when calculating positions
-      const originX = mapOffset + bx * (W + MED) + shift;
-      const originY = mapOffset + by * (W + MED) + shift;
-      
+      const originX = originalMapOffset + bx * (W + MED) + expansionShift;
+      const originY = originalMapOffset + by * (W + MED) + expansionShift;
       const centerX = originX + Math.floor(W / 2) + 0.5;
       const centerY = originY + Math.floor(W / 2) + 0.5;
-      
       const spotId = state.pickupSpots.length;
       state.pickupSpots.push({ x: centerX, y: centerY, hasItem: false });
-      
       // Spawn initial pistol at each spot
       const item = { type: 'item', pos: new Vec2(centerX, centerY), name: 'Pistol', color: '#FFD700', spotId };
       state.entities.push(item);

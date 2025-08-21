@@ -5,6 +5,20 @@ export class SpawnManager {
   constructor(stateManager) {
     this.stateManager = stateManager;
     this.spawnedPowerUps = new Set();
+    
+    // Define power-up types with weights (higher = more common)
+    this.powerUpTypes = [
+      { name: 'Pistol', color: '#FFD700', weight: 30, rarity: 'common' },
+      { name: 'Health Pack', color: '#4CAF50', weight: 25, rarity: 'common' },
+      { name: 'Ammo Pack', color: '#FF9800', weight: 20, rarity: 'common' },
+      { name: 'Armor', color: '#2196F3', weight: 15, rarity: 'uncommon' },
+      { name: 'Speed Boost', color: '#9C27B0', weight: 8, rarity: 'rare' },
+      { name: 'Damage Boost', color: '#F44336', weight: 5, rarity: 'very rare' },
+      { name: 'Rocket Launcher', color: '#FF1744', weight: 2, rarity: 'legendary' }
+    ];
+    
+    // Calculate total weight for probability calculations
+    this.totalWeight = this.powerUpTypes.reduce((sum, item) => sum + item.weight, 0);
   }
 
   update(dt) {
@@ -49,21 +63,32 @@ export class SpawnManager {
     }
   }
 
-  respawnPowerUp(state, spot) {
-    const powerUpTypes = [
-      { name: 'Pistol', color: '#FFD700' },
-      { name: 'Health Pack', color: '#4CAF50' },
-      { name: 'Ammo Pack', color: '#FF9800' }
-    ];
+  // Weighted random selection
+  selectWeightedPowerUp() {
+    const random = Math.random() * this.totalWeight;
+    let currentWeight = 0;
     
-    // Randomly select power-up type
-    const powerUpType = powerUpTypes[Math.floor(state.rand() * powerUpTypes.length)];
+    for (const powerUp of this.powerUpTypes) {
+      currentWeight += powerUp.weight;
+      if (random <= currentWeight) {
+        return powerUp;
+      }
+    }
+    
+    // Fallback to most common if something goes wrong
+    return this.powerUpTypes[0];
+  }
+
+  respawnPowerUp(state, spot) {
+    // Use weighted random selection
+    const powerUpType = this.selectWeightedPowerUp();
     
     const item = {
       type: 'item',
       pos: new Vec2(spot.x, spot.y),
       name: powerUpType.name,
       color: powerUpType.color,
+      rarity: powerUpType.rarity,
       spotId: state.pickupSpots.indexOf(spot)
     };
     

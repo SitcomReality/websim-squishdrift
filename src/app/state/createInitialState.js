@@ -54,33 +54,18 @@ export function createInitialState(seed = null) {
   
   // Spawn initial power-ups at all pickup spots
   const powerUpTypes = [
-    { name: 'Pistol',        color: '#FFD700', weight: 40 },
-    { name: 'Health Pack',   color: '#4CAF50', weight: 25 },
-    { name: 'Police Bribes', color: '#8A2BE2', weight: 15 },
-    { name: 'Machine Gun',   color: '#FF4500', weight: 12 },
-    { name: 'Rocket Launcher',color: '#FF1493', weight: 8  }
+    { name: 'Pistol', color: '#FFD700' },
+    { name: 'Health Pack', color: '#4CAF50' },
+    { name: 'Ammo Pack', color: '#FF9800' }
   ];
-
-  // Pre-compute cumulative weights for weighted random selection
-  const totalWeight = powerUpTypes.reduce((sum, p) => sum + p.weight, 0);
-
+  
   for (const spot of state.pickupSpots) {
-    let random = state.rand() * totalWeight;
-    let selected = powerUpTypes[powerUpTypes.length - 1]; // fallback
-    
-    for (const pu of powerUpTypes) {
-      if (random < pu.weight) {
-        selected = pu;
-        break;
-      }
-      random -= pu.weight;
-    }
-
+    const powerUpType = powerUpTypes[Math.floor(rand() * powerUpTypes.length)];
     const item = {
       type: 'item',
       pos: new Vec2(spot.x, spot.y),
-      name: selected.name,
-      color: selected.color,
+      name: powerUpType.name,
+      color: powerUpType.color,
       spotId: state.pickupSpots.indexOf(spot)
     };
     state.entities.push(item);

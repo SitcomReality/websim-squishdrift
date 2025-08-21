@@ -29,9 +29,6 @@ export class WeaponSystem {
     // Handle weapon pickup
     this.handleWeaponPickup(state, player);
     
-    // Handle health pickup
-    this.handleHealthPickup(state, player);
-    
     // Handle firing
     if (player.equippedWeapon && !player.inVehicle) {
       this.handleWeaponFiring(state, player, input, state.debugOverlay?.enabled || false);
@@ -111,55 +108,6 @@ export class WeaponSystem {
         // Break after picking up one weapon
         break;
       }
-    }
-  }
-
-  handleHealthPickup(state, player) {
-    const healthItems = state.entities.filter(e => 
-      e.type === 'item' && e.name === 'Health Pack'
-    );
-    
-    for (let i = healthItems.length - 1; i >= 0; i--) {
-      const healthItem = healthItems[i];
-      if (Math.hypot(player.pos.x - healthItem.pos.x, player.pos.y - healthItem.pos.y) < 1) {
-        // Calculate actual health gained
-        const maxHp = player.health.maxHp || 100;
-        const currentHp = player.health.hp;
-        const potentialGain = 15;
-        const actualGain = Math.min(potentialGain, maxHp - currentHp);
-        
-        // Apply health
-        player.health.heal(actualGain);
-        
-        // Show pickup text with actual amount gained
-        this.damageTextSystem.addPickupText(state, healthItem.pos, `+${actualGain}`, '#4CAF50');
-        
-        // Update HUD health bar
-        this.updateHealthBar(state, player);
-        
-        // Remove the health item from entities
-        const index = state.entities.indexOf(healthItem);
-        if (index > -1) {
-          state.entities.splice(index, 1);
-        }
-        
-        // Mark pickup spot as empty for respawn
-        if (typeof healthItem.spotId === 'number' && state?.pickupSpots?.[healthItem.spotId]) {
-          state.pickupSpots[healthItem.spotId].hasItem = false;
-        }
-        
-        // Break after picking up one health pack
-        break;
-      }
-    }
-  }
-
-  updateHealthBar(state, player) {
-    if (!player.health) return;
-    
-    const hpBarEl = document.getElementById('hp-bar');
-    if (hpBarEl) {
-      hpBarEl.style.width = `${player.health.getPercent() * 100}%`;
     }
   }
 

@@ -21,9 +21,6 @@ export class GameEngine {
     this.stateManager.initialize();
     this.hudManager.initialize();
 
-    // Expose input manager to stateManager so systems can read input via stateManager
-    this.stateManager.inputManager = this.inputManager;
-
     // Ensure state knows about the canvas for systems that reference it
     if (this.stateManager.state) this.stateManager.state.canvas = canvas;
 
@@ -36,10 +33,9 @@ export class GameEngine {
       };
     }
 
-    // Expose commonly used references for external code (main.js expects these)
+    // Expose commonly used references for external code
     this.debugOverlay = this.debugManager.debugOverlay;
     this.renderer = this.renderingManager.renderer;
-    // Make debugOverlay available on state for renderer/debug visuals
     if (this.stateManager.state) this.stateManager.state.debugOverlay = this.debugOverlay;
 
     // Listen for restart events
@@ -52,14 +48,12 @@ export class GameEngine {
     // Skip updates if player is dead
     if (this.deathSystem.isDead) return;
 
-    // Run game systems which may read input.pressed; clear pressed AFTER systems run.
+    // Run game systems
     this.systemManager.update(dt);
     this.spawnManager.update(dt);
     this.deathSystem.update(this.stateManager.state, dt);
 
-    // Now update input manager to perform any end-of-frame housekeeping.
-    // Note: InputSystem.update() is intentionally a no-op; we need to clear the
-    // one-frame 'pressed' set so presses are only valid for a single update cycle.
+    // Update input manager
     this.inputManager.update();
     if (this.inputManager?.inputSystem?.clearPressed) {
       this.inputManager.inputSystem.clearPressed();

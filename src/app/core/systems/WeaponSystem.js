@@ -76,22 +76,61 @@ export class WeaponSystem {
   }
 
   handleWeaponPickup(state, player) {
-    // Handle both 'item' and 'weapon' types
+    // Handle all item pickups including health
     const items = state.entities.filter(e => 
-      (e.type === 'item' && e.name === 'Pistol') || 
-      (e.type === 'weapon' && e.weaponType === 'pistol')
+      (e.type === 'item' && ['Pistol', 'Health Pack', 'Police Bribes', 'Machine Gun', 'Rocket Launcher'].includes(e.name))
     );
     
     for (let i = items.length - 1; i >= 0; i--) {
       const item = items[i];
       if (Math.hypot(player.pos.x - item.pos.x, player.pos.y - item.pos.y) < 1) {
-        player.equippedWeapon = { ...this.weapons['pistol'] };
-        player.equippedWeapon.ammo = player.equippedWeapon.maxAmmo;
-        player.equippedWeapon.lastFireTime = 0;
-        player.equippedWeapon.isReloading = false;
         
-        // Show pickup text
-        this.damageTextSystem.addPickupText(state, item.pos, 'PISTOL');
+        // Handle health pack pickup
+        if (item.name === 'Health Pack') {
+          // Restore 15 HP
+          const oldHp = player.health.hp;
+          player.health.heal(15);
+          const healed = player.health.hp - oldHp;
+          
+          // Show pickup text
+          this.damageTextSystem.addPickupText(state, item.pos, `+${healed}`);
+          
+          // Remove health pack from entities
+          const index = state.entities.indexOf(item);
+          if (index > -1) {
+            state.entities.splice(index, 1);
+          }
+          
+          // Mark pickup spot as empty for respawn
+          if (typeof item.spotId === 'number' && state?.pickupSpots?.[item.spotId]) {
+            state.pickupSpots[item.spotId].hasItem = false;
+          }
+          
+          continue; // Skip weapon pickup logic for health
+        }
+        
+        // Handle weapon pickup
+        if (item.name === 'Pistol') {
+          player.equippedWeapon = { ...this.weapons['pistol'] };
+          player.equippedWeapon.ammo = player.equippedWeapon.maxAmmo;
+          player.equippedWeapon.lastFireTime = 0;
+          player.equippedWeapon.isReloading = false;
+          
+          // Show pickup text
+          this.damageTextSystem.addPickupText(state, item.pos, 'PISTOL');
+          
+          // Create ammo bar if it doesn't exist
+          this.createAmmoBar();
+          
+          const itemNameEl = document.getElementById('item-name');
+          if (itemNameEl) itemNameEl.textContent = player.equippedWeapon.name;
+        }
+        
+        // Handle other weapon pickups
+        if (['Police Bribes', 'Machine Gun', 'Rocket Launcher'].includes(item.name)) {
+          // Placeholder for future weapon implementation
+          this.damageTextSystem.addPickupText(state, item.pos, item.name);
+        }
         
         // Remove the item from entities
         const index = state.entities.indexOf(item);
@@ -99,14 +138,10 @@ export class WeaponSystem {
           state.entities.splice(index, 1);
         }
         
-        // Create ammo bar if it doesn't exist
-        this.createAmmoBar();
-        
-        const itemNameEl = document.getElementById('item-name');
-        if (itemNameEl) itemNameEl.textContent = player.equippedWeapon.name;
-        
-        // Break after picking up one weapon
-        break;
+        // Mark pickup spot as empty for respawn
+        if (typeof item.spotId === 'number' && state?.pickupSpots?.[item.spotId]) {
+          state.pickupSpots[item.spotId].hasItem = false;
+        }
       }
     }
   }

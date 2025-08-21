@@ -6,25 +6,17 @@ export class SpawnManager {
     this.stateManager = stateManager;
     this.spawnedPowerUps = new Set();
     
-    // Define pickup weights for respawning
-    this.pickupWeights = {
-      'Pistol': 50,
-      'Health Pack': 30,
-      'Police Bribes': 20,
-      'Machine Gun': 8,
-      'Rocket Launcher': 8
-    };
-    
-    this.totalWeight = Object.values(this.pickupWeights).reduce((sum, weight) => sum + weight, 0);
-    
-    // Define pickup types with their properties
-    this.pickupTypes = [
-      { name: 'Pistol', color: '#FFD700', type: 'pistol' },
-      { name: 'Health Pack', color: '#4CAF50', type: 'health' },
-      { name: 'Police Bribes', color: '#8B4513', type: 'bribes' },
-      { name: 'Machine Gun', color: '#FF5722', type: 'machinegun' },
-      { name: 'Rocket Launcher', color: '#E91E63', type: 'rocket' }
+    // Weighted pickup types
+    this.powerUpTypes = [
+      { name: 'Pistol',        color: '#FFD700', weight: 40 },
+      { name: 'Health Pack',   color: '#4CAF50', weight: 25 },
+      { name: 'Police Bribes', color: '#8A2BE2', weight: 15 },
+      { name: 'Machine Gun',   color: '#FF4500', weight: 12 },
+      { name: 'Rocket Launcher',color: '#FF1493', weight: 8 }
     ];
+    
+    // Pre-compute total weight
+    this.totalWeight = this.powerUpTypes.reduce((sum, p) => sum + p.weight, 0);
   }
 
   update(dt) {
@@ -70,34 +62,28 @@ export class SpawnManager {
   }
 
   respawnPowerUp(state, spot) {
-    const powerUpType = this.selectWeightedPickup(state.rand);
+    // Weighted random selection
+    let random = state.rand() * this.totalWeight;
+    let selected = this.powerUpTypes[this.powerUpTypes.length - 1]; // fallback
+    
+    for (const pu of this.powerUpTypes) {
+      if (random < pu.weight) {
+        selected = pu;
+        break;
+      }
+      random -= pu.weight;
+    }
     
     const item = {
       type: 'item',
       pos: new Vec2(spot.x, spot.y),
-      name: powerUpType.name,
-      color: powerUpType.color,
-      spotId: state.pickupSpots.indexOf(spot),
-      pickupType: powerUpType.type
+      name: selected.name,
+      color: selected.color,
+      spotId: state.pickupSpots.indexOf(spot)
     };
     
     state.entities.push(item);
     spot.hasItem = true;
-  }
-
-  selectWeightedPickup(rand) {
-    let random = rand() * this.totalWeight;
-    let cumulative = 0;
-    
-    for (const [name, weight] of Object.entries(this.pickupWeights)) {
-      cumulative += weight;
-      if (random <= cumulative) {
-        return this.pickupTypes.find(t => t.name === name);
-      }
-    }
-    
-    // Fallback to pistol
-    return this.pickupTypes[0];
   }
 
   despawnEntities(state, player, despawnRadius) {

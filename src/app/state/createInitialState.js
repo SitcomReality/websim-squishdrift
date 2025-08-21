@@ -52,28 +52,36 @@ export function createInitialState(seed = null) {
     }
   }
   
-  // Define pickup weights (higher = more common)
-  const pickupWeights = {
-    'Pistol': 50,
-    'Health Pack': 30,
-    'Police Bribes': 20,
-    'Machine Gun': 8,
-    'Rocket Launcher': 8
-  };
-  
-  // Calculate total weight for probability distribution
-  const totalWeight = Object.values(pickupWeights).reduce((sum, weight) => sum + weight, 0);
-  
   // Spawn initial power-ups at all pickup spots
+  const powerUpTypes = [
+    { name: 'Pistol',        color: '#FFD700', weight: 40 },
+    { name: 'Health Pack',   color: '#4CAF50', weight: 25 },
+    { name: 'Police Bribes', color: '#8A2BE2', weight: 15 },
+    { name: 'Machine Gun',   color: '#FF4500', weight: 12 },
+    { name: 'Rocket Launcher',color: '#FF1493', weight: 8  }
+  ];
+
+  // Pre-compute cumulative weights for weighted random selection
+  const totalWeight = powerUpTypes.reduce((sum, p) => sum + p.weight, 0);
+
   for (const spot of state.pickupSpots) {
-    const powerUpType = selectWeightedPickup(pickupWeights, totalWeight, rand);
+    let random = state.rand() * totalWeight;
+    let selected = powerUpTypes[powerUpTypes.length - 1]; // fallback
+    
+    for (const pu of powerUpTypes) {
+      if (random < pu.weight) {
+        selected = pu;
+        break;
+      }
+      random -= pu.weight;
+    }
+
     const item = {
       type: 'item',
       pos: new Vec2(spot.x, spot.y),
-      name: powerUpType.name,
-      color: powerUpType.color,
-      spotId: state.pickupSpots.indexOf(spot),
-      pickupType: powerUpType.type
+      name: selected.name,
+      color: selected.color,
+      spotId: state.pickupSpots.indexOf(spot)
     };
     state.entities.push(item);
     spot.hasItem = true;
@@ -135,28 +143,4 @@ export function createInitialState(seed = null) {
   }
   
   return state;
-}
-
-// Helper function to select a weighted random pickup
-function selectWeightedPickup(weights, totalWeight, rand) {
-  const types = [
-    { name: 'Pistol', color: '#FFD700', type: 'pistol' },
-    { name: 'Health Pack', color: '#4CAF50', type: 'health' },
-    { name: 'Police Bribes', color: '#8B4513', type: 'bribes' },
-    { name: 'Machine Gun', color: '#FF5722', type: 'machinegun' },
-    { name: 'Rocket Launcher', color: '#E91E63', type: 'rocket' }
-  ];
-  
-  let random = rand() * totalWeight;
-  let cumulative = 0;
-  
-  for (const [name, weight] of Object.entries(weights)) {
-    cumulative += weight;
-    if (random <= cumulative) {
-      return types.find(t => t.name === name);
-    }
-  }
-  
-  // Fallback to pistol if something goes wrong
-  return types[0];
 }

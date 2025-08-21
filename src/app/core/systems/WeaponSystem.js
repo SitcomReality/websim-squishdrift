@@ -14,26 +14,6 @@ export class WeaponSystem {
         projectileSize: 0.1,
         maxAmmo: 12,
         reloadTime: 1000 // ms
-      },
-      machinegun: {
-        name: 'Machine Gun',
-        damage: 35,
-        range: 25,
-        fireRate: 150,
-        projectileSpeed: 18,
-        projectileSize: 0.12,
-        maxAmmo: 30,
-        reloadTime: 2000
-      },
-      rocket: {
-        name: 'Rocket Launcher',
-        damage: 100,
-        range: 30,
-        fireRate: 500,
-        projectileSpeed: 12,
-        projectileSize: 0.2,
-        maxAmmo: 4,
-        reloadTime: 3000
       }
     };
     this.damageTextSystem = new DamageTextSystem();
@@ -98,33 +78,20 @@ export class WeaponSystem {
   handleWeaponPickup(state, player) {
     // Handle both 'item' and 'weapon' types
     const items = state.entities.filter(e => 
-      (e.type === 'item' && ['Pistol', 'Health Pack', 'Police Bribes', 'Machine Gun', 'Rocket Launcher'].includes(e.name)) || 
+      (e.type === 'item' && e.name === 'Pistol') || 
       (e.type === 'weapon' && e.weaponType === 'pistol')
     );
     
     for (let i = items.length - 1; i >= 0; i--) {
       const item = items[i];
       if (Math.hypot(player.pos.x - item.pos.x, player.pos.y - item.pos.y) < 1) {
-        // Handle different pickup types
-        if (item.name === 'Health Pack') {
-          player.health.heal(50);
-          this.damageTextSystem.addPickupText(state, item.pos, 'HEALTH');
-        } else if (item.name === 'Police Bribes') {
-          // Reduce wanted level
-          if (state.emergencyServices) {
-            state.emergencyServices.wantedLevel = Math.max(0, state.emergencyServices.wantedLevel - 2);
-          }
-          this.damageTextSystem.addPickupText(state, item.pos, 'BRIBES');
-        } else {
-          // Handle weapons
-          const weaponType = item.pickupType || 'pistol';
-          player.equippedWeapon = { ...this.weapons[weaponType] };
-          player.equippedWeapon.ammo = player.equippedWeapon.maxAmmo;
-          player.equippedWeapon.lastFireTime = 0;
-          player.equippedWeapon.isReloading = false;
-          
-          this.damageTextSystem.addPickupText(state, item.pos, item.name.toUpperCase());
-        }
+        player.equippedWeapon = { ...this.weapons['pistol'] };
+        player.equippedWeapon.ammo = player.equippedWeapon.maxAmmo;
+        player.equippedWeapon.lastFireTime = 0;
+        player.equippedWeapon.isReloading = false;
+        
+        // Show pickup text
+        this.damageTextSystem.addPickupText(state, item.pos, 'PISTOL');
         
         // Remove the item from entities
         const index = state.entities.indexOf(item);
@@ -132,18 +99,13 @@ export class WeaponSystem {
           state.entities.splice(index, 1);
         }
         
-        // Mark spot empty for respawning
-        if (typeof item.spotId === 'number' && state?.pickupSpots?.[item.spotId]) {
-          state.pickupSpots[item.spotId].hasItem = false;
-        }
-        
         // Create ammo bar if it doesn't exist
         this.createAmmoBar();
         
         const itemNameEl = document.getElementById('item-name');
-        if (itemNameEl) itemNameEl.textContent = item.name;
+        if (itemNameEl) itemNameEl.textContent = player.equippedWeapon.name;
         
-        // Break after picking up one item
+        // Break after picking up one weapon
         break;
       }
     }

@@ -52,21 +52,28 @@ export function createInitialState(seed = null) {
     }
   }
   
-  // Spawn initial power-ups at all pickup spots
-  const powerUpTypes = [
-    { name: 'Pistol', color: '#FFD700' },
-    { name: 'Health Pack', color: '#4CAF50' },
-    { name: 'Ammo Pack', color: '#FF9800' }
-  ];
+  // Define pickup weights (higher = more common)
+  const pickupWeights = {
+    'Pistol': 50,
+    'Health Pack': 30,
+    'Police Bribes': 20,
+    'Machine Gun': 8,
+    'Rocket Launcher': 8
+  };
   
+  // Calculate total weight for probability distribution
+  const totalWeight = Object.values(pickupWeights).reduce((sum, weight) => sum + weight, 0);
+  
+  // Spawn initial power-ups at all pickup spots
   for (const spot of state.pickupSpots) {
-    const powerUpType = powerUpTypes[Math.floor(rand() * powerUpTypes.length)];
+    const powerUpType = selectWeightedPickup(pickupWeights, totalWeight, rand);
     const item = {
       type: 'item',
       pos: new Vec2(spot.x, spot.y),
       name: powerUpType.name,
       color: powerUpType.color,
-      spotId: state.pickupSpots.indexOf(spot)
+      spotId: state.pickupSpots.indexOf(spot),
+      pickupType: powerUpType.type
     };
     state.entities.push(item);
     spot.hasItem = true;
@@ -128,4 +135,28 @@ export function createInitialState(seed = null) {
   }
   
   return state;
+}
+
+// Helper function to select a weighted random pickup
+function selectWeightedPickup(weights, totalWeight, rand) {
+  const types = [
+    { name: 'Pistol', color: '#FFD700', type: 'pistol' },
+    { name: 'Health Pack', color: '#4CAF50', type: 'health' },
+    { name: 'Police Bribes', color: '#8B4513', type: 'bribes' },
+    { name: 'Machine Gun', color: '#FF5722', type: 'machinegun' },
+    { name: 'Rocket Launcher', color: '#E91E63', type: 'rocket' }
+  ];
+  
+  let random = rand() * totalWeight;
+  let cumulative = 0;
+  
+  for (const [name, weight] of Object.entries(weights)) {
+    cumulative += weight;
+    if (random <= cumulative) {
+      return types.find(t => t.name === name);
+    }
+  }
+  
+  // Fallback to pistol if something goes wrong
+  return types[0];
 }

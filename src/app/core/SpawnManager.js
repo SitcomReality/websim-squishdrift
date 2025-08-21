@@ -6,19 +6,25 @@ export class SpawnManager {
     this.stateManager = stateManager;
     this.spawnedPowerUps = new Set();
     
-    // Define power-up types with weights (higher = more common)
-    this.powerUpTypes = [
-      { name: 'Pistol', color: '#FFD700', weight: 30, rarity: 'common' },
-      { name: 'Health Pack', color: '#4CAF50', weight: 25, rarity: 'common' },
-      { name: 'Ammo Pack', color: '#FF9800', weight: 20, rarity: 'common' },
-      { name: 'Armor', color: '#2196F3', weight: 15, rarity: 'uncommon' },
-      { name: 'Speed Boost', color: '#9C27B0', weight: 8, rarity: 'rare' },
-      { name: 'Damage Boost', color: '#F44336', weight: 5, rarity: 'very rare' },
-      { name: 'Rocket Launcher', color: '#FF1744', weight: 2, rarity: 'legendary' }
-    ];
+    // Define pickup weights for respawning
+    this.pickupWeights = {
+      'Pistol': 50,
+      'Health Pack': 30,
+      'Police Bribes': 20,
+      'Machine Gun': 8,
+      'Rocket Launcher': 8
+    };
     
-    // Calculate total weight for probability calculations
-    this.totalWeight = this.powerUpTypes.reduce((sum, item) => sum + item.weight, 0);
+    this.totalWeight = Object.values(this.pickupWeights).reduce((sum, weight) => sum + weight, 0);
+    
+    // Define pickup types with their properties
+    this.pickupTypes = [
+      { name: 'Pistol', color: '#FFD700', type: 'pistol' },
+      { name: 'Health Pack', color: '#4CAF50', type: 'health' },
+      { name: 'Police Bribes', color: '#8B4513', type: 'bribes' },
+      { name: 'Machine Gun', color: '#FF5722', type: 'machinegun' },
+      { name: 'Rocket Launcher', color: '#E91E63', type: 'rocket' }
+    ];
   }
 
   update(dt) {
@@ -63,37 +69,35 @@ export class SpawnManager {
     }
   }
 
-  // Weighted random selection
-  selectWeightedPowerUp() {
-    const random = Math.random() * this.totalWeight;
-    let currentWeight = 0;
-    
-    for (const powerUp of this.powerUpTypes) {
-      currentWeight += powerUp.weight;
-      if (random <= currentWeight) {
-        return powerUp;
-      }
-    }
-    
-    // Fallback to most common if something goes wrong
-    return this.powerUpTypes[0];
-  }
-
   respawnPowerUp(state, spot) {
-    // Use weighted random selection
-    const powerUpType = this.selectWeightedPowerUp();
+    const powerUpType = this.selectWeightedPickup(state.rand);
     
     const item = {
       type: 'item',
       pos: new Vec2(spot.x, spot.y),
       name: powerUpType.name,
       color: powerUpType.color,
-      rarity: powerUpType.rarity,
-      spotId: state.pickupSpots.indexOf(spot)
+      spotId: state.pickupSpots.indexOf(spot),
+      pickupType: powerUpType.type
     };
     
     state.entities.push(item);
     spot.hasItem = true;
+  }
+
+  selectWeightedPickup(rand) {
+    let random = rand() * this.totalWeight;
+    let cumulative = 0;
+    
+    for (const [name, weight] of Object.entries(this.pickupWeights)) {
+      cumulative += weight;
+      if (random <= cumulative) {
+        return this.pickupTypes.find(t => t.name === name);
+      }
+    }
+    
+    // Fallback to pistol
+    return this.pickupTypes[0];
   }
 
   despawnEntities(state, player, despawnRadius) {

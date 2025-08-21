@@ -92,38 +92,28 @@ export function createInitialState(seed = null) {
     state.entities.push({ type:'npc', pos:new Vec2(n.x+0.5, n.y+0.5), from:{x:n.x,y:n.y}, to: next, t: 0, speed: 0.2 + rand()*0.15 });
   }
   
-  // Create pickup spots at the center of each block
-  // Use original city layout coordinates before perimeter expansion
-  const cityLayout = new CityLayout(blocksWide, blocksHigh);
-  const pickupSpots = [];
+  // Create pickup spots at the center of each block and spawn an initial pickup (pistol)
+  // Use map properties instead of cityLayout
+  const shift = 2; // This matches the shift in MapGen.js
+  const mapOffset = 2;
   
+  state.pickupSpots = [];
   for (let by = 0; by < blocksHigh; by++) {
     for (let bx = 0; bx < blocksWide; bx++) {
-      const origin = cityLayout.getBlockOrigin(bx, by);
-      const centerX = origin.x + Math.floor(cityLayout.W / 2) + 0.5;
-      const centerY = origin.y + Math.floor(cityLayout.W / 2) + 0.5;
-      
-      // Adjust for the perimeter expansion
-      const adjustedX = centerX + shift;
-      const adjustedY = centerY + shift;
-      
-      const spotId = pickupSpots.length;
-      pickupSpots.push({ x: adjustedX, y: adjustedY, hasItem: false });
-      
-      // Spawn initial pistol at this spot
-      const item = { 
-        type: 'item', 
-        pos: new Vec2(adjustedX, adjustedY), 
-        name: 'Pistol', 
-        color: '#FFD700', 
-        spotId 
-      };
+      const W = map.W; // Get W from the generated map
+      const MED = map.MED; // Get MED from the generated map
+      const originX = mapOffset + bx * (W + MED);
+      const originY = mapOffset + by * (W + MED);
+      const centerX = originX + Math.floor(W / 2) + 0.5 + shift; // Add shift here
+      const centerY = originY + Math.floor(W / 2) + 0.5 + shift; // Add shift here
+      const spotId = state.pickupSpots.length;
+      state.pickupSpots.push({ x: centerX, y: centerY, hasItem: false });
+      // Spawn initial pistol at each spot
+      const item = { type: 'item', pos: new Vec2(centerX, centerY), name: 'Pistol', color: '#FFD700', spotId };
       state.entities.push(item);
-      pickupSpots[spotId].hasItem = true;
+      state.pickupSpots[spotId].hasItem = true;
     }
   }
-  
-  state.pickupSpots = pickupSpots;
   
   return state;
 }

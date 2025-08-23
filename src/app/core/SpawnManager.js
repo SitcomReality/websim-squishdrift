@@ -29,6 +29,8 @@ export class SpawnManager {
       : player.pos;
     
     this.spawnEntitiesNearPlayer(state, referencePos, innerSpawnRadius, outerSpawnRadius);
+    // Spawn pickups at spots when within spawn annulus
+    this.spawnPickupsNearPlayer(state, referencePos, innerSpawnRadius, outerSpawnRadius);
   }
 
   despawnEntities(state, player, despawnRadius) {
@@ -137,6 +139,27 @@ export class SpawnManager {
         });
         
         state.entities.push(vehicle);
+      }
+    }
+  }
+
+  spawnPickupsNearPlayer(state, referencePos, innerSpawnRadius, outerSpawnRadius) {
+    const spots = state.pickupSpots || [];
+    for (let i = 0; i < spots.length; i++) {
+      const spot = spots[i];
+      const dist = Math.hypot(spot.x - referencePos.x, spot.y - referencePos.y);
+      if (dist >= innerSpawnRadius && dist <= outerSpawnRadius && !spot.hasItem) {
+        const alreadyExists = state.entities.some(e => e.type === 'item' && e.spotId === i);
+        if (!alreadyExists) {
+          state.entities.push({
+            type: 'item',
+            pos: new Vec2(spot.x, spot.y),
+            name: 'Pistol',
+            color: '#FFD700',
+            spotId: i
+          });
+          spot.hasItem = true;
+        }
       }
     }
   }

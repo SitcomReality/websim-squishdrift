@@ -34,44 +34,6 @@ export function createInitialState(seed = null) {
   player.pos.x = spawnX; player.pos.y = spawnY; state.camera.x = spawnX; state.camera.y = spawnY;
   player.vel = { x: 0, y: 0 }; player.mass = 80; player.hitboxW = 0.15; player.hitboxH = 0.15;
   
-  // Create pickup spots at the center of each block
-  state.pickupSpots = [];
-  const ORIGINAL_MAP_OFFSET = 2; // CityLayout.mapOffset
-  const MAP_GEN_SHIFT = 2; // shift applied in MapGen.js
-  const W = map.W;
-  const MED = map.MED;
-  
-  for (let by = 0; by < blocksHigh; by++) {
-    for (let bx = 0; bx < blocksWide; bx++) {
-      const originX = ORIGINAL_MAP_OFFSET + MED + bx * (W + MED) + MAP_GEN_SHIFT;
-      const originY = ORIGINAL_MAP_OFFSET + MED + by * (W + MED) + MAP_GEN_SHIFT;
-      const centerX = originX + Math.floor(W / 2) + 0.5;
-      const centerY = originY + Math.floor(W / 2) + 0.5;
-      const spotId = state.pickupSpots.length;
-      state.pickupSpots.push({ x: centerX, y: centerY, hasItem: false });
-    }
-  }
-  
-  // Spawn initial power-ups at all pickup spots
-  const powerUpTypes = [
-    { name: 'Pistol', color: '#FFD700' },
-    { name: 'Health Pack', color: '#4CAF50' },
-    { name: 'Ammo Pack', color: '#FF9800' }
-  ];
-  
-  for (const spot of state.pickupSpots) {
-    const powerUpType = powerUpTypes[Math.floor(rand() * powerUpTypes.length)];
-    const item = {
-      type: 'item',
-      pos: new Vec2(spot.x, spot.y),
-      name: powerUpType.name,
-      color: powerUpType.color,
-      spotId: state.pickupSpots.indexOf(spot)
-    };
-    state.entities.push(item);
-    spot.hasItem = true;
-  }
-  
   // Spawn empty vehicle using new system
   const emptyVehicleTypes = ['compact', 'sedan', 'truck', 'sports'];
   const randomEmptyType = emptyVehicleTypes[Math.floor(rand() * emptyVehicleTypes.length)];
@@ -95,6 +57,7 @@ export function createInitialState(seed = null) {
     const next = spawnNode.next[Math.floor(rand() * spawnNode.next.length)];
     const vehicleType = vehicleTypes[i % vehicleTypes.length];
     
+    // Determine rotation based on road direction
     let rot = 0;
     switch(spawnNode.dir) {
       case 'N': rot = -Math.PI/2; break;
@@ -122,9 +85,36 @@ export function createInitialState(seed = null) {
   const sortedByDist = pedNodes.slice().sort((a,b)=> (Math.hypot(a.x+0.5-spawnX,a.y+0.5-spawnY) - Math.hypot(b.x+0.5-spawnX,b.y+0.5-spawnY)));
   for (let i=0;i<spawnCount;i++){
     const n = sortedByDist[i];
+    // Skip spawning on median strips
     if (map.tiles[Math.floor(n.y)][Math.floor(n.x)] === Tile.Median) continue;
+    
     const next = (n.neighbors && n.neighbors.length) ? n.neighbors[Math.floor(rand()*n.neighbors.length)] : { x:n.x, y:n.y };
     state.entities.push({ type:'npc', pos:new Vec2(n.x+0.5, n.y+0.5), from:{x:n.x,y:n.y}, to: next, t: 0, speed: 0.2 + rand()*0.15 });
+  }
+  
+  // Create pickup spots at the center of each block and spawn an initial pickup (pistol)
+  // Use map properties instead of cityLayout
+  // Map generation applies a fixed 2-tile shift when expanding the map.
+  // Compute block center using the same formula as CityLayout.getBlockOrigin:
+  // center = (original mapOffset + MED + bx*(W+MED)) + floor(W/2) + 0.5, then add the generation shift.
+  state.pickupSpots = [];
+  const ORIGINAL_MAP_OFFSET = 2; // CityLayout.mapOffset
+  const MAP_GEN_SHIFT = 2; // shift applied in MapGen.js
+  const W = map.W;
+  const MED = map.MED;
+  for (let by = 0; by < blocksHigh; by++) {
+    for (let bx = 0; bx < blocksWide; bx++) {
+      const originX = ORIGINAL_MAP_OFFSET + MED + bx * (W + MED) + MAP_GEN_SHIFT;
+      const originY = ORIGINAL_MAP_OFFSET + MED + by * (W + MED) + MAP_GEN_SHIFT;
+      const centerX = originX + Math.floor(W / 2) + 0.5;
+      const centerY = originY + Math.floor(W / 2) + 0.5;
+      const spotId = state.pickupSpots.length;
+      state.pickupSpots.push({ x: centerX, y: centerY, hasItem: false });
+      // Spawn initial pistol at each spot
+      const item = { type: 'item', pos: new Vec2(centerX, centerY), name: 'Pistol', color: '#FFD700', spotId };
+      state.entities.push(item);
+      state.pickupSpots[spotId].hasItem = true;
+    }
   }
   
   return state;

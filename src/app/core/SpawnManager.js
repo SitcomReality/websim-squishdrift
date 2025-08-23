@@ -4,7 +4,6 @@ import { Vec2 } from '../../utils/Vec2.js';
 export class SpawnManager {
   constructor(stateManager) {
     this.stateManager = stateManager;
-    this.spawnedPowerUps = new Set();
   }
 
   update(dt) {
@@ -13,7 +12,6 @@ export class SpawnManager {
     if (!player) return;
 
     this.updateSpawning(player);
-    this.updatePowerUpRespawns(state, player);
   }
 
   updateSpawning(player) {
@@ -26,49 +24,11 @@ export class SpawnManager {
     this.despawnEntities(state, player, despawnRadius);
 
     // Spawn new entities within spawn radius but outside inner radius
-    const referenceEntity = state.control.inVehicle 
-      ? state.control.vehicle 
-      : player;
-    
-    this.spawnEntitiesNearPlayer(state, referenceEntity, innerSpawnRadius, outerSpawnRadius);
-  }
-
-  updatePowerUpRespawns(state, player) {
-    // Check if player is near any pickup spots that need respawning
     const referencePos = state.control.inVehicle 
       ? state.control.vehicle.pos 
       : player.pos;
-
-    for (const spot of state.pickupSpots || []) {
-      const distance = Math.hypot(spot.x - referencePos.x, spot.y - referencePos.y);
-      
-      // Respawn power-up if player is within range and spot is empty
-      if (distance <= 8 && !spot.hasItem) {
-        this.respawnPowerUp(state, spot);
-      }
-    }
-  }
-
-  respawnPowerUp(state, spot) {
-    const powerUpTypes = [
-      { name: 'Pistol', color: '#FFD700' },
-      { name: 'Health Pack', color: '#4CAF50' },
-      { name: 'Ammo Pack', color: '#FF9800' }
-    ];
     
-    // Randomly select power-up type
-    const powerUpType = powerUpTypes[Math.floor(state.rand() * powerUpTypes.length)];
-    
-    const item = {
-      type: 'item',
-      pos: new Vec2(spot.x, spot.y),
-      name: powerUpType.name,
-      color: powerUpType.color,
-      spotId: state.pickupSpots.indexOf(spot)
-    };
-    
-    state.entities.push(item);
-    spot.hasItem = true;
+    this.spawnEntitiesNearPlayer(state, referencePos, innerSpawnRadius, outerSpawnRadius);
   }
 
   despawnEntities(state, player, despawnRadius) {

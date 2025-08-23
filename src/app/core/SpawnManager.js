@@ -4,8 +4,6 @@ import { Vec2 } from '../../utils/Vec2.js';
 export class SpawnManager {
   constructor(stateManager) {
     this.stateManager = stateManager;
-    this.respawnCheckInterval = 500; // Check every 500ms
-    this.lastRespawnCheck = 0;
   }
 
   update(dt) {
@@ -13,124 +11,24 @@ export class SpawnManager {
     const player = state.entities.find(e => e.type === 'player');
     if (!player) return;
 
-    // Update respawn timer
-    this.lastRespawnCheck += dt;
-    if (this.lastRespawnCheck < this.respawnCheckInterval) return;
-    this.lastRespawnCheck = 0;
+    this.updateSpawning(player);
+  }
 
-    // Find all spawn locations
-    const spawnLocations = this.findSpawnLocations(state);
+  updateSpawning(player) {
+    const state = this.stateManager.getState();
+    const innerSpawnRadius = 8;
+    const outerSpawnRadius = 10;
+    const despawnRadius = 12;
+
+    // Despawn entities outside despawn radius
+    this.despawnEntities(state, player, despawnRadius);
+
+    // Spawn new entities within spawn radius but outside inner radius
+    const referencePos = state.control.inVehicle 
+      ? state.control.vehicle.pos 
+      : player.pos;
     
-    // Check which locations player is in range of
-    const nearbySpawns = spawnLocations.filter(location => {
-      const distance = Vec2.Distance(player.pos, location.pos);
-      return distance <= location.spawnRadius;
-    });
-
-    // Spawn items at locations player enters
-    this.spawnItemsAtLocations(state, nearbySpawns);
-  }
-
-  findSpawnLocations(state) {
-    const map = state.world.map;
-    const locations = [];
-
-    // 1. Building centers (where pickups originally spawn)
-    for (let by = 0; by < state.cityLayout.blocksHigh; by++) {
-      for (let bx = 0; bx < state.cityLayout.blocksWide; bx++) {
-        const origin = state.cityLayout.getBlockOrigin(bx, by);
-        const centerX = origin.x + state.cityLayout.W / 2;
-        const centerY = origin.y + state.cityLayout.W / 2;
-        
-        locations.push({
-          pos: new Vec2(centerX, centerY),
-          spawnRadius: state.cityLayout.W / 2,
-          type: 'building'
-        });
-      }
-    }
-
-    // 2. Pedestrian spawn points
-    const pedNodes = state.world.map.peds?.list || [];
-    for (const node of pedNodes) {
-      locations.push({
-        pos: new Vec2(node.x + 0.5, node.y + 0.5),
-        spawnRadius: 1.5,
-        type: 'pedestrian'
-      });
-    }
-
-    // 3. Road intersection centers
-    const roads = state.world.map.roads;
-    for (const { cx, cy } of roads.roundabouts || []) {
-      locations.push({
-        pos: new Vec2(cx, cy),
-        spawnRadius: 2,
-        type: 'intersection'
-      });
-    }
-
-    return locations;
-  }
-
-  spawnItemsAtLocations(state, locations) {
-    // Track which locations have active spawns
-    if (!state.activeSpawns) state.activeSpawns = new Map();
-
-    locations.forEach(location => {
-      const key = `${location.pos.x},${location.pos.y}`;
-      
-      // Skip if already active
-      if (state.activeSpawns.has(key)) return;
-
-      // Check if location is already occupied
-      const occupied = state.entities.some(e => 
-        e.type === 'item' && 
-        Math.abs(e.pos.x - location.pos.x) < 0.5 && 
-        Math.abs(e.pos.y - location.pos.y) < 0.5
-      );
-
-      if (!occupied) {
-        // Spawn new item
-        const item = this.createItemForLocation(state, location);
-        state.entities.push(item);
-        state.activeSpawns.set(key, item);
-      }
-    });
-
-    // Clean up spawns player has left
-    for (const [key, item] of state.activeSpawns) {
-      const [x, y] = key.split(',').map(Number);
-      const distance = Vec2.Distance(player.pos, new Vec2(x, y));
-      
-      if (distance > location.spawnRadius + 1) {
-        // Remove item if it exists
-        const index = state.entities.indexOf(item);
-        if (index > -1) {
-          state.entities.splice(index, 1);
-        }
-        state.activeSpawns.delete(key);
-      }
-    }
-  }
-
-  createItemForLocation(state, location) {
-    const items = [
-      { type: 'item', name: 'Health Pack', color: '#4CAF50' },
-      { type: 'item', name: 'Ammo Crate', color: '#FF9800' },
-      { type: 'item', name: 'Armor', color: '#2196F3' },
-      { type: 'item', name: 'Grenade', color: '#F44336' }
-    ];
-
-    const itemType = items[state.rand() * items.length | 0];
-    
-    return {
-      type: 'item',
-      pos: new Vec2(location.pos.x, location.pos.y),
-      name: itemType.name,
-      color: itemType.color,
-      spotId: `${location.type}_${Math.floor(location.pos.x)}_${Math.floor(location.pos.y)}`
-    };
+    this.spawnEntitiesNearPlayer(state, referencePos, innerSpawnRadius, outerSpawnRadius);
   }
 
   despawnEntities(state, player, despawnRadius) {

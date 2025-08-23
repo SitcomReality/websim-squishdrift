@@ -4,8 +4,6 @@ import { Vec2 } from '../../utils/Vec2.js';
 export class SpawnManager {
   constructor(stateManager) {
     this.stateManager = stateManager;
-    this.lastPickupCheck = 0;
-    this.pickupCheckInterval = 1000; // Check every second
   }
 
   update(dt) {
@@ -14,42 +12,6 @@ export class SpawnManager {
     if (!player) return;
 
     this.updateSpawning(player);
-    this.updatePickupSpawning(state, player, dt);
-  }
-
-  updatePickupSpawning(state, player, dt) {
-    this.lastPickupCheck += dt * 1000;
-    if (this.lastPickupCheck < this.pickupCheckInterval) return;
-    this.lastPickupCheck = 0;
-
-    const referencePos = state.control.inVehicle 
-      ? state.control.vehicle.pos 
-      : player.pos;
-
-    const innerRadius = 8;
-    const outerRadius = 10;
-
-    // Check each pickup spot
-    if (!state.pickupSpots) return;
-
-    for (const spot of state.pickupSpots) {
-      const distance = Math.hypot(spot.x - referencePos.x, spot.y - referencePos.y);
-      
-      // Only spawn if within the radius range
-      if (distance >= innerRadius && distance <= outerRadius && !spot.hasItem) {
-        // Spawn a new pistol at this location
-        const item = {
-          type: 'item',
-          pos: new Vec2(spot.x, spot.y),
-          name: 'Pistol',
-          color: '#FFD700',
-          spotId: state.pickupSpots.indexOf(spot)
-        };
-        
-        state.entities.push(item);
-        spot.hasItem = true;
-      }
-    }
   }
 
   updateSpawning(player) {
@@ -175,6 +137,23 @@ export class SpawnManager {
         });
         
         state.entities.push(vehicle);
+      }
+    }
+
+    // Respawn pickups when a pickup spot enters the spawn ring
+    this.respawnPickups(state, referencePos, innerSpawnRadius, outerSpawnRadius);
+  }
+
+  // Respawn pickup items when their spot comes into the spawn ring
+  respawnPickups(state, referencePos, inner, outer) {
+    if (!state?.pickupSpots || !referencePos) return;
+    for (let i = 0; i < state.pickupSpots.length; i++) {
+      const spot = state.pickupSpots[i];
+      if (spot.hasItem) continue;
+      const d = Math.hypot(spot.x - referencePos.x, spot.y - referencePos.y);
+      if (d <= outer && d >= inner) {
+        state.entities.push({ type: 'item', pos: { x: spot.x, y: spot.y }, name: 'Pistol', color: '#FFD700', spotId: i });
+        spot.hasItem = true;
       }
     }
   }

@@ -5,10 +5,7 @@ export class DamageTextSystem {
   }
 
   update(state, dt) {
-    // Ensure damageTexts array exists
-    if (!state.damageTexts) {
-      state.damageTexts = [];
-    }
+    if (!state.damageTexts) state.damageTexts = [];
     
     // Update existing texts
     for (let i = state.damageTexts.length - 1; i >= 0; i--) {
@@ -32,11 +29,6 @@ export class DamageTextSystem {
   }
 
   addDamageText(state, pos, damage, color = '#ff3333') {
-    // Ensure damageTexts array exists
-    if (!state.damageTexts) {
-      state.damageTexts = [];
-    }
-    
     const text = {
       type: 'damage_text',
       pos: { x: pos.x, y: pos.y },
@@ -51,11 +43,6 @@ export class DamageTextSystem {
   }
 
   addText(state, pos, text, color = '#ffffff', size = 14) {
-    // Ensure damageTexts array exists
-    if (!state.damageTexts) {
-      state.damageTexts = [];
-    }
-    
     const floatingText = {
       type: 'floating_text',
       pos: { x: pos.x, y: pos.y },
@@ -70,11 +57,6 @@ export class DamageTextSystem {
   }
 
   addPickupText(state, pos, itemName, color = '#4CAF50') {
-    // Ensure damageTexts array exists
-    if (!state.damageTexts) {
-      state.damageTexts = [];
-    }
-    
     const pickupText = {
       type: 'pickup_text',
       pos: { x: pos.x, y: pos.y - 0.5 }, // Offset slightly above pickup

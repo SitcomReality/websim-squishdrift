@@ -139,5 +139,23 @@ export class SpawnManager {
         state.entities.push(vehicle);
       }
     }
+
+    // Respawn pickups when the player (or reference position) comes into range of a pickup spot.
+    // Pickup spots are created at game start and marked with hasItem; if an entry is empty and the
+    // reference position comes within the outerSpawnRadius, spawn the item and mark the spot occupied.
+    if (state.pickupSpots && state.pickupSpots.length) {
+      for (let i = 0; i < state.pickupSpots.length; i++) {
+        const spot = state.pickupSpots[i];
+        if (spot.hasItem) continue;
+        const dx = spot.x - referencePos.x;
+        const dy = spot.y - referencePos.y;
+        const distance = Math.hypot(dx, dy);
+        if (distance <= outerSpawnRadius) {
+          const item = { type: 'item', pos: { x: spot.x, y: spot.y }, name: 'Pistol', color: '#FFD700', spotId: i };
+          state.entities.push(item);
+          spot.hasItem = true;
+        }
+      }
+    }
   }
 }

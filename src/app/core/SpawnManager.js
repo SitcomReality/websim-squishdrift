@@ -139,22 +139,5 @@ export class SpawnManager {
         state.entities.push(vehicle);
       }
     }
-
-    // Respawn pickups when a pickup spot enters the spawn ring
-    this.respawnPickups(state, referencePos, innerSpawnRadius, outerSpawnRadius);
-  }
-
-  // Respawn pickup items when their spot comes into the spawn ring
-  respawnPickups(state, referencePos, inner, outer) {
-    if (!state?.pickupSpots || !referencePos) return;
-    for (let i = 0; i < state.pickupSpots.length; i++) {
-      const spot = state.pickupSpots[i];
-      if (spot.hasItem) continue;
-      const d = Math.hypot(spot.x - referencePos.x, spot.y - referencePos.y);
-      if (d <= outer && d >= inner) {
-        state.entities.push({ type: 'item', pos: { x: spot.x, y: spot.y }, name: 'Pistol', color: '#FFD700', spotId: i });
-        spot.hasItem = true;
-      }
-    }
   }
 }

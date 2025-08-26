@@ -171,10 +171,13 @@ export class VehicleCollisionSystem {
   addDamageIndicator(state, pos, damage) {
     if (!state.damageTexts) state.damageTexts = [];
     
+    // Ensure we have a valid damage value
+    const actualDamage = damage || 0;
+    
     const indicator = {
       type: 'damage_indicator',
       pos: { x: pos.x, y: pos.y },
-      damage: damage,
+      damage: actualDamage,
       age: 0,
       lifetime: 1.5
     };

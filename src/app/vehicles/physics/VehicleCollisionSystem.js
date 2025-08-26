@@ -25,7 +25,8 @@ export class VehicleCollisionSystem {
     const obbA = entityOBB(v);
     
     for (const o of others) {
-      const contact = obbOverlap(obbA, entityOBB(o)); if (!contact) continue;
+      const contact = obbOverlap(obbA, entityOBB(o));
+      if (!contact) continue;
       
       // Use contact normal for more predictable collision response
       const correctedContact = { ...contact, normal: this.smoothCollisionNormal(contact.normal, v, o) };

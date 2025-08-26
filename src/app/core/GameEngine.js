@@ -166,6 +166,13 @@ export class GameEngine {
     newState.scoringSystem = this.scoringSystem;
     newState.damageTextSystem = this.damageTextSystem;
     newState.explosionSystem = this.explosionSystem;
+
+    // Reload explosion image for the new state
+    const explosionImage = new Image();
+    explosionImage.src = '/Explosion_001_Tile_8x8_256x256.png';
+    explosionImage.onload = () => {
+      newState.explosionImage = explosionImage;
+    };
     
     // Reset scoring system
     this.scoringSystem.reset();

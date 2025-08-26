@@ -7,6 +7,7 @@ import { HUDManager } from './HUDManager.js';
 import { DebugManager } from './DebugManager.js';
 import { DeathSystem } from './systems/DeathSystem.js';
 import { ScoringSystem } from './systems/ScoringSystem.js';
+import { DamageTextSystem } from './systems/DamageTextSystem.js';
 
 export class GameEngine {
   constructor(canvas, { debugEl } = {}) {
@@ -19,6 +20,7 @@ export class GameEngine {
     this.debugManager = new DebugManager(debugEl, this.stateManager);
     this.deathSystem = new DeathSystem();
     this.scoringSystem = new ScoringSystem();
+    this.damageTextSystem = new DamageTextSystem();
     
     this.stateManager.initialize();
     this.hudManager.initialize();
@@ -32,6 +34,11 @@ export class GameEngine {
     // Add scoring system to state
     if (this.stateManager.state) {
       this.stateManager.state.scoringSystem = this.scoringSystem;
+    }
+
+    // Add damage text system to state
+    if (this.stateManager.state) {
+      this.stateManager.state.damageTextSystem = this.damageTextSystem;
     }
 
     // Add start time for death screen stats
@@ -63,6 +70,9 @@ export class GameEngine {
     this.systemManager.update(dt);
     this.spawnManager.update(dt);
     this.deathSystem.update(this.stateManager.state, dt);
+    
+    // Always update damage text system regardless of player state
+    this.damageTextSystem.update(this.stateManager.state, dt);
     
     // Update HUD with scoring info
     this.updateHUD();

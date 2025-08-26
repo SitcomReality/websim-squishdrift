@@ -1,9 +1,13 @@
 import { VehiclePhysicsConstants } from './VehiclePhysicsConstants.js';
 import { Tile } from '../../../map/TileTypes.js';
 import { entityOBB, aabbForTile, aabbForTrunk, obbOverlap, resolveDynamicDynamic, resolveDynamicStatic } from './geom.js';
+import { Health } from '../../components/Health.js';
 
 export class VehicleCollisionSystem {
-  constructor() {}
+  constructor() {
+    this.collisionDamageThreshold = 0.5; // Reduced from 2.0 to 0.5 for easier damage
+    this.damageMultiplier = 20.0; // Increased from 15.0 to 20.0 for more damage
+  }
 
   update(state, dt) {
     for (const v of state.entities.filter(e => e.type === 'vehicle')) {
@@ -19,15 +23,71 @@ export class VehicleCollisionSystem {
   handleVehicleCollisions(state, v) {
     const others = state.entities.filter(e => e.type === 'vehicle' && e !== v);
     const obbA = entityOBB(v);
+    
     for (const o of others) {
-      const contact = obbOverlap(obbA, entityOBB(o)); if (!contact) continue;
+      const contact = obbOverlap(obbA, entityOBB(o));
+      if (!contact) continue;
       
       // Use contact normal for more predictable collision response
       const correctedContact = { ...contact, normal: this.smoothCollisionNormal(contact.normal, v, o) };
       resolveDynamicDynamic(v, o, correctedContact, 0.4); // Reduced restitution for smoother bounce
       
+      // Calculate collision damage
+      this.calculateCollisionDamage(state, v, o);
+      
       // Apply damping to reduce flickering
       this.applyCollisionDamping(v, o);
+    }
+  }
+
+  calculateCollisionDamage(state, vehicleA, vehicleB) {
+    // Ensure both vehicles have health
+    if (!vehicleA.health) {
+      vehicleA.health = new Health(vehicleA.maxHealth || 100);
+    }
+    if (!vehicleB.health) {
+      vehicleB.health = new Health(vehicleB.maxHealth || 100);
+    }
+
+    // Calculate relative velocity
+    const relativeVel = {
+      x: (vehicleA.vel?.x || 0) - (vehicleB.vel?.x || 0),
+      y: (vehicleA.vel?.y || 0) - (vehicleB.vel?.y || 0)
+    };
+    
+    const impactSpeed = Math.hypot(relativeVel.x, relativeVel.y);
+    
+    // Only cause damage if impact speed exceeds threshold
+    if (impactSpeed < this.collisionDamageThreshold) {
+      return;
+    }
+    
+    // Calculate damage based on impact force - ensure minimum 1 damage
+    const totalMass = vehicleA.mass + vehicleB.mass;
+    const damageA = Math.max(1, Math.round((impactSpeed * vehicleB.mass / totalMass) * this.damageMultiplier));
+    const damageB = Math.max(1, Math.round((impactSpeed * vehicleA.mass / totalMass) * this.damageMultiplier));
+    
+    // Apply damage
+    vehicleA.health.takeDamage(damageA);
+    vehicleB.health.takeDamage(damageB);
+    
+    // Register crimes if vehicles are destroyed
+    if (state.scoringSystem) {
+      if (!vehicleA.health.isAlive()) {
+        state.scoringSystem.addCrime(state, 'destroy_vehicle', vehicleA);
+      }
+      if (!vehicleB.health.isAlive()) {
+        state.scoringSystem.addCrime(state, 'destroy_vehicle', vehicleB);
+      }
+    }
+    
+    // Add damage indicators - use integers only
+    this.addDamageIndicator(state, vehicleA.pos, damageA);
+    this.addDamageIndicator(state, vehicleB.pos, damageB);
+    
+    // Add screen shake for significant impacts
+    if (impactSpeed > 3.0 && state.cameraSystem) {
+      state.cameraSystem.addShake(Math.min(1, impactSpeed / 8));
     }
   }
 
@@ -245,5 +305,24 @@ export class VehicleCollisionSystem {
   isTreeTrunk(gx, gy, map) {
     const t = map.tiles[gy][gx];
     return t === 10; // Assuming 10 is the tile type for tree trunks
+  }
+
+  addDamageIndicator(state, pos, damage) {
+    if (!state.damageTexts) state.damageTexts = [];
+    
+    // Ensure we have a valid damage value
+    const actualDamage = damage || 0;
+    
+    const indicator = {
+      type: 'damage_indicator',
+      pos: { x: pos.x, y: pos.y },
+      text: `-${actualDamage}`, // Use text property with proper formatting
+      color: '#ff3333',
+      age: 0,
+      lifetime: 1.5,
+      size: 14
+    };
+    
+    state.damageTexts.push(indicator);
   }
 }

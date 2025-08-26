@@ -38,13 +38,13 @@ export class DamageTextSystem {
       color,
       age: 0,
       lifetime: this.fadeDuration,
-      size: 14 // font size in pixels
+      size: 7 // Reduced from 14 to 7 (50% of original)
     };
     
     state.damageTexts.push(text);
   }
 
-  addText(state, pos, text, color = '#ffffff', size = 14) {
+  addText(state, pos, text, color = '#ffffff', size = 7) { // Reduced default size
     if (!state.damageTexts) state.damageTexts = [];
     
     const floatingText = {
@@ -70,7 +70,7 @@ export class DamageTextSystem {
       color,
       age: 0,
       lifetime: 2.0, // Longer duration for pickups
-      size: 16 // Slightly larger for visibility
+      size: 8 // Reduced from 16 to 8 (50% of original)
     };
     
     state.damageTexts.push(pickupText);

@@ -2,69 +2,28 @@ import { Vec2 } from '../../../utils/Vec2.js';
 import { Health } from '../../components/Health.js';
 import { DamageTextSystem } from './DamageTextSystem.js';
 import { ScoringSystem } from './ScoringSystem.js';
+import { WeaponDefinitions } from './weapons/WeaponDefinitions.js';
+import { ProjectileManager } from './weapons/ProjectileManager.js';
+import { CollisionHandler } from './weapons/CollisionHandler.js';
 
 export class WeaponSystem {
   constructor() {
-    this.weapons = {
-      pistol: {
-        name: 'Pistol',
-        damage: 25,
-        range: 20,
-        fireRate: 300, // ms between shots
-        projectileSpeed: 15,
-        projectileSize: 0.1,
-        maxAmmo: 12,
-        reloadTime: 1000 // ms
-      },
-      ak47: {
-        name: 'AK47',
-        damage: 35,
-        range: 25,
-        fireRate: 100,
-        projectileSpeed: 20,
-        projectileSize: 0.1,
-        maxAmmo: 30,
-        reloadTime: 2000
-      },
-      shotgun: {
-        name: 'Shotgun',
-        damage: 15, // per pellet
-        range: 10,
-        fireRate: 800,
-        projectileSpeed: 12,
-        projectileSize: 0.08,
-        pellets: 8,
-        spread: 0.25, // radians
-        maxAmmo: 6,
-        reloadTime: 2500
-      },
-      grenade: {
-        name: 'Grenade',
-        damage: 100, // at center of explosion
-        range: 12,
-        fireRate: 1000,
-        projectileSpeed: 8,
-        projectileSize: 0.2,
-        maxAmmo: 5,
-        reloadTime: 0, // no reload, just uses up stock
-        isThrowable: true,
-        fuse: 2.0 // seconds
-      }
-    };
+    this.weapons = WeaponDefinitions;
     this.damageTextSystem = new DamageTextSystem();
     this.scoringSystem = new ScoringSystem();
+    this.projectileManager = new ProjectileManager();
+    this.collisionHandler = new CollisionHandler();
   }
 
   update(state, input, dt) {
     const player = state.entities.find(e => e.type === 'player');
     if (!player) return;
 
-    // Initialize scoring system if not exists
+    // Initialize systems
     if (!state.scoringSystem) {
       state.scoringSystem = new ScoringSystem();
     }
 
-    // Skip weapon handling if player is in vehicle
     if (player.inVehicle) return;
 
     // Handle weapon pickup
@@ -75,11 +34,8 @@ export class WeaponSystem {
       this.handleWeaponFiring(state, player, input, state.debugOverlay?.enabled || false);
     }
 
-    // Update damage text system
-    this.damageTextSystem.update(state, dt);
-
     // Update projectiles
-    this.updateProjectiles(state, dt);
+    this.projectileManager.updateProjectiles(state, dt);
     
     // Update ammo bar
     this.updateAmmoBar(state, player);
@@ -203,340 +159,11 @@ export class WeaponSystem {
         return;
       }
       
-      this.fireProjectile(state, player);
+      this.projectileManager.fireProjectile(state, player);
       weapon.lastFireTime = now;
       
       if (!debugEnabled) {
         weapon.ammo--;
-      }
-    }
-  }
-
-  fireProjectile(state, player) {
-    const weapon = player.equippedWeapon;
-    const angle = player.facingAngle || Math.atan2(player.facing.y, player.facing.x);
-    const origin = (state.control?.inVehicle && state.control.vehicle?.pos) ? state.control.vehicle.pos : player.pos;
-    
-    if (weapon.name === 'Grenade') {
-      // Create grenade projectile that will explode into shrapnel
-      const grenade = {
-        type: 'projectile',
-        pos: new Vec2(origin.x, origin.y),
-        vel: new Vec2(
-          Math.cos(angle) * weapon.projectileSpeed,
-          Math.sin(angle) * weapon.projectileSpeed
-        ),
-        damage: 0, // Grenade itself does no damage
-        range: weapon.range,
-        lifetime: weapon.range / weapon.projectileSpeed,
-        age: 0,
-        size: weapon.projectileSize,
-        owner: 'player',
-        isGrenade: true,
-        explosionDamage: weapon.damage,
-        shrapnelCount: 12,
-        shrapnelRange: 8
-      };
-      state.entities.push(grenade);
-    } else {
-      // Handle other projectiles normally
-      const createProjectile = (projAngle) => ({
-        type: 'projectile',
-        pos: new Vec2(origin.x, origin.y),
-        vel: new Vec2(
-          Math.cos(projAngle) * weapon.projectileSpeed,
-          Math.sin(projAngle) * weapon.projectileSpeed
-        ),
-        damage: weapon.damage,
-        range: weapon.range,
-        lifetime: weapon.range / weapon.projectileSpeed,
-        age: 0,
-        size: weapon.projectileSize,
-        owner: 'player'
-      });
-
-      if (weapon.name === 'Shotgun' && weapon.pellets) {
-        for (let i = 0; i < weapon.pellets; i++) {
-          const spreadAngle = angle + (Math.random() - 0.5) * weapon.spread;
-          state.entities.push(createProjectile(spreadAngle));
-        }
-      } else {
-        state.entities.push(createProjectile(angle));
-      }
-    }
-  }
-
-  updateProjectiles(state, dt) {
-    const projectiles = state.entities.filter(e => e.type === 'projectile');
-    
-    for (let i = projectiles.length - 1; i >= 0; i--) {
-      const proj = projectiles[i];
-      
-      proj.pos.x += proj.vel.x * dt;
-      proj.pos.y += proj.vel.y * dt;
-      
-      proj.age += dt;
-      if (proj.age >= proj.lifetime) {
-        state.entities.splice(state.entities.indexOf(proj), 1);
-        continue;
-      }
-      
-      // Check for grenade explosion
-      if (proj.isGrenade) {
-        const collision = this.checkGrenadeCollision(state, proj);
-        if (collision || proj.age >= proj.lifetime) {
-          this.explodeGrenade(state, proj);
-          state.entities.splice(state.entities.indexOf(proj), 1);
-          continue;
-        }
-      }
-      
-      // Handle regular projectile collision
-      if (this.checkCollisions(state, proj)) {
-        state.entities.splice(state.entities.indexOf(proj), 1);
-      }
-    }
-  }
-
-  checkGrenadeCollision(state, grenade) {
-    const map = state.world.map;
-    
-    // Check map boundaries
-    if (grenade.pos.x < 0 || grenade.pos.x >= map.width || 
-        grenade.pos.y < 0 || grenade.pos.y >= map.height) {
-      return true;
-    }
-    
-    // Check tree trunk collision
-    const tx = Math.floor(grenade.pos.x);
-    const ty = Math.floor(grenade.pos.y);
-    if (this.isTreeTrunkCollision(grenade.pos.x, grenade.pos.y, tx, ty, state)) {
-      return true;
-    }
-    
-    // Check tile collision
-    if (tx >= 0 && tx < map.width && ty >= 0 && ty < map.height) {
-      const tile = map.tiles[ty][tx];
-      if ([8, 9].includes(tile)) {
-        return true;
-      }
-    }
-    
-    // Check entity collisions (vehicles, NPCs)
-    const entities = state.entities.filter(e => 
-      (e.type === 'vehicle' || e.type === 'npc') && 
-      e !== grenade.owner
-    );
-    
-    for (const entity of entities) {
-      const distance = Math.hypot(
-        grenade.pos.x - entity.pos.x,
-        grenade.pos.y - entity.pos.y
-      );
-      
-      const radius = entity.type === 'vehicle' ? 0.5 : 0.2;
-      if (distance < radius + grenade.size) {
-        return true;
-      }
-    }
-    
-    return false;
-  }
-
-  explodeGrenade(state, grenade) {
-    // Create explosion effect
-    if (state.explosionSystem) {
-      state.explosionSystem.createExplosion(state, grenade.pos);
-    }
-    
-    // Create shrapnel projectiles
-    const shrapnelCount = grenade.shrapnelCount || 12;
-    const damage = grenade.explosionDamage || 100;
-    const range = grenade.shrapnelRange || 8;
-    
-    for (let i = 0; i < shrapnelCount; i++) {
-      const angle = (i / shrapnelCount) * Math.PI * 2;
-      const speed = 12 + Math.random() * 4; // Random speed variation
-      
-      const shrapnel = {
-        type: 'projectile',
-        pos: new Vec2(grenade.pos.x, grenade.pos.y),
-        vel: new Vec2(
-          Math.cos(angle) * speed,
-          Math.sin(angle) * speed
-        ),
-        damage: Math.round(damage * 0.6), // Shrapnel does 60% of grenade damage
-        range: range,
-        lifetime: range / speed,
-        age: 0,
-        size: 0.05, // Small shrapnel pieces
-        owner: grenade.owner,
-        isShrapnel: true
-      };
-      
-      state.entities.push(shrapnel);
-    }
-    
-    // Add screen shake
-    if (state.cameraSystem) {
-      state.cameraSystem.addShake(1.5);
-    }
-  }
-
-  checkCollisions(state, projectile) {
-    const map = state.world.map;
-    const tileSize = state.world.tileSize;
-    
-    // Check map boundaries
-    if (projectile.pos.x < 0 || projectile.pos.x >= map.width || 
-        projectile.pos.y < 0 || projectile.pos.y >= map.height) {
-      return true;
-    }
-    
-    // Check tree trunk collision
-    const tx = Math.floor(projectile.pos.x);
-    const ty = Math.floor(projectile.pos.y);
-    if (this.isTreeTrunkCollision(projectile.pos.x, projectile.pos.y, tx, ty, state)) {
-      return true;
-    }
-    
-    // Check tile collision
-    if (tx >= 0 && tx < map.width && ty >= 0 && ty < map.height) {
-      const tile = map.tiles[ty][tx];
-      if ([8, 9].includes(tile)) {
-        return true;
-      }
-    }
-    
-    // Check entity collisions
-    const entities = state.entities.filter(e => 
-      (e.type === 'vehicle' || e.type === 'npc') && 
-      e !== projectile.owner
-    );
-
-    for (const entity of entities) {
-      const distance = Math.hypot(
-        projectile.pos.x - entity.pos.x,
-        projectile.pos.y - entity.pos.y
-      );
-      
-      const radius = entity.type === 'vehicle' ? 0.5 : 0.2;
-      if (distance < radius + projectile.size) {
-        // Register crime
-        if (entity.type === 'vehicle') {
-          state.scoringSystem.addCrime(state, 'shoot_vehicle', entity);
-          
-          // Check if it's a police vehicle
-          if (entity.vehicleType === 'emergency' && entity.color === '#0000FF') {
-            state.scoringSystem.addCrime(state, 'shoot_police_vehicle', entity);
-          }
-        }
-        
-        // Ensure entity has health
-        if (!entity.health) {
-          if (entity.type === 'vehicle') {
-            entity.health = new Health(entity.maxHealth || 100);
-          } else if (entity.type === 'npc') {
-            // NPCs die instantly to any damage
-            entity.health = new Health(1);
-          }
-        }
-        
-        // Apply damage
-        if (entity.type === 'npc') {
-          // NPCs die instantly
-          entity.health.hp = 0;
-          
-          // Register crime for killing pedestrian
-          state.scoringSystem.addCrime(state, 'kill_pedestrian', entity);
-          
-          // Check if it's a police officer
-          if (entity.isPolice) {
-            state.scoringSystem.addCrime(state, 'kill_police', entity);
-          }
-        } else {
-          // Vehicles take damage normally
-          entity.health.takeDamage(projectile.damage);
-          state.particleSystem?.emitSparks(state, entity.pos, 10, 4);
-        }
-        
-        // Show damage text
-        this.damageTextSystem.addDamageText(state, entity.pos, projectile.damage);
-        
-        // Handle vehicle destruction with explosion
-        if (entity.type === 'vehicle' && !entity.health.isAlive()) {
-          this.handleVehicleDestruction(state, entity);
-        }
-        
-        // Update stats
-        if (entity.type === 'npc') {
-          state.stats.enemiesKilled = (state.stats.enemiesKilled || 0) + 1;
-        } else if (entity.type === 'vehicle') {
-          state.stats.vehiclesDestroyed = (state.stats.vehiclesDestroyed || 0) + 1;
-          
-          // Register crime for destroying vehicle
-          if (!entity.health.isAlive()) {
-            state.scoringSystem.addCrime(state, 'destroy_vehicle', entity);
-          }
-        }
-        
-        // Handle entity destruction
-        if (!entity.health.isAlive()) {
-          const index = state.entities.indexOf(entity);
-          if (index > -1) {
-            if (entity.type === 'npc') {
-              const bloodStain = {
-                type: 'blood',
-                pos: { x: entity.pos.x, y: entity.pos.y },
-                size: 0.6 + Math.random() * 0.4,
-                color: `hsl(0, 70%, ${30 + Math.random() * 20}%)`,
-                rotation: Math.random() * Math.PI * 2
-              };
-              
-              if (state.bloodManager) {
-                state.bloodManager.addBlood(state, bloodStain);
-              } else {
-                state.entities.push(bloodStain);
-              }
-            }
-            state.entities.splice(index, 1);
-          }
-        }
-        
-        return true;
-      }
-    }
-    
-    return false;
-  }
-
-  handleVehicleDestruction(state, vehicle) {
-    // Create explosion using explosion system
-    if (state.explosionSystem) {
-      state.explosionSystem.createExplosion(state, vehicle.pos);
-    }
-    
-    // remove fixed-intensity shake; ExplosionSystem now handles distance-based shake
-    // if (state.cameraSystem) { state.cameraSystem.addShake(1.0); }
-    
-    // Register crimes
-    if (state.scoringSystem) {
-      state.scoringSystem.addCrime(state, 'destroy_vehicle', vehicle);
-    }
-    
-    // Remove vehicle from entities
-    const vehicleIndex = state.entities.indexOf(vehicle);
-    if (vehicleIndex > -1) {
-      state.entities.splice(vehicleIndex, 1);
-    }
-    
-    // If this was the player's vehicle, handle death
-    if (state.control?.vehicle === vehicle) {
-      const deathSystem = state._engine?.systems?.death || 
-                         state.deathSystem || 
-                         state._engine?.deathSystem;
-      if (deathSystem && deathSystem.handlePlayerDeath) {
-        deathSystem.handlePlayerDeath(state);
       }
     }
   }

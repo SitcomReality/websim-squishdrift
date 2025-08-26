@@ -27,30 +27,79 @@ export class CollisionSystem {
     for (const bullet of bullets) {
       for (const target of targets) {
         if (this.checkCollision(bullet, target, 0.35)) {
-          // Ensure health exists for vehicles
-          if (!target.health && target.type === 'vehicle') {
-            target.health = new Health(target.maxHealth || 100);
+          // Ensure entity has health
+          if (!target.health) {
+            if (target.type === 'vehicle') {
+              target.health = new Health(target.maxHealth || 100);
+            } else if (target.type === 'npc') {
+              // NPCs die instantly
+              target.health = new Health(1);
+              target.health.hp = 0;
+            }
           }
           
+          // Apply damage
+          target.health.takeDamage(25);
+          
+          // Handle vehicle destruction
+          if (target.type === 'vehicle') {
+            this.handleVehicleDestruction(state, target);
+          }
+          
+          // Trigger screen shake for player damage
           if (target.type === 'npc') {
-            // NPCs die instantly
-            target.health = new Health(1);
-            target.health.hp = 0;
-          } else {
-            // Vehicles take damage normally
-            target.health.takeDamage(25);
+            this.triggerShake(state, 0.5);
           }
           
           // Remove bullet on hit
           const bulletIndex = state.entities.indexOf(bullet);
           if (bulletIndex > -1) state.entities.splice(bulletIndex, 1);
           
-          // Remove destroyed targets
-          if (!target.health.isAlive()) {
+          // Handle NPC death
+          if (target.type === 'npc' && !target.health.isAlive()) {
+            const bloodStain = {
+              type: 'blood',
+              pos: new Vec2(target.pos.x, target.pos.y),
+              size: 0.6 + Math.random() * 0.4,
+              color: `hsl(0, 70%, ${30 + Math.random() * 20}%)`,
+              rotation: Math.random() * Math.PI * 2
+            };
+            
+            state.entities.push(bloodStain);
             const targetIndex = state.entities.indexOf(target);
             if (targetIndex > -1) state.entities.splice(targetIndex, 1);
           }
         }
+      }
+    }
+  }
+
+  handleVehicleDestruction(state, vehicle) {
+    if (!vehicle.health || vehicle.health.isAlive()) return;
+    
+    // Create explosion
+    if (state.explosionSystem) {
+      state.explosionSystem.createExplosion(state, vehicle.pos);
+    }
+    
+    // Register crimes
+    if (state.scoringSystem) {
+      state.scoringSystem.addCrime(state, 'destroy_vehicle', vehicle);
+    }
+    
+    // Remove vehicle from entities
+    const vehicleIndex = state.entities.indexOf(vehicle);
+    if (vehicleIndex > -1) {
+      state.entities.splice(vehicleIndex, 1);
+    }
+    
+    // If this was the player's vehicle, handle death
+    if (state.control?.vehicle === vehicle) {
+      const deathSystem = state._engine?.systems?.death || 
+                         state.deathSystem || 
+                         state._engine?.deathSystem;
+      if (deathSystem && deathSystem.handlePlayerDeath) {
+        deathSystem.handlePlayerDeath(state);
       }
     }
   }
@@ -137,7 +186,7 @@ export class CollisionSystem {
       const collisionRadius = playerRadius + vehicleRadius;
       
       if (this.checkCollision(player, vehicle, collisionRadius)) {
-        // Damage depends on vehicle movement toward the player (no damage if moving away)
+        // Compute damage based on vehicle movement vector relative to player
         const vx = vehicle.vel?.x || 0, vy = vehicle.vel?.y || 0;
         const speed = Math.hypot(vx, vy);
         if (speed > 0.01) {
@@ -145,20 +194,25 @@ export class CollisionSystem {
           const toPlayer = { x: player.pos.x - vehicle.pos.x, y: player.pos.y - vehicle.pos.y };
           const dist = Math.hypot(toPlayer.x, toPlayer.y) || 1;
           const toPlayerN = { x: toPlayer.x / dist, y: toPlayer.y / dist };
-          const alignment = vdir.x * toPlayerN.x + vdir.y * toPlayerN.y;
+          const alignment = vdir.x * toPlayerN.x + vdir.y * toPlayerN.y; // 1 => directly toward player
           if (alignment > 0) {
+            // Scale damage by speed and alignment; tune multiplier to keep similar feel
             const damage = Math.max(1, Math.round(speed * alignment * 20));
             const oldHealth = player.health.hp;
             player.health.takeDamage(damage);
             const damageTaken = oldHealth - player.health.hp;
             if (damageTaken > 0) {
               this.lastDamageTime = now;
-              this.addDamageText(state, player.pos, damage);
               this.triggerShake(state, Math.min(1, damageTaken / 50));
-              const k = Math.min(1, damage / 30) * 0.35;
-              player.pos.x += toPlayerN.x * k;
-              player.pos.y += toPlayerN.y * k;
+              // Add floating damage text
+              this.addDamageText(state, player.pos, damage);
             }
+            // Handle vehicle destruction if it runs out of health
+            this.handleVehicleDestruction(state, vehicle);
+            // Knockback away from vehicle (scaled by damage)
+            const k = Math.min(1, damage / 30) * 0.35;
+            player.pos.x += toPlayerN.x * k;
+            player.pos.y += toPlayerN.y * k;
           }
         }
       }

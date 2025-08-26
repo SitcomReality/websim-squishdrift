@@ -91,23 +91,9 @@ export class VehicleCollisionSystem {
       vehicleB.lastDamageTime = now;
     }
     
-    // Register crimes and create explosion if vehicles are destroyed
-    if (state.scoringSystem) {
-      if (!vehicleA.health.isAlive()) {
-        state.scoringSystem.addCrime(state, 'destroy_vehicle', vehicleA);
-        // Create explosion
-        if (state.explosionSystem) {
-          state.explosionSystem.createExplosion(state, vehicleA.pos);
-        }
-      }
-      if (!vehicleB.health.isAlive()) {
-        state.scoringSystem.addCrime(state, 'destroy_vehicle', vehicleB);
-        // Create explosion
-        if (state.explosionSystem) {
-          state.explosionSystem.createExplosion(state, vehicleB.pos);
-        }
-      }
-    }
+    // Check for vehicle destruction and handle consistently
+    this.handleVehicleDestruction(state, vehicleA);
+    this.handleVehicleDestruction(state, vehicleB);
     
     // Add damage indicators - use integers only
     if (canDamageA) this.addDamageIndicator(state, vehicleA.pos, damageA);
@@ -116,6 +102,36 @@ export class VehicleCollisionSystem {
     // Add screen shake for significant impacts
     if (impactSpeed > 3.0 && state.cameraSystem) {
       state.cameraSystem.addShake(Math.min(1, impactSpeed / 8));
+    }
+  }
+
+  handleVehicleDestruction(state, vehicle) {
+    if (!vehicle.health || vehicle.health.isAlive()) return;
+    
+    // Create explosion
+    if (state.explosionSystem) {
+      state.explosionSystem.createExplosion(state, vehicle.pos);
+    }
+    
+    // Register crimes
+    if (state.scoringSystem) {
+      state.scoringSystem.addCrime(state, 'destroy_vehicle', vehicle);
+    }
+    
+    // Remove vehicle from entities
+    const vehicleIndex = state.entities.indexOf(vehicle);
+    if (vehicleIndex > -1) {
+      state.entities.splice(vehicleIndex, 1);
+    }
+    
+    // If this was the player's vehicle, handle death
+    if (state.control?.vehicle === vehicle) {
+      const deathSystem = state._engine?.systems?.death || 
+                         state.deathSystem || 
+                         state._engine?.deathSystem;
+      if (deathSystem && deathSystem.handlePlayerDeath) {
+        deathSystem.handlePlayerDeath(state);
+      }
     }
   }
 
@@ -146,10 +162,7 @@ export class VehicleCollisionSystem {
             v.health.takeDamage(damage);
             v.lastDamageTime = now;
             
-            if (state.scoringSystem && !v.health.isAlive()) {
-              state.scoringSystem.addCrime(state, 'destroy_vehicle', v);
-            }
-            
+            this.handleVehicleDestruction(state, v);
             this.addDamageIndicator(state, v.pos, damage);
           }
         }
@@ -175,27 +188,6 @@ export class VehicleCollisionSystem {
       // Use contact normal for building collision
       const correctedContact = { ...contact, normal: contact.normal };
       resolveDynamicStatic(v, correctedContact, 0.2);
-      
-      // Calculate collision damage for building impact
-      const now = Date.now();
-      const canDamage = now - (v.lastDamageTime || 0) >= this.damageCooldown;
-      
-      if (canDamage) {
-        const impactSpeed = Math.hypot(v.vel?.x || 0, v.vel?.y || 0);
-        if (impactSpeed > this.collisionDamageThreshold) {
-          if (!v.health) v.health = new Health(v.maxHealth || 100);
-          const damage = Math.max(1, Math.round(impactSpeed * 8));
-          v.health.takeDamage(damage);
-          v.lastDamageTime = now;
-          
-          if (state.scoringSystem && !v.health.isAlive()) {
-            state.scoringSystem.addCrime(state, 'destroy_vehicle', v);
-          }
-          
-          this.addDamageIndicator(state, v.pos, damage);
-        }
-      }
-      
       // Reflect velocity for a bounce effect when hitting building tiles
       {
         const restitution = 0.6;
@@ -209,6 +201,23 @@ export class VehicleCollisionSystem {
       
       // Strong damping for building impacts
       this.applyBuildingDamping(v);
+      
+      // Calculate collision damage for building impact
+      const now = Date.now();
+      const canDamage = now - (v.lastDamageTime || 0) >= this.damageCooldown;
+      
+      if (canDamage) {
+        const impactSpeed = Math.hypot(v.vel?.x || 0, v.vel?.y || 0);
+        if (impactSpeed > this.collisionDamageThreshold) {
+          if (!v.health) v.health = new Health(v.maxHealth || 100);
+          const damage = Math.max(1, Math.round(impactSpeed * 8));
+          v.health.takeDamage(damage);
+          v.lastDamageTime = now;
+          
+          this.handleVehicleDestruction(state, v);
+          this.addDamageIndicator(state, v.pos, damage);
+        }
+      }
     }
   }
 

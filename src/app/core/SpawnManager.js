@@ -145,7 +145,8 @@ export class SpawnManager {
 
   spawnPickupsNearPlayer(state, referencePos, innerSpawnRadius, outerSpawnRadius) {
     const spots = state.pickupSpots || [];
-    const availablePickups = ['Pistol', 'AK47', 'Shotgun', 'Grenade'];
+    // Include health and bribe in the available pickups
+    const availablePickups = ['Pistol', 'AK47', 'Shotgun', 'Grenade', 'Health', 'Bribe'];
 
     for (let i = 0; i < spots.length; i++) {
       const spot = spots[i];

@@ -28,7 +28,7 @@ export class ParticleSystem {
         x: pos.x, y: pos.y,
         vx: Math.cos(a) * s, vy: Math.sin(a) * s * 0.5,
         life: 0.25 + Math.random() * 0.25,
-        size: 0.06 + Math.random() * 0.04,
+        size: (0.06 + Math.random() * 0.04) * 0.25, // 25% of original size
         color: 'rgba(255,200,50,1)'
       });
     }

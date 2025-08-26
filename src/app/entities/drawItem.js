@@ -1,9 +1,18 @@
 export function drawItem(r, state, item) {
   const { ctx } = r, ts = state.world.tileSize;
 
+  const imageMap = {
+    'Pistol': 'pistol',
+    'AK47': 'ak47',
+    'Shotgun': 'shotgun',
+    'Grenade': 'grenade'
+  };
+
+  const imageName = imageMap[item.name];
+
   // Handle image-based pickups
-  if (item.name === 'Pistol' && state.pickupImages?.pistol) {
-    const img = state.pickupImages.pistol;
+  if (imageName && state.pickupImages?.[imageName]) {
+    const img = state.pickupImages[imageName];
     const itemSize = ts * 0.75; // Make the pickup image about 3/4 of a tile size
     const aspect = img.width / img.height;
     const w = itemSize;

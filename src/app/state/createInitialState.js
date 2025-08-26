@@ -98,6 +98,7 @@ export function createInitialState(seed = null) {
   // Compute block center using the same formula as CityLayout.getBlockOrigin:
   // center = (original mapOffset + MED + bx*(W+MED)) + floor(W/2) + 0.5, then add the generation shift.
   state.pickupSpots = [];
+  const availablePickups = ['Pistol', 'AK47', 'Shotgun', 'Grenade'];
   const ORIGINAL_MAP_OFFSET = 2; // CityLayout.mapOffset
   const MAP_GEN_SHIFT = 2; // shift applied in MapGen.js
   const W = map.W;
@@ -110,8 +111,9 @@ export function createInitialState(seed = null) {
       const centerY = originY + Math.floor(W / 2) + 0.5;
       const spotId = state.pickupSpots.length;
       state.pickupSpots.push({ x: centerX, y: centerY, hasItem: false });
-      // Spawn initial pistol at each spot
-      const item = { type: 'item', pos: new Vec2(centerX, centerY), name: 'Pistol', color: '#FFD700', spotId };
+      // Spawn initial random weapon at each spot
+      const pickupName = availablePickups[Math.floor(rand() * availablePickups.length)];
+      const item = { type: 'item', pos: new Vec2(centerX, centerY), name: pickupName, color: '#FFD700', spotId };
       state.entities.push(item);
       state.pickupSpots[spotId].hasItem = true;
     }

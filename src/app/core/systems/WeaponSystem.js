@@ -15,6 +15,40 @@ export class WeaponSystem {
         projectileSize: 0.1,
         maxAmmo: 12,
         reloadTime: 1000 // ms
+      },
+      ak47: {
+        name: 'AK47',
+        damage: 35,
+        range: 25,
+        fireRate: 100,
+        projectileSpeed: 20,
+        projectileSize: 0.1,
+        maxAmmo: 30,
+        reloadTime: 2000
+      },
+      shotgun: {
+        name: 'Shotgun',
+        damage: 15, // per pellet
+        range: 10,
+        fireRate: 800,
+        projectileSpeed: 12,
+        projectileSize: 0.08,
+        pellets: 8,
+        spread: 0.25, // radians
+        maxAmmo: 6,
+        reloadTime: 2500
+      },
+      grenade: {
+        name: 'Grenade',
+        damage: 100, // at center of explosion
+        range: 12,
+        fireRate: 1000,
+        projectileSpeed: 8,
+        projectileSize: 0.2,
+        maxAmmo: 5,
+        reloadTime: 0, // no reload, just uses up stock
+        isThrowable: true,
+        fuse: 2.0 // seconds
       }
     };
     this.damageTextSystem = new DamageTextSystem();
@@ -85,20 +119,21 @@ export class WeaponSystem {
   handleWeaponPickup(state, player) {
     // Handle both 'item' and 'weapon' types
     const items = state.entities.filter(e => 
-      (e.type === 'item' && e.name === 'Pistol') || 
-      (e.type === 'weapon' && e.weaponType === 'pistol')
+      (e.type === 'item' && ['Pistol', 'AK47', 'Shotgun', 'Grenade'].includes(e.name)) || 
+      (e.type === 'weapon' && ['pistol', 'ak47', 'shotgun', 'grenade'].includes(e.weaponType))
     );
     
     for (let i = items.length - 1; i >= 0; i--) {
       const item = items[i];
       if (Math.hypot(player.pos.x - item.pos.x, player.pos.y - item.pos.y) < 1) {
-        player.equippedWeapon = { ...this.weapons['pistol'] };
+        const weaponKey = item.name.toLowerCase();
+        player.equippedWeapon = { ...this.weapons[weaponKey] };
         player.equippedWeapon.ammo = player.equippedWeapon.maxAmmo;
         player.equippedWeapon.lastFireTime = 0;
         player.equippedWeapon.isReloading = false;
         
         // Show pickup text
-        this.damageTextSystem.addPickupText(state, item.pos, 'PISTOL');
+        this.damageTextSystem.addPickupText(state, item.pos, item.name.toUpperCase());
         
         // Remove the item from entities
         const index = state.entities.indexOf(item);
@@ -182,12 +217,12 @@ export class WeaponSystem {
     const angle = player.facingAngle || Math.atan2(player.facing.y, player.facing.x);
     const origin = (state.control?.inVehicle && state.control.vehicle?.pos) ? state.control.vehicle.pos : player.pos;
     
-    const projectile = {
+    const createProjectile = (projAngle) => ({
       type: 'projectile',
       pos: new Vec2(origin.x, origin.y),
       vel: new Vec2(
-        Math.cos(angle) * weapon.projectileSpeed,
-        Math.sin(angle) * weapon.projectileSpeed
+        Math.cos(projAngle) * weapon.projectileSpeed,
+        Math.sin(projAngle) * weapon.projectileSpeed
       ),
       damage: weapon.damage,
       range: weapon.range,
@@ -195,9 +230,16 @@ export class WeaponSystem {
       age: 0,
       size: weapon.projectileSize,
       owner: 'player'
-    };
-    
-    state.entities.push(projectile);
+    });
+
+    if (weapon.name === 'Shotgun' && weapon.pellets) {
+      for (let i = 0; i < weapon.pellets; i++) {
+        const spreadAngle = angle + (Math.random() - 0.5) * weapon.spread;
+        state.entities.push(createProjectile(spreadAngle));
+      }
+    } else {
+      state.entities.push(createProjectile(angle));
+    }
   }
 
   updateProjectiles(state, dt) {

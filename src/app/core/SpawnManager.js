@@ -145,16 +145,19 @@ export class SpawnManager {
 
   spawnPickupsNearPlayer(state, referencePos, innerSpawnRadius, outerSpawnRadius) {
     const spots = state.pickupSpots || [];
+    const availablePickups = ['Pistol', 'AK47', 'Shotgun', 'Grenade'];
+
     for (let i = 0; i < spots.length; i++) {
       const spot = spots[i];
       const dist = Math.hypot(spot.x - referencePos.x, spot.y - referencePos.y);
       if (dist >= innerSpawnRadius && dist <= outerSpawnRadius && !spot.hasItem) {
         const alreadyExists = state.entities.some(e => e.type === 'item' && e.spotId === i);
         if (!alreadyExists) {
+          const pickupName = availablePickups[Math.floor(state.rand() * availablePickups.length)];
           state.entities.push({
             type: 'item',
             pos: new Vec2(spot.x, spot.y),
-            name: 'Pistol',
+            name: pickupName,
             color: '#FFD700',
             spotId: i
           });

@@ -118,6 +118,31 @@ export class DeathSystem {
 
     document.body.appendChild(deathOverlay);
 
+    // Start zooming out immediately
+    if (state.camera) {
+      const defaultZoom = state.camera.defaultZoom || 4;
+      const targetZoom = defaultZoom * 2; // Maximum debug zoom distance
+      
+      // Smooth zoom over 2 seconds
+      const startTime = Date.now();
+      const zoomDuration = 2000;
+      
+      const zoomOut = () => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / zoomDuration, 1);
+        
+        // Ease out cubic for smooth zoom
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        state.camera.zoom = state.camera.defaultZoom + (targetZoom - state.camera.defaultZoom) * easeOut;
+        
+        if (progress < 1) {
+          requestAnimationFrame(zoomOut);
+        }
+      };
+      
+      zoomOut();
+    }
+
     // Use setTimeout to trigger the fade-in animation
     setTimeout(() => {
       deathOverlay.style.background = 'rgba(0, 0, 0, 0.8)';

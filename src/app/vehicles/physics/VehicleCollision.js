@@ -150,27 +150,8 @@ export class VehicleCollisionSystem {
       if (this.isTreeTrunk(gx, gy, map)) {
         const contact = obbOverlap(obb, aabbForTrunk(gx, gy)); if (!contact) continue;
         const correctedContact = { ...contact, normal: contact.normal };
-        resolveDynamicStatic(v, correctedContact, 0.2);
-        
-        // Calculate collision damage for tree impact
-        const now = Date.now();
-        const canDamage = now - (v.lastDamageTime || 0) >= this.damageCooldown;
-        
-        if (canDamage) {
-          const impactSpeed = Math.hypot(v.vel?.x || 0, v.vel?.y || 0);
-          if (impactSpeed > this.collisionDamageThreshold) {
-            if (!v.health) v.health = new Health(v.maxHealth || 100);
-            const damage = Math.max(1, Math.round(impactSpeed * 5));
-            v.health.takeDamage(damage);
-            v.lastDamageTime = now;
-            state.particleSystem?.emitSparks(state, v.pos, Math.min(10, 3 + Math.floor(damage / 6)), 3.5);
-            
-            this.handleVehicleDestruction(state, v);
-            this.addDamageIndicator(state, v.pos, damage);
-          }
-        }
-        
-        // Add bounce reflection for trunk impacts
+        resolveDynamicStatic(v, correctedContact, 0.6); // Increased restitution from 0.2 to 0.6
+        // Reflect velocity along contact normal to produce a bounce effect
         {
           const restitution = 0.6;
           const speed = Math.hypot(v.vel.x || 0, v.vel.y || 0);
@@ -190,8 +171,8 @@ export class VehicleCollisionSystem {
       
       // Use contact normal for building collision
       const correctedContact = { ...contact, normal: contact.normal };
-      resolveDynamicStatic(v, correctedContact, 0.2);
-      // Reflect velocity for a bounce effect when hitting building tiles
+      resolveDynamicStatic(v, correctedContact, 0.6); // Increased restitution from 0.2 to 0.6
+      // Reflect velocity so vehicle bounces off walls/tiles rather than sticking
       {
         const restitution = 0.6;
         const speed = Math.hypot(v.vel.x || 0, v.vel.y || 0);
@@ -204,23 +185,6 @@ export class VehicleCollisionSystem {
       
       // Strong damping for building impacts
       this.applyBuildingDamping(v);
-      
-      // Calculate collision damage for building impact
-      const now = Date.now();
-      const canDamage = now - (v.lastDamageTime || 0) >= this.damageCooldown;
-      
-      if (canDamage) {
-        const impactSpeed = Math.hypot(v.vel?.x || 0, v.vel?.y || 0);
-        if (impactSpeed > this.collisionDamageThreshold) {
-          if (!v.health) v.health = new Health(v.maxHealth || 100);
-          const damage = Math.max(1, Math.round(impactSpeed * 8));
-          v.health.takeDamage(damage);
-          v.lastDamageTime = now;
-          
-          this.handleVehicleDestruction(state, v);
-          this.addDamageIndicator(state, v.pos, damage);
-        }
-      }
     }
   }
 
@@ -342,7 +306,7 @@ export class VehicleCollisionSystem {
       objA.vel.x *= dampingFactor;
       objA.vel.y *= dampingFactor;
     }
-    if (objB.vel) {
+    if (objB?.vel) {
       objB.vel.x *= dampingFactor;
       objB.vel.y *= dampingFactor;
     }
@@ -425,14 +389,4 @@ export class VehicleCollisionSystem {
         const restitution = 0.6;
         const speed = Math.hypot(v.vel.x || 0, v.vel.y || 0);
         const velDir = this.getVelocityDirection(v);
-        const reflect = this.calculateBounceNormal(velDir, correctedContact.normal);
-        const bounceFactor = Math.max(0.25, restitution * 0.8);
-        v.vel.x = reflect.x * speed * bounceFactor;
-        v.vel.y = reflect.y * speed * bounceFactor;
-      }
-      
-      // Strong damping for building impacts
-      this.applyBuildingDamping(v);
-    }
-  }
-}
+        const reflect = this.calculateBounceNormal(velDir, correctedContact.normal

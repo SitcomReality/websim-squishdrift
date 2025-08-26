@@ -6,7 +6,7 @@ import { NPCSystem } from './systems/NPCSystem.js';
 import { CameraSystem } from './systems/CameraSystem.js';
 import { AIDrivingSystem } from './systems/AIDrivingSystem.js';
 import { VehicleMovementSystem } from '../vehicles/physics/VehicleMovementSystem.js';
-import { VehicleCollisionSystem } from '../vehicles/physics/VehicleCollisionSystem.js';
+import { VehicleCollisionSystem } from '../vehicles/physics/VehicleCollision.js';
 import { SkidmarkSystem } from './systems/SkidmarkSystem.js';
 import { WeaponSystem } from './systems/WeaponSystem.js';
 import { ParticleSystem } from './systems/ParticleSystem.js';

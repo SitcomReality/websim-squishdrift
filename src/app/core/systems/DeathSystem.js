@@ -157,19 +157,18 @@ export class DeathSystem {
       }, 2000);
     }, 100);
 
-    // Add restart button listener using event delegation
+    // Add restart button listener using direct assignment to ensure it works
     setTimeout(() => {
-      const restartBtn = document.getElementById('restart-button');
+      // Query the button inside the overlay to avoid colliding with any other element
+      const restartBtn = deathOverlay.querySelector('#restart-button');
       if (restartBtn) {
-        console.log('Restart button found, adding listener');
-        restartBtn.addEventListener('click', (e) => {
-          console.log('Restart button clicked via event listener');
-          e.preventDefault();
-          e.stopPropagation();
+        console.log('Restart button found in death overlay, adding listener');
+        restartBtn.addEventListener('click', () => {
+          console.log('Restart button clicked (death overlay)');
           this.restartGame();
-        }, { capture: true, once: true });
+        });
       }
-    }, 2100);
+    }, 2100); // Wait until after content is shown
   }
 
   updateDeathScreen(state, dt) {

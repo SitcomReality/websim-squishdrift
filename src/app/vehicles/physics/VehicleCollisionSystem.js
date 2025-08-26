@@ -22,6 +22,39 @@ export class VehicleCollisionSystem {
       this.handlePlayerCollision(state, v);
       this.handlePedestrianCollision(state, v);
       this.handleMapBoundaries(state, v);
+      
+      // Check for vehicle destruction based on health
+      this.checkVehicleDestruction(state, v);
+    }
+  }
+
+  checkVehicleDestruction(state, vehicle) {
+    if (!vehicle.health || vehicle.health.isAlive()) return;
+    
+    // Create explosion
+    if (state.explosionSystem) {
+      state.explosionSystem.createExplosion(state, vehicle.pos);
+    }
+    
+    // Register crimes
+    if (state.scoringSystem) {
+      state.scoringSystem.addCrime(state, 'destroy_vehicle', vehicle);
+    }
+    
+    // Remove vehicle from entities
+    const vehicleIndex = state.entities.indexOf(vehicle);
+    if (vehicleIndex > -1) {
+      state.entities.splice(vehicleIndex, 1);
+    }
+    
+    // If this was the player's vehicle, handle death
+    if (state.control?.vehicle === vehicle) {
+      const deathSystem = state._engine?.systems?.death || 
+                         state.deathSystem || 
+                         state._engine?.deathSystem;
+      if (deathSystem && deathSystem.handlePlayerDeath) {
+        deathSystem.handlePlayerDeath(state);
+      }
     }
   }
 
@@ -39,9 +72,6 @@ export class VehicleCollisionSystem {
       
       // Calculate collision damage
       this.calculateCollisionDamage(state, v, o);
-      
-      // Apply damping to reduce flickering
-      this.applyCollisionDamping(v, o);
     }
   }
 
@@ -91,10 +121,6 @@ export class VehicleCollisionSystem {
       vehicleB.lastDamageTime = now;
     }
     
-    // Check for vehicle destruction and handle consistently
-    this.handleVehicleDestruction(state, vehicleA);
-    this.handleVehicleDestruction(state, vehicleB);
-    
     // Add damage indicators - use integers only
     if (canDamageA) this.addDamageIndicator(state, vehicleA.pos, damageA);
     if (canDamageB) this.addDamageIndicator(state, vehicleB.pos, damageB);
@@ -102,36 +128,6 @@ export class VehicleCollisionSystem {
     // Add screen shake for significant impacts
     if (impactSpeed > 3.0 && state.cameraSystem) {
       state.cameraSystem.addShake(Math.min(1, impactSpeed / 8));
-    }
-  }
-
-  handleVehicleDestruction(state, vehicle) {
-    if (!vehicle.health || vehicle.health.isAlive()) return;
-    
-    // Create explosion
-    if (state.explosionSystem) {
-      state.explosionSystem.createExplosion(state, vehicle.pos);
-    }
-    
-    // Register crimes
-    if (state.scoringSystem) {
-      state.scoringSystem.addCrime(state, 'destroy_vehicle', vehicle);
-    }
-    
-    // Remove vehicle from entities
-    const vehicleIndex = state.entities.indexOf(vehicle);
-    if (vehicleIndex > -1) {
-      state.entities.splice(vehicleIndex, 1);
-    }
-    
-    // If this was the player's vehicle, handle death
-    if (state.control?.vehicle === vehicle) {
-      const deathSystem = state._engine?.systems?.death || 
-                         state.deathSystem || 
-                         state._engine?.deathSystem;
-      if (deathSystem && deathSystem.handlePlayerDeath) {
-        deathSystem.handlePlayerDeath(state);
-      }
     }
   }
 
@@ -162,7 +158,7 @@ export class VehicleCollisionSystem {
             v.health.takeDamage(damage);
             v.lastDamageTime = now;
             
-            this.handleVehicleDestruction(state, v);
+            this.checkVehicleDestruction(state, v);
             this.addDamageIndicator(state, v.pos, damage);
           }
         }
@@ -172,7 +168,7 @@ export class VehicleCollisionSystem {
           const restitution = 0.6;
           const speed = Math.hypot(v.vel.x || 0, v.vel.y || 0);
           const velDir = this.getVelocityDirection(v);
-          const reflect = this.calculateBounceNormal(velDir, correctedContact.normal);
+          const reflect = this.calculateBounceNormal(velDir, contact.normal);
           const bounceFactor = Math.max(0.25, restitution * 0.8);
           v.vel.x = reflect.x * speed * bounceFactor;
           v.vel.y = reflect.y * speed * bounceFactor;
@@ -214,7 +210,7 @@ export class VehicleCollisionSystem {
           v.health.takeDamage(damage);
           v.lastDamageTime = now;
           
-          this.handleVehicleDestruction(state, v);
+          this.checkVehicleDestruction(state, v);
           this.addDamageIndicator(state, v.pos, damage);
         }
       }
@@ -377,53 +373,23 @@ export class VehicleCollisionSystem {
   }
 
   handleMapBoundaries(state, v) {
-    // Check for map boundaries collision
-    const map = state.world?.map; if (!map) return;
-    const r = Math.ceil(Math.max(v.hitboxW||0.9, v.hitboxH||0.5)) + 1, tx=Math.floor(v.pos.x), ty=Math.floor(v.pos.y);
-    const obb = entityOBB(v);
+    const map = state.world?.map;
+    if (!map) return;
     
-    for (let oy=-r; oy<=r; oy++) for (let ox=-r; ox<=r; ox++) {
-      const gx=tx+ox, gy=ty+oy; if (gx<0||gy<0||gx>=map.width||gy>=map.height) continue;
-      const t = map.tiles[gy][gx];
+    // Check if vehicle is outside map boundaries
+    if (v.pos.x < 0 || v.pos.x >= map.width || 
+        v.pos.y < 0 || v.pos.y >= map.height) {
       
-      // Check for tree trunk collision (use tight trunk AABB, not whole tile)
-      if (this.isTreeTrunk(gx, gy, map)) {
-        const contact = obbOverlap(obb, aabbForTrunk(gx, gy)); if (!contact) continue;
-        const correctedContact = { ...contact, normal: contact.normal };
-        resolveDynamicStatic(v, correctedContact, 0.6); // Increased restitution from 0.2 to 0.6
-        // Reflect velocity along contact normal to produce a bounce effect
-        {
-          const restitution = 0.6;
-          const speed = Math.hypot(v.vel.x || 0, v.vel.y || 0);
-          const velDir = this.getVelocityDirection(v);
-          const reflect = this.calculateBounceNormal(velDir, correctedContact.normal);
-          const bounceFactor = Math.max(0.25, restitution * 0.8);
-          v.vel.x = reflect.x * speed * bounceFactor;
-          v.vel.y = reflect.y * speed * bounceFactor;
-        }
-        this.applyBuildingDamping(v);
-        continue;
+      // Mark vehicle as destroyed
+      if (!v.health) {
+        v.health = new Health(1);
       }
+      v.health.hp = 0;
       
-      // Original building collision
-      if (t !== 8 && t !== 9) continue; // BuildingFloor/Wall as solid
-      
-      const contact = obbOverlap(obb, aabbForTile(gx,gy)); if (!contact) continue;
-      const correctedContact = { ...contact, normal: contact.normal };
-      resolveDynamicStatic(v, correctedContact, 0.6); // Increased restitution from 0.2 to 0.6
-      // Reflect velocity so vehicle bounces off walls/tiles rather than sticking
-      {
-        const restitution = 0.6;
-        const speed = Math.hypot(v.vel.x || 0, v.vel.y || 0);
-        const velDir = this.getVelocityDirection(v);
-        const reflect = this.calculateBounceNormal(velDir, correctedContact.normal);
-        const bounceFactor = Math.max(0.25, restitution * 0.8);
-        v.vel.x = reflect.x * speed * bounceFactor;
-        v.vel.y = reflect.y * speed * bounceFactor;
+      // Check if this is the player's vehicle
+      if (state.control?.inVehicle && state.control.vehicle === v) {
+        // Player death will be handled by DeathSystem
       }
-      
-      // Strong damping for building impacts
-      this.applyBuildingDamping(v);
     }
   }
 }

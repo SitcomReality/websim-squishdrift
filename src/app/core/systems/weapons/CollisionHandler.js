@@ -1,5 +1,6 @@
 import { Vec2 } from '../../../../utils/Vec2.js';
 import { Health } from '../../../components/Health.js';
+import { DamageTextSystem } from '../../systems/DamageTextSystem.js';
 
 export class CollisionHandler {
   constructor() {

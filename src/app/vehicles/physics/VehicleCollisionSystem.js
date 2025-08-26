@@ -1,9 +1,13 @@
 import { VehiclePhysicsConstants } from './VehiclePhysicsConstants.js';
 import { Tile } from '../../../map/TileTypes.js';
 import { entityOBB, aabbForTile, aabbForTrunk, obbOverlap, resolveDynamicDynamic, resolveDynamicStatic } from './geom.js';
+import { Health } from '../../components/Health.js';
 
 export class VehicleCollisionSystem {
-  constructor() {}
+  constructor() {
+    this.collisionDamageThreshold = 2.0; // Minimum speed for damage
+    this.damageMultiplier = 15.0; // Damage scaling factor
+  }
 
   update(state, dt) {
     for (const v of state.entities.filter(e => e.type === 'vehicle')) {
@@ -12,21 +16,78 @@ export class VehicleCollisionSystem {
       this.handleBuildingCollisions(state, v);
       this.handlePlayerCollision(state, v);
       this.handlePedestrianCollision(state, v);
+      this.handleMapBoundaries(state, v);
     }
   }
 
   handleVehicleCollisions(state, v) {
     const others = state.entities.filter(e => e.type === 'vehicle' && e !== v);
     const obbA = entityOBB(v);
+    
     for (const o of others) {
-      const contact = obbOverlap(obbA, entityOBB(o)); if (!contact) continue;
+      const contact = obbOverlap(obbA, entityOBB(o));
+      if (!contact) continue;
       
       // Use contact normal for more predictable collision response
       const correctedContact = { ...contact, normal: this.smoothCollisionNormal(contact.normal, v, o) };
-      resolveDynamicDynamic(v, o, correctedContact, 0.8); // Increased restitution from 0.4 to 0.8
+      resolveDynamicDynamic(v, o, correctedContact, 0.4);
+      
+      // Calculate collision damage
+      this.calculateCollisionDamage(state, v, o);
       
       // Apply damping to reduce flickering
       this.applyCollisionDamping(v, o);
+    }
+  }
+
+  calculateCollisionDamage(state, vehicleA, vehicleB) {
+    // Ensure both vehicles have health
+    if (!vehicleA.health) {
+      vehicleA.health = new Health(vehicleA.maxHealth || 100);
+    }
+    if (!vehicleB.health) {
+      vehicleB.health = new Health(vehicleB.maxHealth || 100);
+    }
+
+    // Calculate relative velocity
+    const relativeVel = {
+      x: (vehicleA.vel?.x || 0) - (vehicleB.vel?.x || 0),
+      y: (vehicleA.vel?.y || 0) - (vehicleB.vel?.y || 0)
+    };
+    
+    const impactSpeed = Math.hypot(relativeVel.x, relativeVel.y);
+    
+    // Only cause damage if impact speed exceeds threshold
+    if (impactSpeed < this.collisionDamageThreshold) {
+      return;
+    }
+    
+    // Calculate damage based on impact force
+    const totalMass = vehicleA.mass + vehicleB.mass;
+    const damageA = Math.max(0, (impactSpeed * vehicleB.mass / totalMass) * this.damageMultiplier);
+    const damageB = Math.max(0, (impactSpeed * vehicleA.mass / totalMass) * this.damageMultiplier);
+    
+    // Apply damage
+    vehicleA.health.takeDamage(damageA);
+    vehicleB.health.takeDamage(damageB);
+    
+    // Register crimes if vehicles are destroyed
+    if (state.scoringSystem) {
+      if (!vehicleA.health.isAlive()) {
+        state.scoringSystem.addCrime(state, 'destroy_vehicle', vehicleA);
+      }
+      if (!vehicleB.health.isAlive()) {
+        state.scoringSystem.addCrime(state, 'destroy_vehicle', vehicleB);
+      }
+    }
+    
+    // Add damage indicators
+    this.addDamageIndicator(state, vehicleA.pos, Math.round(damageA));
+    this.addDamageIndicator(state, vehicleB.pos, Math.round(damageB));
+    
+    // Add screen shake for significant impacts
+    if (impactSpeed > 5.0 && state.cameraSystem) {
+      state.cameraSystem.addShake(Math.min(1, impactSpeed / 10));
     }
   }
 
@@ -39,12 +100,25 @@ export class VehicleCollisionSystem {
       const gx=tx+ox, gy=ty+oy; if (gx<0||gy<0||gx>=map.width||gy>=map.height) continue;
       const t = map.tiles[gy][gx];
       
-      // Check for tree trunk collision (use tight trunk AABB, not whole tile)
+      // Tree trunk: use tight trunk AABB instead of full tile AABB
       if (this.isTreeTrunk(gx, gy, map)) {
         const contact = obbOverlap(obb, aabbForTrunk(gx, gy)); if (!contact) continue;
         const correctedContact = { ...contact, normal: contact.normal };
-        resolveDynamicStatic(v, correctedContact, 0.6); // Increased restitution from 0.2 to 0.6
-        // Reflect velocity along contact normal to produce a bounce effect
+        resolveDynamicStatic(v, correctedContact, 0.2);
+        
+        // Calculate collision damage for tree impact
+        const impactSpeed = Math.hypot(v.vel?.x || 0, v.vel?.y || 0);
+        if (impactSpeed > this.collisionDamageThreshold) {
+          if (!v.health) v.health = new Health(v.maxHealth || 100);
+          const damage = Math.max(0, impactSpeed * 5);
+          v.health.takeDamage(damage);
+          
+          if (state.scoringSystem && !v.health.isAlive()) {
+            state.scoringSystem.addCrime(state, 'destroy_vehicle', v);
+          }
+        }
+        
+        // Add bounce reflection for trunk impacts
         {
           const restitution = 0.6;
           const speed = Math.hypot(v.vel.x || 0, v.vel.y || 0);
@@ -58,13 +132,27 @@ export class VehicleCollisionSystem {
         continue;
       }
       
-      // Original building collision
-      if (t !== 8 && t !== 9) continue; // BuildingFloor/Wall as solid
-      
+      // BuildingFloor/Wall as solid (full tile)
+      if (t !== 8 && t !== 9) continue;
       const contact = obbOverlap(obb, aabbForTile(gx,gy)); if (!contact) continue;
+      
+      // Use contact normal for building collision
       const correctedContact = { ...contact, normal: contact.normal };
-      resolveDynamicStatic(v, correctedContact, 0.6); // Increased restitution from 0.2 to 0.6
-      // Reflect velocity so vehicle bounces off walls/tiles rather than sticking
+      resolveDynamicStatic(v, correctedContact, 0.2);
+      
+      // Calculate collision damage for building impact
+      const impactSpeed = Math.hypot(v.vel?.x || 0, v.vel?.y || 0);
+      if (impactSpeed > this.collisionDamageThreshold) {
+        if (!v.health) v.health = new Health(v.maxHealth || 100);
+        const damage = Math.max(0, impactSpeed * 8);
+        v.health.takeDamage(damage);
+        
+        if (state.scoringSystem && !v.health.isAlive()) {
+          state.scoringSystem.addCrime(state, 'destroy_vehicle', v);
+        }
+      }
+      
+      // Reflect velocity for a bounce effect when hitting building tiles
       {
         const restitution = 0.6;
         const speed = Math.hypot(v.vel.x || 0, v.vel.y || 0);
@@ -78,6 +166,20 @@ export class VehicleCollisionSystem {
       // Strong damping for building impacts
       this.applyBuildingDamping(v);
     }
+  }
+
+  addDamageIndicator(state, pos, damage) {
+    if (!state.damageTexts) state.damageTexts = [];
+    
+    const indicator = {
+      type: 'damage_indicator',
+      pos: { x: pos.x, y: pos.y },
+      damage: damage,
+      age: 0,
+      lifetime: 1.5
+    };
+    
+    state.damageTexts.push(indicator);
   }
 
   isTreeTrunk(x, y, map) {
@@ -214,5 +316,56 @@ export class VehicleCollisionSystem {
     if (length < 0.01) return contactNormal;
 
     return { x: reflected.x / length, y: reflected.y / length };
+  }
+
+  handleMapBoundaries(state, v) {
+    // Check for map boundaries collision
+    const map = state.world?.map; if (!map) return;
+    const r = Math.ceil(Math.max(v.hitboxW||0.9, v.hitboxH||0.5)) + 1, tx=Math.floor(v.pos.x), ty=Math.floor(v.pos.y);
+    const obb = entityOBB(v);
+    
+    for (let oy=-r; oy<=r; oy++) for (let ox=-r; ox<=r; ox++) {
+      const gx=tx+ox, gy=ty+oy; if (gx<0||gy<0||gx>=map.width||gy>=map.height) continue;
+      const t = map.tiles[gy][gx];
+      
+      // Check for tree trunk collision (use tight trunk AABB, not whole tile)
+      if (this.isTreeTrunk(gx, gy, map)) {
+        const contact = obbOverlap(obb, aabbForTrunk(gx, gy)); if (!contact) continue;
+        const correctedContact = { ...contact, normal: contact.normal };
+        resolveDynamicStatic(v, correctedContact, 0.6); // Increased restitution from 0.2 to 0.6
+        // Reflect velocity along contact normal to produce a bounce effect
+        {
+          const restitution = 0.6;
+          const speed = Math.hypot(v.vel.x || 0, v.vel.y || 0);
+          const velDir = this.getVelocityDirection(v);
+          const reflect = this.calculateBounceNormal(velDir, correctedContact.normal);
+          const bounceFactor = Math.max(0.25, restitution * 0.8);
+          v.vel.x = reflect.x * speed * bounceFactor;
+          v.vel.y = reflect.y * speed * bounceFactor;
+        }
+        this.applyBuildingDamping(v);
+        continue;
+      }
+      
+      // Original building collision
+      if (t !== 8 && t !== 9) continue; // BuildingFloor/Wall as solid
+      
+      const contact = obbOverlap(obb, aabbForTile(gx,gy)); if (!contact) continue;
+      const correctedContact = { ...contact, normal: contact.normal };
+      resolveDynamicStatic(v, correctedContact, 0.6); // Increased restitution from 0.2 to 0.6
+      // Reflect velocity so vehicle bounces off walls/tiles rather than sticking
+      {
+        const restitution = 0.6;
+        const speed = Math.hypot(v.vel.x || 0, v.vel.y || 0);
+        const velDir = this.getVelocityDirection(v);
+        const reflect = this.calculateBounceNormal(velDir, correctedContact.normal);
+        const bounceFactor = Math.max(0.25, restitution * 0.8);
+        v.vel.x = reflect.x * speed * bounceFactor;
+        v.vel.y = reflect.y * speed * bounceFactor;
+      }
+      
+      // Strong damping for building impacts
+      this.applyBuildingDamping(v);
+    }
   }
 }

@@ -132,6 +132,9 @@ export class CollisionSystem {
             rotation: bloodStain.rotation
           });
           
+          // Play pedestrian death sound
+          state.audio?.playSfx?.('pedestrian_death');
+          
           const pedestrianIndex = state.entities.indexOf(pedestrian);
           if (pedestrianIndex > -1) {
             state.entities.splice(pedestrianIndex, 1);

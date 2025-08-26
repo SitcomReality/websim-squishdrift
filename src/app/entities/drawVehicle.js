@@ -7,7 +7,21 @@ export function drawVehicle(renderer, state, v) {
   // Get vehicle type and corresponding sprite
   const vehicleType = v.vehicleType || 'sedan';
   const vehicleImages = state.vehicleImages || {};
-  const img = vehicleImages[vehicleType];
+  
+  // Map vehicle types to sprite names
+  const spriteMap = {
+    'compact': 'compact',
+    'sedan': 'sedan',
+    'truck': 'truck',
+    'sports': 'sport', // Fix: map "sports" to "sport"
+    'emergency': 'police',
+    'firetruck': 'firetruck',
+    'ambulance': 'ambulance',
+    'police': 'police'
+  };
+  
+  const spriteName = spriteMap[vehicleType] || vehicleType;
+  const img = vehicleImages[spriteName];
   
   if (!img) {
     // Fallback to box drawing if image not loaded

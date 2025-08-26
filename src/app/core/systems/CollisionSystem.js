@@ -41,7 +41,7 @@ export class CollisionSystem {
           // Apply damage
           target.health.takeDamage(25);
           
-          // Handle vehicle destruction consistently
+          // Handle vehicle destruction
           if (target.type === 'vehicle') {
             this.handleVehicleDestruction(state, target);
           }
@@ -77,7 +77,7 @@ export class CollisionSystem {
   handleVehicleDestruction(state, vehicle) {
     if (!vehicle.health || vehicle.health.isAlive()) return;
     
-    // Create explosion using the explosion system
+    // Create explosion
     if (state.explosionSystem) {
       state.explosionSystem.createExplosion(state, vehicle.pos);
     }

@@ -17,7 +17,8 @@ export function drawVehicle(renderer, state, v) {
   
   ctx.save();
   ctx.translate(v.pos.x * ts, v.pos.y * ts);
-  ctx.rotate(v.rot || 0);
+  // Rotate 90 degrees clockwise to fix "driving sideways" issue
+  ctx.rotate((v.rot || 0) + Math.PI/2);
   
   // Calculate scale based on image dimensions
   const imageWidth = img.width;
@@ -82,7 +83,8 @@ function drawBoxVehicle(renderer, state, v) {
   
   ctx.save();
   ctx.translate(v.pos.x * ts, v.pos.y * ts);
-  ctx.rotate(v.rot || 0);
+  // Rotate 90 degrees clockwise for box fallback too
+  ctx.rotate((v.rot || 0) + Math.PI/2);
   
   ctx.fillStyle = v.color || '#555';
   ctx.fillRect(-w/2, -h/2, w, h);

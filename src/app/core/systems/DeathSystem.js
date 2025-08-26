@@ -121,9 +121,9 @@ export class DeathSystem {
     // Start zooming out immediately
     if (state.camera) {
       const defaultZoom = state.camera.defaultZoom || 4;
-      const targetZoom = defaultZoom * 2; // Maximum debug zoom distance
+      const targetZoom = defaultZoom * 0.5; // Zoom out to half the default zoom
       
-      // Smooth zoom over 2 seconds
+      // Smooth zoom out over 2 seconds
       const startTime = Date.now();
       const zoomDuration = 2000;
       
@@ -133,7 +133,7 @@ export class DeathSystem {
         
         // Ease out cubic for smooth zoom
         const easeOut = 1 - Math.pow(1 - progress, 3);
-        state.camera.zoom = state.camera.defaultZoom + (targetZoom - state.camera.defaultZoom) * easeOut;
+        state.camera.zoom = state.camera.defaultZoom - (state.camera.defaultZoom - targetZoom) * easeOut;
         
         if (progress < 1) {
           requestAnimationFrame(zoomOut);

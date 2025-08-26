@@ -12,14 +12,23 @@ export class CameraSystem {
                   state.entities.find(e => e.type === 'player')?.pos;
     if (!target) return;
     const cam = state.camera; cam.defaultZoom = cam.defaultZoom || cam.zoom || 1;
-    // speed-based zoom (compute world speed from target motion)
+    // speed-based zoom using velocity when available (fallback to position delta)
     const now = performance.now() * 0.001; const dt = this._lastTime ? Math.max(1e-3, now - this._lastTime) : 0;
-    const speed = this._prevTarget && dt ? Math.hypot(target.x - this._prevTarget.x, target.y - this._prevTarget.y) / dt : 0;
+    let speed = 0;
+    if (state.control.inVehicle && state.control.vehicle?.vel) {
+      const v = state.control.vehicle.vel; speed = Math.hypot(v.x || 0, v.y || 0);
+    } else {
+      speed = (this._prevTarget && dt) ? Math.hypot(target.x - this._prevTarget.x, target.y - this._prevTarget.y) / dt : 0;
+    }
     const maxRef = state.control.inVehicle ? (state.control.vehicle?.maxSpeed || 6) : ((state.entities.find(e=>e.type==='player')?.moveSpeed) || 6);
-    const sensitivityMultiplier = 2.5; // Increased from 0.5 to 2.5 - much more responsive
+    const sensitivityMultiplier = 3.5; // increased sensitivity
     const frac = Math.max(0, Math.min(1, (speed / (maxRef || 1)) * sensitivityMultiplier));
-    const desiredZoom = cam.defaultZoom * (1 + frac); // up to 2x at max speed
-    cam.zoom = cam.zoom ?? cam.defaultZoom; cam.zoom += (desiredZoom - cam.zoom) * 0.08;
+    const maxZoom = cam.defaultZoom * 2;
+    const desiredZoom = cam.defaultZoom + (maxZoom - cam.defaultZoom) * frac;
+    // asymmetric lerp: faster snap-back when slowing/crashing
+    const fastSnap = speed < 0.3 && cam.zoom > cam.defaultZoom * 1.05;
+    const lerpRate = fastSnap ? 0.35 : (desiredZoom < (cam.zoom ?? cam.defaultZoom) ? 0.28 : 0.12);
+    cam.zoom = (cam.zoom ?? cam.defaultZoom) + (desiredZoom - (cam.zoom ?? cam.defaultZoom)) * lerpRate;
     // manual zoom only when debug is enabled
     if (state.debugOverlay?.enabled && input) { 
       const minZ = cam.defaultZoom, maxZ = cam.defaultZoom * 2;

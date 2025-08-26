@@ -122,6 +122,9 @@ export class WeaponSystem {
           state.entities.splice(index, 1);
         }
         
+        // Play health pickup SFX
+        state.audio?.playSfx?.('pickup_health');
+        
         // Mark spot as empty if it has one
         if (typeof item.spotId === 'number' && state?.pickupSpots?.[item.spotId]) {
           state.pickupSpots[item.spotId].hasItem = false;
@@ -149,6 +152,9 @@ export class WeaponSystem {
             state.entities.splice(index, 1);
           }
           
+          // Play bribe pickup SFX
+          state.audio?.playSfx?.('pickup_bribe');
+          
           // Remove from pickup spot
           if (typeof item.spotId === 'number' && state?.pickupSpots?.[item.spotId]) {
             state.pickupSpots[item.spotId].hasItem = false;
@@ -163,6 +169,9 @@ export class WeaponSystem {
           
           // Show pickup text
           this.damageTextSystem.addPickupText(state, item.pos, item.name.toUpperCase());
+          
+          // Play default pickup SFX (weapons, etc.)
+          state.audio?.playSfx?.('pickup_default');
           
           // Remove the item from entities
           const index = state.entities.indexOf(item);

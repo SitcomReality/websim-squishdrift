@@ -10,6 +10,7 @@ import { ScoringSystem } from './systems/ScoringSystem.js';
 import { DamageTextSystem } from './systems/DamageTextSystem.js';
 import { ExplosionSystem } from './systems/ExplosionSystem.js';
 import { ParticleSystem } from './systems/ParticleSystem.js';
+import { AudioManager } from './AudioManager.js';
 
 export class GameEngine {
   constructor(canvas, { debugEl } = {}) {
@@ -25,6 +26,8 @@ export class GameEngine {
     this.damageTextSystem = new DamageTextSystem();
     this.explosionSystem = new ExplosionSystem();
     this.particleSystem = new ParticleSystem();
+    this.audioManager = new AudioManager();
+    this.audioManager.init().catch(()=>{});
     
     this.stateManager.initialize();
     this.hudManager.initialize();
@@ -49,6 +52,7 @@ export class GameEngine {
     if (this.stateManager.state) {
       this.stateManager.state.explosionSystem = this.explosionSystem;
       this.stateManager.state.particleSystem = this.particleSystem;
+      this.stateManager.state.audio = this.audioManager; // expose for systems
     }
 
     // Load explosion image
@@ -197,6 +201,7 @@ export class GameEngine {
     newState.damageTextSystem = this.damageTextSystem;
     newState.explosionSystem = this.explosionSystem;
     newState.particleSystem = this.particleSystem;
+    newState.audio = this.audioManager; // persist audio manager across restarts
 
     // Reload explosion image for the new state
     const explosionImage = new Image();

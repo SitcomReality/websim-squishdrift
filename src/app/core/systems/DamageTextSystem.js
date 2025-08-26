@@ -29,6 +29,8 @@ export class DamageTextSystem {
   }
 
   addDamageText(state, pos, damage, color = '#ff3333') {
+    if (!state.damageTexts) state.damageTexts = [];
+    
     const text = {
       type: 'damage_text',
       pos: { x: pos.x, y: pos.y },
@@ -43,6 +45,8 @@ export class DamageTextSystem {
   }
 
   addText(state, pos, text, color = '#ffffff', size = 14) {
+    if (!state.damageTexts) state.damageTexts = [];
+    
     const floatingText = {
       type: 'floating_text',
       pos: { x: pos.x, y: pos.y },
@@ -57,6 +61,8 @@ export class DamageTextSystem {
   }
 
   addPickupText(state, pos, itemName, color = '#4CAF50') {
+    if (!state.damageTexts) state.damageTexts = [];
+    
     const pickupText = {
       type: 'pickup_text',
       pos: { x: pos.x, y: pos.y - 0.5 }, // Offset slightly above pickup

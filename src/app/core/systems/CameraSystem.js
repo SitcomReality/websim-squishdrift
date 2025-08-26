@@ -1,66 +1,11 @@
-export class CameraSystem {
-  constructor() {
-    this.shakeIntensity = 0;
-    this.shakeDecay = 0.9;
-    this.maxShake = 0.3; // Maximum shake in tiles
-    // track for speed-based zoom
-    this._prevTarget = null; this._lastTime = 0;
-  }
-
-  update(state, input) {
-    const target = state.control.inVehicle ? state.control.vehicle.pos : 
-                  state.entities.find(e => e.type === 'player')?.pos;
-    if (!target) return;
-    const cam = state.camera; cam.defaultZoom = cam.defaultZoom || cam.zoom || 1;
-    // speed-based zoom (compute world speed from target motion)
-    const now = performance.now() * 0.001; const dt = this._lastTime ? Math.max(1e-3, now - this._lastTime) : 0;
     const speed = this._prevTarget && dt ? Math.hypot(target.x - this._prevTarget.x, target.y - this._prevTarget.y) / dt : 0;
     const maxRef = state.control.inVehicle ? (state.control.vehicle?.maxSpeed || 6) : ((state.entities.find(e=>e.type==='player')?.moveSpeed) || 6);
     const frac = Math.max(0, Math.min(1, speed / (maxRef || 1)));
     const desiredZoom = cam.defaultZoom * (1 + frac); // up to 2x at max speed
-    cam.zoom = cam.zoom ?? cam.defaultZoom; cam.zoom += (desiredZoom - cam.zoom) * 0.08;
-    // manual zoom only when debug is enabled
-    if (state.debugOverlay?.enabled && input) { 
-      const minZ = cam.defaultZoom, maxZ = cam.defaultZoom * 2;
-      cam.zoom = Math.min(maxZ, Math.max(minZ, cam.zoom + (input.zoomDelta || 0)));
-      input.zoomDelta = 0;
-    } else if (input) { input.zoomDelta = 0; }
 
-    // Apply shake effect
-    let shakeX = 0, shakeY = 0;
-    if (this.shakeIntensity > 0) {
-      shakeX = (Math.random() - 0.5) * 2 * this.shakeIntensity;
-      shakeY = (Math.random() - 0.5) * 2 * this.shakeIntensity;
-      this.shakeIntensity *= this.shakeDecay;
-      
-      // Stop shaking when intensity becomes very small
-      if (this.shakeIntensity < 0.01) {
-        this.shakeIntensity = 0;
-      }
-    }
+    const speed = this._prevTarget && dt ? Math.hypot(target.x - this._prevTarget.x, target.y - this._prevTarget.y) / dt : 0;
+    const maxRef = state.control.inVehicle ? (state.control.vehicle?.maxSpeed || 6) : ((state.entities.find(e=>e.type==='player')?.moveSpeed) || 6);
+    const speedThreshold = maxRef * 0.4; // Reduce threshold to 40% of max speed
+    const frac = Math.max(0, Math.min(1, speed / (speedThreshold || 1)));
+    const desiredZoom = cam.defaultZoom * (1 + frac); // up to 2x at max speed
 
-    cam.x += (target.x - cam.x) * 0.1 + shakeX;
-    cam.y += (target.y - cam.y) * 0.1 + shakeY;
-
-    const ts = state.world.tileSize;
-    const canvas = document.getElementById('game');
-    const viewW = (canvas?.width ?? window.innerWidth);
-    const viewH = (canvas?.height ?? window.innerHeight);
-    const z = cam.zoom || 1;
-    const halfX = (viewW / (ts * z)) / 2;
-    const halfY = (viewH / (ts * z)) / 2;
-    
-    const map = state.world.map;
-    const pad = 30; // tiles of ocean padding beyond city edges
-    cam.x = Math.min(Math.max(cam.x, halfX - pad), map.width - halfX + pad);
-    cam.y = Math.min(Math.max(cam.y, halfY - pad), map.height - halfY + pad);
-
-    // Update previous target and time for speed-based zoom
-    this._prevTarget = target;
-    this._lastTime = now;
-  }
-
-  addShake(intensity = 1) {
-    this.shakeIntensity = Math.min(this.maxShake, intensity);
-  }
-}

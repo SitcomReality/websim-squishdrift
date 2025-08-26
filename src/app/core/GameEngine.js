@@ -154,15 +154,18 @@ export class GameEngine {
   restart() {
     // Reinitialize everything
     this.stateManager.initialize();
-    this.stateManager.state.canvas = this.renderingManager.renderer.canvas;
-    this.stateManager.state.startTime = Date.now();
-    this.stateManager.state.stats = {
+    const newState = this.stateManager.getState();
+    
+    newState.canvas = this.renderingManager.renderer.canvas;
+    newState.startTime = Date.now();
+    newState.stats = {
       enemiesKilled: 0,
       vehiclesDestroyed: 0
     };
-    this.stateManager.state.debugOverlay = this.debugOverlay;
-    this.stateManager.state.scoringSystem = this.scoringSystem;
-    this.stateManager.inputManager = this.inputManager;
+    newState.debugOverlay = this.debugOverlay;
+    newState.scoringSystem = this.scoringSystem;
+    newState.damageTextSystem = this.damageTextSystem;
+    newState.explosionSystem = this.explosionSystem;
     
     // Reset scoring system
     this.scoringSystem.reset();
@@ -172,6 +175,9 @@ export class GameEngine {
     
     // Reload vehicle images
     this.loadVehicleImages();
+    
+    // Ensure input manager is connected
+    this.stateManager.inputManager = this.inputManager;
   }
 
   resetHUD() {

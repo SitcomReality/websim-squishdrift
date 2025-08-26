@@ -23,12 +23,15 @@ export class CameraSystem {
     const maxRef = state.control.inVehicle ? (state.control.vehicle?.maxSpeed || 6) : ((state.entities.find(e=>e.type==='player')?.moveSpeed) || 6);
     const sensitivityMultiplier = 3.5; // increased sensitivity
     const frac = Math.max(0, Math.min(1, (speed / (maxRef || 1)) * sensitivityMultiplier));
+    const minZoom = cam.defaultZoom;
     const maxZoom = cam.defaultZoom * 2;
-    const desiredZoom = cam.defaultZoom + (maxZoom - cam.defaultZoom) * frac;
+    // INVERTED: fast = zoom OUT (far), slow = zoom IN (close)
+    const desiredZoom = maxZoom - (maxZoom - minZoom) * frac;
     // asymmetric lerp: faster snap-back when slowing/crashing
     const fastSnap = speed < 0.3 && cam.zoom > cam.defaultZoom * 1.05;
     const lerpRate = fastSnap ? 0.35 : (desiredZoom < (cam.zoom ?? cam.defaultZoom) ? 0.28 : 0.12);
     cam.zoom = (cam.zoom ?? cam.defaultZoom) + (desiredZoom - (cam.zoom ?? cam.defaultZoom)) * lerpRate;
+    
     // manual zoom only when debug is enabled
     if (state.debugOverlay?.enabled && input) { 
       const minZ = cam.defaultZoom, maxZ = cam.defaultZoom * 2;

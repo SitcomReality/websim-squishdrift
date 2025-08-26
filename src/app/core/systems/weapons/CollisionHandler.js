@@ -97,7 +97,7 @@ export class CollisionHandler {
     // Show damage text
     this.damageTextSystem.addDamageText(state, entity.pos, projectile.damage);
     
-    // Handle destruction
+    // Handle destruction - ensure explosion system is triggered
     if (!entity.health.isAlive()) {
       this.handleEntityDestruction(state, entity);
     }
@@ -123,27 +123,33 @@ export class CollisionHandler {
     } else if (entity.type === 'vehicle') {
       state.stats.vehiclesDestroyed = (state.stats.vehiclesDestroyed || 0) + 1;
       state.scoringSystem.addCrime(state, 'destroy_vehicle', entity);
+      
+      // Ensure explosion system is triggered for vehicles destroyed by gunfire
+      if (state.explosionSystem) {
+        state.explosionSystem.createExplosion(state, entity.pos);
+      }
     }
     
+    // Remove entity from entities array
     const index = state.entities.indexOf(entity);
     if (index > -1) {
       state.entities.splice(index, 1);
     }
   }
 
-  isTreeTrunkCollision(projX, projY, tileX, tileY, state) {
+  isTreeTrunkCollision(projX, projY, tx, ty, state) {
     if (!state.world.map.trees) return false;
     
     const tree = state.world.map.trees.find(tree => 
-      Math.floor(tree.pos.x) === tileX && Math.floor(tree.pos.y) === tileY
+      Math.floor(tree.pos.x) === tx && Math.floor(tree.pos.y) === ty
     );
     
     if (!tree) return false;
     
     const trunkSize = 0.3;
     const trunkHalf = trunkSize / 2;
-    const trunkCenterX = tileX + 0.5;
-    const trunkCenterY = tileY + 0.5;
+    const trunkCenterX = tx + 0.5;
+    const trunkCenterY = ty + 0.5;
     
     const dx = Math.abs(projX - trunkCenterX);
     const dy = Math.abs(projY - trunkCenterY);

@@ -43,6 +43,20 @@ export class GameEngine {
       this.stateManager.state.damageTextSystem = this.damageTextSystem;
     }
 
+    // Add explosion system to state
+    if (this.stateManager.state) {
+      this.stateManager.state.explosionSystem = this.explosionSystem;
+    }
+
+    // Load explosion image
+    if (this.stateManager.state) {
+      const explosionImage = new Image();
+      explosionImage.src = '/Explosion_001_Tile_8x8_256x256.png';
+      explosionImage.onload = () => {
+        this.stateManager.state.explosionImage = explosionImage;
+      };
+    }
+
     // Add start time for death screen stats
     if (this.stateManager.state) {
       this.stateManager.state.startTime = Date.now();
@@ -50,11 +64,6 @@ export class GameEngine {
         enemiesKilled: 0,
         vehiclesDestroyed: 0
       };
-    }
-
-    // Add explosion system to state
-    if (this.stateManager.state) {
-      this.stateManager.state.explosionSystem = this.explosionSystem;
     }
 
     // Expose commonly used references for external code (main.js expects these)

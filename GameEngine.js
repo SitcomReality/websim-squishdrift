@@ -14,6 +14,17 @@ import { VehicleCollisionSystem } from '../vehicles/physics/VehicleCollisionSyst
 import { SkidmarkSystem } from '../systems/SkidmarkSystem.js';
 import { createInitialState } from '../state/createInitialState.js';
 import { DebugOverlaySystem } from '../systems/DebugOverlaySystem.js';
+import { GameStateManager } from './GameStateManager.js';
+import { SystemManager } from './SystemManager.js';
+import { RenderingManager } from './RenderingManager.js';
+import { InputManager } from './InputManager.js';
+import { SpawnManager } from './SpawnManager.js';
+import { HUDManager } from './HUDManager.js';
+import { DebugManager } from './DebugManager.js';
+import { DeathSystem } from './systems/DeathSystem.js';
+import { ScoringSystem } from './systems/ScoringSystem.js';
+import { DamageTextSystem } from './systems/DamageTextSystem.js';
+import { ExplosionSystem } from './systems/ExplosionSystem.js';
 
 export class GameEngine {
   constructor(canvas, { debugEl } = {}) {
@@ -62,4 +73,3 @@ export class GameEngine {
     this.renderer.endFrame();
   }
 }
-

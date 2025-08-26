@@ -2,6 +2,7 @@ import { Vec2 } from '../../utils/Vec2.js';
 import { Health } from '../components/Health.js';
 import { findPath } from '../../utils/pathfinding.js';
 import { createVehicle } from '../vehicles/VehicleTypes.js';
+import { PoliceChaseManager } from './PoliceChaseManager.js';
 
 export class EmergencyServices {
   constructor(state) {
@@ -14,6 +15,8 @@ export class EmergencyServices {
     // Defensive initialization with fallbacks
     this.roadGraph = state?.world?.map?.roads || { nodes: [] }
     this.map = state?.world?.map || { width: 100, height: 100, tiles: [] }
+    this.policeChase = new PoliceChaseManager();
+    this._pathfinding = { findPath };
   }
 
   addIncident(type, position, severity = 1) {
@@ -43,6 +46,7 @@ export class EmergencyServices {
     this.checkRandomEvents(state, dt)
     this.updateEmergencyResponse(state)
     this.updateEmergencyVehicles(state, dt)
+    this.policeChase.update(state, dt, this)
   }
 
   checkRandomEvents(state, dt) {
@@ -235,5 +239,23 @@ export class EmergencyServices {
       }
     }
     return bestNode
+  }
+
+  createChaserVehicle(pos, rot, startNode, route) {
+    const vehicle = createVehicle('emergency', pos, {
+      vehicleType: 'police',
+      color: '#0000FF',
+      rot,
+      controlled: false,
+      siren: true,
+      isEmergency: true,
+      drivingStyle: 'reckless',
+      aiTargetSpeed: 5.0,
+      node: startNode,
+      plannedRoute: route || [],
+      currentPathIndex: 0,
+      isPoliceChaser: true
+    });
+    return vehicle;
   }
 }

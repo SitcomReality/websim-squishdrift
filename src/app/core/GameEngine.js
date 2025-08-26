@@ -63,6 +63,9 @@ export class GameEngine {
     // Load vehicle images
     this.loadVehicleImages();
 
+    // Load pickup images
+    this.loadPickupImages();
+
     // Add start time for death screen stats
     if (this.stateManager.state) {
       this.stateManager.state.startTime = Date.now();
@@ -82,6 +85,28 @@ export class GameEngine {
     window.addEventListener('game-restart', () => {
       this.restart();
     });
+  }
+
+  loadPickupImages() {
+    const pickupMap = {
+      'pistol': 'pickup_pistol.png',
+      'shotgun': 'pickup_shotgun.png',
+      'ak47': 'pickup_ak47.png',
+      'grenade': 'pickup_grenade.png'
+    };
+
+    for (const [name, fileName] of Object.entries(pickupMap)) {
+      const img = new Image();
+      img.src = `/${fileName}`;
+      img.onload = () => {
+        if (this.stateManager.state) {
+          if (!this.stateManager.state.pickupImages) {
+            this.stateManager.state.pickupImages = {};
+          }
+          this.stateManager.state.pickupImages[name] = img;
+        }
+      };
+    }
   }
 
   loadVehicleImages() {
@@ -186,6 +211,7 @@ export class GameEngine {
     
     // Reload vehicle images
     this.loadVehicleImages();
+    this.loadPickupImages();
     
     // Ensure input manager is connected
     this.stateManager.inputManager = this.inputManager;

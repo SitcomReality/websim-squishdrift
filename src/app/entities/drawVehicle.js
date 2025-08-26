@@ -13,7 +13,7 @@ export function drawVehicle(renderer, state, v) {
     'compact': 'compact',
     'sedan': 'sedan',
     'truck': 'truck',
-    'sports': 'sport', // Fix: map "sports" to "sport"
+    'sports': 'sports', // Fixed: was 'sport', now 'sports'
     'emergency': 'police',
     'firetruck': 'firetruck',
     'ambulance': 'ambulance',

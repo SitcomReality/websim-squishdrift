@@ -87,12 +87,14 @@ export class GameEngine {
     
     vehicleTypes.forEach(type => {
       const img = new Image();
-      img.src = `/vehicle_${type}.png`;
+      const fileType = (type === 'sports' ? 'sport' : type);
+      img.src = `/vehicle_${fileType}.png`;
       img.onload = () => {
         if (this.stateManager.state) {
           if (!this.stateManager.state.vehicleImages) {
             this.stateManager.state.vehicleImages = {};
           }
+          this.stateManager.state.vehicleImages[fileType] = img;
           this.stateManager.state.vehicleImages[type] = img;
         }
       };

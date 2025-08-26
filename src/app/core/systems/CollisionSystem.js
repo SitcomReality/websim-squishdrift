@@ -75,11 +75,14 @@ export class CollisionSystem {
   }
 
   handleVehicleDestruction(state, vehicle) {
-    if (!vehicle.health || vehicle.health.isAlive()) return;
-    
     // Create explosion
     if (state.explosionSystem) {
       state.explosionSystem.createExplosion(state, vehicle.pos);
+    }
+    
+    // Add screen shake for explosions
+    if (state.cameraSystem) {
+      state.cameraSystem.addShake(1.0);
     }
     
     // Register crimes

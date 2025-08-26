@@ -300,6 +300,11 @@ export class WeaponSystem {
         // Show damage text
         this.damageTextSystem.addDamageText(state, entity.pos, projectile.damage);
         
+        // Handle vehicle destruction with explosion
+        if (entity.type === 'vehicle' && !entity.health.isAlive()) {
+          this.handleVehicleDestruction(state, entity);
+        }
+        
         // Update stats
         if (entity.type === 'npc') {
           state.stats.enemiesKilled = (state.stats.enemiesKilled || 0) + 1;
@@ -340,6 +345,39 @@ export class WeaponSystem {
     }
     
     return false;
+  }
+
+  handleVehicleDestruction(state, vehicle) {
+    // Create explosion using explosion system
+    if (state.explosionSystem) {
+      state.explosionSystem.createExplosion(state, vehicle.pos);
+    }
+    
+    // Add screen shake
+    if (state.cameraSystem) {
+      state.cameraSystem.addShake(1.0);
+    }
+    
+    // Register crimes
+    if (state.scoringSystem) {
+      state.scoringSystem.addCrime(state, 'destroy_vehicle', vehicle);
+    }
+    
+    // Remove vehicle from entities
+    const vehicleIndex = state.entities.indexOf(vehicle);
+    if (vehicleIndex > -1) {
+      state.entities.splice(vehicleIndex, 1);
+    }
+    
+    // If this was the player's vehicle, handle death
+    if (state.control?.vehicle === vehicle) {
+      const deathSystem = state._engine?.systems?.death || 
+                         state.deathSystem || 
+                         state._engine?.deathSystem;
+      if (deathSystem && deathSystem.handlePlayerDeath) {
+        deathSystem.handlePlayerDeath(state);
+      }
+    }
   }
 
   isTreeTrunkCollision(projX, projY, tileX, tileY, state) {

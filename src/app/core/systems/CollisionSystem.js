@@ -41,14 +41,13 @@ export class CollisionSystem {
           // Apply damage
           target.health.takeDamage(25);
           
-          // Handle vehicle destruction
-          if (target.type === 'vehicle') {
-            this.handleVehicleDestruction(state, target);
-          }
-          
           // Trigger screen shake for player damage
           if (target.type === 'npc') {
             this.triggerShake(state, 0.5);
+            state.particleSystem?.emitBlood(state, target.pos, 10, 3);
+          }
+          if (target.type === 'vehicle') {
+            state.particleSystem?.emitSparks(state, target.pos, 8, 5);
           }
           
           // Remove bullet on hit
@@ -207,6 +206,7 @@ export class CollisionSystem {
               this.triggerShake(state, Math.min(1, damageTaken / 50));
               // Add floating damage text
               this.addDamageText(state, player.pos, damage);
+              state.particleSystem?.emitBlood(state, player.pos, 12, 2.5);
             }
             // Handle vehicle destruction if it runs out of health
             this.handleVehicleDestruction(state, vehicle);

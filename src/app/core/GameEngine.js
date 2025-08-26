@@ -9,6 +9,7 @@ import { DeathSystem } from './systems/DeathSystem.js';
 import { ScoringSystem } from './systems/ScoringSystem.js';
 import { DamageTextSystem } from './systems/DamageTextSystem.js';
 import { ExplosionSystem } from './systems/ExplosionSystem.js';
+import { ParticleSystem } from './systems/ParticleSystem.js';
 
 export class GameEngine {
   constructor(canvas, { debugEl } = {}) {
@@ -23,6 +24,7 @@ export class GameEngine {
     this.scoringSystem = new ScoringSystem();
     this.damageTextSystem = new DamageTextSystem();
     this.explosionSystem = new ExplosionSystem();
+    this.particleSystem = new ParticleSystem();
     
     this.stateManager.initialize();
     this.hudManager.initialize();
@@ -46,6 +48,7 @@ export class GameEngine {
     // Add explosion system to state
     if (this.stateManager.state) {
       this.stateManager.state.explosionSystem = this.explosionSystem;
+      this.stateManager.state.particleSystem = this.particleSystem;
     }
 
     // Load explosion image
@@ -166,6 +169,7 @@ export class GameEngine {
     newState.scoringSystem = this.scoringSystem;
     newState.damageTextSystem = this.damageTextSystem;
     newState.explosionSystem = this.explosionSystem;
+    newState.particleSystem = this.particleSystem;
 
     // Reload explosion image for the new state
     const explosionImage = new Image();

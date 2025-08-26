@@ -295,6 +295,7 @@ export class WeaponSystem {
         } else {
           // Vehicles take damage normally
           entity.health.takeDamage(projectile.damage);
+          state.particleSystem?.emitSparks(state, entity.pos, 10, 4);
         }
         
         // Show damage text

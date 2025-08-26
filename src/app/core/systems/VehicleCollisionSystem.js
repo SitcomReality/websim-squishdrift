@@ -85,11 +85,13 @@ export class VehicleCollisionSystem {
     if (canDamageA) {
       vehicleA.health.takeDamage(damageA);
       vehicleA.lastDamageTime = now;
+      state.particleSystem?.emitSparks(state, vehicleA.pos, Math.min(12, 4 + Math.floor(damageA / 5)), 4);
     }
     
     if (canDamageB) {
       vehicleB.health.takeDamage(damageB);
       vehicleB.lastDamageTime = now;
+      state.particleSystem?.emitSparks(state, vehicleB.pos, Math.min(12, 4 + Math.floor(damageB / 5)), 4);
     }
     
     // Register crimes if vehicles are destroyed
@@ -174,6 +176,7 @@ export class VehicleCollisionSystem {
             const damage = Math.max(1, Math.round(impactSpeed * 5));
             v.health.takeDamage(damage);
             v.lastDamageTime = now;
+            state.particleSystem?.emitSparks(state, v.pos, Math.min(10, 3 + Math.floor(damage / 6)), 3.5);
             
             if (!v.health.isAlive()) {
               this.handleVehicleDestruction(state, v);

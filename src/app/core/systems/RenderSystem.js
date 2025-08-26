@@ -116,6 +116,9 @@ export class RenderSystem {
     drawBuildings(renderer, state, 'walls');
     drawBuildings(renderer, state, 'roofs');
     
+    // Draw particles (simple circles)
+    this.drawParticles(state, renderer);
+    
     // Draw damage text and floating text ON TOP of everything
     drawDamageText(renderer, state);
     
@@ -215,6 +218,20 @@ export class RenderSystem {
         ctx.restore();
       });
     }
+  }
+
+  drawParticles(state, renderer) {
+    const ps = state.particles || []; if (!ps.length) return;
+    const { ctx } = renderer; const ts = state.world.tileSize;
+    ctx.save();
+    for (const p of ps) {
+      const alpha = Math.max(0, Math.min(1, p.life)); // quick fade
+      ctx.fillStyle = p.type === 'spark' ? `rgba(255,200,50,${alpha})` : `rgba(139,0,0,${alpha})`;
+      ctx.beginPath();
+      ctx.arc(p.x * ts, p.y * ts, (p.size || 0.06) * ts, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
   }
 
   drawMouseReticule(state, renderer) {

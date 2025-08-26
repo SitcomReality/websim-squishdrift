@@ -9,6 +9,7 @@ import { VehicleMovementSystem } from '../vehicles/physics/VehicleMovementSystem
 import { VehicleCollisionSystem } from '../vehicles/physics/VehicleCollisionSystem.js';
 import { SkidmarkSystem } from './systems/SkidmarkSystem.js';
 import { WeaponSystem } from './systems/WeaponSystem.js';
+import { ParticleSystem } from './systems/ParticleSystem.js';
 
 export class SystemManager {
   constructor(stateManager) {
@@ -24,7 +25,8 @@ export class SystemManager {
       vehicleCollision: new VehicleCollisionSystem(),
       skidmarks: new SkidmarkSystem(),
       weapon: new WeaponSystem(),
-      collision: new CollisionSystem()
+      collision: new CollisionSystem(),
+      particles: new ParticleSystem()
     };
     // Connect camera system to collision system for screen shake
     this.systems.collision.cameraSystem = this.systems.camera;
@@ -49,6 +51,7 @@ export class SystemManager {
     this.stateManager.emergencyServices.update(state, dt);
     this.systems.skidmarks.update(state, dt);
     this.systems.weapon.update(state, input, dt);
+    this.systems.particles.update(state, dt);
   }
 
   getSystems() {

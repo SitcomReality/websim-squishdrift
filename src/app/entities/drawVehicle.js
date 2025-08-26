@@ -1,145 +1,91 @@
 import { VehicleArchetype, VehicleTypes } from '../vehicles/VehicleTypes.js';
 
 export function drawVehicle(renderer, state, v) {
-  const { ctx } = renderer, ts = state.world.tileSize;
+  const { ctx } = renderer;
+  const ts = state.world.tileSize;
   
-  // Get vehicle properties, falling back to archetype if not defined
+  // Get vehicle type and corresponding sprite
   const vehicleType = v.vehicleType || 'sedan';
-  const typeProps = VehicleTypes[vehicleType] || VehicleArchetype;
+  const vehicleImages = state.vehicleImages || {};
+  const img = vehicleImages[vehicleType];
   
-  // Use vehicle-specific properties if available, otherwise use type defaults
-  const color = v.color || typeProps.color;
-  const width = v.width || typeProps.width;
-  const height = v.height || typeProps.height;
-  const cornerRadius = v.cornerRadius || typeProps.cornerRadius;
-  const w = ts * width;
-  const h = ts * height;
-  
-  // Normalize semantics: length = larger body dimension (forward axis), width = smaller (cross axis)
-  const lengthPx = Math.max(w, h);
-  const widthPx  = Math.min(w, h);
+  if (!img) {
+    // Fallback to box drawing if image not loaded
+    drawBoxVehicle(renderer, state, v);
+    return;
+  }
   
   ctx.save();
   ctx.translate(v.pos.x * ts, v.pos.y * ts);
   ctx.rotate(v.rot || 0);
   
-  // Draw main body with rounded corners
-  ctx.fillStyle = color;
+  // Calculate scale based on image dimensions
+  const imageWidth = img.width;
+  const imageHeight = img.height;
+  const targetHeight = ts * 1.2; // Make vehicles slightly larger than tile size
+  const scale = targetHeight / imageHeight;
+  const scaledWidth = imageWidth * scale;
+  const scaledHeight = imageHeight * scale;
   
-  // Calculate rounded rectangle path
-  const cx = 0, cy = 0;
-  const hw = lengthPx/2, hh = widthPx/2;
-  const r = Math.min(hw * cornerRadius, hh * cornerRadius);
+  // Center the image
+  const offsetX = -scaledWidth / 2;
+  const offsetY = -scaledHeight / 2;
   
-  ctx.beginPath();
-  ctx.moveTo(cx - hw + r, cy - hh);
-  ctx.lineTo(cx + hw - r, cy - hh);
-  ctx.quadraticCurveTo(cx + hw, cy - hh, cx + hw, cy - hh + r);
-  ctx.lineTo(cx + hw, cy + hh - r);
-  ctx.quadraticCurveTo(cx + hw, cy + hh, cx + hw - r, cy + hh);
-  ctx.lineTo(cx - hw + r, cy + hh);
-  ctx.quadraticCurveTo(cx - hw, cy + hh, cx - hw, cy + hh - r);
-  ctx.lineTo(cx - hw, cy - hh + r);
-  ctx.quadraticCurveTo(cx - hw, cy - hh, cx - hw + r, cy - hh);
-  ctx.closePath();
-  ctx.fill();
+  // Draw the sprite
+  ctx.drawImage(
+    img,
+    offsetX,
+    offsetY,
+    scaledWidth,
+    scaledHeight
+  );
   
-  // Draw cabin - darker rectangle in central area
-  const cabinLength = lengthPx * 0.55; // Reduced from 0.65 to 0.55
-  const cabinWidth  = widthPx  * 0.6;  // 60% of vehicle width (breadth)
-  const cabinX = -cabinLength / 2;
-  const cabinY = -cabinWidth  / 2;
-  
-  // Create a darker version of the base color
-  const darkerColor = darkenColor(color, 0.3);
-  ctx.fillStyle = darkerColor;
-  ctx.fillRect(cabinX, cabinY, cabinLength, cabinWidth);
-  
-  // Get lighting properties
-  const headlights = { ...VehicleArchetype.headlights, ...typeProps.headlights, ...(v.headlights || {}) };
-  const brakeLights = { ...VehicleArchetype.brakeLights, ...typeProps.brakeLights, ...(v.brakeLights || {}) };
-  
-  // Draw headlights
-  ctx.fillStyle = headlights.color;
-  const headX = hw * (headlights.frontOffset || 0.4);
-  
-  for (let i = 0; i < headlights.count; i++) {
-    const offset = (i - (headlights.count - 1) / 2) * (headlights.spacing * ts);
-    const headlightW = ts * headlights.width;
-    const headlightH = ts * headlights.height;
+  // Draw health bar above vehicles
+  if (v.health && v.health.maxHealth) {
+    const healthPercent = v.health.hp / v.health.maxHealth;
+    const barWidth = scaledWidth * 0.8;
+    const barHeight = 4;
+    const barX = -barWidth / 2;
+    const barY = offsetY - barHeight - 8;
     
-    ctx.fillRect(
-      headX - headlightW/2,
-      offset - headlightH/2,
-      headlightW,
-      headlightH
-    );
+    // Background
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.fillRect(barX, barY, barWidth, barHeight);
+    
+    // Health bar
+    const healthColor = healthPercent > 0.6 ? '#4CAF50' : 
+                       healthPercent > 0.3 ? '#FF9800' : '#F44336';
+    ctx.fillStyle = healthColor;
+    ctx.fillRect(barX, barY, barWidth * healthPercent, barHeight);
   }
   
-  // Draw brake lights
-  const brakeX = -hw * (brakeLights.rearOffset || 0.5);
-  const brakeLightWidth = ts * (brakeLights.width || VehicleArchetype.brakeLights.width);
-  const brakeLightHeight = ts * (brakeLights.height || VehicleArchetype.brakeLights.height);
-  
-  for (let i = 0; i < brakeLights.count; i++) {
-    const offset = (i - (brakeLights.count - 1) / 2) * (brakeLights.spacing * ts);
-    ctx.fillStyle = v.brakeLight ? brakeLights.onColor : brakeLights.offColor;
-    ctx.fillRect(
-      brakeX - brakeLightWidth / 2,
-      offset - brakeLightHeight / 2,
-      brakeLightWidth,
-      brakeLightHeight
-    );
-  }
-  
-  // Add windows if defined
-  if (v.windows || typeProps.windows) {
-    const windows = v.windows || typeProps.windows;
-    ctx.fillStyle = '#333';
+  // Draw siren for emergency vehicles
+  if (v.siren && v.vehicleType === 'emergency') {
+    const now = Date.now();
+    const blink = Math.floor(now / 500) % 2 === 0;
     
-    if (windows.front) {
-      const win = windows.front;
-      ctx.fillRect(
-        headX - hw * win.width/2,
-        -widthPx * win.height/2,
-        hw * win.width,
-        widthPx * win.height
-      );
-    }
-    
-    if (windows.rear) {
-      const win = windows.rear;
-      ctx.fillRect(
-        brakeX - hw * win.width/2,
-        -widthPx * win.height/2,
-        hw * win.width,
-        widthPx * win.height
-      );
-    }
-  }
-  
-  // Add stripes or decals if defined
-  if (v.stripes || typeProps.stripes) {
-    const stripes = v.stripes || typeProps.stripes;
-    ctx.fillStyle = stripes.color || '#fff';
-    
-    for (const stripe of stripes.list || []) {
-      ctx.fillRect(
-        -hw * stripe.x,
-        -hh * stripe.y,
-        hw * stripe.width,
-        hh * stripe.height
-      );
-    }
-  }
-  
-  // Draw sirens for emergency vehicles
-  if (v.vehicleType === 'emergency' && v.siren) {
-    ctx.fillStyle = Math.floor(Date.now() / 500) % 2 ? '#ff0000' : '#0000ff';
+    ctx.fillStyle = blink ? '#FF0000' : '#0000FF';
     ctx.beginPath();
-    ctx.arc(headX + ts * 0.1, 0, ts * 0.05, 0, Math.PI * 2);
+    ctx.arc(0, -scaledHeight/2 - 10, 5, 0, Math.PI * 2);
     ctx.fill();
   }
+  
+  ctx.restore();
+}
+
+// Fallback box drawing function
+function drawBoxVehicle(renderer, state, v) {
+  const { ctx } = renderer;
+  const ts = state.world.tileSize;
+  const w = ts * (v.width || 0.9);
+  const h = ts * (v.height || 0.5);
+  
+  ctx.save();
+  ctx.translate(v.pos.x * ts, v.pos.y * ts);
+  ctx.rotate(v.rot || 0);
+  
+  ctx.fillStyle = v.color || '#555';
+  ctx.fillRect(-w/2, -h/2, w, h);
   
   ctx.restore();
 }

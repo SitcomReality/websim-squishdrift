@@ -1,7 +1,7 @@
 import { GameStateManager } from './GameStateManager.js';
 import { SystemManager } from './SystemManager.js';
 import { RenderingManager } from './RenderingManager.js';
-import { InputManager } from './InputManager.js';
+import { InputManager } from '../InputManager.js';
 import { SpawnManager } from './SpawnManager.js';
 import { HUDManager } from './HUDManager.js';
 import { DebugManager } from './DebugManager.js';
@@ -57,6 +57,9 @@ export class GameEngine {
       };
     }
 
+    // Load vehicle images
+    this.loadVehicleImages();
+
     // Add start time for death screen stats
     if (this.stateManager.state) {
       this.stateManager.state.startTime = Date.now();
@@ -75,6 +78,24 @@ export class GameEngine {
     // Listen for restart events
     window.addEventListener('game-restart', () => {
       this.restart();
+    });
+  }
+
+  loadVehicleImages() {
+    const vehicleTypes = ['ambulance', 'compact', 'sedan', 'truck', 'sports', 'firetruck', 'police'];
+    const vehicleImages = {};
+    
+    vehicleTypes.forEach(type => {
+      const img = new Image();
+      img.src = `/vehicle_${type}.png`;
+      img.onload = () => {
+        if (this.stateManager.state) {
+          if (!this.stateManager.state.vehicleImages) {
+            this.stateManager.state.vehicleImages = {};
+          }
+          this.stateManager.state.vehicleImages[type] = img;
+        }
+      };
     });
   }
 
@@ -146,6 +167,9 @@ export class GameEngine {
     
     // Reset HUD elements
     this.resetHUD();
+    
+    // Reload vehicle images
+    this.loadVehicleImages();
   }
 
   resetHUD() {

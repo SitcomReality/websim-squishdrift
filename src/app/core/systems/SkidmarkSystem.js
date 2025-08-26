@@ -75,7 +75,11 @@ export class SkidmarkSystem {
           
           const skidColor = useBloodSkids ? 'rgba(139, 0, 0, 0.8)' : 'rgba(0, 0, 0, 0.8)';
           
-          const lw = this.skidTrackHalfWidth;
+          // Adjust track width based on vehicle type
+          const isTruck = v.vehicleType === 'truck';
+          const trackWidth = isTruck ? this.skidTrackHalfWidth : this.skidTrackHalfWidth * 0.6; // 60% width for non-trucks
+          
+          const lw = trackWidth;
 
           // Left wheel track
           state.skidmarks.push({

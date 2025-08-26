@@ -168,6 +168,7 @@ export class PlayerSystem {
     return state.entities.find(e => 
       e.type === 'vehicle' && 
       !e.controlled && 
+      !e.isEmergency && // NEW: Exclude emergency vehicles
       e.pos && player.pos &&
       Math.hypot(e.pos.x - player.pos.x, e.pos.y - player.pos.y) < interactionDistance
     );

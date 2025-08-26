@@ -7,11 +7,16 @@ export class VehicleCollisionSystem {
   constructor() {
     this.collisionDamageThreshold = 0.5; // Reduced from 2.0 to 0.5 for easier damage
     this.damageMultiplier = 20.0; // Increased from 15.0 to 20.0 for more damage
+    this.damageCooldown = 1000; // 1000ms invincibility frames
   }
 
   update(state, dt) {
     for (const v of state.entities.filter(e => e.type === 'vehicle')) {
       v.hitboxW = v.hitboxW ?? 0.9; v.hitboxH = v.hitboxH ?? 0.5; v.mass = v.mass || 1200; v.vel = v.vel || {x:0,y:0};
+      
+      // Initialize lastDamageTime if not exists
+      if (!v.lastDamageTime) v.lastDamageTime = 0;
+      
       this.handleVehicleCollisions(state, v);
       this.handleBuildingCollisions(state, v);
       this.handlePlayerCollision(state, v);
@@ -41,6 +46,14 @@ export class VehicleCollisionSystem {
   }
 
   calculateCollisionDamage(state, vehicleA, vehicleB) {
+    const now = Date.now();
+    
+    // Check cooldown for both vehicles
+    const canDamageA = now - (vehicleA.lastDamageTime || 0) >= this.damageCooldown;
+    const canDamageB = now - (vehicleB.lastDamageTime || 0) >= this.damageCooldown;
+    
+    if (!canDamageA && !canDamageB) return; // Both in cooldown
+    
     // Ensure both vehicles have health
     if (!vehicleA.health) {
       vehicleA.health = new Health(vehicleA.maxHealth || 100);
@@ -67,9 +80,16 @@ export class VehicleCollisionSystem {
     const damageA = Math.max(1, Math.round((impactSpeed * vehicleB.mass / totalMass) * this.damageMultiplier));
     const damageB = Math.max(1, Math.round((impactSpeed * vehicleA.mass / totalMass) * this.damageMultiplier));
     
-    // Apply damage
-    vehicleA.health.takeDamage(damageA);
-    vehicleB.health.takeDamage(damageB);
+    // Apply damage only if not in cooldown
+    if (canDamageA) {
+      vehicleA.health.takeDamage(damageA);
+      vehicleA.lastDamageTime = now;
+    }
+    
+    if (canDamageB) {
+      vehicleB.health.takeDamage(damageB);
+      vehicleB.lastDamageTime = now;
+    }
     
     // Register crimes if vehicles are destroyed
     if (state.scoringSystem) {
@@ -82,8 +102,8 @@ export class VehicleCollisionSystem {
     }
     
     // Add damage indicators - use integers only
-    this.addDamageIndicator(state, vehicleA.pos, damageA);
-    this.addDamageIndicator(state, vehicleB.pos, damageB);
+    if (canDamageA) this.addDamageIndicator(state, vehicleA.pos, damageA);
+    if (canDamageB) this.addDamageIndicator(state, vehicleB.pos, damageB);
     
     // Add screen shake for significant impacts
     if (impactSpeed > 3.0 && state.cameraSystem) {
@@ -107,14 +127,22 @@ export class VehicleCollisionSystem {
         resolveDynamicStatic(v, correctedContact, 0.2);
         
         // Calculate collision damage for tree impact
-        const impactSpeed = Math.hypot(v.vel?.x || 0, v.vel?.y || 0);
-        if (impactSpeed > this.collisionDamageThreshold) {
-          if (!v.health) v.health = new Health(v.maxHealth || 100);
-          const damage = Math.max(0, impactSpeed * 5);
-          v.health.takeDamage(damage);
-          
-          if (state.scoringSystem && !v.health.isAlive()) {
-            state.scoringSystem.addCrime(state, 'destroy_vehicle', v);
+        const now = Date.now();
+        const canDamage = now - (v.lastDamageTime || 0) >= this.damageCooldown;
+        
+        if (canDamage) {
+          const impactSpeed = Math.hypot(v.vel?.x || 0, v.vel?.y || 0);
+          if (impactSpeed > this.collisionDamageThreshold) {
+            if (!v.health) v.health = new Health(v.maxHealth || 100);
+            const damage = Math.max(1, Math.round(impactSpeed * 5));
+            v.health.takeDamage(damage);
+            v.lastDamageTime = now;
+            
+            if (state.scoringSystem && !v.health.isAlive()) {
+              state.scoringSystem.addCrime(state, 'destroy_vehicle', v);
+            }
+            
+            this.addDamageIndicator(state, v.pos, damage);
           }
         }
         
@@ -141,14 +169,22 @@ export class VehicleCollisionSystem {
       resolveDynamicStatic(v, correctedContact, 0.2);
       
       // Calculate collision damage for building impact
-      const impactSpeed = Math.hypot(v.vel?.x || 0, v.vel?.y || 0);
-      if (impactSpeed > this.collisionDamageThreshold) {
-        if (!v.health) v.health = new Health(v.maxHealth || 100);
-        const damage = Math.max(0, impactSpeed * 8);
-        v.health.takeDamage(damage);
-        
-        if (state.scoringSystem && !v.health.isAlive()) {
-          state.scoringSystem.addCrime(state, 'destroy_vehicle', v);
+      const now = Date.now();
+      const canDamage = now - (v.lastDamageTime || 0) >= this.damageCooldown;
+      
+      if (canDamage) {
+        const impactSpeed = Math.hypot(v.vel?.x || 0, v.vel?.y || 0);
+        if (impactSpeed > this.collisionDamageThreshold) {
+          if (!v.health) v.health = new Health(v.maxHealth || 100);
+          const damage = Math.max(1, Math.round(impactSpeed * 8));
+          v.health.takeDamage(damage);
+          v.lastDamageTime = now;
+          
+          if (state.scoringSystem && !v.health.isAlive()) {
+            state.scoringSystem.addCrime(state, 'destroy_vehicle', v);
+          }
+          
+          this.addDamageIndicator(state, v.pos, damage);
         }
       }
       

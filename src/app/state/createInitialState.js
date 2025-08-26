@@ -98,7 +98,7 @@ export function createInitialState(seed = null) {
   // Compute block center using the same formula as CityLayout.getBlockOrigin:
   // center = (original mapOffset + MED + bx*(W+MED)) + floor(W/2) + 0.5, then add the generation shift.
   state.pickupSpots = [];
-  const availablePickups = ['Pistol', 'AK47', 'Shotgun', 'Grenade', 'Health'];
+  const availablePickups = ['Pistol', 'AK47', 'Shotgun', 'Grenade', 'Health', 'Bribe'];
   const ORIGINAL_MAP_OFFSET = 2; // CityLayout.mapOffset
   const MAP_GEN_SHIFT = 2; // shift applied in MapGen.js
   const W = map.W;

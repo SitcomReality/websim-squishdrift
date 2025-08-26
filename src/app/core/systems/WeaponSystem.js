@@ -95,8 +95,8 @@ export class WeaponSystem {
   handleWeaponPickup(state, player) {
     // Handle both 'item' and 'weapon' types
     const items = state.entities.filter(e => 
-      (e.type === 'item' && ['Pistol', 'AK47', 'Shotgun', 'Grenade', 'Health'].includes(e.name)) || 
-      (e.type === 'weapon' && ['pistol', 'ak47', 'shotgun', 'grenade'].includes(e.weaponType))
+      (e.type === 'item' && ['Pistol', 'AK47', 'Shotgun', 'Grenade', 'Health', 'Bribe'].includes(e.name)) || 
+      (e.type === 'weapon' && ['pistol', 'ak47', 'shotgun', 'grenade', 'bribe'].includes(e.weaponType))
     );
     
     // Handle medkit pickup separately
@@ -132,37 +132,58 @@ export class WeaponSystem {
     for (let i = items.length - 1; i >= 0; i--) {
       const item = items[i];
       if (Math.hypot(player.pos.x - item.pos.x, player.pos.y - item.pos.y) < 1) {
-        // Skip health items as they're handled above
-        if (item.name === 'Health') continue;
-        
-        const weaponKey = item.name.toLowerCase();
-        player.equippedWeapon = { ...this.weapons[weaponKey] };
-        player.equippedWeapon.ammo = player.equippedWeapon.maxAmmo;
-        player.equippedWeapon.lastFireTime = 0;
-        player.equippedWeapon.isReloading = false;
-        
-        // Show pickup text
-        this.damageTextSystem.addPickupText(state, item.pos, item.name.toUpperCase());
-        
-        // Remove the item from entities
-        const index = state.entities.indexOf(item);
-        if (index > -1) {
-          state.entities.splice(index, 1);
+        // Handle bribe pickup
+        if (item.name === 'Bribe') {
+          // Reduce wanted level
+          if (state.emergencyServices && state.emergencyServices.wantedLevel > 0) {
+            state.emergencyServices.wantedLevel = Math.max(0, state.emergencyServices.wantedLevel - 1);
+            state.emergencyServices.wantedDecay = 0; // Reset decay timer
+            
+            // Show pickup text
+            this.damageTextSystem.addPickupText(state, item.pos, 'BRIBE', '#FFD700');
+          }
+          
+          // Remove the bribe
+          const index = state.entities.indexOf(item);
+          if (index > -1) {
+            state.entities.splice(index, 1);
+          }
+          
+          // Remove from pickup spot
+          if (typeof item.spotId === 'number' && state?.pickupSpots?.[item.spotId]) {
+            state.pickupSpots[item.spotId].hasItem = false;
+          }
+        } else if (item.name !== 'Health') {
+          // Handle weapons (existing code)
+          const weaponKey = item.name.toLowerCase();
+          player.equippedWeapon = { ...this.weapons[weaponKey] };
+          player.equippedWeapon.ammo = player.equippedWeapon.maxAmmo;
+          player.equippedWeapon.lastFireTime = 0;
+          player.equippedWeapon.isReloading = false;
+          
+          // Show pickup text
+          this.damageTextSystem.addPickupText(state, item.pos, item.name.toUpperCase());
+          
+          // Remove the item from entities
+          const index = state.entities.indexOf(item);
+          if (index > -1) {
+            state.entities.splice(index, 1);
+          }
+          
+          // Remove from pickup spot
+          if (typeof item.spotId === 'number' && state?.pickupSpots?.[item.spotId]) {
+            state.pickupSpots[item.spotId].hasItem = false;
+          }
+          
+          // Create ammo bar if it doesn't exist
+          this.createAmmoBar();
+          
+          const itemNameEl = document.getElementById('item-name');
+          if (itemNameEl) itemNameEl.textContent = player.equippedWeapon.name;
+          
+          // Break after picking up one weapon
+          break;
         }
-        
-        // Remove from pickup spot
-        if (typeof item.spotId === 'number' && state?.pickupSpots?.[item.spotId]) {
-          state.pickupSpots[item.spotId].hasItem = false;
-        }
-        
-        // Create ammo bar if it doesn't exist
-        this.createAmmoBar();
-        
-        const itemNameEl = document.getElementById('item-name');
-        if (itemNameEl) itemNameEl.textContent = player.equippedWeapon.name;
-        
-        // Break after picking up one weapon
-        break;
       }
     }
   }

@@ -8,7 +8,8 @@ export function drawItem(r, state, item){
     'AK47': 'ak47',
     'Shotgun': 'shotgun',
     'Grenade': 'grenade',
-    'Health': 'health'
+    'Health': 'health',
+    'Bribe': 'bribe'
   };
 
   const imageName = imageMap[item.name];

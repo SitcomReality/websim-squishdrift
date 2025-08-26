@@ -93,7 +93,8 @@ export class GameEngine {
       'shotgun': 'pickup_shotgun.png',
       'ak47': 'pickup_ak47.png',
       'grenade': 'pickup_grenade.png',
-      'health': 'pickup_health.png'
+      'health': 'pickup_health.png',
+      'bribe': 'pickup_bribe.png'
     };
 
     for (const [name, fileName] of Object.entries(pickupMap)) {

@@ -1,7 +1,7 @@
 import { GameStateManager } from './GameStateManager.js';
 import { SystemManager } from './SystemManager.js';
 import { RenderingManager } from './RenderingManager.js';
-import { InputManager } from '../InputManager.js';
+import { InputManager } from './InputManager.js';
 import { SpawnManager } from './SpawnManager.js';
 import { HUDManager } from './HUDManager.js';
 import { DebugManager } from './DebugManager.js';

@@ -15,13 +15,12 @@ export class ExplosionSystem {
       explosion.currentFrame = Math.floor(explosion.time * this.frameRate);
       
       if (explosion.currentFrame >= this.totalFrames) {
-        // Remove explosion when animation is complete
         state.explosions.splice(i, 1);
       }
     }
   }
 
-  createExplosion(state, position, source = 'vehicle') {
+  createExplosion(state, position) {
     const explosion = {
       type: 'explosion',
       pos: { x: position.x, y: position.y },
@@ -29,28 +28,21 @@ export class ExplosionSystem {
       currentFrame: 0,
       frameWidth: 256,
       frameHeight: 256,
-      totalFrames: this.totalFrames,
-      source: source
+      totalFrames: this.totalFrames
     };
     
     if (!state.explosions) state.explosions = [];
     state.explosions.push(explosion);
-    
-    // Trigger screen shake based on distance from camera
-    if (state.cameraSystem) {
-      const distance = Math.hypot(
-        position.x - state.camera.x,
-        position.y - state.camera.y
-      );
-      
-      // Calculate shake intensity based on distance
-      // Max shake at 0 distance, drops off with distance
-      const maxDistance = 15; // tiles
-      const shakeIntensity = Math.max(0, 1 - (distance / maxDistance)) * 2.0;
-      
-      if (shakeIntensity > 0.01) {
-        state.cameraSystem.addShake(shakeIntensity);
-      }
+
+    // Distance-based screen shake from camera center
+    const cam = state.camera;
+    const camSys = state.cameraSystem || state._engine?.systems?.camera;
+    if (cam && camSys) {
+      const dx = explosion.pos.x - cam.x, dy = explosion.pos.y - cam.y;
+      const dist = Math.hypot(dx, dy);
+      const maxDist = 12; // tiles
+      const intensity = Math.max(0, 1 - dist / maxDist); // 0..1
+      if (intensity > 0) camSys.addShake(intensity);
     }
   }
 }

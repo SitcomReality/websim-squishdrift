@@ -350,10 +350,11 @@ export class WeaponSystem {
   handleVehicleDestruction(state, vehicle) {
     // Create explosion using explosion system
     if (state.explosionSystem) {
-      state.explosionSystem.createExplosion(state, vehicle.pos, 'vehicle');
+      state.explosionSystem.createExplosion(state, vehicle.pos);
     }
     
-    // Screen shake is now handled by the explosion system
+    // remove fixed-intensity shake; ExplosionSystem now handles distance-based shake
+    // if (state.cameraSystem) { state.cameraSystem.addShake(1.0); }
     
     // Register crimes
     if (state.scoringSystem) {

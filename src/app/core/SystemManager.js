@@ -26,15 +26,17 @@ export class SystemManager {
       weapon: new WeaponSystem(),
       collision: new CollisionSystem()
     };
-    
     // Connect camera system to collision system for screen shake
     this.systems.collision.cameraSystem = this.systems.camera;
+    /* attach camera system to state for global access */
+    const s = this.stateManager.getState?.();
+    if (s) s.cameraSystem = this.systems.camera;
   }
 
   update(dt) {
     const state = this.stateManager.getState();
     const input = this.stateManager.inputManager?.getInput();
-    
+    if (state && !state.cameraSystem) state.cameraSystem = this.systems.camera;
     this.systems.player.update(state, input, dt);
     this.systems.vehicle.update(state, input, dt);
     this.systems.bullet.update(state, dt);
@@ -53,4 +55,3 @@ export class SystemManager {
     return this.systems;
   }
 }
-

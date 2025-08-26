@@ -89,9 +89,6 @@ export class CollisionHandler {
       if (entity.isPolice) {
         state.scoringSystem.addCrime(state, 'kill_police', entity);
       }
-      
-      // Play pedestrian death sound
-      state.audio?.playSfx?.('pedestrian_death');
     } else {
       entity.health.takeDamage(projectile.damage);
       state.particleSystem?.emitSparks(state, entity.pos, 10, 4);
@@ -103,12 +100,6 @@ export class CollisionHandler {
     // Handle destruction - ensure explosion system is triggered
     if (!entity.health.isAlive()) {
       this.handleEntityDestruction(state, entity);
-    }
-    
-    // Remove entity from entities array
-    const index = state.entities.indexOf(entity);
-    if (index > -1) {
-      state.entities.splice(index, 1);
     }
   }
 
@@ -138,6 +129,12 @@ export class CollisionHandler {
         state.explosionSystem.createExplosion(state, entity.pos);
       }
     }
+    
+    // Remove entity from entities array
+    const index = state.entities.indexOf(entity);
+    if (index > -1) {
+      state.entities.splice(index, 1);
+    }
   }
 
   isTreeTrunkCollision(projX, projY, tx, ty, state) {
@@ -160,3 +157,4 @@ export class CollisionHandler {
     return dx <= trunkHalf && dy <= trunkHalf;
   }
 }
+

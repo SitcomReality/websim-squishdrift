@@ -163,7 +163,6 @@ export class VehicleCollisionSystem {
             const damage = Math.max(1, Math.round(impactSpeed * 5));
             v.health.takeDamage(damage);
             v.lastDamageTime = now;
-            state.particleSystem?.emitSparks(state, v.pos, Math.min(10, 3 + Math.floor(damage / 6)), 3.5);
             
             this.handleVehicleDestruction(state, v);
             this.addDamageIndicator(state, v.pos, damage);
@@ -264,14 +263,21 @@ export class VehicleCollisionSystem {
         const contact = obbOverlap(vehicleOBB, pedOBB);
 
         if (contact) {
-            state.entities.push({
+            // Play pedestrian death sound
+            state.audio?.playSfx?.('pedestrian_death');
+            
+            // Create blood stain
+            const bloodStain = {
                 type: 'blood',
                 pos: { x: ped.pos.x, y: ped.pos.y },
-                size: 0.6 + (state.rand ? state.rand() * 0.4 : Math.random() * 0.4),
-                color: `hsl(0, 70%, ${30 + (state.rand ? state.rand() * 20 : Math.random() * 20)}%)`,
-                rotation: (state.rand ? state.rand() * Math.PI * 2 : Math.random() * Math.PI * 2)
-            });
-
+                size: 0.6 + Math.random() * 0.4,
+                color: `hsl(0, 70%, ${30 + Math.random() * 20}%)`,
+                rotation: Math.random() * Math.PI * 2
+            };
+            
+            state.entities.push(bloodStain);
+            
+            // Remove the pedestrian
             const pedIndex = state.entities.indexOf(ped);
             if (pedIndex > -1) {
                 state.entities.splice(pedIndex, 1);

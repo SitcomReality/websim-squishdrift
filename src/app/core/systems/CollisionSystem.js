@@ -41,21 +41,10 @@ export class CollisionSystem {
           // Apply damage
           target.health.takeDamage(25);
           
-          // Trigger screen shake for player damage
-          if (target.type === 'npc') {
-            this.triggerShake(state, 0.5);
-            state.particleSystem?.emitBlood(state, target.pos, 10, 3);
-          }
-          if (target.type === 'vehicle') {
-            state.particleSystem?.emitSparks(state, target.pos, 8, 5);
-          }
-          
-          // Remove bullet on hit
-          const bulletIndex = state.entities.indexOf(bullet);
-          if (bulletIndex > -1) state.entities.splice(bulletIndex, 1);
-          
-          // Handle NPC death
+          // Handle NPC death with sound
           if (target.type === 'npc' && !target.health.isAlive()) {
+            state.audio?.playSfx?.('pedestrian_death');
+            
             const bloodStain = {
               type: 'blood',
               pos: new Vec2(target.pos.x, target.pos.y),
@@ -68,6 +57,19 @@ export class CollisionSystem {
             const targetIndex = state.entities.indexOf(target);
             if (targetIndex > -1) state.entities.splice(targetIndex, 1);
           }
+          
+          // Trigger screen shake for player damage
+          if (target.type === 'npc') {
+            this.triggerShake(state, 0.5);
+            state.particleSystem?.emitBlood(state, target.pos, 10, 3);
+          }
+          if (target.type === 'vehicle') {
+            state.particleSystem?.emitSparks(state, target.pos, 8, 5);
+          }
+          
+          // Remove bullet on hit
+          const bulletIndex = state.entities.indexOf(bullet);
+          if (bulletIndex > -1) state.entities.splice(bulletIndex, 1);
         }
       }
     }
@@ -131,9 +133,6 @@ export class CollisionSystem {
             color: bloodStain.color,
             rotation: bloodStain.rotation
           });
-          
-          // Play pedestrian death sound
-          state.audio?.playSfx?.('pedestrian_death');
           
           const pedestrianIndex = state.entities.indexOf(pedestrian);
           if (pedestrianIndex > -1) {

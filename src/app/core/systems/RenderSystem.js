@@ -14,7 +14,7 @@ import { drawBlood } from '../../entities/drawBlood.js';
 import { drawProjectile } from '../../entities/drawProjectile.js';
 import { drawDamageIndicator } from '../../entities/drawDamageIndicator.js';
 import { drawDamageText } from '../../entities/drawDamageText.js';
-import { drawExplosion } from '../../entities/drawExplosion.js';
+import { drawExplosion } from '../entities/drawExplosion.js';
 
 export class RenderSystem {
   render(state, renderer, debugOverlay) {

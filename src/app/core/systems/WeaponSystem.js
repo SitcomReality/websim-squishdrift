@@ -254,6 +254,13 @@ export class WeaponSystem {
         return;
       }
       
+      // Play appropriate sound effect based on weapon type
+      if (weapon.name === 'Pistol' || weapon.name === 'AK47') {
+        state.audio?.playSfx?.('shoot01');
+      } else if (weapon.name === 'Shotgun') {
+        state.audio?.playSfx?.('shoot02');
+      }
+      
       this.projectileManager.fireProjectile(state, player);
       weapon.lastFireTime = now;
       
@@ -274,12 +281,11 @@ export class WeaponSystem {
     if (!tree) return false;
     
     // Calculate the precise trunk collision area
-    const trunkSize = 0.3; // Same as used in aabbForTrunk
+    const trunkSize = 0.3;
     const trunkHalf = trunkSize / 2;
     const trunkCenterX = tileX + 0.5;
     const trunkCenterY = tileY + 0.5;
     
-    // Check if projectile is within the trunk's precise hitbox
     const dx = Math.abs(projX - trunkCenterX);
     const dy = Math.abs(projY - trunkCenterY);
     

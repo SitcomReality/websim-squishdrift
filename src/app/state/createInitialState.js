@@ -54,7 +54,7 @@ export function createInitialState(seed = null) {
   const vehicleTypes = ['compact', 'sedan', 'truck', 'sports'];
   for (let i = 0; i < validSpawns.length; i++) {
     const spawnNode = validSpawns[i];
-    const next = spawnNode.next[Math.floor(rand() * spawnNode.next.length)];
+    const next = spawnNode.next[Math.floor(state.rand() * spawnNode.next.length)];
     const vehicleType = vehicleTypes[i % vehicleTypes.length];
     
     // Determine rotation based on road direction

@@ -125,8 +125,7 @@ export const VehicleTypes = {
       ...VehicleArchetype.headlights,
       size: 0.05,
       width: 0.1,
-      frontOffset: 0.7, // Increased from 0.45 to 0.7 for sports
-      frontOffset: 0.75 // Further increased to 0.75
+      frontOffset: 0.75
     },
     colorScheme: { hue:[15,40], sat:[70,85], light:[30,50] } // highest saturation
   },

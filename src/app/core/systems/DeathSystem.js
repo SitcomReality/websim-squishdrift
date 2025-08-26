@@ -110,7 +110,7 @@ export class DeathSystem {
           cursor: pointer;
           transition: all 0.3s ease;
         " onmouseover="this.style.background='rgba(255,255,255,0.2)'"
-           onmouseout="this.style.background='rgba(255,255,255,0.1)'" >
+           onmouseout="this.style.background='rgba(255,255,255,0.1)'">
           RESTART
         </button>
       </div>
@@ -157,13 +157,17 @@ export class DeathSystem {
       }, 2000);
     }, 100);
 
-    // Add restart button listener
-    const restartBtn = document.getElementById('restart-button');
-    if (restartBtn) {
-      restartBtn.onclick = () => {
-        this.restartGame();
-      };
-    }
+    // Add restart button listener using direct assignment to ensure it works
+    setTimeout(() => {
+      const restartBtn = document.getElementById('restart-button');
+      if (restartBtn) {
+        console.log('Restart button found, adding listener');
+        restartBtn.onclick = () => {
+          console.log('Restart button clicked');
+          this.restartGame();
+        };
+      }
+    }, 2100); // Wait until after content is shown
   }
 
   updateDeathScreen(state, dt) {
@@ -194,7 +198,6 @@ export class DeathSystem {
   }
 
   restartGame() {
-    // Ensure this function is properly called
     console.log('Restarting game...');
     
     // Remove death overlay

@@ -37,6 +37,15 @@ toggleBtn.addEventListener('click', () => {
   console.log('Debug overlay enabled:', next);
 });
 
+// Add a handler for the on-page restart button so it triggers the same 'game-restart' event
+const restartBtn = document.getElementById('restart-button');
+if (restartBtn) {
+  restartBtn.addEventListener('click', () => {
+    console.log('Restart button clicked (UI)');
+    window.dispatchEvent(new CustomEvent('game-restart'));
+  });
+}
+
 // Add click handling for debug spawning
 canvas.addEventListener('click', (e) => {
   if (!game.debugOverlay?.enabled) return;

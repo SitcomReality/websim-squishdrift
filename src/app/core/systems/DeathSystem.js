@@ -157,13 +157,12 @@ export class DeathSystem {
       }, 2000);
     }, 100);
 
-    // Add restart button listener with proper event handling
+    // Add restart button listener
     const restartBtn = document.getElementById('restart-button');
     if (restartBtn) {
-      restartBtn.addEventListener('click', () => {
-        console.log('Restart button clicked - triggering restart');
+      restartBtn.onclick = () => {
         this.restartGame();
-      });
+      };
     }
   }
 

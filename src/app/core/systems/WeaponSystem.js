@@ -217,28 +217,52 @@ export class WeaponSystem {
     const angle = player.facingAngle || Math.atan2(player.facing.y, player.facing.x);
     const origin = (state.control?.inVehicle && state.control.vehicle?.pos) ? state.control.vehicle.pos : player.pos;
     
-    const createProjectile = (projAngle) => ({
-      type: 'projectile',
-      pos: new Vec2(origin.x, origin.y),
-      vel: new Vec2(
-        Math.cos(projAngle) * weapon.projectileSpeed,
-        Math.sin(projAngle) * weapon.projectileSpeed
-      ),
-      damage: weapon.damage,
-      range: weapon.range,
-      lifetime: weapon.range / weapon.projectileSpeed,
-      age: 0,
-      size: weapon.projectileSize,
-      owner: 'player'
-    });
-
-    if (weapon.name === 'Shotgun' && weapon.pellets) {
-      for (let i = 0; i < weapon.pellets; i++) {
-        const spreadAngle = angle + (Math.random() - 0.5) * weapon.spread;
-        state.entities.push(createProjectile(spreadAngle));
-      }
+    if (weapon.name === 'Grenade') {
+      // Create grenade projectile that will explode into shrapnel
+      const grenade = {
+        type: 'projectile',
+        pos: new Vec2(origin.x, origin.y),
+        vel: new Vec2(
+          Math.cos(angle) * weapon.projectileSpeed,
+          Math.sin(angle) * weapon.projectileSpeed
+        ),
+        damage: 0, // Grenade itself does no damage
+        range: weapon.range,
+        lifetime: weapon.range / weapon.projectileSpeed,
+        age: 0,
+        size: weapon.projectileSize,
+        owner: 'player',
+        isGrenade: true,
+        explosionDamage: weapon.damage,
+        shrapnelCount: 12,
+        shrapnelRange: 8
+      };
+      state.entities.push(grenade);
     } else {
-      state.entities.push(createProjectile(angle));
+      // Handle other projectiles normally
+      const createProjectile = (projAngle) => ({
+        type: 'projectile',
+        pos: new Vec2(origin.x, origin.y),
+        vel: new Vec2(
+          Math.cos(projAngle) * weapon.projectileSpeed,
+          Math.sin(projAngle) * weapon.projectileSpeed
+        ),
+        damage: weapon.damage,
+        range: weapon.range,
+        lifetime: weapon.range / weapon.projectileSpeed,
+        age: 0,
+        size: weapon.projectileSize,
+        owner: 'player'
+      });
+
+      if (weapon.name === 'Shotgun' && weapon.pellets) {
+        for (let i = 0; i < weapon.pellets; i++) {
+          const spreadAngle = angle + (Math.random() - 0.5) * weapon.spread;
+          state.entities.push(createProjectile(spreadAngle));
+        }
+      } else {
+        state.entities.push(createProjectile(angle));
+      }
     }
   }
 
@@ -257,9 +281,105 @@ export class WeaponSystem {
         continue;
       }
       
+      // Check for grenade explosion
+      if (proj.isGrenade) {
+        const collision = this.checkGrenadeCollision(state, proj);
+        if (collision || proj.age >= proj.lifetime) {
+          this.explodeGrenade(state, proj);
+          state.entities.splice(state.entities.indexOf(proj), 1);
+          continue;
+        }
+      }
+      
+      // Handle regular projectile collision
       if (this.checkCollisions(state, proj)) {
         state.entities.splice(state.entities.indexOf(proj), 1);
       }
+    }
+  }
+
+  checkGrenadeCollision(state, grenade) {
+    const map = state.world.map;
+    
+    // Check map boundaries
+    if (grenade.pos.x < 0 || grenade.pos.x >= map.width || 
+        grenade.pos.y < 0 || grenade.pos.y >= map.height) {
+      return true;
+    }
+    
+    // Check tree trunk collision
+    const tx = Math.floor(grenade.pos.x);
+    const ty = Math.floor(grenade.pos.y);
+    if (this.isTreeTrunkCollision(grenade.pos.x, grenade.pos.y, tx, ty, state)) {
+      return true;
+    }
+    
+    // Check tile collision
+    if (tx >= 0 && tx < map.width && ty >= 0 && ty < map.height) {
+      const tile = map.tiles[ty][tx];
+      if ([8, 9].includes(tile)) {
+        return true;
+      }
+    }
+    
+    // Check entity collisions (vehicles, NPCs)
+    const entities = state.entities.filter(e => 
+      (e.type === 'vehicle' || e.type === 'npc') && 
+      e !== grenade.owner
+    );
+    
+    for (const entity of entities) {
+      const distance = Math.hypot(
+        grenade.pos.x - entity.pos.x,
+        grenade.pos.y - entity.pos.y
+      );
+      
+      const radius = entity.type === 'vehicle' ? 0.5 : 0.2;
+      if (distance < radius + grenade.size) {
+        return true;
+      }
+    }
+    
+    return false;
+  }
+
+  explodeGrenade(state, grenade) {
+    // Create explosion effect
+    if (state.explosionSystem) {
+      state.explosionSystem.createExplosion(state, grenade.pos);
+    }
+    
+    // Create shrapnel projectiles
+    const shrapnelCount = grenade.shrapnelCount || 12;
+    const damage = grenade.explosionDamage || 100;
+    const range = grenade.shrapnelRange || 8;
+    
+    for (let i = 0; i < shrapnelCount; i++) {
+      const angle = (i / shrapnelCount) * Math.PI * 2;
+      const speed = 12 + Math.random() * 4; // Random speed variation
+      
+      const shrapnel = {
+        type: 'projectile',
+        pos: new Vec2(grenade.pos.x, grenade.pos.y),
+        vel: new Vec2(
+          Math.cos(angle) * speed,
+          Math.sin(angle) * speed
+        ),
+        damage: Math.round(damage * 0.6), // Shrapnel does 60% of grenade damage
+        range: range,
+        lifetime: range / speed,
+        age: 0,
+        size: 0.05, // Small shrapnel pieces
+        owner: grenade.owner,
+        isShrapnel: true
+      };
+      
+      state.entities.push(shrapnel);
+    }
+    
+    // Add screen shake
+    if (state.cameraSystem) {
+      state.cameraSystem.addShake(1.5);
     }
   }
 

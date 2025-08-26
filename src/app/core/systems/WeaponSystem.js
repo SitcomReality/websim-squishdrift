@@ -37,8 +37,28 @@ export class WeaponSystem {
     // Update projectiles
     this.projectileManager.updateProjectiles(state, dt);
     
+    // Check projectile collisions
+    this.checkProjectileCollisions(state);
+    
     // Update ammo bar
     this.updateAmmoBar(state, player);
+  }
+
+  checkProjectileCollisions(state) {
+    const projectiles = state.entities.filter(e => e.type === 'projectile');
+    
+    for (let i = projectiles.length - 1; i >= 0; i--) {
+      const proj = projectiles[i];
+      
+      // Check collisions using collision handler
+      if (this.collisionHandler.checkCollisions(state, proj)) {
+        // Remove projectile on collision
+        const index = state.entities.indexOf(proj);
+        if (index > -1) {
+          state.entities.splice(index, 1);
+        }
+      }
+    }
   }
 
   updateAmmoBar(state, player) {

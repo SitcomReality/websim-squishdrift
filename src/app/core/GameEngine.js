@@ -6,6 +6,7 @@ import { SpawnManager } from './SpawnManager.js';
 import { HUDManager } from './HUDManager.js';
 import { DebugManager } from './DebugManager.js';
 import { DeathSystem } from './systems/DeathSystem.js';
+import { ScoringSystem } from './systems/ScoringSystem.js';
 
 export class GameEngine {
   constructor(canvas, { debugEl } = {}) {
@@ -17,6 +18,7 @@ export class GameEngine {
     this.hudManager = new HUDManager();
     this.debugManager = new DebugManager(debugEl, this.stateManager);
     this.deathSystem = new DeathSystem();
+    this.scoringSystem = new ScoringSystem();
     
     this.stateManager.initialize();
     this.hudManager.initialize();
@@ -26,6 +28,11 @@ export class GameEngine {
 
     // Ensure state knows about the canvas for systems that reference it
     if (this.stateManager.state) this.stateManager.state.canvas = canvas;
+
+    // Add scoring system to state
+    if (this.stateManager.state) {
+      this.stateManager.state.scoringSystem = this.scoringSystem;
+    }
 
     // Add start time for death screen stats
     if (this.stateManager.state) {
@@ -56,6 +63,9 @@ export class GameEngine {
     this.systemManager.update(dt);
     this.spawnManager.update(dt);
     this.deathSystem.update(this.stateManager.state, dt);
+    
+    // Update HUD with scoring info
+    this.updateHUD();
 
     // Now update input manager to perform any end-of-frame housekeeping.
     // Note: InputSystem.update() is intentionally a no-op; we need to clear the
@@ -73,6 +83,22 @@ export class GameEngine {
     this.renderingManager.render(this.stateManager.state, interp);
   }
 
+  updateHUD() {
+    const state = this.stateManager.getState();
+    if (!state || !state.scoringSystem) return;
+    
+    const wantedLevelEl = document.getElementById('wanted-level');
+    const scoreEl = document.getElementById('score');
+    
+    if (wantedLevelEl) {
+      wantedLevelEl.textContent = state.scoringSystem.getWantedLevel();
+    }
+    
+    if (scoreEl) {
+      scoreEl.textContent = state.scoringSystem.getScore();
+    }
+  }
+
   restart() {
     // Reinitialize everything
     this.stateManager.initialize();
@@ -83,7 +109,11 @@ export class GameEngine {
       vehiclesDestroyed: 0
     };
     this.stateManager.state.debugOverlay = this.debugOverlay;
+    this.stateManager.state.scoringSystem = this.scoringSystem;
     this.stateManager.inputManager = this.inputManager;
+    
+    // Reset scoring system
+    this.scoringSystem.reset();
     
     // Reset HUD elements
     this.resetHUD();
@@ -106,6 +136,18 @@ export class GameEngine {
     const vehicleStateEl = document.getElementById('vehicle-state');
     if (vehicleStateEl) {
       vehicleStateEl.textContent = 'on foot';
+    }
+    
+    // Reset score display
+    const scoreEl = document.getElementById('score');
+    if (scoreEl) {
+      scoreEl.textContent = '0';
+    }
+    
+    // Reset wanted level
+    const wantedEl = document.getElementById('wanted-level');
+    if (wantedEl) {
+      wantedEl.textContent = '0';
     }
   }
 }

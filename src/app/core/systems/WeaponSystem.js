@@ -17,11 +17,17 @@ export class WeaponSystem {
       }
     };
     this.damageTextSystem = new DamageTextSystem();
+    this.scoringSystem = new ScoringSystem();
   }
 
   update(state, input, dt) {
     const player = state.entities.find(e => e.type === 'player');
     if (!player) return;
+
+    // Initialize scoring system if not exists
+    if (!state.scoringSystem) {
+      state.scoringSystem = new ScoringSystem();
+    }
 
     // Skip weapon handling if player is in vehicle
     if (player.inVehicle) return;
@@ -253,6 +259,16 @@ export class WeaponSystem {
       
       const radius = entity.type === 'vehicle' ? 0.5 : 0.2;
       if (distance < radius + projectile.size) {
+        // Register crime
+        if (entity.type === 'vehicle') {
+          state.scoringSystem.addCrime(state, 'shoot_vehicle', entity);
+          
+          // Check if it's a police vehicle
+          if (entity.vehicleType === 'emergency' && entity.color === '#0000FF') {
+            state.scoringSystem.addCrime(state, 'shoot_police_vehicle', entity);
+          }
+        }
+        
         // Ensure entity has health
         if (!entity.health) {
           if (entity.type === 'vehicle') {
@@ -267,6 +283,14 @@ export class WeaponSystem {
         if (entity.type === 'npc') {
           // NPCs die instantly
           entity.health.hp = 0;
+          
+          // Register crime for killing pedestrian
+          state.scoringSystem.addCrime(state, 'kill_pedestrian', entity);
+          
+          // Check if it's a police officer
+          if (entity.isPolice) {
+            state.scoringSystem.addCrime(state, 'kill_police', entity);
+          }
         } else {
           // Vehicles take damage normally
           entity.health.takeDamage(projectile.damage);
@@ -280,6 +304,11 @@ export class WeaponSystem {
           state.stats.enemiesKilled = (state.stats.enemiesKilled || 0) + 1;
         } else if (entity.type === 'vehicle') {
           state.stats.vehiclesDestroyed = (state.stats.vehiclesDestroyed || 0) + 1;
+          
+          // Register crime for destroying vehicle
+          if (!entity.health.isAlive()) {
+            state.scoringSystem.addCrime(state, 'destroy_vehicle', entity);
+          }
         }
         
         // Handle entity destruction

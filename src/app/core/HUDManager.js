@@ -16,6 +16,12 @@ export class HUDManager {
     wantedRow.innerHTML = '<span class="label">Wanted</span><span id="wanted-level">0</span>';
     hud.appendChild(wantedRow);
 
+    // Create score row
+    const scoreRow = document.createElement('div');
+    scoreRow.className = 'row';
+    scoreRow.innerHTML = '<span class="label">Score</span><span id="score">0</span>';
+    hud.appendChild(scoreRow);
+
     // Create interaction prompt
     const interactionRow = document.createElement('div');
     interactionRow.className = 'row';
@@ -34,6 +40,7 @@ export class HUDManager {
 
     this.elements = {
       wantedLevelEl: document.getElementById('wanted-level'),
+      scoreEl: document.getElementById('score'),
       interactionPromptEl: document.getElementById('interaction-prompt'),
       interactionActionEl: document.getElementById('interaction-action'),
       debugInfoEl: document.getElementById('debug-info'),

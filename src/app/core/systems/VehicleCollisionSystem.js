@@ -96,6 +96,11 @@ export class VehicleCollisionSystem {
         const contact = obbOverlap(vehicleOBB, pedOBB);
 
         if (contact) {
+            // Register crime for killing pedestrian
+            if (state.scoringSystem) {
+                state.scoringSystem.addCrime(state, 'kill_pedestrian', ped);
+            }
+
             // Use BloodManager to handle blood creation and limit
             if (!state.bloodManager) {
                 state.bloodManager = new (require('../../entities/drawBlood.js').BloodManager)();

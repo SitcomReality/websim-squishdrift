@@ -154,7 +154,7 @@ export class WeaponSystem {
             state.pickupSpots[item.spotId].hasItem = false;
           }
         } else if (item.name !== 'Health') {
-          // Handle weapons (existing code)
+          // Handle weapons - always replace current weapon
           const weaponKey = item.name.toLowerCase();
           player.equippedWeapon = { ...this.weapons[weaponKey] };
           player.equippedWeapon.ammo = player.equippedWeapon.maxAmmo;
@@ -224,17 +224,24 @@ export class WeaponSystem {
       return;
     }
     
-    if (input.pressed.has('KeyR') && weapon.ammo < weapon.maxAmmo && !debugEnabled) {
-      weapon.isReloading = true;
-      weapon.reloadStartTime = now;
-      return;
-    }
-    
     const isFiring = input.mousePos && input.keys.has('MouseLeft');
     if (isFiring && now - weapon.lastFireTime >= weapon.fireRate) {
       if (weapon.ammo <= 0 && !debugEnabled) {
-        weapon.isReloading = true;
-        weapon.reloadStartTime = now;
+        // Instead of reloading, remove the weapon entirely
+        player.equippedWeapon = null;
+        
+        // Update HUD to show "None"
+        const itemNameEl = document.getElementById('item-name');
+        if (itemNameEl) {
+          itemNameEl.textContent = 'None';
+        }
+        
+        // Remove ammo bar
+        const ammoContainer = document.getElementById('ammo-container');
+        if (ammoContainer) {
+          ammoContainer.remove();
+        }
+        
         return;
       }
       

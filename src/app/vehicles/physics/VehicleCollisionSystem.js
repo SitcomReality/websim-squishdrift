@@ -53,7 +53,7 @@ export class VehicleCollisionSystem {
     const canDamageB = now - (vehicleB.lastDamageTime || 0) >= this.damageCooldown;
     
     if (!canDamageA && !canDamageB) return; // Both in cooldown
-
+    
     // Ensure both vehicles have health
     if (!vehicleA.health) {
       vehicleA.health = new Health(vehicleA.maxHealth || 100);
@@ -113,11 +113,9 @@ export class VehicleCollisionSystem {
       state.explosionSystem.createExplosion(state, vehicle.pos);
     }
     
-    // Register crimes if vehicles are destroyed
+    // Register crimes
     if (state.scoringSystem) {
-      if (!vehicle.health.isAlive()) {
-        state.scoringSystem.addCrime(state, 'destroy_vehicle', vehicle);
-      }
+      state.scoringSystem.addCrime(state, 'destroy_vehicle', vehicle);
     }
     
     // Remove vehicle from entities
@@ -126,8 +124,8 @@ export class VehicleCollisionSystem {
       state.entities.splice(vehicleIndex, 1);
     }
     
-    // If this is the player's vehicle, handle death
-    if (state.control?.inVehicle && state.control.vehicle === vehicle) {
+    // If this was the player's vehicle, handle death
+    if (state.control?.vehicle === vehicle) {
       const deathSystem = state._engine?.systems?.death || 
                          state.deathSystem || 
                          state._engine?.deathSystem;

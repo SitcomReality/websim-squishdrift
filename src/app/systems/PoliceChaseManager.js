@@ -4,6 +4,7 @@ export class PoliceChaseManager {
     this.spawnCooldown = 0;
     this.repathInterval = 1.0;
     this._lastRepath = 0;
+    this.lastWantedLevel = 0; // Track last known wanted level
   }
 
   update(state, dt, emergencyServices) {
@@ -12,9 +13,22 @@ export class PoliceChaseManager {
     this.spawnCooldown = Math.max(0, this.spawnCooldown - dt);
 
     const desired = Math.min(3, Math.max(0, level));
-    while (this.chasers.length < desired && this.spawnCooldown <= 0) {
+    
+    // Check if wanted level increased - if so, spawn immediately
+    const levelIncreased = level > this.lastWantedLevel;
+    this.lastWantedLevel = level;
+    
+    while (this.chasers.length < desired) {
+      // Skip cooldown if wanted level just increased
+      const canSpawn = levelIncreased || this.spawnCooldown <= 0;
+      if (!canSpawn) break;
+      
       if (this.trySpawnChaser(state, emergencyServices)) {
         this.spawnCooldown = this.getRespawnDelay(level);
+        // Only reset cooldown if not spawning due to level increase
+        if (levelIncreased) {
+          this.spawnCooldown = 0; // Reset cooldown for immediate response
+        }
       } else break;
     }
 
@@ -30,7 +44,7 @@ export class PoliceChaseManager {
   }
 
   getRespawnDelay(level) {
-    return level === 3 ? 5 : level === 2 ? 15 : 30;
+    return level === 3 ? 1 : level === 2 ? 5 : 10;
   }
 
   cleanup(state) {

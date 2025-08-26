@@ -5,8 +5,8 @@ import { Health } from '../../components/Health.js';
 
 export class VehicleCollisionSystem {
   constructor() {
-    this.collisionDamageThreshold = 2.0; // Minimum speed for damage
-    this.damageMultiplier = 15.0; // Damage scaling factor
+    this.collisionDamageThreshold = 0.5; // Reduced from 2.0 to 0.5 for easier damage
+    this.damageMultiplier = 20.0; // Increased from 15.0 to 20.0 for more damage
   }
 
   update(state, dt) {
@@ -62,10 +62,10 @@ export class VehicleCollisionSystem {
       return;
     }
     
-    // Calculate damage based on impact force
+    // Calculate damage based on impact force - ensure minimum 1 damage
     const totalMass = vehicleA.mass + vehicleB.mass;
-    const damageA = Math.max(0, (impactSpeed * vehicleB.mass / totalMass) * this.damageMultiplier);
-    const damageB = Math.max(0, (impactSpeed * vehicleA.mass / totalMass) * this.damageMultiplier);
+    const damageA = Math.max(1, Math.round((impactSpeed * vehicleB.mass / totalMass) * this.damageMultiplier));
+    const damageB = Math.max(1, Math.round((impactSpeed * vehicleA.mass / totalMass) * this.damageMultiplier));
     
     // Apply damage
     vehicleA.health.takeDamage(damageA);
@@ -81,13 +81,13 @@ export class VehicleCollisionSystem {
       }
     }
     
-    // Add damage indicators
-    this.addDamageIndicator(state, vehicleA.pos, Math.round(damageA));
-    this.addDamageIndicator(state, vehicleB.pos, Math.round(damageB));
+    // Add damage indicators - use integers only
+    this.addDamageIndicator(state, vehicleA.pos, damageA);
+    this.addDamageIndicator(state, vehicleB.pos, damageB);
     
     // Add screen shake for significant impacts
-    if (impactSpeed > 5.0 && state.cameraSystem) {
-      state.cameraSystem.addShake(Math.min(1, impactSpeed / 10));
+    if (impactSpeed > 3.0 && state.cameraSystem) {
+      state.cameraSystem.addShake(Math.min(1, impactSpeed / 8));
     }
   }
 

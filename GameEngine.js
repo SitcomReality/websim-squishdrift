@@ -135,6 +135,18 @@ export class GameEngine {
         }
       };
     }
+
+    // Load pistol pickup image
+    const pistolImg = new Image();
+    pistolImg.src = '/pickup_pistol.png';
+    pistolImg.onload = () => {
+      if (this.stateManager.state) {
+        if (!this.stateManager.state.vehicleImages) {
+          this.stateManager.state.vehicleImages = {};
+        }
+        this.stateManager.state.vehicleImages.pistol = pistolImg;
+      }
+    };
   }
 
   update(dt) {

@@ -10,6 +10,9 @@ export class AIDrivingSystem {
       v.aiTargetSpeed = v.aiTargetSpeed || (v.drivingStyle === 'reckless' ? 4.0 : 1.5);
       v.impatience = v.impatience || 0;
       
+      // Check if vehicle is damaged and should panic
+      this.checkVehiclePanic(v);
+      
       // Initialize planned route if not exists
       if (!v.plannedRoute || !v.plannedRoute.length) {
         this.initializeRoute(v, roads);
@@ -17,6 +20,20 @@ export class AIDrivingSystem {
 
       this.updateRouteFollowing(state, v, roads, dt, obstacles);
       this.updateMovement(v, dt);
+    }
+  }
+
+  checkVehiclePanic(vehicle) {
+    // If vehicle has health and is damaged, switch to reckless
+    if (vehicle.health && vehicle.health.hp < vehicle.health.maxHp && vehicle.drivingStyle !== 'reckless') {
+      vehicle.drivingStyle = 'reckless';
+      vehicle.aiTargetSpeed = 4.0; // Increase speed for reckless driving
+      vehicle.impatience = 10; // Make them immediately impatient
+    }
+    
+    // If vehicle is severely damaged (below 30% health), make even more reckless
+    if (vehicle.health && vehicle.health.hp < (vehicle.health.maxHp * 0.3)) {
+      vehicle.aiTargetSpeed = 5.0; // Even faster when panicking
     }
   }
 

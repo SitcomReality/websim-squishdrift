@@ -7,16 +7,26 @@ export class VehicleCollisionSystem {
   constructor() {
     this.collisionDamageThreshold = 0.5; // Reduced from 2.0 to 0.5 for easier damage
     this.damageMultiplier = 20.0; // Increased from 15.0 to 20.0 for more damage
+    this.damageCooldown = 1000;
   }
 
   update(state, dt) {
     for (const v of state.entities.filter(e => e.type === 'vehicle')) {
       v.hitboxW = v.hitboxW ?? 0.9; v.hitboxH = v.hitboxH ?? 0.5; v.mass = v.mass || 1200; v.vel = v.vel || {x:0,y:0};
+      
+      // Initialize lastDamageTime if not exists
+      if (!v.lastDamageTime) v.lastDamageTime = 0;
+      
       this.handleVehicleCollisions(state, v);
       this.handleBuildingCollisions(state, v);
       this.handlePlayerCollision(state, v);
       this.handlePedestrianCollision(state, v);
-      this.handleMapBoundaries(state, v); // Add map boundary check
+      this.handleMapBoundaries(state, v);
+      
+      // Check for vehicle destruction due to health
+      if (v.health && !v.health.isAlive()) {
+        this.handleVehicleDestruction(state, v);
+      }
     }
   }
 
@@ -41,6 +51,10 @@ export class VehicleCollisionSystem {
   }
 
   calculateCollisionDamage(state, vehicleA, vehicleB) {
+    const now = Date.now();
+    const canDamageA = now - (vehicleA.lastDamageTime || 0) >= this.damageCooldown;
+    const canDamageB = now - (vehicleB.lastDamageTime || 0) >= this.damageCooldown;
+    
     // Ensure both vehicles have health
     if (!vehicleA.health) {
       vehicleA.health = new Health(vehicleA.maxHealth || 100);
@@ -68,8 +82,15 @@ export class VehicleCollisionSystem {
     const damageB = Math.max(1, Math.round((impactSpeed * vehicleA.mass / totalMass) * this.damageMultiplier));
     
     // Apply damage
-    vehicleA.health.takeDamage(damageA);
-    vehicleB.health.takeDamage(damageB);
+    if (canDamageA) {
+      vehicleA.health.takeDamage(damageA);
+      vehicleA.lastDamageTime = now;
+    }
+    
+    if (canDamageB) {
+      vehicleB.health.takeDamage(damageB);
+      vehicleB.lastDamageTime = now;
+    }
     
     // Register crimes if vehicles are destroyed
     if (state.scoringSystem) {
@@ -81,13 +102,49 @@ export class VehicleCollisionSystem {
       }
     }
     
+    // Handle vehicle destruction if health is depleted
+    if (canDamageA && !vehicleA.health.isAlive()) {
+      this.handleVehicleDestruction(state, vehicleA);
+    }
+    if (canDamageB && !vehicleB.health.isAlive()) {
+      this.handleVehicleDestruction(state, vehicleB);
+    }
+    
     // Add damage indicators - use integers only
-    this.addDamageIndicator(state, vehicleA.pos, damageA);
-    this.addDamageIndicator(state, vehicleB.pos, damageB);
+    if (canDamageA) this.addDamageIndicator(state, vehicleA.pos, damageA);
+    if (canDamageB) this.addDamageIndicator(state, vehicleB.pos, damageB);
     
     // Add screen shake for significant impacts
     if (impactSpeed > 3.0 && state.cameraSystem) {
       state.cameraSystem.addShake(Math.min(1, impactSpeed / 8));
+    }
+  }
+
+  handleVehicleDestruction(state, vehicle) {
+    // Create explosion
+    if (state.explosionSystem) {
+      state.explosionSystem.createExplosion(state, vehicle.pos);
+    }
+    
+    // Register crimes
+    if (state.scoringSystem) {
+      state.scoringSystem.addCrime(state, 'destroy_vehicle', vehicle);
+    }
+    
+    // Remove vehicle from entities
+    const vehicleIndex = state.entities.indexOf(vehicle);
+    if (vehicleIndex > -1) {
+      state.entities.splice(vehicleIndex, 1);
+    }
+    
+    // If this was the player's vehicle, handle death
+    if (state.control?.vehicle === vehicle) {
+      const deathSystem = state._engine?.systems?.death || 
+                         state.deathSystem || 
+                         state._engine?.deathSystem;
+      if (deathSystem && deathSystem.handlePlayerDeath) {
+        deathSystem.handlePlayerDeath(state);
+      }
     }
   }
 
@@ -104,7 +161,27 @@ export class VehicleCollisionSystem {
       if (this.isTreeTrunk(gx, gy, map)) {
         const contact = obbOverlap(obb, aabbForTrunk(gx, gy)); if (!contact) continue;
         const correctedContact = { ...contact, normal: contact.normal };
-        resolveDynamicStatic(v, correctedContact, 0.2);
+        resolveDynamicStatic(v, correctedContact, 0.6);
+        
+        // Calculate collision damage for tree impact
+        const now = Date.now();
+        const canDamage = now - (v.lastDamageTime || 0) >= this.damageCooldown;
+        
+        if (canDamage) {
+          const impactSpeed = Math.hypot(v.vel?.x || 0, v.vel?.y || 0);
+          if (impactSpeed > this.collisionDamageThreshold) {
+            if (!v.health) v.health = new Health(v.maxHealth || 100);
+            const damage = Math.max(1, Math.round(impactSpeed * 5));
+            v.health.takeDamage(damage);
+            v.lastDamageTime = now;
+            
+            if (!v.health.isAlive()) {
+              this.handleVehicleDestruction(state, v);
+            }
+            this.addDamageIndicator(state, v.pos, damage);
+          }
+        }
+        
         // Add bounce reflection for trunk impacts
         {
           const restitution = 0.6;
@@ -125,16 +202,25 @@ export class VehicleCollisionSystem {
       
       // Use contact normal for building collision
       const correctedContact = { ...contact, normal: contact.normal };
-      resolveDynamicStatic(v, correctedContact, 0.2);
-      // Reflect velocity for a bounce effect when hitting building tiles
-      {
-        const restitution = 0.6;
-        const speed = Math.hypot(v.vel.x || 0, v.vel.y || 0);
-        const velDir = this.getVelocityDirection(v);
-        const reflect = this.calculateBounceNormal(velDir, correctedContact.normal);
-        const bounceFactor = Math.max(0.25, restitution * 0.8);
-        v.vel.x = reflect.x * speed * bounceFactor;
-        v.vel.y = reflect.y * speed * bounceFactor;
+      resolveDynamicStatic(v, correctedContact, 0.6);
+      
+      // Calculate collision damage for building impact
+      const now = Date.now();
+      const canDamage = now - (v.lastDamageTime || 0) >= this.damageCooldown;
+      
+      if (canDamage) {
+        const impactSpeed = Math.hypot(v.vel?.x || 0, v.vel?.y || 0);
+        if (impactSpeed > this.collisionDamageThreshold) {
+          if (!v.health) v.health = new Health(v.maxHealth || 100);
+          const damage = Math.max(1, Math.round(impactSpeed * 8));
+          v.health.takeDamage(damage);
+          v.lastDamageTime = now;
+          
+          if (!v.health.isAlive()) {
+            this.handleVehicleDestruction(state, v);
+          }
+          this.addDamageIndicator(state, v.pos, damage);
+        }
       }
       
       // Strong damping for building impacts
@@ -174,7 +260,11 @@ export class VehicleCollisionSystem {
                 rotation: (state.rand ? state.rand() * Math.PI * 2 : Math.random() * Math.PI * 2)
             };
             
-            state.bloodManager.addBlood(state, bloodStain);
+            if (state.bloodManager) {
+                state.bloodManager.addBlood(state, bloodStain);
+            } else {
+                state.entities.push(bloodStain);
+            }
 
             const pedIndex = state.entities.indexOf(ped);
             if (pedIndex > -1) {
@@ -210,15 +300,9 @@ export class VehicleCollisionSystem {
         v.pos.y < 0 || v.pos.y >= map.height) {
       
       // Mark vehicle as destroyed
-      if (!v.health) {
-        v.health = new (require('../../components/Health.js').Health)(1);
-      }
+      if (!v.health) v.health = new Health(v.maxHealth || 100);
       v.health.hp = 0;
-      
-      // Check if this is the player's vehicle
-      if (state.control?.inVehicle && state.control.vehicle === v) {
-        // Player death will be handled by DeathSystem
-      }
+      this.handleVehicleDestruction(state, v);
     }
   }
 
@@ -302,9 +386,11 @@ export class VehicleCollisionSystem {
     return { x: reflected.x / length, y: reflected.y / length };
   }
 
-  isTreeTrunk(gx, gy, map) {
-    const t = map.tiles[gy][gx];
-    return t === 10; // Assuming 10 is the tile type for tree trunks
+  isTreeTrunk(x, y, map) {
+    if (!map.trees) return false;
+    return map.trees.some(tree => 
+      Math.floor(tree.pos.x) === x && Math.floor(tree.pos.y) === y
+    );
   }
 
   addDamageIndicator(state, pos, damage) {

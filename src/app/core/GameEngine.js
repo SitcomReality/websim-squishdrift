@@ -31,13 +31,7 @@ export class GameEngine {
     this.stateManager.inputManager = this.inputManager;
 
     // Ensure state knows about the canvas for systems that reference it
-    if (this.stateManager.state) {
-      this.stateManager.state.canvas = canvas;
-      // Provide a stable _engine bridge so modules can find engine systems (camera, etc.)
-      // and also expose the cameraSystem directly on state for immediate access.
-      this.stateManager.state._engine = { systems: this.systemManager.getSystems() };
-      this.stateManager.state.cameraSystem = this.systemManager.getSystems().camera;
-    }
+    if (this.stateManager.state) this.stateManager.state.canvas = canvas;
 
     // Add scoring system to state
     if (this.stateManager.state) {

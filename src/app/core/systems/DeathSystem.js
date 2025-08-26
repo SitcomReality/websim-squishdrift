@@ -158,14 +158,12 @@ export class DeathSystem {
     }, 100);
 
     // Add restart button listener
-    setTimeout(() => {
-      const restartBtn = document.getElementById('restart-button');
-      if (restartBtn) {
-        restartBtn.addEventListener('click', () => {
-          this.restartGame();
-        });
-      }
-    }, 2100);
+    const restartBtn = document.getElementById('restart-button');
+    if (restartBtn) {
+      restartBtn.onclick = () => {
+        this.restartGame();
+      };
+    }
   }
 
   updateDeathScreen(state, dt) {
@@ -196,6 +194,9 @@ export class DeathSystem {
   }
 
   restartGame() {
+    // Ensure this function is properly called
+    console.log('Restarting game...');
+    
     // Remove death overlay
     const deathOverlay = document.getElementById('death-overlay');
     if (deathOverlay) {

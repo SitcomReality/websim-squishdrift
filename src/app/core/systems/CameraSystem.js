@@ -16,7 +16,7 @@ export class CameraSystem {
     const now = performance.now() * 0.001; const dt = this._lastTime ? Math.max(1e-3, now - this._lastTime) : 0;
     const speed = this._prevTarget && dt ? Math.hypot(target.x - this._prevTarget.x, target.y - this._prevTarget.y) / dt : 0;
     const maxRef = state.control.inVehicle ? (state.control.vehicle?.maxSpeed || 6) : ((state.entities.find(e=>e.type==='player')?.moveSpeed) || 6);
-    const sensitivityMultiplier = 0.5; // Halve the speed requirement
+    const sensitivityMultiplier = 2.5; // Increased from 0.5 to 2.5 - much more responsive
     const frac = Math.max(0, Math.min(1, (speed / (maxRef || 1)) * sensitivityMultiplier));
     const desiredZoom = cam.defaultZoom * (1 + frac); // up to 2x at max speed
     cam.zoom = cam.zoom ?? cam.defaultZoom; cam.zoom += (desiredZoom - cam.zoom) * 0.08;

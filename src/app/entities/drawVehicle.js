@@ -20,34 +20,47 @@ export function drawVehicle(renderer, state, v) {
   // Rotate 90 degrees clockwise to fix "driving sideways" issue
   ctx.rotate((v.rot || 0) + Math.PI/2);
   
-  // Calculate scale based on image dimensions
-  const imageWidth = img.width;
-  const imageHeight = img.height;
-  const targetHeight = ts * 1.2; // Make vehicles slightly larger than tile size
-  const scale = targetHeight / imageHeight;
-  const scaledWidth = imageWidth * scale;
-  const scaledHeight = imageHeight * scale;
+  // Get actual hitbox dimensions
+  const hitboxW = v.hitboxW || 0.9;
+  const hitboxH = v.hitboxH || 0.5;
   
-  // Center the image
-  const offsetX = -scaledWidth / 2;
-  const offsetY = -scaledHeight / 2;
+  // Scale sprite to match hitbox dimensions
+  const targetWidth = hitboxW * ts;
+  const targetHeight = hitboxH * ts;
+  
+  // Calculate scale factors based on actual image dimensions
+  const scaleX = targetWidth / img.width;
+  const scaleY = targetHeight / img.height;
+  
+  // Center the scaled sprite
+  const offsetX = -targetWidth / 2;
+  const offsetY = -targetHeight / 2;
+  
+  // Apply scaling
+  ctx.scale(scaleX, scaleY);
   
   // Draw the sprite
   ctx.drawImage(
     img,
-    offsetX,
-    offsetY,
-    scaledWidth,
-    scaledHeight
+    -img.width / 2,
+    -img.height / 2,
+    img.width,
+    img.height
   );
+  
+  ctx.restore();
+  
+  // Draw health bar and other overlays in a separate context to avoid scaling issues
+  ctx.save();
+  ctx.translate(v.pos.x * ts, v.pos.y * ts);
   
   // Draw health bar above vehicles
   if (v.health && v.health.maxHealth) {
     const healthPercent = v.health.hp / v.health.maxHealth;
-    const barWidth = scaledWidth * 0.8;
+    const barWidth = hitboxW * ts * 0.8;
     const barHeight = 4;
     const barX = -barWidth / 2;
-    const barY = offsetY - barHeight - 8;
+    const barY = -(hitboxH * ts / 2) - barHeight - 8;
     
     // Background
     ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
@@ -67,7 +80,7 @@ export function drawVehicle(renderer, state, v) {
     
     ctx.fillStyle = blink ? '#FF0000' : '#0000FF';
     ctx.beginPath();
-    ctx.arc(0, -scaledHeight/2 - 10, 5, 0, Math.PI * 2);
+    ctx.arc(0, -(hitboxH * ts / 2) - 15, 5, 0, Math.PI * 2);
     ctx.fill();
   }
   
@@ -78,8 +91,8 @@ export function drawVehicle(renderer, state, v) {
 function drawBoxVehicle(renderer, state, v) {
   const { ctx } = renderer;
   const ts = state.world.tileSize;
-  const w = ts * (v.width || 0.9);
-  const h = ts * (v.height || 0.5);
+  const w = ts * (v.hitboxW || 0.9);
+  const h = ts * (v.hitboxH || 0.5);
   
   ctx.save();
   ctx.translate(v.pos.x * ts, v.pos.y * ts);

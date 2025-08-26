@@ -14,6 +14,7 @@ import { drawBlood } from '../../entities/drawBlood.js';
 import { drawProjectile } from '../../entities/drawProjectile.js';
 import { drawDamageIndicator } from '../../entities/drawDamageIndicator.js';
 import { drawDamageText } from '../../entities/drawDamageText.js';
+import { drawExplosion } from '../../entities/drawExplosion.js';
 
 export class RenderSystem {
   render(state, renderer, debugOverlay) {
@@ -49,6 +50,12 @@ export class RenderSystem {
     drawTiles(renderer, state, 'ground');
     drawTiles(renderer, state, 'floors');
     drawSkidmarks(renderer, state);
+    
+    // Draw explosions
+    const explosions = state.explosions || [];
+    for (const explosion of explosions) {
+      drawExplosion(renderer, state, explosion);
+    }
     
     // Sort entities by y-position for proper z-ordering
     const entities = [...(state.entities || [])].sort((a, b) => {

@@ -91,13 +91,21 @@ export class VehicleCollisionSystem {
       vehicleB.lastDamageTime = now;
     }
     
-    // Register crimes if vehicles are destroyed
+    // Register crimes and create explosion if vehicles are destroyed
     if (state.scoringSystem) {
       if (!vehicleA.health.isAlive()) {
         state.scoringSystem.addCrime(state, 'destroy_vehicle', vehicleA);
+        // Create explosion
+        if (state.explosionSystem) {
+          state.explosionSystem.createExplosion(state, vehicleA.pos);
+        }
       }
       if (!vehicleB.health.isAlive()) {
         state.scoringSystem.addCrime(state, 'destroy_vehicle', vehicleB);
+        // Create explosion
+        if (state.explosionSystem) {
+          state.explosionSystem.createExplosion(state, vehicleB.pos);
+        }
       }
     }
     

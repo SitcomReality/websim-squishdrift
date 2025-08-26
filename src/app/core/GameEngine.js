@@ -8,6 +8,7 @@ import { DebugManager } from './DebugManager.js';
 import { DeathSystem } from './systems/DeathSystem.js';
 import { ScoringSystem } from './systems/ScoringSystem.js';
 import { DamageTextSystem } from './systems/DamageTextSystem.js';
+import { ExplosionSystem } from './systems/ExplosionSystem.js';
 
 export class GameEngine {
   constructor(canvas, { debugEl } = {}) {
@@ -21,6 +22,7 @@ export class GameEngine {
     this.deathSystem = new DeathSystem();
     this.scoringSystem = new ScoringSystem();
     this.damageTextSystem = new DamageTextSystem();
+    this.explosionSystem = new ExplosionSystem();
     
     this.stateManager.initialize();
     this.hudManager.initialize();
@@ -50,6 +52,11 @@ export class GameEngine {
       };
     }
 
+    // Add explosion system to state
+    if (this.stateManager.state) {
+      this.stateManager.state.explosionSystem = this.explosionSystem;
+    }
+
     // Expose commonly used references for external code (main.js expects these)
     this.debugOverlay = this.debugManager.debugOverlay;
     this.renderer = this.renderingManager.renderer;
@@ -73,6 +80,9 @@ export class GameEngine {
     
     // Always update damage text system regardless of player state
     this.damageTextSystem.update(this.stateManager.state, dt);
+    
+    // Update explosion system
+    this.explosionSystem.update(this.stateManager.state, dt);
     
     // Update HUD with scoring info
     this.updateHUD();

@@ -2,6 +2,15 @@ import { GameEngine } from './src/app/core/GameEngine.js';
 import { createLoop } from './src/app/loop.js';
 import { Vec2 } from './src/utils/Vec2.js';
 
+// Load explosion sprite sheet
+const explosionImage = new Image();
+explosionImage.src = '/Explosion_001_Tile_8x8_256x256.png';
+explosionImage.onload = () => {
+  if (game && game.stateManager && game.stateManager.state) {
+    game.stateManager.state.explosionImage = explosionImage;
+  }
+};
+
 // Game elements
 const canvas = document.getElementById('game');
 const debugEl = document.getElementById('debug');

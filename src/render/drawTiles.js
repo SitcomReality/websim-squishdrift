@@ -47,6 +47,15 @@ export function drawTiles(r, state, layer = 'all'){
 
   // Draw dashed lines on straight roads
   drawDashedLines(r, state);
+
+  // Draw explosions last so they appear on top
+  const explosions = state.explosions || [];
+  for (const explosion of explosions) {
+    if (explosion.pos.x >= sx && explosion.pos.x < sx + wTiles &&
+        explosion.pos.y >= sy && explosion.pos.y < sy + hTiles) {
+      drawExplosion(r, state, explosion);
+    }
+  }
 }
 
 function isZebraCrossing(tile) {

@@ -95,13 +95,46 @@ export class WeaponSystem {
   handleWeaponPickup(state, player) {
     // Handle both 'item' and 'weapon' types
     const items = state.entities.filter(e => 
-      (e.type === 'item' && ['Pistol', 'AK47', 'Shotgun', 'Grenade'].includes(e.name)) || 
+      (e.type === 'item' && ['Pistol', 'AK47', 'Shotgun', 'Grenade', 'Health'].includes(e.name)) || 
       (e.type === 'weapon' && ['pistol', 'ak47', 'shotgun', 'grenade'].includes(e.weaponType))
     );
+    
+    // Handle medkit pickup separately
+    const healthItems = state.entities.filter(e => 
+      e.type === 'item' && e.name === 'Health'
+    );
+    
+    for (let i = healthItems.length - 1; i >= 0; i--) {
+      const item = healthItems[i];
+      if (Math.hypot(player.pos.x - item.pos.x, player.pos.y - item.pos.y) < 1) {
+        // Calculate actual health gained
+        const healthGained = Math.min(15, player.health.maxHp - player.health.hp);
+        
+        // Restore health
+        player.health.hp = Math.min(player.health.hp + 15, player.health.maxHp);
+        
+        // Show pickup text with actual health gained
+        this.damageTextSystem.addPickupText(state, item.pos, `+${healthGained}`, '#4CAF50');
+        
+        // Remove the medkit
+        const index = state.entities.indexOf(item);
+        if (index > -1) {
+          state.entities.splice(index, 1);
+        }
+        
+        // Mark spot as empty if it has one
+        if (typeof item.spotId === 'number' && state?.pickupSpots?.[item.spotId]) {
+          state.pickupSpots[item.spotId].hasItem = false;
+        }
+      }
+    }
     
     for (let i = items.length - 1; i >= 0; i--) {
       const item = items[i];
       if (Math.hypot(player.pos.x - item.pos.x, player.pos.y - item.pos.y) < 1) {
+        // Skip health items as they're handled above
+        if (item.name === 'Health') continue;
+        
         const weaponKey = item.name.toLowerCase();
         player.equippedWeapon = { ...this.weapons[weaponKey] };
         player.equippedWeapon.ammo = player.equippedWeapon.maxAmmo;
@@ -115,6 +148,11 @@ export class WeaponSystem {
         const index = state.entities.indexOf(item);
         if (index > -1) {
           state.entities.splice(index, 1);
+        }
+        
+        // Remove from pickup spot
+        if (typeof item.spotId === 'number' && state?.pickupSpots?.[item.spotId]) {
+          state.pickupSpots[item.spotId].hasItem = false;
         }
         
         // Create ammo bar if it doesn't exist

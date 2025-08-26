@@ -76,6 +76,30 @@ export class ProjectileManager {
     }
   }
 
+  fireProjectile(state, player) {
+    const weapon = player.equippedWeapon;
+    if (!weapon) return;
+
+    const projectile = this.createProjectile(state, player, weapon);
+    state.entities.push(projectile);
+
+    // Handle shotgun pellets
+    if (weapon.name === 'Shotgun' && weapon.pellets > 1) {
+      for (let i = 1; i < weapon.pellets; i++) {
+        const spread = weapon.spread || 0.25;
+        const angle = player.facingAngle || Math.atan2(player.facing.y, player.facing.x);
+        const spreadAngle = angle + (Math.random() - 0.5) * spread;
+        
+        const pellet = this.createStandardProjectile(
+          (state.control?.inVehicle && state.control.vehicle?.pos) ? state.control.vehicle.pos : player.pos,
+          spreadAngle,
+          weapon
+        );
+        state.entities.push(pellet);
+      }
+    }
+  }
+
   checkGrenadeCollision(state, grenade) {
     const map = state.world.map;
     

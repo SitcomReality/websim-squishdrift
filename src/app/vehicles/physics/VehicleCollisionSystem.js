@@ -177,9 +177,11 @@ export class VehicleCollisionSystem {
     const indicator = {
       type: 'damage_indicator',
       pos: { x: pos.x, y: pos.y },
-      damage: actualDamage,
+      text: `-${actualDamage}`, // Use text property with proper formatting
+      color: '#ff3333',
       age: 0,
-      lifetime: 1.5
+      lifetime: 1.5,
+      size: 14
     };
     
     state.damageTexts.push(indicator);

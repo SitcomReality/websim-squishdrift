@@ -35,7 +35,7 @@ export class VehicleCollisionSystem {
       
       // Use contact normal for more predictable collision response
       const correctedContact = { ...contact, normal: this.smoothCollisionNormal(contact.normal, v, o) };
-      resolveDynamicDynamic(v, o, correctedContact, 0.4);
+      resolveDynamicDynamic(v, o, correctedContact, 0.6);
       
       // Calculate collision damage
       this.calculateCollisionDamage(state, v, o);
@@ -327,8 +327,14 @@ export class VehicleCollisionSystem {
       objB.angularVelocity *= 0.7;
     }
     
-    // Reduce linear velocity slightly for stability
-    const dampingFactor = 0.85;
+    // Reduce linear velocity; ease off when both flow in same direction at low relative speed
+    let dampingFactor = 0.85;
+    if (objB && objA?.vel && objB?.vel) {
+      const rel = Math.hypot((objA.vel.x||0)-(objB.vel.x||0),(objA.vel.y||0)-(objB.vel.y||0));
+      const a = (x)=>((x%(2*Math.PI))+2*Math.PI)%(2*Math.PI);
+      const hDiff = (objA.rot!=null && objB.rot!=null) ? Math.abs(((a(objA.rot)-a(objB.rot)+Math.PI)%(2*Math.PI))-Math.PI) : Math.PI;
+      if (rel < 0.6 && hDiff < 0.5) dampingFactor = 0.97;
+    }
     if (objA.vel) {
       objA.vel.x *= dampingFactor;
       objA.vel.y *= dampingFactor;

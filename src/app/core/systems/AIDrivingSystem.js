@@ -168,15 +168,24 @@ export class AIDrivingSystem {
     // --- NEW --- Obstacle avoidance speed adjustment for normal drivers
     if (drivingStyle === 'normal' && v.impatience < IMPATIENCE_THRESHOLD) {
       if (obstacleDistance === 0) { // Obstacle right in front
-        // Request a sustained brake hold instead of instantly flipping brake on/off.
-        // This prevents flicker: we set a short hold timer and force throttle=0.
-        v.brakeHoldTimer = Math.max(v.brakeHoldTimer || 0, 0.6); // hold brakes for ~0.6s
-        v.ctrl.throttle = 0;
-        speedMultiplier = 0;
+        const ov = detectedObstacle;
+        const isVeh = ov && ov.type === 'vehicle';
+        const relSpeed = isVeh ? Math.hypot((ov.vel?.x||0)-(v.vel?.x||0),(ov.vel?.y||0)-(v.vel?.y||0)) : Infinity;
+        const ang = (a)=>((a% (2*Math.PI))+2*Math.PI)%(2*Math.PI);
+        const hDiff = isVeh ? Math.abs(((ang(ov.rot||0)-ang(v.rot||0)+Math.PI)% (2*Math.PI)) - Math.PI) : Math.PI;
+        const sameFlow = isVeh && hDiff < 0.35 && relSpeed < 0.6;
+        if (sameFlow) {
+          speedMultiplier = Math.min(speedMultiplier, 0.85);
+          v.ctrl.throttle = Math.max(v.ctrl.throttle || 0, 0.2);
+        } else {
+          v.brakeHoldTimer = Math.max(v.brakeHoldTimer || 0, 0.6);
+          v.ctrl.throttle = 0;
+          speedMultiplier = 0;
+        }
       } else if (obstacleDistance === 1) { // Obstacle 1 node away
-        speedMultiplier = Math.min(speedMultiplier, 0.3);
-      } else if (obstacleDistance === 2) { // Obstacle 2 nodes away
         speedMultiplier = Math.min(speedMultiplier, 0.6);
+      } else if (obstacleDistance === 2) { // Obstacle 2 nodes away
+        speedMultiplier = Math.min(speedMultiplier, 0.8);
       }
     }
 

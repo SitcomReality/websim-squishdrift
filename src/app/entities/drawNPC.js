@@ -49,11 +49,17 @@ export function drawNPC(r, state, npc){
   const armSwingAngle = Math.sin(animProgress) * 0.8; // Radians
 
   // --- Draw Arms (behind body) ---
-  // Left Arm (from viewer's perspective, drawn first to be behind)
+  // Both arms are now drawn behind the body, positioned forward and spread apart
+  
+  // Left Arm (behind body, positioned forward and to the side)
   ctx.save();
-  // Position relative to body center, slightly back and to the side
-  ctx.translate(-bodyW * 0.05, bodyH * 0.1); 
-  ctx.rotate(-armSwingAngle); // Opposite swing
+  // Position arms more forward and slightly outward
+  const armOffsetX = bodyW * 0.35; // Move arms forward
+  const armOffsetY = bodyH * 0.1;   // Slight vertical offset
+  const armSpread = bodyW * 0.6;  // Increased spread between arms
+  
+  ctx.translate(armOffsetX - armSpread/2, armOffsetY);
+  ctx.rotate(-armSwingAngle); // Opposite swing for left arm
   ctx.drawImage(
     pedestrianImages.arms,
     sxArm, syArm, armSpriteWidth, armSpriteHeight,
@@ -61,24 +67,23 @@ export function drawNPC(r, state, npc){
   );
   ctx.restore();
 
-  // --- Draw Body ---
+  // Right Arm (behind body, positioned forward and to the other side)
+  ctx.save();
+  ctx.translate(armOffsetX + armSpread/2, armOffsetY);
+  ctx.rotate(armSwingAngle); // Swing for right arm
+  ctx.drawImage(
+    pedestrianImages.arms,
+    sxArm, syArm, armSpriteWidth, armSpriteHeight,
+    -armW / 2, -armH / 2, armW, armH
+  );
+  ctx.restore();
+
+  // --- Draw Body (on top of arms) ---
   ctx.drawImage(
     pedestrianImages.bodies,
     sxBody, syBody, bodySpriteWidth, bodySpriteHeight,
     -bodyW / 2, -bodyH / 2, bodyW, bodyH
   );
-
-  // --- Draw Arms (in front of body) ---
-  // Right Arm
-  ctx.save();
-  ctx.translate(-bodyW * 0.05, -bodyH * 0.2); // Positioned more forward
-  ctx.rotate(armSwingAngle);
-  ctx.drawImage(
-    pedestrianImages.arms,
-    sxArm, syArm, armSpriteWidth, armSpriteHeight,
-    -armW / 2, -armH / 2, armW, armH
-  );
-  ctx.restore();
 
   ctx.restore();
 }

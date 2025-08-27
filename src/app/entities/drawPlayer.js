@@ -1,4 +1,4 @@
-export function drawPlayer(r, state, player){
+export async function drawPlayer(r, state, player){
   if (player.hidden) return;
   const { ctx } = r, ts = state.world.tileSize, p = player.pos;
   

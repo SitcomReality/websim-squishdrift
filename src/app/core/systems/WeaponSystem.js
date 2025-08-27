@@ -158,34 +158,37 @@ export class WeaponSystem {
         } else if (item.name !== 'Health') {
           // Handle weapons - always replace current weapon
           const weaponKey = item.name.toLowerCase();
-          player.equippedWeapon = { ...this.weapons[weaponKey] };
-          player.equippedWeapon.ammo = player.equippedWeapon.maxAmmo;
-          player.equippedWeapon.lastFireTime = 0;
-          player.equippedWeapon.isReloading = false;
-          
-          // Show pickup text
-          this.damageTextSystem.addPickupText(state, item.pos, item.name.toUpperCase());
-          
-          // Play default pickup SFX (weapons, etc.)
-          state.audio?.playSfxAt?.('pickup_default', item.pos, state);
-          
-          // Remove the item from entities
-          const index = state.entities.indexOf(item);
-          if (index > -1) {
-            state.entities.splice(index, 1);
+          const weapon = this.weapons[weaponKey];
+          if (weapon) {
+            player.equippedWeapon = { ...weapon };
+            player.equippedWeapon.ammo = weapon.maxAmmo;
+            player.equippedWeapon.lastFireTime = 0;
+            player.equippedWeapon.isReloading = false;
+            
+            // Show pickup text
+            this.damageTextSystem.addPickupText(state, item.pos, weapon.name.toUpperCase());
+            
+            // Play default pickup SFX (weapons, etc.)
+            state.audio?.playSfxAt?.('pickup_default', item.pos, state);
+            
+            // Remove the item from entities
+            const index = state.entities.indexOf(item);
+            if (index > -1) {
+              state.entities.splice(index, 1);
+            }
+            
+            // Remove from pickup spot
+            if (typeof item.spotId === 'number' && state?.pickupSpots?.[item.spotId]) {
+              state.pickupSpots[item.spotId].hasItem = false;
+            }
+            
+            // Update item name directly
+            const itemNameEl = document.getElementById('item-name');
+            if (itemNameEl) itemNameEl.textContent = weapon.name;
+            
+            // Break after picking up one weapon
+            break;
           }
-          
-          // Remove from pickup spot
-          if (typeof item.spotId === 'number' && state?.pickupSpots?.[item.spotId]) {
-            state.pickupSpots[item.spotId].hasItem = false;
-          }
-          
-          // Update item name directly
-          const itemNameEl = document.getElementById('item-name');
-          if (itemNameEl) itemNameEl.textContent = weapon.name;
-          
-          // Break after picking up one weapon
-          break;
         }
       }
     }
@@ -201,6 +204,8 @@ export class WeaponSystem {
   }
 
   handleWeaponFiring(state, player, input, debugEnabled) {
+    if (!player.equippedWeapon) return;
+    
     const weapon = player.equippedWeapon;
     const now = Date.now();
     

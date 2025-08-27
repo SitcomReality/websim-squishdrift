@@ -152,33 +152,17 @@ export class RenderSystem {
     // Calculate glow parameters
     const centerX = vehicle.pos.x * ts;
     const centerY = vehicle.pos.y * ts;
-    const glowSize = ts * 2.5;
-    const innerSize = ts * 1.2;
     
-    // Create radial gradient for glow effect
-    const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, glowSize);
+    // Single pulsing circle with minimal size change
+    const baseSize = ts * 1.0; // Smaller base size
+    const pulseSize = baseSize * (1 + Math.sin(Date.now() * 0.002) * 0.15); // Much slower and smaller pulse (15% max change)
     
-    // Yellow-green glow with transparency
-    gradient.addColorStop(0, 'rgba(255, 255, 100, 0.8)');
-    gradient.addColorStop(0.3, 'rgba(255, 255, 50, 0.6)');
-    gradient.addColorStop(0.6, 'rgba(255, 200, 50, 0.3)');
-    gradient.addColorStop(1, 'rgba(255, 150, 0, 0)');
-    
-    // Draw the glow
     ctx.save();
     ctx.globalCompositeOperation = 'screen';
-    ctx.fillStyle = gradient;
+    ctx.fillStyle = 'rgba(255, 255, 100, 0.3)'; // Much more transparent
     ctx.beginPath();
-    ctx.arc(centerX, centerY, glowSize, 0, Math.PI * 2);
+    ctx.arc(centerX, centerY, pulseSize, 0, Math.PI * 2);
     ctx.fill();
-    
-    // Add subtle pulse effect
-    const pulse = Math.sin(Date.now() * 0.005) * 0.2 + 0.8;
-    ctx.fillStyle = `rgba(255, 255, 100, ${0.3 * pulse})`;
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, innerSize * pulse, 0, Math.PI * 2);
-    ctx.fill();
-    
     ctx.restore();
   }
 

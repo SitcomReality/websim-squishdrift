@@ -13,6 +13,7 @@ export class SkidmarkSystem {
     this.skidDespawnRadius = 15;
     this.skidSegmentLength = 0.05;
     this.rearWheelOffset = -0.3;
+    this.playerVehicleSkidBoost = 2.0; // Boost volume for player vehicle
   }
 
   update(state, dt) {
@@ -36,12 +37,27 @@ export class SkidmarkSystem {
         // NEW: start/update skid loop while skidding
         if (!v._isSkidding) {
           v._skidLoopId = v._skidLoopId || { type: 'skid', vehicle: v };
+          
+          // Check if this is the player's vehicle
+          const isPlayerVehicle = state.control?.inVehicle && state.control?.vehicle === v;
+          const effectiveVolume = isPlayerVehicle ? 0.35 * this.playerVehicleSkidBoost : 0.35;
+          
           state.audio?.startOrUpdateLoopAt?.('tire_skid_loop', v._skidLoopId, v.pos, state, {
-            rate: 1.0, baseVolume: 0.35, startOffset: Math.random() * 4.0
+            rate: 1.0,
+            baseVolume: effectiveVolume,
+            startOffset: Math.random() * 4.0
           });
           v._isSkidding = true;
         } else {
-          const vol = 0.25 + Math.min(0.5, (v.skidIntensity || 0) * 0.5);
+          // Check if this is the player's vehicle
+          const isPlayerVehicle = state.control?.inVehicle && state.control?.vehicle === v;
+          let vol = 0.25 + Math.min(0.5, (v.skidIntensity || 0) * 0.5);
+          
+          // Apply boost for player vehicle
+          if (isPlayerVehicle) {
+            vol *= this.playerVehicleSkidBoost;
+          }
+          
           state.audio?.startOrUpdateLoopAt?.('tire_skid_loop', v._skidLoopId, v.pos, state, { rate: 1.0, baseVolume: vol });
         }
         const moved = Math.hypot(v.pos.x - v._lastSkidPos.x, v.pos.y - v._lastSkidPos.y);

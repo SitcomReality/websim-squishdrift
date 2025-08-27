@@ -1,6 +1,10 @@
 import { GameEngine } from './src/app/core/GameEngine.js';
 import { createLoop } from './src/app/loop.js';
+import { LoadingSystem } from './loading.js';
 import { Vec2 } from './src/utils/Vec2.js';
+
+// Create global loading system
+const loadingSystem = new LoadingSystem();
 
 // Game elements - initialize game first
 const canvas = document.getElementById('game');
@@ -13,15 +17,44 @@ let loop = createLoop({
   render: (interp) => game.render(interp),
 });
 
-// Load explosion sprite sheet after game is initialized
-const explosionImage = new Image();
-explosionImage.src = '/Explosion_001_Tile_8x8_256x256.png';
-explosionImage.onload = () => {
-  if (game.stateManager && game.stateManager.state) {
-    game.stateManager.state.explosionImage = explosionImage;
+// Modify GameEngine to use loading system
+async function initializeWithLoading() {
+  try {
+    // Show loading screen and load assets
+    const loadedAssets = await loadingSystem.loadAssets();
+    
+    // Initialize game with loaded assets
+    game = new GameEngine(canvas, { debugEl });
+    
+    // Pass loaded assets to game state
+    if (game.stateManager && game.stateManager.state) {
+      Object.assign(game.stateManager.state, loadedAssets);
+    }
+    
+    loop = createLoop({
+      update: (dt) => game.update(dt),
+      render: (interp) => game.render(interp),
+    });
+    
+    // Start the game loop
+    loop.start();
+    
+  } catch (error) {
+    console.error('Failed to initialize game:', error);
+    // Fallback to basic initialization without loading screen
+    game = new GameEngine(canvas, { debugEl });
+    loop = createLoop({
+      update: (dt) => game.update(dt),
+      render: (interp) => game.render(interp),
+    });
+    loop.start();
   }
-};
+}
 
+// Replace direct initialization with loading system
+initializeWithLoading();
+
+// Update button and event listeners to wait for initialization
 toggleBtn.addEventListener('click', () => {
   console.log('Debug button clicked');
   const next = !game.debugOverlay?.enabled;
@@ -148,5 +181,3 @@ window.addEventListener('resize', () => {
 if (game.renderer && game.renderer.resizeToDisplay) {
   game.renderer.resizeToDisplay();
 }
-
-loop.start();

@@ -28,7 +28,7 @@ export class CanvasRenderer {
     ctx.setTransform(1,0,0,1,0,0);
     ctx.translate(cx, cy);
     ctx.scale(state.camera.zoom || 1, state.camera.zoom || 1);
-    ctx.translate(Math.floor(-state.camera.x*ts), Math.floor(-state.camera.y*ts));
+    ctx.translate(-(state.camera.x*ts), -(state.camera.y*ts));
   }
   endFrame(){ /* no-op */ }
 }

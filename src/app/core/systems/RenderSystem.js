@@ -36,7 +36,7 @@ export class RenderSystem {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.translate(cx, cy);
     ctx.scale(state.camera?.zoom || 1, state.camera?.zoom || 1);
-    ctx.translate(Math.floor(-(state.camera?.x || 0) * ts), Math.floor(-(state.camera?.y || 0) * ts));
+    ctx.translate(-(state.camera?.x || 0) * ts, -(state.camera?.y || 0) * ts);
     
     // Draw layers
     const z = state.camera?.zoom || 1;

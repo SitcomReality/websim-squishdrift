@@ -153,13 +153,13 @@ export class RenderSystem {
     const centerX = vehicle.pos.x * ts;
     const centerY = vehicle.pos.y * ts;
     
-    // Single pulsing circle with minimal size change
-    const baseSize = ts * 1.0; // Smaller base size
-    const pulseSize = baseSize * (1 + Math.sin(Date.now() * 0.002) * 0.15); // Much slower and smaller pulse (15% max change)
+    // Further reduced base size and pulse
+    const baseSize = ts * 0.65; // Reduced from 1.0 to 0.65
+    const pulseSize = baseSize * (1 + Math.sin(Date.now() * 0.001) * 0.08); // Much slower (0.001) and smaller pulse (8% max change)
     
     ctx.save();
     ctx.globalCompositeOperation = 'screen';
-    ctx.fillStyle = 'rgba(255, 255, 100, 0.3)'; // Much more transparent
+    ctx.fillStyle = 'rgba(255, 255, 100, 0.25)'; // Even more transparent
     ctx.beginPath();
     ctx.arc(centerX, centerY, pulseSize, 0, Math.PI * 2);
     ctx.fill();

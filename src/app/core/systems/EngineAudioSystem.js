@@ -4,6 +4,7 @@ export class EngineAudioSystem {
     this.rateMax = 1.5;
     this.volIdle = 0.18;
     this.volMax = 0.4;
+    this.playerVehicleBoost = 2.0; // Boost volume when player is in vehicle
   }
 
   update(state, dt) {
@@ -28,15 +29,19 @@ export class EngineAudioSystem {
       const rate = this.rateMin + (this.rateMax - this.rateMin) * t;
       const baseVol = this.volIdle + (this.volMax - this.volIdle) * t;
 
+      // Check if player is in this vehicle
+      const isPlayerVehicle = state.control?.inVehicle && state.control?.vehicle === v;
+      const effectiveVolume = isPlayerVehicle ? baseVol * this.playerVehicleBoost : baseVol;
+
       // Use vehicle object as loop id
       const id = v;
 
       audio.startOrUpdateLoopAt(key, id, v.pos, state, {
         rate,
-        baseVolume: baseVol,
-        minDistance: 2,
-        maxDistance: 20,
-        panMax: 14
+        baseVolume: effectiveVolume,
+        minDistance: isPlayerVehicle ? 0.5 : 2,  // Closer min distance for player vehicle
+        maxDistance: isPlayerVehicle ? 5 : 20, // Shorter max distance for player vehicle
+        panMax: isPlayerVehicle ? 4 : 14        // Less panning for player vehicle
       });
 
       activeSet.add(id);

@@ -28,6 +28,9 @@ export class VehicleCharacterCollisionHandler {
             const contact = obbOverlap(vehicleOBB, pedOBB);
 
             if (contact) {
+                // Always play pedestrian death sound
+                state.audio?.playSfxAt?.('pedestrian_death', ped.pos, state);
+                
                 // Updated to use oof03 instead of oof01
                 const oofSound = Math.random() < 0.5 ? 'oof02' : 'oof03';
                 state.audio?.playSfxAt?.(oofSound, ped.pos, state);

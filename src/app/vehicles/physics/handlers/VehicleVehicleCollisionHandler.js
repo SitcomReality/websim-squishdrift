@@ -64,7 +64,8 @@ export class VehicleVehicleCollisionHandler {
             vehicleA.lastDamageTime = now;
             state.particleSystem?.emitSparks(state, vehicleA.pos, Math.min(12, 4 + Math.floor(damageA / 5)), 4);
             const impactSound = ['impact01', 'impact02', 'impact03'][Math.floor(Math.random() * 3)];
-            state.audio?.playSfxAt?.(impactSound, vehicleA.pos, state);
+            // Reduce volume to 30% for vehicle collisions
+            state.audio?.playSfxAt?.(impactSound, vehicleA.pos, state, { volume: 0.3 });
         }
         
         if (canDamageB) {
@@ -72,7 +73,8 @@ export class VehicleVehicleCollisionHandler {
             vehicleB.lastDamageTime = now;
             state.particleSystem?.emitSparks(state, vehicleB.pos, Math.min(12, 4 + Math.floor(damageB / 5)), 4);
             const impactSound = ['impact01', 'impact02', 'impact03'][Math.floor(Math.random() * 3)];
-            state.audio?.playSfxAt?.(impactSound, vehicleB.pos, state);
+            // Reduce volume to 30% for vehicle collisions
+            state.audio?.playSfxAt?.(impactSound, vehicleB.pos, state, { volume: 0.3 });
         }
         
         handleVehicleDestruction(state, vehicleA);

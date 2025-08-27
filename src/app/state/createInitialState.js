@@ -14,7 +14,7 @@ export function createInitialState(seed = null) {
   const blocksHigh = 3 + Math.floor(rand() * 4); // 3-6 blocks
   
   const map = generateCity(finalSeed, blocksWide, blocksHigh);
-  const player = { type: 'player', pos: new Vec2(), facing: new Vec2(1,0), moveSpeed: 6 };
+  const player = { type: 'player', pos: new Vec2(), facing: new Vec2(1,0), moveSpeed: 1.5 }; // Changed from 6 to 1.5 (25% of original)
   const state = { 
     time: 0, 
     entities: [player], 

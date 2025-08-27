@@ -48,6 +48,10 @@ export class EngineAudioSystem {
         if (id?.type === 'vehicle' && !activeSet.has(id)) {
           audio.stopLoop(id, { fadeOut: 0.15 });
         }
+        // also cleanup skid loops if vehicle no longer present
+        if (id?.type === 'skid' && !vehicles.includes(id.vehicle)) {
+          audio.stopLoop(id, { fadeOut: 0.1 });
+        }
       }
     }
   }

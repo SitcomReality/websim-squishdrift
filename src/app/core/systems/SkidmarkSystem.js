@@ -33,17 +33,20 @@ export class SkidmarkSystem {
       if ((drifting || hardBrake) && speed > 0.05) {
         // spacing against last drop using vehicle's center position
         if (!v._lastSkidPos) v._lastSkidPos = new Vec2(v.pos.x, v.pos.y);
+        // NEW: start/update skid loop while skidding
+        if (!v._isSkidding) {
+          v._skidLoopId = v._skidLoopId || { type: 'skid', vehicle: v };
+          state.audio?.startOrUpdateLoopAt?.('tire_skid_loop', v._skidLoopId, v.pos, state, {
+            rate: 1.0, baseVolume: 0.35, startOffset: Math.random() * 4.0
+          });
+          v._isSkidding = true;
+        } else {
+          const vol = 0.25 + Math.min(0.5, (v.skidIntensity || 0) * 0.5);
+          state.audio?.startOrUpdateLoopAt?.('tire_skid_loop', v._skidLoopId, v.pos, state, { rate: 1.0, baseVolume: vol });
+        }
         const moved = Math.hypot(v.pos.x - v._lastSkidPos.x, v.pos.y - v._lastSkidPos.y);
 
         if (moved >= this.skidMinSegmentSpacing) {
-          // Play tire screech sound when starting a new skid sequence
-          if (!v._isSkidding) {
-            const screechSounds = ['tire_screech01', 'tire_screech02', 'tire_screech03'];
-            const randomSound = screechSounds[Math.floor(Math.random() * screechSounds.length)];
-            state.audio?.playSfxAt?.(randomSound, v.pos, state);
-            v._isSkidding = true;
-          }
-
           // Calculate rear wheel positions
           const fwdX = Math.cos(v.rot || 0);
           const fwdY = Math.sin(v.rot || 0);
@@ -115,7 +118,10 @@ export class SkidmarkSystem {
           v._bloodSkidState.inBlood = false;
           v._bloodSkidState.bloodCount = 0;
         }
-        // Reset skidding flag
+        // Reset skidding flag and stop skid loop
+        if (v._isSkidding && state.audio?.stopLoop) {
+          state.audio.stopLoop(v._skidLoopId);
+        }
         v._isSkidding = false;
       }
     }

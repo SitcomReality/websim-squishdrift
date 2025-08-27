@@ -34,7 +34,8 @@ export class AudioManager {
       this.load('/sfx/engine_emergency.mp3', 'engine_emergency'),
       this.load('/sfx/engine_sedan.mp3', 'engine_sedan'),
       this.load('/sfx/engine_sport.mp3', 'engine_sport'),
-      this.load('/sfx/engine_truck.mp3', 'engine_truck')
+      this.load('/sfx/engine_truck.mp3', 'engine_truck'),
+      this.load('/sfx/tire_skid_loop.mp3', 'tire_skid_loop') // new loop SFX
     ]).catch(()=>{ /* ignore load errors gracefully */ });
   }
 
@@ -104,7 +105,7 @@ export class AudioManager {
   }
 
   // Start or update a spatial looping sound with rate and volume
-  startOrUpdateLoopAt(key, id, pos, state, { rate = 1.0, baseVolume = this.sfxVolume, minDistance = 2, maxDistance = 18, panMax = 12 } = {}) {
+  startOrUpdateLoopAt(key, id, pos, state, { rate = 1.0, baseVolume = this.sfxVolume, minDistance = 2, maxDistance = 18, panMax = 12, startOffset = 0 } = {}) {
     if (!this.ctx || !key || !id) return;
     if (this.ctx.state === 'suspended') this.ctx.resume();
 
@@ -127,7 +128,7 @@ export class AudioManager {
       src.connect(gain);
       (panner ? gain.connect(panner).connect(this.ctx.destination) : gain.connect(this.ctx.destination));
 
-      src.start(0);
+      src.start(0, Math.max(0, Math.min((buf.duration || 0), startOffset))); // start with offset
       node = { src, gain, panner, key };
       this.loops.set(id, node);
     }

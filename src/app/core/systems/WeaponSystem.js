@@ -204,19 +204,7 @@ export class WeaponSystem {
   }
 
   handleWeaponFiring(state, player, input, debugEnabled) {
-    if (!player.equippedWeapon) {
-      // Handle click when no weapon is equipped
-      const justPressed = input.pressed && input.pressed.has('MouseLeft');
-      const now = Date.now();
-      const CLICK_COOLDOWN = 250;
-      
-      if (justPressed && now - (player.lastClickTime || 0) >= CLICK_COOLDOWN) {
-        const pos = (state.control?.inVehicle && state.control.vehicle?.pos) ? state.control.vehicle.pos : player.pos;
-        state.audio?.playSfxAt?.('click', pos, state);
-        player.lastClickTime = now;
-      }
-      return;
-    }
+    if (!player.equippedWeapon) return;
     
     const weapon = player.equippedWeapon;
     const now = Date.now();

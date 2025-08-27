@@ -216,11 +216,12 @@ export class CollisionSystem {
             if (damageTaken > 0) {
               this.lastDamageTime = now;
               this.triggerShake(state, Math.min(1, damageTaken / 50));
-              // Play ouch sound for player damage
-              state.audio?.playSfxAt?.('ouch', player.pos, state);
               // Add floating damage text
               this.addDamageText(state, player.pos, damage);
               state.particleSystem?.emitBlood(state, player.pos, 12, 2.5);
+              
+              // Add ouch sound effect
+              state.audio?.playSfxAt?.('ouch', player.pos, state);
             }
             // Handle vehicle destruction if it runs out of health
             this.handleVehicleDestruction(state, vehicle);

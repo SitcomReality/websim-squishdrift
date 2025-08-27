@@ -17,6 +17,10 @@ let loop = createLoop({
   render: (interp) => game.render(interp),
 });
 
+// Game state - paused until start button is pressed
+let gameStarted = false;
+let gameLoop = null;
+
 // Modify GameEngine to use loading system
 async function initializeWithLoading() {
   try {
@@ -31,23 +35,43 @@ async function initializeWithLoading() {
       Object.assign(game.stateManager.state, loadedAssets);
     }
     
-    loop = createLoop({
-      update: (dt) => game.update(dt),
-      render: (interp) => game.render(interp),
+    // Create paused game loop
+    gameLoop = createLoop({
+      update: (dt) => {
+        if (gameStarted) {
+          game.update(dt);
+        }
+      },
+      render: (interp) => {
+        if (gameStarted) {
+          game.render(interp);
+        }
+      },
     });
     
-    // Start the game loop
-    loop.start();
+    // Show title screen
+    loadingSystem.showTitleScreen();
+    
+    // Add start button listener
+    const startButton = document.getElementById('start-button');
+    if (startButton) {
+      startButton.addEventListener('click', () => {
+        gameStarted = true;
+        loadingSystem.hideTitleScreen();
+        gameLoop.start();
+      });
+    }
     
   } catch (error) {
     console.error('Failed to initialize game:', error);
     // Fallback to basic initialization without loading screen
     game = new GameEngine(canvas, { debugEl });
-    loop = createLoop({
+    gameLoop = createLoop({
       update: (dt) => game.update(dt),
       render: (interp) => game.render(interp),
     });
-    loop.start();
+    gameStarted = true;
+    gameLoop.start();
   }
 }
 

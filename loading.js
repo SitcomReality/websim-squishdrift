@@ -4,6 +4,7 @@ export class LoadingSystem {
     this.loadedAssets = 0;
     this.totalAssets = 0;
     this.loadingPromise = null;
+    this.titleScreen = null;
   }
 
   createLoadingScreen() {
@@ -40,6 +41,71 @@ export class LoadingSystem {
     return overlay;
   }
 
+  createTitleScreen() {
+    const titleOverlay = document.createElement('div');
+    titleOverlay.id = 'title-overlay';
+    titleOverlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9998;
+      font-family: 'Noto Sans', system-ui, sans-serif;
+    `;
+
+    titleOverlay.innerHTML = `
+      <div id="title-content" style="text-align: center;">
+        <div id="title-image" style="width: 512px; height: 128px; margin: 0 auto 40px; background-image: url('/uisprites.png'); background-size: 512px 384px; background-position: 0 0; background-repeat: no-repeat;"></div>
+        <div id="start-button" style="width: 256px; height: 128px; margin: 0 auto; background-image: url('/uisprites.png'); background-size: 512px 384px; background-position: 0 -256px; background-repeat: no-repeat; cursor: pointer; transition: transform 0.2s ease;"></div>
+      </div>
+    `;
+
+    document.body.appendChild(titleOverlay);
+    
+    // Add hover effect
+    const startButton = titleOverlay.querySelector('#start-button');
+    startButton.addEventListener('mouseenter', () => {
+      startButton.style.transform = 'scale(1.05)';
+    });
+    startButton.addEventListener('mouseleave', () => {
+      startButton.style.transform = 'scale(1)';
+    });
+    
+    return titleOverlay;
+  }
+
+  showTitleScreen() {
+    this.titleScreen = this.createTitleScreen();
+    
+    // Hide loading screen
+    const loadingScreen = document.getElementById('loading-overlay');
+    if (loadingScreen) {
+      loadingScreen.style.opacity = '0';
+      setTimeout(() => loadingScreen.remove(), 500);
+    }
+    
+    // Show title screen with fade-in
+    setTimeout(() => {
+      this.titleScreen.style.opacity = '1';
+    }, 100);
+  }
+
+  hideTitleScreen() {
+    if (this.titleScreen) {
+      this.titleScreen.style.opacity = '0';
+      setTimeout(() => {
+        this.titleScreen.remove();
+        this.titleScreen = null;
+      }, 500);
+    }
+  }
+
   updateProgress(text, progress) {
     const loadingBar = document.getElementById('loading-bar');
     const loadingText = document.getElementById('loading-text');
@@ -64,7 +130,7 @@ export class LoadingSystem {
         console.warn(`Failed to load image: ${src}`);
         this.loadedAssets++;
         this.updateProgress(`Loading ${name}...`, (this.loadedAssets / this.totalAssets) * 100);
-        resolve(null); // Continue loading even if one asset fails
+        resolve(null);
       };
       img.src = src;
     });

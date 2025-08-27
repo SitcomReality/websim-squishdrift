@@ -135,9 +135,6 @@ export function drawBuildings(r, state, mode = 'all') {
       if (mode === 'roofs' || mode === 'all') {
         ctx.fillStyle = b.color;
         ctx.fillRect(roofRect.x, roofRect.y, roofRect.w, roofRect.h);
-        ctx.strokeStyle = 'rgba(0,0,0,0.2)';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(roofRect.x, roofRect.y, roofRect.w, roofRect.h);
       }
     }
   }
@@ -231,9 +228,6 @@ function drawTree(r, state, tree) {
   // Draw trunk top
   ctx.fillStyle = tree.trunkColor;
   ctx.fillRect(trunkRoofRect.x, trunkRoofRect.y, trunkRoofRect.w, trunkRoofRect.h);
-  ctx.strokeStyle = 'rgba(0,0,0,0.2)';
-  ctx.lineWidth = 1;
-  ctx.strokeRect(trunkRoofRect.x, trunkRoofRect.y, trunkRoofRect.w, trunkRoofRect.h);
   
   // Draw leaves (drawn after trunk, in front of buildings)
   const leafFloorRect = { 
@@ -299,9 +293,6 @@ function drawTree(r, state, tree) {
   // Draw leaves top with 75% opacity
   ctx.fillStyle = tree.leafColor;
   ctx.fillRect(leafRoofRect.x, leafRoofRect.y, leafRoofRect.w, leafRoofRect.h);
-  ctx.strokeStyle = 'rgba(0,0,0,0.2)';
-  ctx.lineWidth = 1;
-  ctx.strokeRect(leafRoofRect.x, leafRoofRect.y, leafRoofRect.w, leafRoofRect.h);
   
   // Reset opacity
   ctx.globalAlpha = 1.0;

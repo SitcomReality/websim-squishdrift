@@ -2,17 +2,9 @@ import { Tile, TileColor } from '../map/TileTypes.js';
 import { drawExplosion } from '../app/entities/drawExplosion.js';
 
 export function drawTiles(r, state, layer = 'all') {
-  const { ctx } = r, ts = state.world.tileSize, map = state.world.map;
+  const { ctx, canvas } = r, ts = state.world.tileSize, map = state.world.map;
   const z = state.camera.zoom || 1;
-  
-  // Use a slightly larger tile size to prevent seams
-  const effectiveTileSize = ts * z;
-  
-  // Calculate the offset needed for pixel-perfect alignment
-  const offsetX = ((state.camera.x * ts * z) % 1) / z;
-  const offsetY = ((state.camera.y * ts * ts * z) % 1) / z;
-  
-  const wTiles = Math.ceil(r.canvas.width/(ts*z))+2, hTiles = Math.ceil(r.canvas.height/(ts*z))+2;
+  const wTiles = Math.ceil(canvas.width/(ts*z))+2, hTiles = Math.ceil(canvas.height/(ts*z))+2;
   const sx = Math.floor(state.camera.x - wTiles/2), sy = Math.floor(state.camera.y - hTiles/2);
   const floorTypes = new Set([Tile.BuildingFloor]);
   
@@ -22,43 +14,35 @@ export function drawTiles(r, state, layer = 'all') {
     if (layer === 'ground' && floorTypes.has(t)) continue;
     if (layer === 'floors' && !floorTypes.has(t)) continue;
     
-    // Calculate exact screen position
-    const screenX = (gx - state.camera.x) * ts * z + r.canvas.width/2;
-    const screenY = (gy - state.camera.y) * ts * z + r.canvas.height/2;
-    
-    // Add small overlap to prevent seams
-    const overlap = 0.5;
-    
     // Handle zebra crossings with special rendering
     if (isZebraCrossing(t)) {
-      drawZebraCrossing(r, gx, gy, ts, t, z);
+      drawZebraCrossing(r, gx, gy, ts, t);
     } else if (t === Tile.RoundaboutCenter) {
       // Draw road background first
-      ctx.fillStyle = TileColor[Tile.RoadN];
-      ctx.fillRect(screenX - overlap, screenY - overlap, effectiveTileSize + overlap*2, effectiveTileSize + overlap*2);
+      r.ctx.fillStyle = TileColor[Tile.RoadN];
+      r.ctx.fillRect(gx*ts, gy*ts, ts, ts);
       
       // Draw circular grass patch centered in the tile
-      const cx = screenX + effectiveTileSize/2;
-      const cy = screenY + effectiveTileSize/2;
-      const radius = effectiveTileSize * 0.36;
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(cx, cy, radius, 0, Math.PI*2);
-      ctx.closePath();
-      ctx.fillStyle = TileColor[Tile.Grass] || '#90EE90';
-      ctx.fill();
-      ctx.restore();
+      const cx = gx*ts + ts/2, cy = gy*ts + ts/2;
+      const radius = ts * 0.36;
+      r.ctx.save();
+      r.ctx.beginPath();
+      r.ctx.arc(cx, cy, radius, 0, Math.PI*2);
+      r.ctx.closePath();
+      r.ctx.fillStyle = TileColor[Tile.Grass] || '#90EE90';
+      r.ctx.fill();
+      r.ctx.restore();
     } else {
-      ctx.fillStyle = TileColor[t] || '#f5f5f5';
-      ctx.fillRect(screenX - overlap, screenY - overlap, effectiveTileSize + overlap*2, effectiveTileSize + overlap*2);
+      r.ctx.fillStyle = TileColor[t] || '#f5f5f5';
+      r.ctx.fillRect(gx*ts, gy*ts, ts, ts);
     }
     
     // Only draw arrows for uni-directional lanes in intersections
     drawIntersectionArrows(r, gx, gy, ts, t, state);
     
     if (t === Tile.BuildingWall) {
-      ctx.fillStyle = 'rgba(0,0,0,0.2)';
-      ctx.fillRect(screenX - overlap, screenY + effectiveTileSize*0.7 - overlap, effectiveTileSize + overlap*2, effectiveTileSize*0.3 + overlap*2);
+      r.ctx.fillStyle = 'rgba(0,0,0,0.2)';
+      r.ctx.fillRect(gx*ts, gy*ts + ts*0.7, ts, ts*0.3);
     }
   }
 
@@ -79,43 +63,38 @@ function isZebraCrossing(tile) {
   return tile >= Tile.ZebraCrossingN && tile <= Tile.ZebraCrossingW;
 }
 
-function drawZebraCrossing(r, gx, gy, ts, tileType, zoom) {
+function drawZebraCrossing(r, gx, gy, ts, tileType) {
   const { ctx } = r;
-  const effectiveTileSize = ts * zoom;
-  
-  // Calculate screen position
-  const screenX = (gx - r.state.camera.x) * ts * zoom + r.canvas.width/2;
-  const screenY = (gy - r.state.camera.y) * ts * zoom + r.canvas.height/2;
   
   // Base road color
   ctx.fillStyle = TileColor[Tile.RoadN];
-  ctx.fillRect(screenX, screenY, effectiveTileSize, effectiveTileSize);
+  ctx.fillRect(gx*ts, gy*ts, ts, ts);
   
   // Zebra crossing stripes
-  ctx.fillStyle = TileColor[tileType];
+  ctx.fillStyle = TileColor[tileType]; // Use the lighter grey for stripes
   
-  const stripeWidth = effectiveTileSize * 0.15;
-  const gapWidth = stripeWidth;
+  const stripeWidth = ts * 0.15; // 15% of tile width
+  const gapWidth = stripeWidth; // Equal gap between stripes
   
   switch(tileType) {
     case Tile.ZebraCrossingN:
     case Tile.ZebraCrossingS:
-      // Vertical stripes for N/S roads
+      // Vertical stripes for N/S roads - move right by half stripe width
       for (let i = 0; i < 5; i++) {
-        const x = screenX + (i * (stripeWidth + gapWidth)) + gapWidth/2;
-        if (x + stripeWidth <= screenX + effectiveTileSize) {
-          ctx.fillRect(x, screenY, stripeWidth, effectiveTileSize);
+        const x = gx*ts + (i * (stripeWidth + gapWidth)) + gapWidth/2 + stripeWidth/2;
+        if (x + stripeWidth <= (gx+1)*ts) {
+          ctx.fillRect(x, gy*ts, stripeWidth, ts);
         }
       }
       break;
       
     case Tile.ZebraCrossingE:
     case Tile.ZebraCrossingW:
-      // Horizontal stripes for E/W roads
+      // Horizontal stripes for E/W roads - move down by half stripe width
       for (let i = 0; i < 5; i++) {
-        const y = screenY + (i * (stripeWidth + gapWidth)) + gapWidth/2;
-        if (y + stripeWidth <= screenY + effectiveTileSize) {
-          ctx.fillRect(screenX, y, effectiveTileSize, stripeWidth);
+        const y = gy*ts + (i * (stripeWidth + gapWidth)) + gapWidth/2 + stripeWidth/2;
+        if (y + stripeWidth <= (gy+1)*ts) {
+          ctx.fillRect(gx*ts, y, ts, stripeWidth);
         }
       }
       break;

@@ -27,8 +27,12 @@ export class CanvasRenderer {
     const cx = Math.floor(canvas.width/2), cy = Math.floor(canvas.height/2);
     ctx.setTransform(1,0,0,1,0,0);
     ctx.translate(cx, cy);
-    ctx.scale(state.camera.zoom || 1, state.camera.zoom || 1);
-    ctx.translate(-(state.camera.x*ts), -(state.camera.y*ts));
+    const z = state.camera.zoom || 1;
+    ctx.scale(z, z);
+    // pixel-snap the world transform to avoid tile seams at fractional zoom
+    const snapX = Math.round(state.camera.x * ts * z) / z;
+    const snapY = Math.round(state.camera.y * ts * z) / z;
+    ctx.translate(-(snapX*ts/ts), -(snapY*ts/ts));
   }
   endFrame(){ /* no-op */ }
 }

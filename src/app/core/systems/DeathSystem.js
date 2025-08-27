@@ -126,7 +126,7 @@ export class DeathSystem {
           <p>Enemies Eliminated: <span id="enemies-killed">0</span></p>
           <p>Vehicles Destroyed: <span id="vehicles-destroyed">0</span></p>
         </div>
-        <div id="restart-button-sprite"></div>
+        <div id="restart-button-sprite" style="margin-left: 128px;"></div>
       </div>
     `;
 

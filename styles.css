@@ -10,16 +10,14 @@
 * { box-sizing: border-box; }
 html, body { height: 100%; }
 body { margin:0; background:var(--bg); color:var(--fg); font-family:"Noto Sans", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; min-height: 100vh; }
-.app-header {
-  position: sticky;
-  top: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--line);
-  background: var(--bg);
-  z-index: 10;
+.app-header { position:sticky; top:0; display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-bottom:1px solid var(--line); background:var(--bg); z-index:10; }
+.app-header .game-title {
+  width: 256px;
+  height: 64px;
+  background-image: url('/uisprites.png');
+  background-size: 256px 192px;
+  background-position: 0 0;
+  background-repeat: no-repeat;
 }
 .app-header h1 { font-size:16px; margin:0; letter-spacing:.2px; }
 .app-header .ghost { padding:8px 10px; border-radius:10px; border:1px solid var(--line); background:transparent; cursor:pointer; }
@@ -32,6 +30,32 @@ body { margin:0; background:var(--bg); color:var(--fg); font-family:"Noto Sans",
 .hud .fill { height:100%; background:var(--fg); transition: width .15s ease; }
 .interaction-prompt { position: absolute; left: 50%; top: 75%; transform: translateX(-50%); padding: 10px 16px; background: rgba(0,0,0,0.7); color: white; border-radius: 8px; font-size: 14px; backdrop-filter: blur(4px); }
 .interaction-prompt kbd { background: #fff; color: #111; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
+
+#death-overlay #wasted-image {
+  width: 512px;
+  height: 128px;
+  background-image: url('/uisprites.png');
+  background-size: 512px 384px;
+  background-position: 0 -128px;
+  margin-bottom: 20px;
+}
+
+#death-overlay #restart-button-sprite {
+  width: 256px;
+  height: 128px;
+  background-image: url('/uisprites.png');
+  background-size: 512px 384px;
+  background-position: -256px -256px;
+  cursor: pointer;
+  border: none;
+  background-color: transparent;
+  transition: transform 0.1s ease;
+}
+
+#death-overlay #restart-button-sprite:hover {
+  transform: scale(1.05);
+}
+
 .debug { position:absolute; right:20px; top:20px; width:260px; max-height:50vh; overflow:auto; padding:10px; background:#f8fafc; border:1px solid var(--line); border-radius:10px; font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12px; }
 .app-footer { padding:10px 14px; border-top:1px solid var(--line); color:var(--muted); }
 .panel { border:1px solid var(--line); border-radius:12px; overflow:hidden; background:#fff; }
@@ -56,45 +80,4 @@ button.danger { color:var(--danger); border-color:color-mix(in oklab, var(--dang
 .label { color:var(--muted); }
 .mono { font-family: "Space Mono", ui-monospace, SFMono-Regular, Menlo, monospace; }
 .dump { margin:8px 0 0; max-height:240px; overflow:auto; background:#f8fafc; border:1px solid var(--line); border-radius:8px; padding:8px; }
-
-#game-title {
-  height: 48px;
-  width: 256px;
-  object-fit: none;
-  object-position: 0 0;
-}
-
-.wasted-overlay #wasted-text {
-  width: 256px;
-  height: 64px;
-  object-fit: none;
-  object-position: 0 -128px;
-  margin-bottom: 20px;
-}
-
-.wasted-overlay #restart-button {
-  width: 256px;
-  height: 64px;
-  object-fit: none;
-  object-position: 0 -256px;
-  cursor: pointer;
-  transition: transform 0.2s ease;
-}
-
-.wasted-overlay #restart-button:hover {
-  transform: scale(1.05);
-}
-
-.wasted-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.8);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
+/* ...existing styles... */

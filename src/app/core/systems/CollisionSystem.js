@@ -1,3 +1,5 @@
+
+```javascript
 import { Vec2 } from '../../utils/Vec2.js';
 import { Health } from '../components/Health.js';
 
@@ -50,11 +52,8 @@ export class CollisionSystem {
           // Handle NPC death with sound
           if (target.type === 'npc' && !target.health.isAlive()) {
             state.audio?.playSfxAt?.('pedestrian_death', target.pos, state);
-            
-            // Updated to use oof03 instead of oof01
-            const oofSound = Math.random() < 0.5 ? 'oof02' : 'oof03';
-            state.audio?.playSfxAt?.(oofSound, target.pos, state);
-            
+            state.audio?.playSfxAt?.('oof02', target.pos, state);
+
             const bloodStain = {
               type: 'blood',
               pos: new Vec2(target.pos.x, target.pos.y),

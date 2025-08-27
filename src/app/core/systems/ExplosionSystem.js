@@ -87,7 +87,7 @@ export class ExplosionSystem {
         // Apply damage
         e.health.takeDamage(40);
         // Play impact sound at entity
-        state.audio?.playSfxAt?.('impact01', e.pos, state);
+        state.audio?.playSfxAt?.('impact02', e.pos, state);
         // If vehicle destroyed, let existing destruction handlers run elsewhere; if player killed trigger death system
         if (e.type === 'player' && !e.health.isAlive()) {
           const deathSystem = state._engine?.systems?.death || state.deathSystem || state._engine?.deathSystem;

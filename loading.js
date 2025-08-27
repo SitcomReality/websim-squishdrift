@@ -218,8 +218,7 @@ export class LoadingSystem {
       { type: 'audio', src: '/sfx/engine_sedan.mp3', name: 'Sedan Engine', key: 'engine_sedan' },
       { type: 'audio', src: '/sfx/engine_sport.mp3', name: 'Sports Engine', key: 'engine_sport' },
       { type: 'audio', src: '/sfx/engine_truck.mp3', name: 'Truck Engine', key: 'engine_truck' },
-      { type: 'audio', src: '/sfx/oof02.mp3', name: 'Oof Sound 2', key: 'oof02' },
-      { type: 'audio', src: '/sfx/oof03.mp3', name: 'Oof Sound 3', key: 'oof03' }
+      { type: 'audio', src: '/sfx/oof02.mp3', name: 'Oof Sound 2', key: 'oof02' }
     ];
   }
 

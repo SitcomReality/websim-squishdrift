@@ -35,12 +35,6 @@ export class CollisionSystem {
             this.triggerShake(state, 0.5);
           }
           
-          // Play impact sound for vehicles hit by bullets
-          if (target.type === 'vehicle') {
-            const impactSound = ['impact02', 'impact03'][Math.floor(Math.random() * 2)];
-            state.audio?.playSfxAt?.(impactSound, target.pos, state);
-          }
-          
           // Remove bullet on hit
           const bulletIndex = state.entities.indexOf(bullet);
           if (bulletIndex > -1) state.entities.splice(bulletIndex, 1);

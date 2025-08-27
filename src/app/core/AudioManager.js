@@ -24,7 +24,6 @@ export class AudioManager {
       this.load('/sfx/impact03.mp3', 'impact03'),
       this.load('/sfx/pedestrian_death.mp3', 'pedestrian_death'),
       this.load('/sfx/oof02.mp3', 'oof02'),
-      this.load('/sfx/oof03.mp3', 'oof03'),
       this.load('/sfx/tire_screech01.mp3', 'tire_screech01'),
       this.load('/sfx/tire_screech02.mp3', 'tire_screech02'),
       this.load('/sfx/tire_screech03.mp3', 'tire_screech03'),

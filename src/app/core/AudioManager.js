@@ -25,19 +25,21 @@ export class AudioManager {
       this.load('/sfx/impact03.mp3', 'impact03'),
       this.load('/sfx/pedestrian_death.mp3', 'pedestrian_death'),
       this.load('/sfx/oof02.mp3', 'oof02'),
-      this.load('/sfx/oof03.mp3', 'oof03'), // Updated from oof01 to oof03
+      this.load('/sfx/oof03.mp3', 'oof03'),
       this.load('/sfx/tire_screech01.mp3', 'tire_screech01'),
       this.load('/sfx/tire_screech02.mp3', 'tire_screech02'),
       this.load('/sfx/tire_screech03.mp3', 'tire_screech03'),
       this.load('/sfx/siren.mp3', 'siren'),
       this.load('/sfx/projectile_hit.mp3', 'projectile_hit'),
+      this.load('/sfx/ouch.mp3', 'ouch'),
+      this.load('/sfx/click.mp3', 'click'),
       // engine loops
       this.load('/sfx/engine_compact.mp3', 'engine_compact'),
       this.load('/sfx/engine_emergency.mp3', 'engine_emergency'),
       this.load('/sfx/engine_sedan.mp3', 'engine_sedan'),
       this.load('/sfx/engine_sport.mp3', 'engine_sport'),
       this.load('/sfx/engine_truck.mp3', 'engine_truck'),
-      this.load('/sfx/tire_skid_loop.mp3', 'tire_skid_loop') // new loop SFX
+      this.load('/sfx/tire_skid_loop.mp3', 'tire_skid_loop')
     ]).catch(()=>{ /* ignore load errors gracefully */ });
   }
 

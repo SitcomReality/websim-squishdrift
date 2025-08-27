@@ -204,8 +204,6 @@ export class WeaponSystem {
   }
 
   handleWeaponFiring(state, player, input, debugEnabled) {
-    if (!player.equippedWeapon) return;
-    
     const weapon = player.equippedWeapon;
     const now = Date.now();
     
@@ -220,6 +218,10 @@ export class WeaponSystem {
     const isFiring = input.mousePos && input.keys.has('MouseLeft');
     if (isFiring && now - weapon.lastFireTime >= weapon.fireRate) {
       if (weapon.ammo <= 0 && !debugEnabled) {
+        // Play click sound when trying to fire with empty weapon
+        const pos = (state.control?.inVehicle && state.control.vehicle?.pos) ? state.control.vehicle.pos : player.pos;
+        state.audio?.playSfxAt?.('click', pos, state);
+        
         // Instead of reloading, remove the weapon entirely
         player.equippedWeapon = null;
         

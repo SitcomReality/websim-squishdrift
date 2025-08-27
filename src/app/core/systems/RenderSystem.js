@@ -155,7 +155,7 @@ export class RenderSystem {
     
     // Animation timing
     const time = Date.now() * 0.001; // Convert to seconds
-    const cycleDuration = 2.0; // 2 second cycle
+    const cycleDuration = 8.0; // Changed from 2.0 to 8.0 seconds
     const phase = (time % cycleDuration) / cycleDuration;
     
     // Create expansion/contraction effect
@@ -170,13 +170,13 @@ export class RenderSystem {
     
     // Base and max sizes
     const baseSize = ts * 0.25;
-    const maxSize = ts * 1.5; // Much larger expansion
+    const maxSize = ts * 1.1; // Changed from 1.5 to 1.1
     
     // Calculate current size
     const currentSize = baseSize + (maxSize - baseSize) * progress;
     
     // Calculate alpha based on progress (inverse relationship)
-    const maxAlpha = 0.4;
+    const maxAlpha = 0.2; // Changed from 0.4 to 0.2
     const alpha = maxAlpha * (1 - progress);
     
     ctx.save();

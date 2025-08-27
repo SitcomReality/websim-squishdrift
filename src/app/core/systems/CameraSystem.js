@@ -52,9 +52,16 @@ export class CameraSystem {
       }
     }
 
-    // Reduced camera smoothing to reduce jitter - changed from 0.1 to 0.05
-    cam.x += (target.x - cam.x) * 0.05;
-    cam.y += (target.y - cam.y) * 0.05;
+    // Smooth camera movement using velocity-based interpolation
+    const dx = target.x - cam.x;
+    const dy = target.y - cam.y;
+    
+    // Use velocity-based smoothing factor instead of fixed rate
+    const distance = Math.hypot(dx, dy);
+    const smoothingFactor = Math.min(0.15, 0.08 + (distance * 0.02));
+    
+    cam.x += dx * smoothingFactor + shakeX;
+    cam.y += dy * smoothingFactor + shakeY;
 
     const ts = state.world.tileSize;
     const canvas = document.getElementById('game');

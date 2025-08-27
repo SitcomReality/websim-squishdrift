@@ -153,8 +153,8 @@ export class RenderSystem {
     const centerX = vehicle.pos.x * ts;
     const centerY = vehicle.pos.y * ts;
     
-    // Reduced base size to 0.5
-    const baseSize = ts * 0.5;
+    // Reduced base size to 0.25
+    const baseSize = ts * 0.25;
     const pulseSize = baseSize * (1 + Math.sin(Date.now() * 0.001) * 0.08);
     
     ctx.save();

@@ -90,7 +90,8 @@ export class AudioManager {
 
     const dx = pos.x - player.x, dy = pos.y - player.y;
     const dist = Math.hypot(dx, dy);
-    const att = dist <= minDistance ? 1 : Math.max(0, 1 - (dist - minDistance) / Math.max(1e-3, (maxDistance - minDistance)));
+    // Increased severity: quadratic falloff instead of linear
+    const att = dist <= minDistance ? 1 : Math.max(0, 1 - Math.pow((dist - minDistance) / Math.max(1e-3, (maxDistance - minDistance)), 2));
     const finalVol = Math.max(0, Math.min(1, effectiveVolume * att));
 
     const panX = pos.x - cam.x;
@@ -148,7 +149,8 @@ export class AudioManager {
     if (!player || !cam) return;
     const dx = pos.x - player.x, dy = pos.y - player.y;
     const dist = Math.hypot(dx, dy);
-    const att = dist <= minDistance ? 1 : Math.max(0, 1 - (dist - minDistance) / Math.max(1e-3, (maxDistance - minDistance)));
+    // Increased severity: quadratic falloff instead of linear
+    const att = dist <= minDistance ? 1 : Math.max(0, 1 - Math.pow((dist - minDistance) / Math.max(1e-3, (maxDistance - minDistance)), 2));
     const finalVol = Math.max(0, Math.min(1, baseVolume * att));
     const panX = pos.x - cam.x;
     const pan = Math.max(-1, Math.min(1, panX / panMax));

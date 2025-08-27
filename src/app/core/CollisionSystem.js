@@ -44,8 +44,8 @@ export class CollisionSystem {
     // Play pedestrian death sound
     state.audio?.playSfxAt?.('pedestrian_death', npc.pos, state);
     
-    // Also play random oof sound
-    const oofSound = Math.random() < 0.5 ? 'oof01' : 'oof02';
+    // Updated to use oof03 instead of oof01
+    const oofSound = Math.random() < 0.5 ? 'oof02' : 'oof03';
     state.audio?.playSfxAt?.(oofSound, npc.pos, state);
     
     const bloodStain = {

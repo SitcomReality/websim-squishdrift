@@ -51,6 +51,10 @@ export class CollisionSystem {
           if (target.type === 'npc' && !target.health.isAlive()) {
             state.audio?.playSfxAt?.('pedestrian_death', target.pos, state);
             
+            // Updated to use oof03 instead of oof01
+            const oofSound = Math.random() < 0.5 ? 'oof02' : 'oof03';
+            state.audio?.playSfxAt?.(oofSound, target.pos, state);
+            
             const bloodStain = {
               type: 'blood',
               pos: new Vec2(target.pos.x, target.pos.y),

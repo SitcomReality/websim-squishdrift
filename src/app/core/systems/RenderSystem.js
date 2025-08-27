@@ -68,6 +68,11 @@ export class RenderSystem {
       return (a?.pos?.y || 0) - (b?.pos?.y || 0);
     });
     
+    // Draw player vehicle glow effect first
+    if (state.control?.inVehicle && state.control?.vehicle) {
+      this.drawVehicleGlow(state, renderer);
+    }
+    
     for (const entity of entities) {
       if (!entity || !entity.pos) continue;
       
@@ -135,6 +140,46 @@ export class RenderSystem {
     
     // Draw mouse reticule
     this.drawMouseReticule(state, renderer);
+  }
+
+  drawVehicleGlow(state, renderer) {
+    const { ctx } = renderer;
+    const ts = state.world?.tileSize || 24;
+    const vehicle = state.control.vehicle;
+    
+    if (!vehicle || !vehicle.pos) return;
+    
+    // Calculate glow parameters
+    const centerX = vehicle.pos.x * ts;
+    const centerY = vehicle.pos.y * ts;
+    const glowSize = ts * 2.5;
+    const innerSize = ts * 1.2;
+    
+    // Create radial gradient for glow effect
+    const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, glowSize);
+    
+    // Yellow-green glow with transparency
+    gradient.addColorStop(0, 'rgba(255, 255, 100, 0.8)');
+    gradient.addColorStop(0.3, 'rgba(255, 255, 50, 0.6)');
+    gradient.addColorStop(0.6, 'rgba(255, 200, 50, 0.3)');
+    gradient.addColorStop(1, 'rgba(255, 150, 0, 0)');
+    
+    // Draw the glow
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, glowSize, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Add subtle pulse effect
+    const pulse = Math.sin(Date.now() * 0.005) * 0.2 + 0.8;
+    ctx.fillStyle = `rgba(255, 255, 100, ${0.3 * pulse})`;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, innerSize * pulse, 0, Math.PI * 2);
+    ctx.fill();
+    
+    ctx.restore();
   }
 
   drawDebugHitboxes(state, renderer) {

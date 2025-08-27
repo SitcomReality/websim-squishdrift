@@ -43,18 +43,13 @@ export class DamageTextSystem {
     
     state.damageTexts.push(text);
 
-    // Play player hurt sound when this damage text corresponds to the player.
-    // We approximate by checking proximity to the player entity (small threshold).
+    // If this damage text corresponds to the player (player nearby), play ouch SFX
     try {
       const player = state.entities?.find(e => e.type === 'player');
-      if (player && player.pos) {
-        const dx = pos.x - player.pos.x;
-        const dy = pos.y - player.pos.y;
-        if (Math.hypot(dx, dy) < 0.6) {
-          state.audio?.playSfxAt?.('ouch', player.pos, state);
-        }
+      if (player && Math.hypot(player.pos.x - pos.x, player.pos.y - pos.y) < 0.6) {
+        state.audio?.playSfxAt?.('ouch', pos, state);
       }
-    } catch (e) { /* fail silently */ }
+    } catch (e) { /* safe no-op if state not fully initialized */ }
   }
 
   addText(state, pos, text, color = '#ffffff', size = 7) { // Reduced default size

@@ -153,18 +153,49 @@ export class RenderSystem {
     const centerX = vehicle.pos.x * ts;
     const centerY = vehicle.pos.y * ts;
     
-    // Reduced base size to 0.25
+    // Animation timing
+    const time = Date.now() * 0.001; // Convert to seconds
+    const cycleDuration = 2.0; // 2 second cycle
+    const phase = (time % cycleDuration) / cycleDuration;
+    
+    // Create expansion/contraction effect
+    let progress;
+    if (phase < 0.5) {
+      // Expanding phase (0 to 0.5)
+      progress = phase * 2;
+    } else {
+      // Contracting phase (0.5 to 1)
+      progress = 2 - (phase * 2);
+    }
+    
+    // Base and max sizes
     const baseSize = ts * 0.25;
-    const pulseSize = baseSize * (1 + Math.sin(Date.now() * 0.001) * 0.08);
+    const maxSize = ts * 1.5; // Much larger expansion
+    
+    // Calculate current size
+    const currentSize = baseSize + (maxSize - baseSize) * progress;
+    
+    // Calculate alpha based on progress (inverse relationship)
+    const maxAlpha = 0.4;
+    const alpha = maxAlpha * (1 - progress);
     
     ctx.save();
     ctx.globalCompositeOperation = 'screen';
-    ctx.strokeStyle = 'rgba(255, 255, 100, 0.4)';
+    ctx.strokeStyle = `rgba(255, 255, 100, ${alpha})`;
     ctx.lineWidth = 3;
     
-    // Draw thick outline (donut style)
+    // Draw the expanding/contracting circle
     ctx.beginPath();
-    ctx.arc(centerX, centerY, pulseSize, 0, Math.PI * 2);
+    ctx.arc(centerX, centerY, currentSize, 0, Math.PI * 2);
+    ctx.stroke();
+    
+    // Add a second, slightly larger ring with reduced opacity
+    const outerSize = currentSize * 1.2;
+    const outerAlpha = alpha * 0.5;
+    ctx.strokeStyle = `rgba(255, 255, 100, ${outerAlpha})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, outerSize, 0, Math.PI * 2);
     ctx.stroke();
     
     ctx.restore();

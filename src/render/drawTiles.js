@@ -7,6 +7,7 @@ export function drawTiles(r, state, layer = 'all') {
   const wTiles = Math.ceil(canvas.width/(ts*z))+2, hTiles = Math.ceil(canvas.height/(ts*z))+2;
   const sx = Math.floor(state.camera.x - wTiles/2), sy = Math.floor(state.camera.y - hTiles/2);
   const floorTypes = new Set([Tile.BuildingFloor]);
+  const seamPad = 0.5; // overlap tiles by 0.5px to hide seams
   
   for (let y=0; y<hTiles; y++) for (let x=0; x<wTiles; x++){
     const gx = sx + x, gy = sy + y; if (gy<0||gx<0||gy>=map.height||gx>=map.width) continue;
@@ -16,11 +17,11 @@ export function drawTiles(r, state, layer = 'all') {
     
     // Handle zebra crossings with special rendering
     if (isZebraCrossing(t)) {
-      drawZebraCrossing(r, gx, gy, ts, t);
+      drawZebraCrossing(r, gx, gy, ts, t, seamPad);
     } else if (t === Tile.RoundaboutCenter) {
-      // Draw road background first
+      // Draw road background first with overlap
       r.ctx.fillStyle = TileColor[Tile.RoadN];
-      r.ctx.fillRect(gx*ts, gy*ts, ts, ts);
+      r.ctx.fillRect(gx*ts - seamPad, gy*ts - seamPad, ts + seamPad*2, ts + seamPad*2);
       
       // Draw circular grass patch centered in the tile
       const cx = gx*ts + ts/2, cy = gy*ts + ts/2;
@@ -34,7 +35,7 @@ export function drawTiles(r, state, layer = 'all') {
       r.ctx.restore();
     } else {
       r.ctx.fillStyle = TileColor[t] || '#f5f5f5';
-      r.ctx.fillRect(gx*ts, gy*ts, ts, ts);
+      r.ctx.fillRect(gx*ts - seamPad, gy*ts - seamPad, ts + seamPad*2, ts + seamPad*2);
     }
     
     // Only draw arrows for uni-directional lanes in intersections
@@ -63,12 +64,12 @@ function isZebraCrossing(tile) {
   return tile >= Tile.ZebraCrossingN && tile <= Tile.ZebraCrossingW;
 }
 
-function drawZebraCrossing(r, gx, gy, ts, tileType) {
+function drawZebraCrossing(r, gx, gy, ts, tileType, seamPad) {
   const { ctx } = r;
   
-  // Base road color
+  // Base road color with overlap
   ctx.fillStyle = TileColor[Tile.RoadN];
-  ctx.fillRect(gx*ts, gy*ts, ts, ts);
+  ctx.fillRect(gx*ts - seamPad, gy*ts - seamPad, ts + seamPad*2, ts + seamPad*2);
   
   // Zebra crossing stripes
   ctx.fillStyle = TileColor[tileType]; // Use the lighter grey for stripes

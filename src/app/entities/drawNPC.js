@@ -44,17 +44,17 @@ export function drawNPC(r, state, npc){
   const sxArm = armIndex * armSpriteWidth;
   const syArm = skinTone * armSpriteHeight;
   
-  // Animation properties
+  // Animation properties - make arms swing opposite directions
   const animProgress = npc.t * Math.PI * 4; // Controls swing speed
-  const leftArmSwingAngle = Math.sin(animProgress) * 0.8; // Left arm swings forward
-  const rightArmSwingAngle = -Math.sin(animProgress) * 0.8; // Right arm swings backward
+  const leftArmSwingAngle = Math.sin(animProgress) * 0.8; // Full forward/back swing
+  const rightArmSwingAngle = Math.sin(animProgress + Math.PI) * 0.8; // Opposite phase (180° offset)
 
   // --- Draw Arms (behind body) ---
   // Left Arm (from viewer's perspective, drawn first to be behind)
   ctx.save();
   // Position relative to body center, slightly back and to the side
   ctx.translate(bodyW * 0.1, bodyH * 0.25); 
-  ctx.rotate(leftArmSwingAngle); // Left arm swings forward
+  ctx.rotate(-leftArmSwingAngle); // Left arm swing
   ctx.drawImage(
     pedestrianImages.arms,
     sxArm, syArm, armSpriteWidth, armSpriteHeight,
@@ -65,7 +65,7 @@ export function drawNPC(r, state, npc){
   // Right Arm (was in front, now also behind)
   ctx.save();
   ctx.translate(bodyW * 0.1, -bodyH * 0.25); // Positioned more forward
-  ctx.rotate(rightArmSwingAngle); // Right arm swings backward
+  ctx.rotate(rightArmSwingAngle); // Right arm swing (opposite phase)
   ctx.drawImage(
     pedestrianImages.arms,
     sxArm, syArm, armSpriteWidth, armSpriteHeight,

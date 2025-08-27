@@ -204,6 +204,8 @@ export class WeaponSystem {
   }
 
   handleWeaponFiring(state, player, input, debugEnabled) {
+    if (!player.equippedWeapon) return;
+    
     const weapon = player.equippedWeapon;
     const now = Date.now();
     
@@ -218,7 +220,7 @@ export class WeaponSystem {
     const isFiring = input.mousePos && input.keys.has('MouseLeft');
     if (isFiring && now - weapon.lastFireTime >= weapon.fireRate) {
       if (weapon.ammo <= 0 && !debugEnabled) {
-        // Play click sound when trying to fire with empty weapon
+        // Play click sound when out of ammo
         const pos = (state.control?.inVehicle && state.control.vehicle?.pos) ? state.control.vehicle.pos : player.pos;
         state.audio?.playSfxAt?.('click', pos, state);
         
@@ -254,6 +256,15 @@ export class WeaponSystem {
       if (!debugEnabled) {
         weapon.ammo--;
       }
+    }
+    
+    // Handle click when no weapon is equipped
+    const noWeapon = !player.equippedWeapon;
+    if (isFiring && noWeapon && now - (player.lastClickTime || 0) >= weapon?.fireRate || 100) {
+      // Play click sound when no weapon
+      const pos = (state.control?.inVehicle && state.control.vehicle?.pos) ? state.control.vehicle.pos : player.pos;
+      state.audio?.playSfxAt?.('click', pos, state);
+      player.lastClickTime = now;
     }
   }
 

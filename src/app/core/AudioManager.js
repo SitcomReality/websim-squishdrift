@@ -39,7 +39,7 @@ export class AudioManager {
       this.load('/sfx/engine_sedan.mp3', 'engine_sedan'),
       this.load('/sfx/engine_sport.mp3', 'engine_sport'),
       this.load('/sfx/engine_truck.mp3', 'engine_truck'),
-      this.load('/sfx/tire_skid_loop.mp3', 'tire_skid_loop')
+      this.load('/sfx/tire_skid_loop.mp3', 'tire_skid_loop') // new loop SFX
     ]).catch(()=>{ /* ignore load errors gracefully */ });
   }
 

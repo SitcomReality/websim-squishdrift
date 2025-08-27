@@ -41,6 +41,12 @@ export class CollisionSystem {
           // Apply damage
           target.health.takeDamage(25);
           
+          // Play impact sound for vehicles hit by bullets
+          if (target.type === 'vehicle') {
+            const impactSound = ['impact01', 'impact02', 'impact03'][Math.floor(Math.random() * 3)];
+            state.audio?.playSfxAt?.(impactSound, target.pos, state);
+          }
+          
           // Handle NPC death with sound
           if (target.type === 'npc' && !target.health.isAlive()) {
             state.audio?.playSfxAt?.('pedestrian_death', target.pos, state);

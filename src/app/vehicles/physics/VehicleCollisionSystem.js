@@ -85,12 +85,20 @@ export class VehicleCollisionSystem {
       vehicleA.health.takeDamage(damageA);
       vehicleA.lastDamageTime = now;
       state.particleSystem?.emitSparks(state, vehicleA.pos, Math.min(12, 4 + Math.floor(damageA / 5)), 4);
+      
+      // Play random impact sound
+      const impactSound = ['impact01', 'impact02', 'impact03'][Math.floor(Math.random() * 3)];
+      state.audio?.playSfxAt?.(impactSound, vehicleA.pos, state);
     }
     
     if (canDamageB) {
       vehicleB.health.takeDamage(damageB);
       vehicleB.lastDamageTime = now;
       state.particleSystem?.emitSparks(state, vehicleB.pos, Math.min(12, 4 + Math.floor(damageB / 5)), 4);
+      
+      // Play random impact sound
+      const impactSound = ['impact01', 'impact02', 'impact03'][Math.floor(Math.random() * 3)];
+      state.audio?.playSfxAt?.(impactSound, vehicleB.pos, state);
     }
     
     // Check for vehicle destruction and handle consistently
@@ -164,6 +172,10 @@ export class VehicleCollisionSystem {
             v.health.takeDamage(damage);
             v.lastDamageTime = now;
             
+            // Play random impact sound
+            const impactSound = ['impact01', 'impact02', 'impact03'][Math.floor(Math.random() * 3)];
+            state.audio?.playSfxAt?.(impactSound, v.pos, state);
+            
             this.handleVehicleDestruction(state, v);
             this.addDamageIndicator(state, v.pos, damage);
           }
@@ -215,6 +227,10 @@ export class VehicleCollisionSystem {
           const damage = Math.max(1, Math.round(impactSpeed * 8));
           v.health.takeDamage(damage);
           v.lastDamageTime = now;
+          
+          // Play random impact sound
+          const impactSound = ['impact01', 'impact02', 'impact03'][Math.floor(Math.random() * 3)];
+          state.audio?.playSfxAt?.(impactSound, v.pos, state);
           
           this.handleVehicleDestruction(state, v);
           this.addDamageIndicator(state, v.pos, damage);

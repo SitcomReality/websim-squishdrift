@@ -42,13 +42,13 @@ body { margin:0; background:var(--bg); color:var(--fg); font-family:"Noto Sans",
 /* Top left - Score */
 .score-hud {
   left: 20px;
-  top: 20px;
+  top: 10px;
 }
 
 /* Top right - Wanted level */
 .wanted-hud {
   right: 20px;
-  top: 20px;
+  top: 10px;
 }
 
 /* Bottom left - Item and ammo */

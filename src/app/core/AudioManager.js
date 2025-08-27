@@ -20,7 +20,6 @@ export class AudioManager {
       this.load('/sfx/shoot02.mp3', 'shoot02'),
       this.load('/sfx/explosion01.mp3', 'explosion01'),
       this.load('/sfx/explosion02.mp3', 'explosion02'),
-      this.load('/sfx/impact01.mp3', 'impact01'),
       this.load('/sfx/impact02.mp3', 'impact02'),
       this.load('/sfx/impact03.mp3', 'impact03'),
       this.load('/sfx/pedestrian_death.mp3', 'pedestrian_death'),

@@ -123,7 +123,7 @@ export function applyImpactDamage(state, v, damageMultiplier) {
             v.health.takeDamage(damage);
             v.lastDamageTime = now;
             
-            const impactSound = ['impact01', 'impact02', 'impact03'][Math.floor(Math.random() * 3)];
+            const impactSound = ['impact02', 'impact03'][Math.floor(Math.random() * 2)];
             state.audio?.playSfxAt?.(impactSound, v.pos, state, { volume: 0.3 });
             
             handleVehicleDestruction(state, v);

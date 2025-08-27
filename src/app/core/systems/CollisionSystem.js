@@ -43,7 +43,7 @@ export class CollisionSystem {
           
           // Play impact sound for vehicles hit by bullets
           if (target.type === 'vehicle') {
-            const impactSound = ['impact01', 'impact02', 'impact03'][Math.floor(Math.random() * 3)];
+            const impactSound = ['impact02', 'impact03'][Math.floor(Math.random() * 2)];
             state.audio?.playSfxAt?.(impactSound, target.pos, state);
           }
           

@@ -5,11 +5,6 @@ export class CameraSystem {
     this.maxShake = 0.3; // Maximum shake in tiles
     // track for speed-based zoom
     this._prevTarget = null; this._lastTime = 0;
-    // Add smoothing variables
-    this.smoothX = 0;
-    this.smoothY = 0;
-    this.smoothVelX = 0;
-    this.smoothVelY = 0;
   }
 
   update(state, input) {
@@ -17,41 +12,13 @@ export class CameraSystem {
                   state.entities.find(e => e.type === 'player')?.pos;
     if (!target) return;
     const cam = state.camera; cam.defaultZoom = cam.defaultZoom || cam.zoom || 1;
-    
-    // Use a more stable camera follow approach
-    const dt = 0.016; // Assume 60fps
-    
-    // Calculate target position with deadzone
-    const targetX = target.x;
-    const targetY = target.y;
-    
-    // Apply deadzone to reduce micro-corrections
-    const deadzone = 0.05;
-    const dx = targetX - this.smoothX;
-    const dy = targetY - this.smoothY;
-    
-    if (Math.abs(dx) > deadzone || Math.abs(dy) > deadzone) {
-      // Use critically damped spring for smooth following
-      const springStrength = 3.0;
-      const damping = 0.9;
-      
-      const accelX = (dx * springStrength) - (this.smoothVelX * damping);
-      const accelY = (dy * springStrength) - (this.smoothVelY * damping);
-      
-      this.smoothVelX += accelX * dt;
-      this.smoothVelY += accelY * dt;
-      
-      this.smoothX += this.smoothVelX * dt;
-      this.smoothY += this.smoothVelY * dt;
-    }
-    
     // speed-based zoom using velocity when available (fallback to position delta)
-    const now = performance.now() * 0.001; const dt2 = this._lastTime ? Math.max(1e-3, now - this._lastTime) : 0;
+    const now = performance.now() * 0.001; const dt = this._lastTime ? Math.max(1e-3, now - this._lastTime) : 0;
     let speed = 0;
     if (state.control.inVehicle && state.control.vehicle?.vel) {
       const v = state.control.vehicle.vel; speed = Math.hypot(v.x || 0, v.y || 0);
     } else {
-      speed = (this._prevTarget && dt2) ? Math.hypot(target.x - this._prevTarget.x, target.y - this._prevTarget.y) / dt2 : 0;
+      speed = (this._prevTarget && dt) ? Math.hypot(target.x - this._prevTarget.x, target.y - this._prevTarget.y) / dt : 0;
     }
     const maxRef = state.control.inVehicle ? (state.control.vehicle?.maxSpeed || 6) : ((state.entities.find(e=>e.type==='player')?.moveSpeed) || 6);
     const sensitivityMultiplier = 1.5; // Reduced from 3.5 to 1.5 for higher speed requirement
@@ -85,9 +52,9 @@ export class CameraSystem {
       }
     }
 
-    // Use smoothed position instead of direct targeting
-    cam.x = this.smoothX + shakeX;
-    cam.y = this.smoothY + shakeY;
+    // Reduced camera smoothing to reduce jitter - changed from 0.1 to 0.05
+    cam.x += (target.x - cam.x) * 0.05;
+    cam.y += (target.y - cam.y) * 0.05;
 
     const ts = state.world.tileSize;
     const canvas = document.getElementById('game');

@@ -212,12 +212,14 @@ export class LoadingSystem {
       { type: 'image', src: '/pedestrian_bodies.png', name: 'Pedestrian Bodies', key: 'pedestrian_bodies' },
       { type: 'image', src: '/pedestrian_arms.png', name: 'Pedestrian Arms', key: 'pedestrian_arms' },
       
-      // Audio files - these will be handled by AudioManager but we'll preload them
+      // Audio files
       { type: 'audio', src: '/sfx/engine_compact.mp3', name: 'Engine Sounds', key: 'engine_compact' },
       { type: 'audio', src: '/sfx/engine_emergency.mp3', name: 'Emergency Engine', key: 'engine_emergency' },
       { type: 'audio', src: '/sfx/engine_sedan.mp3', name: 'Sedan Engine', key: 'engine_sedan' },
       { type: 'audio', src: '/sfx/engine_sport.mp3', name: 'Sports Engine', key: 'engine_sport' },
-      { type: 'audio', src: '/sfx/engine_truck.mp3', name: 'Truck Engine', key: 'engine_truck' }
+      { type: 'audio', src: '/sfx/engine_truck.mp3', name: 'Truck Engine', key: 'engine_truck' },
+      { type: 'audio', src: '/sfx/oof01.mp3', name: 'Oof Sound 1', key: 'oof01' },
+      { type: 'audio', src: '/sfx/oof02.mp3', name: 'Oof Sound 2', key: 'oof02' }
     ];
   }
 

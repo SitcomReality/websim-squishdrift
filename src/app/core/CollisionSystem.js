@@ -24,46 +24,49 @@ export class CollisionSystem {
     for (const bullet of bullets) {
       for (const target of targets) {
         if (this.checkCollision(bullet, target, 0.35)) {
-          // Ensure entity has health
-          if (!target.health) {
-            if (target.type === 'vehicle') {
-              target.health = new Health(target.maxHealth || 100);
-            } else if (target.type === 'npc') {
-              // NPCs die instantly
-              target.health = new Health(1);
-              target.health.hp = 0;
-            }
-          }
-          
-          // Apply damage
           target.health.takeDamage(25);
-          
-          // Handle NPC death with both sounds
-          if (target.type === 'npc' && !target.health.isAlive()) {
-            state.audio?.playSfxAt?.('pedestrian_death', target.pos, state);
-            
-            // Play random oof sound
-            const oofSound = Math.random() < 0.5 ? 'oof01' : 'oof02';
-            state.audio?.playSfxAt?.(oofSound, target.pos, state);
-            
-            const bloodStain = {
-              type: 'blood',
-              pos: new Vec2(target.pos.x, target.pos.y),
-              size: 0.6 + Math.random() * 0.4,
-              color: `hsl(0, 70%, ${30 + Math.random() * 20}%)`,
-              rotation: Math.random() * Math.PI * 2
-            };
-            
-            state.entities.push(bloodStain);
-            const targetIndex = state.entities.indexOf(target);
-            if (targetIndex > -1) state.entities.splice(targetIndex, 1);
-          }
           
           // Remove bullet on hit
           const bulletIndex = state.entities.indexOf(bullet);
           if (bulletIndex > -1) state.entities.splice(bulletIndex, 1);
+          
+          // Remove destroyed targets
+          if (!target.health.isAlive()) {
+            const targetIndex = state.entities.indexOf(target);
+            if (targetIndex > -1) state.entities.splice(targetIndex, 1);
+          }
         }
       }
+    }
+  }
+
+  handleNPCDeath(state, npc) {
+    // Play pedestrian death sound
+    state.audio?.playSfxAt?.('pedestrian_death', npc.pos, state);
+    
+    // Also play random oof sound
+    const oofSound = Math.random() < 0.5 ? 'oof01' : 'oof02';
+    state.audio?.playSfxAt?.(oofSound, npc.pos, state);
+    
+    const bloodStain = {
+      type: 'blood',
+      pos: new Vec2(npc.pos.x, npc.pos.y),
+      size: 0.6 + Math.random() * 0.4,
+      color: `hsl(0, 70%, ${30 + Math.random() * 20}%)`,
+      rotation: Math.random() * Math.PI * 2
+    };
+    
+    // Use blood manager if available
+    if (state.bloodManager) {
+      state.bloodManager.addBlood(state, bloodStain);
+    } else {
+      state.entities.push(bloodStain);
+    }
+    
+    // Remove NPC
+    const npcIndex = state.entities.indexOf(npc);
+    if (npcIndex > -1) {
+      state.entities.splice(npcIndex, 1);
     }
   }
 

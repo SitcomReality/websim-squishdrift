@@ -65,22 +65,18 @@ export class WeaponSystem {
     if (!player.equippedWeapon) return;
     
     const weapon = player.equippedWeapon;
-    const weaponUI = state.weaponUI || {};
     
-    // Calculate percentages
-    const ammoPercent = weapon.ammo / weapon.maxAmmo;
-    const reloadPercent = weapon.isReloading ? 
-      Math.min(1, (Date.now() - weapon.reloadStartTime) / weapon.reloadTime) : 0;
-    
-    // Update UI
+    // Update existing elements
     const ammoBarEl = document.getElementById('ammo-bar');
     if (ammoBarEl) {
       if (weapon.isReloading) {
         // During reload, show reload progress
-        ammoBarEl.style.width = `${reloadPercent * 100}%`;
+        const reloadProgress = Math.min(1, (Date.now() - weapon.reloadStartTime) / weapon.reloadTime);
+        ammoBarEl.style.width = `${reloadProgress * 100}%`;
         ammoBarEl.style.backgroundColor = '#FFA500'; // Orange for reloading
       } else {
         // Normal ammo display
+        const ammoPercent = weapon.ammo / weapon.maxAmmo;
         ammoBarEl.style.width = `${ammoPercent * 100}%`;
         ammoBarEl.style.backgroundColor = '#4CAF50'; // Green for ammo
       }
@@ -184,11 +180,9 @@ export class WeaponSystem {
             state.pickupSpots[item.spotId].hasItem = false;
           }
           
-          // Create ammo bar if it doesn't exist
-          this.createAmmoBar();
-          
+          // Update item name directly
           const itemNameEl = document.getElementById('item-name');
-          if (itemNameEl) itemNameEl.textContent = player.equippedWeapon.name;
+          if (itemNameEl) itemNameEl.textContent = weapon.name;
           
           // Break after picking up one weapon
           break;
@@ -198,26 +192,11 @@ export class WeaponSystem {
   }
 
   createAmmoBar() {
-    // Create ammo bar if it doesn't exist
-    if (!document.getElementById('ammo-container')) {
-      const hud = document.getElementById('hud');
-      
-      const ammoContainer = document.createElement('div');
-      ammoContainer.className = 'row';
-      ammoContainer.id = 'ammo-container';
-      ammoContainer.innerHTML = `
-        <span class="label">Ammo</span>
-        <div class="bar" style="width: 120px;"><div id="ammo-bar" class="fill" style="width:100%; background-color:#4CAF50;"></div></div>
-        <span id="ammo-text">12/12</span>
-      `;
-      
-      // Insert after HP bar
-      const hpRow = hud.querySelector('.row');
-      if (hpRow) {
-        hpRow.insertAdjacentElement('afterend', ammoContainer);
-      } else {
-        hud.appendChild(ammoContainer);
-      }
+    // Don't create - the ammo bar is now part of the item-hud in index.html
+    // Just ensure the elements exist
+    const ammoBarEl = document.getElementById('ammo-bar');
+    if (!ammoBarEl) {
+      console.warn('Ammo bar element not found');
     }
   }
 

@@ -218,27 +218,24 @@ export class WeaponSystem {
     }
     
     const isFiring = input.mousePos && input.keys.has('MouseLeft');
+    const justPressed = input.pressed && input.pressed.has('MouseLeft');
+    const CLICK_COOLDOWN = 250; // ms - rate limit click SFX when holding
+    
     if (isFiring && now - weapon.lastFireTime >= weapon.fireRate) {
       if (weapon.ammo <= 0 && !debugEnabled) {
-        // Play click sound when out of ammo
-        const pos = (state.control?.inVehicle && state.control.vehicle?.pos) ? state.control.vehicle.pos : player.pos;
-        state.audio?.playSfxAt?.('click', pos, state);
-        
-        // Instead of reloading, remove the weapon entirely
-        player.equippedWeapon = null;
-        
-        // Update HUD to show "None"
-        const itemNameEl = document.getElementById('item-name');
-        if (itemNameEl) {
-          itemNameEl.textContent = 'None';
+        // Only play click on a true mouse press (not while held) and rate-limit it
+        if (justPressed && now - (player.lastClickTime || 0) >= CLICK_COOLDOWN) {
+          const pos = (state.control?.inVehicle && state.control.vehicle?.pos) ? state.control.vehicle.pos : player.pos;
+          state.audio?.playSfxAt?.('click', pos, state);
+          player.lastClickTime = now;
+          // Remove weapon after the click as before
+          player.equippedWeapon = null;
+          
+          const itemNameEl = document.getElementById('item-name');
+          if (itemNameEl) itemNameEl.textContent = 'None';
+          const ammoContainer = document.getElementById('ammo-container');
+          if (ammoContainer) ammoContainer.remove();
         }
-        
-        // Remove ammo bar
-        const ammoContainer = document.getElementById('ammo-container');
-        if (ammoContainer) {
-          ammoContainer.remove();
-        }
-        
         return;
       }
       
@@ -258,10 +255,9 @@ export class WeaponSystem {
       }
     }
     
-    // Handle click when no weapon is equipped
+    // Handle click when no weapon is equipped (single-shot via pressed + cooldown)
     const noWeapon = !player.equippedWeapon;
-    if (isFiring && noWeapon && now - (player.lastClickTime || 0) >= weapon?.fireRate || 100) {
-      // Play click sound when no weapon
+    if (noWeapon && justPressed && now - (player.lastClickTime || 0) >= CLICK_COOLDOWN) {
       const pos = (state.control?.inVehicle && state.control.vehicle?.pos) ? state.control.vehicle.pos : player.pos;
       state.audio?.playSfxAt?.('click', pos, state);
       player.lastClickTime = now;

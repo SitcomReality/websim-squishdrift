@@ -1,3 +1,5 @@
+import { TitleScreen } from './title-screen.js';
+
 export class LoadingSystem {
   constructor() {
     this.loadingScreen = null;
@@ -81,28 +83,25 @@ export class LoadingSystem {
   }
 
   showTitleScreen() {
-    this.titleScreen = this.createTitleScreen();
-    
+    this.titleScreen = new TitleScreen();
+    this.titleScreen.show();
+    this.titleScreen.onStart(() => {
+      this.hideTitleScreen();
+    });
+
     // Hide loading screen
     const loadingScreen = document.getElementById('loading-overlay');
     if (loadingScreen) {
       loadingScreen.style.opacity = '0';
       setTimeout(() => loadingScreen.remove(), 500);
     }
-    
-    // Show title screen with fade-in
-    setTimeout(() => {
-      this.titleScreen.style.opacity = '1';
-    }, 100);
   }
 
   hideTitleScreen() {
     if (this.titleScreen) {
-      this.titleScreen.style.opacity = '0';
-      setTimeout(() => {
-        this.titleScreen.remove();
-        this.titleScreen = null;
-      }, 500);
+      this.titleScreen.hide();
+      this.titleScreen.destroy();
+      this.titleScreen = null;
     }
   }
 

@@ -123,7 +123,7 @@ export class WeaponSystem {
         }
         
         // Play health pickup SFX
-        state.audio?.playSfx?.('pickup_health');
+        state.audio?.playSfxAt?.('pickup_health', item.pos, state);
         
         // Mark spot as empty if it has one
         if (typeof item.spotId === 'number' && state?.pickupSpots?.[item.spotId]) {
@@ -153,7 +153,7 @@ export class WeaponSystem {
           }
           
           // Play bribe pickup SFX
-          state.audio?.playSfx?.('pickup_bribe');
+          state.audio?.playSfxAt?.('pickup_bribe', item.pos, state);
           
           // Remove from pickup spot
           if (typeof item.spotId === 'number' && state?.pickupSpots?.[item.spotId]) {
@@ -171,7 +171,7 @@ export class WeaponSystem {
           this.damageTextSystem.addPickupText(state, item.pos, item.name.toUpperCase());
           
           // Play default pickup SFX (weapons, etc.)
-          state.audio?.playSfx?.('pickup_default');
+          state.audio?.playSfxAt?.('pickup_default', item.pos, state);
           
           // Remove the item from entities
           const index = state.entities.indexOf(item);
@@ -255,10 +255,11 @@ export class WeaponSystem {
       }
       
       // Play appropriate sound effect based on weapon type
+      const pos = (state.control?.inVehicle && state.control.vehicle?.pos) ? state.control.vehicle.pos : player.pos;
       if (weapon.name === 'Pistol' || weapon.name === 'AK47') {
-        state.audio?.playSfx?.('shoot01');
+        state.audio?.playSfxAt?.('shoot01', pos, state);
       } else if (weapon.name === 'Shotgun') {
-        state.audio?.playSfx?.('shoot02');
+        state.audio?.playSfxAt?.('shoot02', pos, state);
       }
       
       this.projectileManager.fireProjectile(state, player);

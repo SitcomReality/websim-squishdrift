@@ -60,5 +60,39 @@ export class AudioManager {
     src.connect(gain).connect(this.ctx.destination);
     src.start(0);
   }
-}
 
+  playSfxAt(key, pos, state, { volume = this.sfxVolume, minDistance = 2, maxDistance = 18, panMax = 12 } = {}) {
+    if (this.sfxMuted) return;
+    const buf = this.buffers.get(key);
+    if (!buf || !this.ctx || !pos || !state) return;
+    if (this.ctx.state === 'suspended') this.ctx.resume();
+
+    const player = state.entities?.find(e => e.type === 'player')?.pos || state.camera;
+    const cam = state.camera || player;
+    if (!player || !cam) return;
+
+    const dx = pos.x - player.x, dy = pos.y - player.y;
+    const dist = Math.hypot(dx, dy);
+    const att = dist <= minDistance ? 1 : Math.max(0, 1 - (dist - minDistance) / Math.max(1e-3, (maxDistance - minDistance)));
+    const finalVol = Math.max(0, Math.min(1, volume * att));
+
+    const panX = pos.x - cam.x;
+    const pan = Math.max(-1, Math.min(1, panX / panMax));
+
+    const src = this.ctx.createBufferSource();
+    src.buffer = buf;
+    const gain = this.ctx.createGain();
+    gain.gain.value = finalVol;
+
+    let destNode = gain;
+    if (this.ctx.createStereoPanner) {
+      const panner = this.ctx.createStereoPanner();
+      panner.pan.value = pan;
+      gain.connect(panner).connect(this.ctx.destination);
+    } else {
+      gain.connect(this.ctx.destination);
+    }
+    src.connect(gain);
+    src.start(0);
+  }
+}

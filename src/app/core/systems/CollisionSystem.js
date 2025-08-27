@@ -43,7 +43,7 @@ export class CollisionSystem {
           
           // Handle NPC death with sound
           if (target.type === 'npc' && !target.health.isAlive()) {
-            state.audio?.playSfx?.('pedestrian_death');
+            state.audio?.playSfxAt?.('pedestrian_death', target.pos, state);
             
             const bloodStain = {
               type: 'blood',

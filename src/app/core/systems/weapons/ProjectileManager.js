@@ -62,7 +62,7 @@ export class ProjectileManager {
       proj.age += dt;
       if (proj.age >= proj.lifetime) {
         // Play hit sound for lifetime expiration
-        state.audio?.playSfx?.('projectile_hit');
+        state.audio?.playSfxAt?.('projectile_hit', proj.pos, state);
         state.entities.splice(state.entities.indexOf(proj), 1);
         continue;
       }
@@ -72,7 +72,7 @@ export class ProjectileManager {
         if (collision || proj.age >= proj.lifetime) {
           this.explodeGrenade(state, proj);
           // Play hit sound for grenade collision
-          state.audio?.playSfx?.('projectile_hit');
+          state.audio?.playSfxAt?.('projectile_hit', proj.pos, state);
           state.entities.splice(state.entities.indexOf(proj), 1);
           continue;
         }
@@ -111,7 +111,7 @@ export class ProjectileManager {
     if (grenade.pos.x < 0 || grenade.pos.x >= map.width || 
         grenade.pos.y < 0 || grenade.pos.y >= map.height) {
       // Play hit sound for boundary collision
-      state.audio?.playSfx?.('projectile_hit');
+      state.audio?.playSfxAt?.('projectile_hit', grenade.pos, state);
       return true;
     }
     
@@ -120,7 +120,7 @@ export class ProjectileManager {
     const ty = Math.floor(grenade.pos.y);
     if (this.isTreeTrunkCollision(grenade.pos.x, grenade.pos.y, tx, ty, state)) {
       // Play hit sound for tree collision
-      state.audio?.playSfx?.('projectile_hit');
+      state.audio?.playSfxAt?.('projectile_hit', grenade.pos, state);
       return true;
     }
     
@@ -129,7 +129,7 @@ export class ProjectileManager {
       const tile = map.tiles[ty][tx];
       if ([8, 9].includes(tile)) {
         // Play hit sound for wall collision
-        state.audio?.playSfx?.('projectile_hit');
+        state.audio?.playSfxAt?.('projectile_hit', grenade.pos, state);
         return true;
       }
     }

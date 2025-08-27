@@ -40,7 +40,7 @@ export class SkidmarkSystem {
           if (!v._isSkidding) {
             const screechSounds = ['tire_screech01', 'tire_screech02', 'tire_screech03'];
             const randomSound = screechSounds[Math.floor(Math.random() * screechSounds.length)];
-            state.audio?.playSfx?.(randomSound);
+            state.audio?.playSfxAt?.(randomSound, v.pos, state);
             v._isSkidding = true;
           }
 

@@ -15,7 +15,7 @@ export class CollisionHandler {
     if (projectile.pos.x < 0 || projectile.pos.x >= map.width || 
         projectile.pos.y < 0 || projectile.pos.y >= map.height) {
       // Play hit sound for boundary collision
-      state.audio?.playSfx?.('projectile_hit');
+      state.audio?.playSfxAt?.('projectile_hit', projectile.pos, state);
       return true;
     }
     
@@ -24,7 +24,7 @@ export class CollisionHandler {
     const ty = Math.floor(projectile.pos.y);
     if (this.isTreeTrunkCollision(projectile.pos.x, projectile.pos.y, tx, ty, state)) {
       // Play hit sound for tree collision
-      state.audio?.playSfx?.('projectile_hit');
+      state.audio?.playSfxAt?.('projectile_hit', projectile.pos, state);
       return true;
     }
     
@@ -33,7 +33,7 @@ export class CollisionHandler {
       const tile = map.tiles[ty][tx];
       if ([8, 9].includes(tile)) {
         // Play hit sound for wall collision
-        state.audio?.playSfx?.('projectile_hit');
+        state.audio?.playSfxAt?.('projectile_hit', projectile.pos, state);
         return true;
       }
     }
@@ -54,7 +54,7 @@ export class CollisionHandler {
       if (distance < radius + projectile.size) {
         this.handleEntityCollision(state, projectile, entity);
         // Play hit sound for entity collision
-        state.audio?.playSfx?.('projectile_hit');
+        state.audio?.playSfxAt?.('projectile_hit', projectile.pos, state);
         return true;
       }
     }
@@ -157,4 +157,3 @@ export class CollisionHandler {
     return dx <= trunkHalf && dy <= trunkHalf;
   }
 }
-

@@ -36,7 +36,7 @@ export class ExplosionSystem {
 
     // Randomly play either explosion01.mp3 or explosion02.mp3
     const soundChoice = Math.random() < 0.5 ? 'explosion01' : 'explosion02';
-    state.audio?.playSfx?.(soundChoice);
+    state.audio?.playSfxAt?.(soundChoice, explosion.pos, state);
 
     // Distance-based screen shake from camera center
     const cam = state.camera;

@@ -155,10 +155,19 @@ export class RenderSystem {
     
     // Animation timing
     const time = Date.now() * 0.001; // Convert to seconds
-    const cycleDuration = 8.0; // Changed from 2.0 to 8.0 seconds
-    const phase = (time % cycleDuration) / cycleDuration;
+    const cycleDuration = 8.0; // 8 seconds total cycle
     
-    // Create expansion/contraction effect
+    // Phase calculation: 0.5 seconds pause at 0 opacity
+    const activeDuration = cycleDuration - 0.5; // 7.5 seconds for active animation
+    const phase = (time % cycleDuration) / activeDuration;
+    
+    // Handle pause phase
+    if (phase > 1) {
+      // In pause phase - show nothing
+      return;
+    }
+    
+    // Create expansion/contraction effect with pause
     let progress;
     if (phase < 0.5) {
       // Expanding phase (0 to 0.5)
@@ -170,32 +179,23 @@ export class RenderSystem {
     
     // Base and max sizes
     const baseSize = ts * 0.25;
-    const maxSize = ts * 1.1; // Changed from 1.5 to 1.1
+    const maxSize = ts * 1.1;
     
     // Calculate current size
     const currentSize = baseSize + (maxSize - baseSize) * progress;
     
     // Calculate alpha based on progress (inverse relationship)
-    const maxAlpha = 0.2; // Changed from 0.4 to 0.2
+    const maxAlpha = 0.2;
     const alpha = maxAlpha * (1 - progress);
     
     ctx.save();
     ctx.globalCompositeOperation = 'screen';
-    ctx.strokeStyle = `rgba(255, 255, 100, ${alpha})`;
+    ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`; // White color
     ctx.lineWidth = 3;
     
-    // Draw the expanding/contracting circle
+    // Draw single white circle
     ctx.beginPath();
     ctx.arc(centerX, centerY, currentSize, 0, Math.PI * 2);
-    ctx.stroke();
-    
-    // Add a second, slightly larger ring with reduced opacity
-    const outerSize = currentSize * 1.2;
-    const outerAlpha = alpha * 0.5;
-    ctx.strokeStyle = `rgba(255, 255, 100, ${outerAlpha})`;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, outerSize, 0, Math.PI * 2);
     ctx.stroke();
     
     ctx.restore();

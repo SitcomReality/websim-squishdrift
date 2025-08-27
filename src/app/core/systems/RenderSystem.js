@@ -54,12 +54,6 @@ export class RenderSystem {
     drawTiles(renderer, state, 'floors');
     drawSkidmarks(renderer, state);
     
-    // Draw explosions
-    const explosions = state.explosions || [];
-    for (const explosion of explosions) {
-      drawExplosion(renderer, state, explosion);
-    }
-    
     // Sort entities by y-position for proper z-ordering
     const entities = [...(state.entities || [])].sort((a, b) => {
       // Blood stains should be drawn behind everything
@@ -113,6 +107,12 @@ export class RenderSystem {
           drawDamageIndicator(renderer, state, entity);
           break;
       }
+    }
+    
+    // Draw explosions in front of everything except roofs
+    const explosions = state.explosions || [];
+    for (const explosion of explosions) {
+      drawExplosion(renderer, state, explosion);
     }
     
     // Draw buildings (walls and roofs) in front

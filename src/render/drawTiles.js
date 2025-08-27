@@ -46,15 +46,6 @@ export function drawTiles(r, state, layer = 'all') {
       r.ctx.fillRect(gx*ts, gy*ts + ts*0.7, ts, ts*0.3);
     }
   }
-
-  // Draw explosions after tiles but before other entities
-  const explosions = state.explosions || [];
-  for (const explosion of explosions) {
-    if (explosion.pos.x >= sx && explosion.pos.x < sx + wTiles &&
-        explosion.pos.y >= sy && explosion.pos.y < sy + hTiles) {
-      drawExplosion(r, state, explosion);
-    }
-  }
   
   // Draw dashed lines on straight roads
   drawDashedLines(r, state);

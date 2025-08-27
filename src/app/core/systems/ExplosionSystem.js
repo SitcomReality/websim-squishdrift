@@ -3,7 +3,6 @@ export class ExplosionSystem {
     this.explosions = [];
     this.frameRate = 15; // frames per second
     this.totalFrames = 64; // 8x8 grid
-    this.explosionSize = 2.5; // tiles radius for damage
   }
 
   update(state, dt) {
@@ -14,12 +13,6 @@ export class ExplosionSystem {
       
       explosion.time += dt;
       explosion.currentFrame = Math.floor(explosion.time * this.frameRate);
-      
-      // Check for damage on first frame (when explosion starts)
-      if (explosion.currentFrame === 0 && !explosion.hasDamaged) {
-        this.applyExplosionDamage(state, explosion);
-        explosion.hasDamaged = true;
-      }
       
       if (explosion.currentFrame >= this.totalFrames) {
         state.explosions.splice(i, 1);
@@ -35,9 +28,7 @@ export class ExplosionSystem {
       currentFrame: 0,
       frameWidth: 256,
       frameHeight: 256,
-      totalFrames: this.totalFrames,
-      hasDamaged: false,
-      size: this.explosionSize
+      totalFrames: this.totalFrames
     };
     
     if (!state.explosions) state.explosions = [];
@@ -57,84 +48,52 @@ export class ExplosionSystem {
       const intensity = Math.max(0, 1 - dist / maxDist); // 0..1
       if (intensity > 0) camSys.addShake(intensity);
     }
-  }
 
-  applyExplosionDamage(state, explosion) {
-    const entities = state.entities;
-    
-    for (const entity of entities) {
-      if (!entity || !entity.pos) continue;
-      
-      // Calculate distance from explosion center
-      const dx = entity.pos.x - explosion.pos.x;
-      const dy = entity.pos.y - explosion.pos.y;
-      const distance = Math.hypot(dx, dy);
-      
-      // Check if within explosion radius
-      if (distance <= explosion.size) {
-        switch (entity.type) {
-          case 'npc':
-            // NPCs die instantly
-            if (!entity.health) {
-              entity.health = { hp: 0, isAlive: () => false };
-            } else {
-              entity.health.hp = 0;
-            }
-            
-            // Create blood splatter
-            const bloodStain = {
-              type: 'blood',
-              pos: { x: entity.pos.x, y: entity.pos.y },
-              size: 0.6 + Math.random() * 0.4,
-              color: `hsl(0, 70%, ${30 + Math.random() * 20}%)`,
-              rotation: Math.random() * Math.PI * 2
-            };
-            
-            if (state.bloodManager) {
-              state.bloodManager.addBlood(state, bloodStain);
-            } else {
-              state.entities.push(bloodStain);
-            }
-            
-            // Remove NPC
-            const index = state.entities.indexOf(entity);
-            if (index > -1) {
-              state.entities.splice(index, 1);
-            }
-            break;
-            
-          case 'player':
-            // Player takes 25 damage
-            if (!entity.health) {
-              entity.health = { hp: 75, maxHp: 100, takeDamage: function(d) { this.hp = Math.max(0, this.hp - d); } };
-            }
-            entity.health.takeDamage(25);
-            
-            // Screen shake for player damage
-            if (state.cameraSystem) {
-              state.cameraSystem.addShake(0.8);
-            }
-            break;
-            
-          case 'vehicle':
-            // Vehicles take 25 damage
-            if (!entity.health) {
-              entity.health = { hp: 75, maxHp: 100, takeDamage: function(d) { this.hp = Math.max(0, this.hp - d); } };
-            }
-            entity.health.takeDamage(25);
-            
-            // Spark effects for vehicle damage
-            if (state.particleSystem) {
-              state.particleSystem.emitSparks(state, entity.pos, 8, 4);
-            }
-            break;
+    // --- NEW: apply damage to nearby entities ---
+    // Explosion visual covers roughly a 2x2 tile area (centered). Use radius=1.1 to be safe.
+    const blastRadius = 1.1;
+    const entities = state.entities || [];
+
+    for (let i = entities.length - 1; i >= 0; i--) {
+      const e = entities[i];
+      if (!e || !e.pos) continue;
+      const dx = e.pos.x - explosion.pos.x;
+      const dy = e.pos.y - explosion.pos.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist > blastRadius) continue;
+
+      // NPCs die instantly
+      if (e.type === 'npc') {
+        // ensure health object exists and mark dead
+        if (!e.health) e.health = { hp: 0, maxHp: 1, isAlive: () => false, takeDamage(){} };
+        e.health.hp = 0;
+        // spawn blood stain
+        state.particleSystem?.emitBlood?.(state, e.pos, 10, 3);
+        state.audio?.playSfxAt?.('pedestrian_death', e.pos, state);
+        // remove NPC entity
+        const idx = state.entities.indexOf(e);
+        if (idx > -1) state.entities.splice(idx, 1);
+        // credit stats
+        if (state.stats) state.stats.enemiesKilled = (state.stats.enemiesKilled || 0) + 1;
+        continue;
+      }
+
+      // Vehicles and player take 40 damage if within blast
+      if (e.type === 'vehicle' || e.type === 'player') {
+        if (!e.health) {
+          // create Health-like object if missing
+          e.health = { hp: (e.maxHealth || 100) , maxHp: (e.maxHealth || 100), takeDamage(amount){ this.hp = Math.max(0, this.hp - amount); }, isAlive(){ return this.hp > 0; } };
+        }
+        // Apply damage
+        e.health.takeDamage(40);
+        // Play impact sound at entity
+        state.audio?.playSfxAt?.('impact01', e.pos, state);
+        // If vehicle destroyed, let existing destruction handlers run elsewhere; if player killed trigger death system
+        if (e.type === 'player' && !e.health.isAlive()) {
+          const deathSystem = state._engine?.systems?.death || state.deathSystem || state._engine?.deathSystem;
+          if (deathSystem && deathSystem.handlePlayerDeath) deathSystem.handlePlayerDeath(state);
         }
       }
-    }
-    
-    // Update scoring system for any destroyed entities
-    if (state.scoringSystem) {
-      // Handle scoring updates for destroyed entities
     }
   }
 }

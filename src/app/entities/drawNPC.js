@@ -46,14 +46,15 @@ export function drawNPC(r, state, npc){
   
   // Animation properties
   const animProgress = npc.t * Math.PI * 4; // Controls swing speed
-  const armSwingAngle = Math.sin(animProgress) * 0.8; // Radians
+  const leftArmSwingAngle = Math.sin(animProgress) * 0.8; // Left arm swings forward
+  const rightArmSwingAngle = -Math.sin(animProgress) * 0.8; // Right arm swings backward
 
   // --- Draw Arms (behind body) ---
   // Left Arm (from viewer's perspective, drawn first to be behind)
   ctx.save();
   // Position relative to body center, slightly back and to the side
   ctx.translate(bodyW * 0.1, bodyH * 0.25); 
-  ctx.rotate(-armSwingAngle); // Opposite swing
+  ctx.rotate(leftArmSwingAngle); // Left arm swings forward
   ctx.drawImage(
     pedestrianImages.arms,
     sxArm, syArm, armSpriteWidth, armSpriteHeight,
@@ -64,7 +65,7 @@ export function drawNPC(r, state, npc){
   // Right Arm (was in front, now also behind)
   ctx.save();
   ctx.translate(bodyW * 0.1, -bodyH * 0.25); // Positioned more forward
-  ctx.rotate(armSwingAngle);
+  ctx.rotate(rightArmSwingAngle); // Right arm swings backward
   ctx.drawImage(
     pedestrianImages.arms,
     sxArm, syArm, armSpriteWidth, armSpriteHeight,
@@ -78,20 +79,6 @@ export function drawNPC(r, state, npc){
     sxBody, syBody, bodySpriteWidth, bodySpriteHeight,
     -bodyW / 2, -bodyH / 2, bodyW, bodyH
   );
-
-  // --- Draw Arms (in front of body) ---
-  // Right Arm
-  /* MOVED TO BE DRAWN BEHIND BODY
-  ctx.save();
-  ctx.translate(-bodyW * 0.05, -bodyH * 0.2); // Positioned more forward
-  ctx.rotate(armSwingAngle);
-  ctx.drawImage(
-    pedestrianImages.arms,
-    sxArm, syArm, armSpriteWidth, armSpriteHeight,
-    -armW / 2, -armH / 2, armW, armH
-  );
-  ctx.restore();
-  */
 
   ctx.restore();
 }

@@ -29,8 +29,8 @@ export function drawNPC(r, state, npc){
   // Sprites face right, so no adjustment needed for angle
   ctx.rotate(angle);
 
-  // Scaled dimensions for drawing
-  const scale = (ts * 0.4) / bodySpriteHeight; // Scale based on height to be ~40% of a tile
+  // Scaled dimensions for drawing - HALVED from original
+  const scale = (ts * 0.2) / bodySpriteHeight; // Changed from 0.4 to 0.2 (50% reduction)
   const bodyW = bodySpriteWidth * scale;
   const bodyH = bodySpriteHeight * scale;
   const armW = armSpriteWidth * scale;
@@ -97,7 +97,8 @@ function drawCircleNPC(r, state, npc) {
   }
   
   ctx.fillStyle = npc.color;
-  const size = ts * 0.15;
+  // HALVED size for fallback circle
+  const size = ts * 0.075; // Changed from 0.15 to 0.075 (50% reduction)
   ctx.beginPath();
   ctx.arc(0, 0, size, 0, Math.PI*2);
   ctx.fill();

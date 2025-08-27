@@ -42,14 +42,6 @@ export class DamageTextSystem {
     };
     
     state.damageTexts.push(text);
-
-    // If this damage text corresponds to the player (player nearby), play ouch SFX
-    try {
-      const player = state.entities?.find(e => e.type === 'player');
-      if (player && Math.hypot(player.pos.x - pos.x, player.pos.y - pos.y) < 0.6) {
-        state.audio?.playSfxAt?.('ouch', pos, state);
-      }
-    } catch (e) { /* safe no-op if state not fully initialized */ }
   }
 
   addText(state, pos, text, color = '#ffffff', size = 7) { // Reduced default size

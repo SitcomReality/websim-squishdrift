@@ -9,6 +9,15 @@ export class PlayerSystem {
     
     this.ensureHealth(player);
     
+    // Play ouch when player's health decreases
+    try {
+      const prevHp = (player.health && typeof player.health._prevHp === 'number') ? player.health._prevHp : player.health.hp;
+      if (player.health.hp < prevHp) {
+        state.audio?.playSfx?.('ouch');
+      }
+      player.health._prevHp = player.health.hp;
+    } catch (e) { /* swallow audio errors */ }
+    
     // Always update facing from mouse (even in vehicle for aiming)
     this.updateFacingFromMouse(state, player, input);
     

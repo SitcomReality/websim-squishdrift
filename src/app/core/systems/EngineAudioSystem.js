@@ -65,4 +65,9 @@ export class EngineAudioSystem {
     if (type === 'emergency' || type === 'police' || type === 'ambulance' || type === 'firetruck') return 'engine_emergency';
     return 'engine_sedan';
   }
+
+  stopAll() {
+    // This method will be called by the death system to stop all engine audio
+    // Implementation depends on the audio system structure
+  }
 }

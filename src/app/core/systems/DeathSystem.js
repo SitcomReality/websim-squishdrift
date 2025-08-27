@@ -69,7 +69,32 @@ export class DeathSystem {
   handlePlayerDeath(state) {
     this.isDead = true;
     this.deathTime = Date.now();
+    
+    // Fade out all audio
+    this.fadeOutAllAudio(state);
+    
     this.createDeathScreen(state);
+  }
+
+  fadeOutAllAudio(state) {
+    if (!state.audio) return;
+    
+    // Stop all loops with fade out
+    if (state.audio.loops && state.audio.loops.size) {
+      for (const [id] of state.audio.loops) {
+        state.audio.stopLoop(id, { fadeOut: 1.0 });
+      }
+    }
+    
+    // Stop engine audio system
+    if (state.engineAudioSystem) {
+      state.engineAudioSystem.stopAll();
+    }
+    
+    // Stop any other playing sounds
+    if (state.audio.stopAll) {
+      state.audio.stopAll();
+    }
   }
 
   createDeathScreen(state) {

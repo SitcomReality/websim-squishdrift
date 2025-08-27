@@ -185,4 +185,23 @@ export class AudioManager {
     }
     this.loops.delete(id);
   }
+
+  stopAll() {
+    // Stop all loops with fade out
+    if (this.loops && this.loops.size) {
+      for (const [id] of this.loops) {
+        this.stopLoop(id, { fadeOut: 1.0 });
+      }
+    }
+    
+    // Stop any other playing sounds
+    if (this.ctx) {
+      // Create a master gain node to fade out all sounds
+      if (this.masterGain) {
+        const t = this.ctx.currentTime;
+        this.masterGain.gain.cancelScheduledValues(t);
+        this.masterGain.gain.linearRampToValueAtTime(0, t + 1.0);
+      }
+    }
+  }
 }

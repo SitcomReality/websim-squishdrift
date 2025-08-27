@@ -34,6 +34,42 @@ export function createInitialState(seed = null) {
   player.pos.x = spawnX; player.pos.y = spawnY; state.camera.x = spawnX; state.camera.y = spawnY;
   player.vel = { x: 0, y: 0 }; player.mass = 80; player.hitboxW = 0.15; player.hitboxH = 0.15;
   
+  // Create sprite pool and assign unique player sprite
+  const skinTones = [0, 1]; // 0=dark, 1=light
+  const bodyIndices = [0, 1, 2, 3, 4]; // 0-4 for body sprite
+  const armIndices = [0, 1, 2, 3]; // 0-3 for arm sprite
+  
+  // Create all possible combinations
+  const allCombinations = [];
+  for (const skinTone of skinTones) {
+    for (const bodyIndex of bodyIndices) {
+      let armIndex;
+      if (bodyIndex < 2) {
+        armIndex = 0; // Sleeveless for first two bodies
+      } else {
+        armIndex = bodyIndex - 1; // Map body 2,3,4 -> arm 1,2,3
+      }
+      
+      allCombinations.push({
+        skinTone,
+        bodyIndex,
+        armIndex
+      });
+    }
+  }
+  
+  // Shuffle and pick unique player sprite
+  const shuffled = allCombinations.sort(() => rand() - 0.5);
+  const playerSprite = shuffled.pop(); // Remove from pool
+  
+  // Assign to player
+  player.skinTone = playerSprite.skinTone;
+  player.bodyIndex = playerSprite.bodyIndex;
+  player.armIndex = playerSprite.armIndex;
+  
+  // Store remaining combinations for NPCs
+  state.availableSpriteCombinations = shuffled;
+  
   // Spawn empty vehicle using new system
   const emptyVehicleTypes = ['compact', 'sedan', 'truck', 'sports'];
   const randomEmptyType = emptyVehicleTypes[Math.floor(rand() * emptyVehicleTypes.length)];
@@ -73,29 +109,43 @@ export function createInitialState(seed = null) {
       speed: 0.25 * 1.5,
       vel: { x: 0, y: 0 },
       angularVel: 0,
-      ctrl: { throttle: 0, brake: 0, steer: 0 }
+      ctrl: { throttle: 0, brake: 0, steer: 0 },
+      mass: 1200, maxSpeed: 4, engineForce: 900, brakeForce: 1600,
+      rollingRes: 1.0, drag: 0.25, grip: 6.0, steerRate: 2.5
     });
     
     state.entities.push(vehicle);
   }
   
-  // Spawn simple NPC pedestrians on ped graph near player
+  // Spawn NPC pedestrians from remaining sprite combinations
   const pedNodes = map.peds?.list || [];
   const spawnCount = Math.min(30, pedNodes.length);
   const sortedByDist = pedNodes.slice().sort((a,b)=> (Math.hypot(a.x+0.5-spawnX,a.y+0.5-spawnY) - Math.hypot(b.x+0.5-spawnX,b.y+0.5-spawnY)));
-  for (let i=0;i<spawnCount;i++){
+  
+  // Shuffle remaining combinations for NPCs
+  const remainingCombinations = [...state.availableSpriteCombinations].sort(() => rand() - 0.5);
+  
+  for (let i=0;i<spawnCount && remainingCombinations.length > 0;i++){
     const n = sortedByDist[i];
     // Skip spawning on median strips
     if (map.tiles[Math.floor(n.y)][Math.floor(n.x)] === Tile.Median) continue;
     
-    const next = (n.neighbors && n.neighbors.length) ? n.neighbors[Math.floor(rand()*n.neighbors.length)] : { x:n.x, y:n.y };
-    const npc = { type:'npc', pos:new Vec2(n.x+0.5, n.y+0.5), from:{x:n.x,y:n.y}, to: next, t: 0, speed: 0.2 + rand()*0.15 };
+    const next = (n.neighbors && n.neighbors.length) ? n.neighbors[Math.floor(rand() * n.neighbors.length)] : { x:n.x, y:n.y };
     
-    // Assign sprite properties
-    npc.skinTone = rand() < 0.5 ? 0 : 1; // 0 for dark, 1 for light
-    npc.bodyIndex = Math.floor(rand() * 5); // 0-4 for body sprite
-    if (npc.bodyIndex < 2) { npc.armIndex = 0; } 
-    else { npc.armIndex = npc.bodyIndex - 1; }
+    // Use remaining sprite combinations for NPCs
+    const spriteCombo = remainingCombinations.pop();
+    
+    const npc = { 
+      type:'npc', 
+      pos:new Vec2(n.x+0.5, n.y+0.5), 
+      from:{x:n.x,y:n.y}, 
+      to: next, 
+      t: 0, 
+      speed: 0.2 + rand() * 0.15,
+      skinTone: spriteCombo.skinTone,
+      bodyIndex: spriteCombo.bodyIndex,
+      armIndex: spriteCombo.armIndex
+    };
     
     state.entities.push(npc);
   }

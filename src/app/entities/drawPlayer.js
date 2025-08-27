@@ -1,13 +1,22 @@
 export function drawPlayer(r, state, player){
   if (player.hidden) return;
   const { ctx } = r, ts = state.world.tileSize, p = player.pos;
-  ctx.save(); ctx.fillStyle = '#FF0000';
-  const size = ts * 0.15; // Reduced from 0.8 to 0.15 to match NPC size
-  const halfSize = size / 2;
-  ctx.translate(p.x*ts, p.y*ts);
-  ctx.fillRect(-halfSize, -halfSize, size, size);
-  ctx.fillStyle = '#FFFFFF'; ctx.beginPath();
-  ctx.arc((player.facing.x)*ts*0.15, (player.facing.y)*ts*0.15, 2, 0, Math.PI*2);
-  ctx.fill(); ctx.restore();
+  
+  // Use drawNPC function for player sprite
+  const npc = {
+    type: 'npc',
+    pos: player.pos,
+    from: { x: Math.floor(p.x), y: Math.floor(p.y) },
+    to: { x: Math.floor(p.x) + Math.cos(player.facingAngle || 0), y: Math.floor(p.y) + Math.sin(player.facingAngle || 0) },
+    t: 0,
+    speed: player.moveSpeed || 6,
+    skinTone: player.skinTone,
+    bodyIndex: player.bodyIndex,
+    armIndex: player.armIndex,
+    facingAngle: player.facingAngle
+  };
+  
+  // Import and use the NPC drawing function
+  const { drawNPC } = await import('./drawNPC.js');
+  drawNPC(r, state, npc);
 }
-

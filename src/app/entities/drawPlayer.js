@@ -1,4 +1,6 @@
-export async function drawPlayer(r, state, player){
+import { drawNPC } from './drawNPC.js';
+
+export function drawPlayer(r, state, player) {
   if (player.hidden) return;
   const { ctx } = r, ts = state.world.tileSize, p = player.pos;
   
@@ -16,7 +18,6 @@ export async function drawPlayer(r, state, player){
     facingAngle: player.facingAngle
   };
   
-  // Import and use the NPC drawing function
-  const { drawNPC } = await import('./drawNPC.js');
+  // Use the NPC drawing function directly
   drawNPC(r, state, npc);
 }

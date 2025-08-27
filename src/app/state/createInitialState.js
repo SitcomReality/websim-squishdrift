@@ -89,7 +89,15 @@ export function createInitialState(seed = null) {
     if (map.tiles[Math.floor(n.y)][Math.floor(n.x)] === Tile.Median) continue;
     
     const next = (n.neighbors && n.neighbors.length) ? n.neighbors[Math.floor(rand()*n.neighbors.length)] : { x:n.x, y:n.y };
-    state.entities.push({ type:'npc', pos:new Vec2(n.x+0.5, n.y+0.5), from:{x:n.x,y:n.y}, to: next, t: 0, speed: 0.2 + rand()*0.15 });
+    const npc = { type:'npc', pos:new Vec2(n.x+0.5, n.y+0.5), from:{x:n.x,y:n.y}, to: next, t: 0, speed: 0.2 + rand()*0.15 };
+    
+    // Assign sprite properties
+    npc.skinTone = rand() < 0.5 ? 0 : 1; // 0 for dark, 1 for light
+    npc.bodyIndex = Math.floor(rand() * 5); // 0-4 for body sprite
+    if (npc.bodyIndex < 2) { npc.armIndex = 0; } 
+    else { npc.armIndex = npc.bodyIndex - 1; }
+    
+    state.entities.push(npc);
   }
   
   // Create pickup spots at the center of each block and spawn an initial pickup (pistol)

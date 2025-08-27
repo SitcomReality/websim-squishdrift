@@ -79,14 +79,22 @@ export class SpawnManager {
           ? spawnNode.neighbors[Math.floor(state.rand() * spawnNode.neighbors.length)]
           : { x: spawnNode.x, y: spawnNode.y };
         
-        state.entities.push({
+        const npc = {
           type: 'npc',
           pos: { x: spawnNode.x + 0.5, y: spawnNode.y + 0.5 },
           from: { x: spawnNode.x, y: spawnNode.y },
           to: next,
           t: 0,
           speed: 0.2 + state.rand() * 0.15
-        });
+        };
+
+        // Assign sprite properties
+        npc.skinTone = state.rand() < 0.5 ? 0 : 1; // 0 for dark, 1 for light
+        npc.bodyIndex = Math.floor(state.rand() * 5); // 0-4 for body sprite
+        if (npc.bodyIndex < 2) { npc.armIndex = 0; } 
+        else { npc.armIndex = npc.bodyIndex - 1; }
+
+        state.entities.push(npc);
       }
     }
 

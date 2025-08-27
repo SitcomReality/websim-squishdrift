@@ -70,6 +70,9 @@ export class GameEngine {
     // Load pickup images
     this.loadPickupImages();
 
+    // Load pedestrian images
+    this.loadPedestrianImages();
+
     // Add start time for death screen stats
     if (this.stateManager.state) {
       this.stateManager.state.startTime = Date.now();
@@ -133,6 +136,28 @@ export class GameEngine {
         }
       };
     });
+  }
+
+  loadPedestrianImages() {
+    if (this.stateManager.state) {
+        if (!this.stateManager.state.pedestrianImages) {
+            this.stateManager.state.pedestrianImages = {};
+        }
+        const bodiesImg = new Image();
+        bodiesImg.src = '/pedestrian_bodies.png';
+        bodiesImg.onload = () => {
+            if (this.stateManager.state.pedestrianImages) {
+              this.stateManager.state.pedestrianImages.bodies = bodiesImg;
+            }
+        };
+        const armsImg = new Image();
+        armsImg.src = '/pedestrian_arms.png';
+        armsImg.onload = () => {
+            if (this.stateManager.state.pedestrianImages) {
+              this.stateManager.state.pedestrianImages.arms = armsImg;
+            }
+        };
+    }
   }
 
   update(dt) {
@@ -219,6 +244,7 @@ export class GameEngine {
     // Reload vehicle images
     this.loadVehicleImages();
     this.loadPickupImages();
+    this.loadPedestrianImages();
     
     // Ensure input manager is connected
     this.stateManager.inputManager = this.inputManager;

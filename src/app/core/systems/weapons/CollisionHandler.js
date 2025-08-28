@@ -11,6 +11,9 @@ export class CollisionHandler {
     const map = state.world.map;
     const tileSize = state.world.tileSize;
     
+    // Allow freshly spawned grenade shrapnel to move out of walls/trees before colliding
+    if (projectile.isShrapnel && projectile.age < 0.05) return false;
+    
     // Check map boundaries
     if (projectile.pos.x < 0 || projectile.pos.x >= map.width || 
         projectile.pos.y < 0 || projectile.pos.y >= map.height) {

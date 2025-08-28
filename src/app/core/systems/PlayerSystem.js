@@ -3,11 +3,18 @@ import { Vec2 } from '../../../utils/Vec2.js';
 import { Health } from '../../components/Health.js';
 
 export class PlayerSystem {
+  constructor() {
+    this.maxStamina = 100;
+    this.staminaDepletionRate = 20; // per second
+    this.staminaRechargeRate = 40; // per second (2x depletion)
+  }
+
   update(state, input, dt) {
     const player = state.entities.find(e => e.type === 'player');
     if (!player) return;
     
     this.ensureHealth(player);
+    this.ensureStamina(player);
     
     // Play ouch when player's health decreases
     try {
@@ -48,6 +55,7 @@ export class PlayerSystem {
     
     if (!state.control.inVehicle) {
       this.handlePlayerMovement(state, player, input, dt);
+      this.updateStamina(state, player, input, dt);
     } else {
       // Keep player "attached" to vehicle while inside
       const v = state.control.vehicle;
@@ -65,19 +73,63 @@ export class PlayerSystem {
     }
   }
 
+  ensureStamina(entity) {
+    if (!entity.stamina) {
+      entity.stamina = this.maxStamina;
+      entity.maxStamina = this.maxStamina;
+    }
+  }
+
+  updateStamina(state, player, input, dt) {
+    const isRunning = input.keys.has('ShiftLeft') || input.keys.has('ShiftRight');
+    const isMoving = input.keys.has('KeyW') || input.keys.has('KeyS') || 
+                    input.keys.has('KeyA') || input.keys.has('KeyD') ||
+                    input.keys.has('ArrowUp') || input.keys.has('ArrowDown') ||
+                    input.keys.has('ArrowLeft') || input.keys.has('ArrowRight');
+    
+    // Deplete stamina when running and moving
+    if (isRunning && isMoving && player.stamina > 0) {
+      player.stamina = Math.max(0, player.stamina - this.staminaDepletionRate * dt);
+    } else {
+      // Recharge stamina when not running or not moving
+      player.stamina = Math.min(player.maxStamina, player.stamina + this.staminaRechargeRate * dt);
+    }
+    
+    // Update HUD visibility
+    this.updateStaminaBar(player);
+  }
+
+  updateStaminaBar(player) {
+    const staminaBar = document.getElementById('stamina-container');
+    const staminaFill = document.getElementById('stamina-bar');
+    const staminaText = document.getElementById('stamina-text');
+    
+    if (!staminaBar || !staminaFill || !staminaText) return;
+    
+    // Show stamina bar only when not at max
+    if (player.stamina < player.maxStamina) {
+      staminaBar.style.display = 'block';
+      const percentage = (player.stamina / player.maxStamina) * 100;
+      staminaFill.style.width = `${percentage}%`;
+      staminaText.textContent = `${Math.round(player.stamina)}/${player.maxStamina}`;
+    } else {
+      staminaBar.style.display = 'none';
+    }
+  }
+
   handlePlayerMovement(state, player, input, dt) {
     if (!state || !player || !input || !dt) return;
     
     // Get movement input relative to player facing
     let forward = 0, strafe = 0;
-    if (input.keys && input.keys.has('KeyW')) forward += 1;
-    if (input.keys && input.keys.has('ArrowUp')) forward += 1;
-    if (input.keys && input.keys.has('KeyS')) forward -= 0.75; // 75% speed for backward
-    if (input.keys && input.keys.has('ArrowDown')) forward -= 0.75;
-    if (input.keys && input.keys.has('KeyA')) strafe -= 0.75; // 75% speed for strafing
-    if (input.keys && input.keys.has('ArrowLeft')) strafe -= 0.75;
-    if (input.keys && input.keys.has('KeyD')) strafe += 0.75; // 75% speed for strafing
-    if (input.keys && input.keys.has('ArrowRight')) strafe += 0.75;
+    if (input.keys.has('KeyW')) forward += 1;
+    if (input.keys.has('ArrowUp')) forward += 1;
+    if (input.keys.has('KeyS')) forward -= 0.75; // 75% speed for backward
+    if (input.keys.has('ArrowDown')) forward -= 0.75;
+    if (input.keys.has('KeyA')) strafe -= 0.75; // 75% speed for strafing
+    if (input.keys.has('ArrowLeft')) strafe -= 0.75;
+    if (input.keys.has('KeyD')) strafe += 0.75; // 75% speed for strafing
+    if (input.keys.has('ArrowRight')) strafe += 0.75;
     
     if (forward || strafe) {
       // Calculate movement in world space based on player facing
@@ -95,7 +147,14 @@ export class PlayerSystem {
         const normalizedDx = dx / len;
         const normalizedDy = dy / len;
         
-        const moveSpeed = player.moveSpeed || 6;
+        // Apply run speed if shift is held and stamina available
+        const isRunning = input.keys.has('ShiftLeft') || input.keys.has('ShiftRight');
+        let moveSpeed = player.moveSpeed || 6;
+        
+        if (isRunning && player.stamina > 0) {
+          moveSpeed *= 1.8; // 80% faster when running
+        }
+        
         const nx = player.pos.x + normalizedDx * moveSpeed * dt;
         const ny = player.pos.y + normalizedDy * moveSpeed * dt;
         

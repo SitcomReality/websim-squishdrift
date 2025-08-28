@@ -90,15 +90,16 @@ export class PlayerSystem {
     // Deplete stamina when running and moving
     if (isRunning && isMoving && player.stamina > 0) {
       player.stamina = Math.max(0, player.stamina - this.staminaDepletionRate * dt);
-    } else if (!isRunning || !isMoving) {
-      // Only recharge when not running or not moving
-      player.stamina = Math.min(player.maxStamina, player.stamina + this.staminaRechargeRate * dt);
+    } else {
+      // Recharge stamina when not running or not moving
+      // Only recharge when stamina is not at maximum
+      if (player.stamina < player.maxStamina) {
+        player.stamina = Math.min(player.maxStamina, player.stamina + this.staminaRechargeRate * dt);
+      }
     }
     
-    // Ensure stamina never resets to max when it reaches zero
-    if (player.stamina <= 0) {
-      player.stamina = 0;
-    }
+    // Prevent instant reset - stamina must recharge naturally
+    player.stamina = Math.max(0, Math.min(player.maxStamina, player.stamina));
     
     // Only update HUD visibility - we'll handle the canvas rendering separately
     // The stamina bar will now be drawn near the player instead of in HUD

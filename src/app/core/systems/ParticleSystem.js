@@ -105,7 +105,7 @@ export class ParticleSystem {
       
       // Create smaller, more dynamic sparks
       const sparkSize = 0.02 + Math.random() * 0.03; // Much smaller base size
-      
+          
       state.particles.push({
         type: 'spark',
         x: pos.x,
@@ -115,7 +115,7 @@ export class ParticleSystem {
         life: 0.15 + Math.random() * 0.2, // Shorter life for quick spark effect
         maxLife: 0.15 + Math.random() * 0.2,
         size: sparkSize,
-        maxSize: sparkSize * 2.5, // Max size for expansion
+        maxSize: sparkSize * 1.25, // Max size reduced to 1.25x instead of 2.5x
         color: 'rgba(255,200,50,1)',
         alpha: 1.0,
         maxAlpha: 1.0

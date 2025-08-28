@@ -90,9 +90,14 @@ export class PlayerSystem {
     // Deplete stamina when running and moving
     if (isRunning && isMoving && player.stamina > 0) {
       player.stamina = Math.max(0, player.stamina - this.staminaDepletionRate * dt);
-    } else {
-      // Recharge stamina when not running or not moving
+    } else if (!isRunning || !isMoving) {
+      // Only recharge when not running or not moving
       player.stamina = Math.min(player.maxStamina, player.stamina + this.staminaRechargeRate * dt);
+    }
+    
+    // Ensure stamina never resets to max when it reaches zero
+    if (player.stamina <= 0) {
+      player.stamina = 0;
     }
     
     // Only update HUD visibility - we'll handle the canvas rendering separately

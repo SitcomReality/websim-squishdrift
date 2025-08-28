@@ -5,21 +5,32 @@ export function drawPlayer(r, state, player) {
   if (player.hidden) return;
   const { ctx } = r, ts = state.world.tileSize, p = player.pos;
   
-  // Use drawNPC function for player sprite
+  // Create a dynamic NPC-like representation for player with arm movement
+  const isMoving = player.lastMoveSpeed > 0.01;
+  const moveSpeed = player.lastMoveSpeed || 0;
+  const baseAnimSpeed = 4; // NPC base animation speed
+  
+  // Calculate animation speed multiplier based on movement
+  let animMultiplier = 1;
+  if (isMoving) {
+    animMultiplier = Math.max(1.5, moveSpeed / 0.5); // Player moves faster than NPCs
+  }
+  
+  // Create NPC-like structure for player with custom animation
   const npc = {
     type: 'npc',
     pos: player.pos,
     from: { x: Math.floor(p.x), y: Math.floor(p.y) },
     to: { x: Math.floor(p.x) + Math.cos(player.facingAngle || 0), y: Math.floor(p.y) + Math.sin(player.facingAngle || 0) },
-    t: 0,
-    speed: player.moveSpeed || 6,
+    t: (state.time || 0) * baseAnimSpeed * animMultiplier % 1, // Use game time for smooth animation
+    speed: moveSpeed || 1.5,
     skinTone: player.skinTone,
     bodyIndex: player.bodyIndex,
     armIndex: player.armIndex,
     facingAngle: player.facingAngle
   };
   
-  // Use the NPC drawing function directly
+  // Use the NPC drawing function which includes arm animation
   drawNPC(r, state, npc);
   
   // Draw health bar above player

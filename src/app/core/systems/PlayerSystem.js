@@ -54,7 +54,15 @@ export class PlayerSystem {
     } catch (e) { /* DOM may be unavailable in some contexts */ }
     
     if (!state.control.inVehicle) {
+      // Track movement speed for arm animation
+      const prevPos = { x: player.pos.x, y: player.pos.y };
       this.handlePlayerMovement(state, player, input, dt);
+      
+      // Calculate movement speed for animation
+      const dx = player.pos.x - prevPos.x;
+      const dy = player.pos.y - prevPos.y;
+      player.lastMoveSpeed = Math.hypot(dx, dy) / dt;
+      
       this.updateStamina(state, player, input, dt);
     } else {
       // Keep player "attached" to vehicle while inside
@@ -63,6 +71,7 @@ export class PlayerSystem {
         player.pos.x = v.pos.x;
         player.pos.y = v.pos.y;
         player.hidden = true;
+        player.lastMoveSpeed = 0; // No arm movement when in vehicle
       }
     }
   }
@@ -145,7 +154,7 @@ export class PlayerSystem {
         
         // Check if player can run based on stamina
         const isRunning = input.keys.has('ShiftLeft') || input.keys.has('ShiftRight');
-        let moveSpeed = player.moveSpeed || 6;
+        let moveSpeed = player.moveSpeed || 1.5;
         
         // Only allow running if player has stamina
         if (isRunning && player.canRun !== false) {
@@ -180,12 +189,12 @@ export class PlayerSystem {
     const camX = state.camera?.x || 0;
     const camY = state.camera?.y || 0;
     
-    const worldX = (mouseX - cx) / zoom + camX * ts;
-    const worldY = (mouseY - cy) / zoom + camY * ts;
+    const worldX = (mouseX - cx) / zoom + camX;
+    const worldY = (mouseY - cy) / zoom + camY;
     
     // Calculate angle from player to mouse
-    const dx = worldX / ts - player.pos.x;
-    const dy = worldY / ts - player.pos.y;
+    const dx = worldX - player.pos.x;
+    const dy = worldY - player.pos.y;
     player.facingAngle = Math.atan2(dy, dx);
     
     // Update facing vector
@@ -247,6 +256,7 @@ export class PlayerSystem {
     state.control.vehicle = vehicle;
     player.hidden = true;
     player.inVehicle = true;
+    player.lastMoveSpeed = 0; // Stop arm movement when entering vehicle
     
     player.collisionDisabled = true;
     player.canUseItems = false;
@@ -297,6 +307,7 @@ export class PlayerSystem {
       
       player.hidden = false;
       player.inVehicle = false;
+      player.lastMoveSpeed = 0; // Stop arm movement when exiting vehicle
       player.collisionDisabled = false;
       player.canUseItems = true;
     }

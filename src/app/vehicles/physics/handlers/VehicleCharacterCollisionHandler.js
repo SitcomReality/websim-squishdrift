@@ -28,6 +28,11 @@ export class VehicleCharacterCollisionHandler {
             const contact = obbOverlap(vehicleOBB, pedOBB);
 
             if (contact) {
+                // Register kill with scoring system if this is a player-controlled vehicle
+                if (state.control?.inVehicle && state.control?.vehicle === v) {
+                    state.scoringSystem?.addCrime(state, 'kill_pedestrian', ped);
+                }
+                
                 // Always play pedestrian death sound
                 state.audio?.playSfxAt?.('pedestrian_death', ped.pos, state);
                 

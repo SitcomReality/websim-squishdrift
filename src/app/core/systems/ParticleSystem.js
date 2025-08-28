@@ -73,10 +73,9 @@ export class ParticleSystem {
       const baseAlpha = 0.7;
       const alpha = baseAlpha - (damageLevel * 0.3); // More transparent with damage
       
-      // Darker colors for more damage
-      const hue = 0; // Greyscale
-      const saturation = 0;
-      const lightness = Math.max(10, 30 - (damageLevel * 20)); // 30% to 10% (darker)
+      // Random color between light grey and black
+      const lightness = 20 + Math.random() * 50; // 20% to 70% lightness
+      const saturation = 0; // Greyscale
       
       state.particles.push({
         type: 'smoke',
@@ -88,7 +87,7 @@ export class ParticleSystem {
         maxLife: 2.0 + (damageLevel * 1.5),
         alpha: alpha,
         size: 0.05 + (damageLevel * 0.05), // Larger with damage
-        color: `hsl(${hue}, ${saturation}%, ${lightness}%)`
+        color: `hsl(0, ${saturation}%, ${lightness}%)`
       });
     }
   }

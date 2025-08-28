@@ -65,7 +65,9 @@ export class ProjectileManager {
         if (proj.isGrenade) {
           this.explodeGrenade(state, proj);
         }
-        state.entities.splice(state.entities.indexOf(proj), 1);
+        // Use the captured index to remove the exact projectile instance to avoid accidental mismatches
+        const idx = state.entities.indexOf(proj);
+        if (idx > -1) state.entities.splice(idx, 1);
         continue;
       }
       
@@ -75,7 +77,8 @@ export class ProjectileManager {
         if (proj.isGrenade) {
           this.explodeGrenade(state, proj);
         }
-        state.entities.splice(state.entities.indexOf(proj), 1);
+        const idx2 = state.entities.indexOf(proj);
+        if (idx2 > -1) state.entities.splice(idx2, 1);
       }
     }
   }

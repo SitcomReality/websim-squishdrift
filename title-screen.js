@@ -112,17 +112,6 @@ export class TitleScreen {
       if (this.gameStarted) return;
       this.gameStarted = true;
       
-      // Start the main soundtrack
-      if (window.game && window.game.audioManager) {
-        window.game.audioManager.playMainTheme();
-      } else {
-        // Fallback direct audio
-        const music = new Audio('/music/player2.mp3');
-        music.loop = true;
-        music.volume = 0.6;
-        music.play().catch(e => console.warn('Could not play music:', e));
-      }
-      
       callback();
     });
   }

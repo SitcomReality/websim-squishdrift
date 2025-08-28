@@ -75,8 +75,7 @@ async function initializeWithLoading() {
         loadingSystem.hideTitleScreen();
         
         // Start the main soundtrack
-        music.volume = game.audioManager?.musicVolume || 0.6;
-        music.play().catch(e => console.warn('Could not play music:', e));
+        game.audioManager?.playMainTheme?.();
         
         gameLoop.start();
       });

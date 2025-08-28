@@ -58,9 +58,6 @@ export class AudioManager {
     // Load main theme
     this.mainTheme = new Audio('/music/player2.mp3');
     this.mainTheme.loop = true;
-    
-    // Add to audio controls
-    this.loadedAssets.push({ key: 'main_theme', audio: this.mainTheme });
   }
 
   async load(url, key) {
@@ -227,25 +224,35 @@ export class AudioManager {
   }
 
   playMainTheme() {
-    if (this.mainTheme) {
-      this.mainTheme.volume = this.musicVolume;
+    if (!this.mainTheme) {
+      this.mainTheme = new Audio('/music/player2.mp3');
+      this.mainTheme.loop = true;
+    }
+    this.mainTheme.muted = !!this.musicMuted;
+    this.mainTheme.volume = this.musicMuted ? 0 : this.musicVolume;
+    if (this.mainTheme.paused) {
+      this.mainTheme.currentTime = this.mainTheme.currentTime || 0;
       this.mainTheme.play().catch(e => console.warn('Could not play main theme:', e));
     }
   }
 
   stopMainTheme(fadeOut = 1.0) {
-    if (this.mainTheme && this.mainTheme.playbackRate !== 0) {
-      const fade = () => {
-        if (this.mainTheme.volume > 0.01) {
-          this.mainTheme.volume = Math.max(0, this.mainTheme.volume - 0.02);
-          setTimeout(fade, fadeOut * 50);
-        } else {
-          this.mainTheme.pause();
-          this.mainTheme.currentTime = 0;
-        }
-      };
-      fade();
-    }
+    if (!this.mainTheme) return;
+    const targetMs = Math.max(0, fadeOut * 1000);
+    const startVol = this.mainTheme.volume;
+    const start = performance.now();
+    const step = (now) => {
+      const t = Math.min(1, (now - start) / targetMs);
+      this.mainTheme.volume = startVol * (1 - t);
+      if (t < 1) {
+        requestAnimationFrame(step);
+      } else {
+        this.mainTheme.pause();
+        this.mainTheme.currentTime = 0;
+        this.mainTheme.volume = this.musicMuted ? 0 : this.musicVolume;
+      }
+    };
+    requestAnimationFrame(step);
   }
 
   stopAll() {
@@ -280,6 +287,9 @@ export class AudioManager {
     this.volumeSettings.music = Math.max(0, Math.min(1, volume));
     this.musicVolume = this.volumeSettings.music;
     this.musicMuted = this.volumeSettings.musicMuted;
+    if (this.mainTheme) {
+      this.mainTheme.volume = this.musicMuted ? 0 : this.musicVolume;
+    }
   }
 
   toggleSfxMute() {
@@ -291,6 +301,12 @@ export class AudioManager {
   toggleMusicMute() {
     this.volumeSettings.musicMuted = !this.volumeSettings.musicMuted;
     this.musicMuted = this.volumeSettings.musicMuted;
+    if (this.mainTheme) {
+      this.mainTheme.muted = !!this.musicMuted;
+      if (!this.musicMuted) {
+        this.mainTheme.volume = this.musicVolume;
+      }
+    }
     return this.musicMuted;
   }
 }

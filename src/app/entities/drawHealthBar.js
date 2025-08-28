@@ -1,6 +1,6 @@
 export function drawHealthBar(r, entity, offsetY = -0.3) {
   if (!entity.health) return;
-  if (entity.hidden || entity.inVehicle) return; // Don't show health bar when in vehicle
+  if (entity.hidden || entity.inVehicle) return;
   
   const { ctx } = r;
   const ts = r.ts || 24;
@@ -21,3 +21,4 @@ export function drawHealthBar(r, entity, offsetY = -0.3) {
   
   ctx.restore();
 }
+

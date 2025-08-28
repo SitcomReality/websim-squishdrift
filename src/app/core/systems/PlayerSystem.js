@@ -95,24 +95,14 @@ export class PlayerSystem {
       player.stamina = Math.min(player.maxStamina, player.stamina + this.staminaRechargeRate * dt);
     }
     
-    // Update HUD visibility
-    this.updateStaminaBar(player);
+    // Only update HUD visibility - we'll handle the canvas rendering separately
+    // The stamina bar will now be drawn near the player instead of in HUD
   }
 
   updateStaminaBar(player) {
+    // Remove HUD stamina bar - now drawn near player on canvas
     const staminaBar = document.getElementById('stamina-container');
-    const staminaFill = document.getElementById('stamina-bar');
-    const staminaText = document.getElementById('stamina-text');
-    
-    if (!staminaBar || !staminaFill || !staminaText) return;
-    
-    // Show stamina bar only when not at max
-    if (player.stamina < player.maxStamina) {
-      staminaBar.style.display = 'block';
-      const percentage = (player.stamina / player.maxStamina) * 100;
-      staminaFill.style.width = `${percentage}%`;
-      staminaText.textContent = `${Math.round(player.stamina)}/${player.maxStamina}`;
-    } else {
+    if (staminaBar) {
       staminaBar.style.display = 'none';
     }
   }

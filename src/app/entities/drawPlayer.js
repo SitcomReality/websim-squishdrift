@@ -1,4 +1,5 @@
 import { drawNPC } from './drawNPC.js';
+import { drawHealthBar } from './drawHealthBar.js';
 
 export function drawPlayer(r, state, player) {
   if (player.hidden) return;
@@ -20,4 +21,35 @@ export function drawPlayer(r, state, player) {
   
   // Use the NPC drawing function directly
   drawNPC(r, state, npc);
+  
+  // Draw health bar above player
+  drawHealthBar(r, player, -0.3);
+  
+  // Draw stamina bar below player when not full
+  if (player.stamina !== undefined && player.stamina < player.maxStamina) {
+    drawStaminaBar(r, player, 0.5);
+  }
+}
+
+function drawStaminaBar(r, player, offsetY = 0.5) {
+  if (!player.health) return;
+  if (player.hidden || player.inVehicle) return;
+  
+  const { ctx } = r;
+  const ts = r.ts || 24;
+  const staminaPercent = player.stamina / player.maxStamina;
+  
+  ctx.save();
+  ctx.translate(player.pos.x * ts, (player.pos.y + offsetY) * ts);
+  
+  // Background
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+  ctx.fillRect(-ts * 0.3, -ts * 0.1, ts * 0.6, ts * 0.08);
+  
+  // Stamina bar
+  const staminaColor = '#00BFFF'; // Blue for stamina
+  ctx.fillStyle = staminaColor;
+  ctx.fillRect(-ts * 0.3, -ts * 0.1, ts * 0.6 * staminaPercent, ts * 0.08);
+  
+  ctx.restore();
 }

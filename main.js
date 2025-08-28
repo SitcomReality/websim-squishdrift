@@ -16,6 +16,8 @@ const toggleBtn = document.getElementById('toggle-debug');
 
 let game = null; // defer creation until initializeWithLoading()
 window.game = null;
+let gameStarted = false;
+let gameLoop = null;
 
 // Modify GameEngine to use loading system
 async function initializeWithLoading() {
@@ -122,8 +124,8 @@ initializeWithLoading();
 // Update button and event listeners to wait for initialization
 toggleBtn.addEventListener('click', () => {
   console.log('Debug button clicked');
-  const next = !game.debugOverlay?.enabled;
-  if (game.debugOverlay) {
+  const next = !game?.debugOverlay?.enabled;
+  if (game?.debugOverlay) {
     game.debugOverlay.enabled = next;
   }
   if (debugEl) {
@@ -146,7 +148,7 @@ if (restartBtn) {
 
 // Add click handling for debug spawning
 canvas.addEventListener('click', (e) => {
-  if (!game.debugOverlay?.enabled) return;
+  if (!game?.debugOverlay?.enabled) return;
   
   const rect = canvas.getBoundingClientRect();
   const x = e.clientX - rect.left;
@@ -227,7 +229,7 @@ canvas.addEventListener('click', (e) => {
 // Show zoom indicator (optional unobtrusive)
 function updateZoomUI(){
   const zoomEl = document.getElementById('zoom-indicator');
-  if (!zoomEl || !game.stateManager) return;
+  if (!zoomEl || !game || !game.stateManager) return;
   
   const state = game.stateManager.getState?.();
   if (state?.camera) {
@@ -238,11 +240,12 @@ function updateZoomUI(){
 setInterval(updateZoomUI, 200);
 
 window.addEventListener('resize', () => {
-  if (game.renderer && game.renderer.resizeToDisplay) {
+  if (game && game.renderer && game.renderer.resizeToDisplay) {
     game.renderer.resizeToDisplay();
   }
 });
 
-if (game.renderer && game.renderer.resizeToDisplay) {
+// Defer initial resize until game exists; guard access
+if (game && game.renderer && game.renderer.resizeToDisplay) {
   game.renderer.resizeToDisplay();
 }

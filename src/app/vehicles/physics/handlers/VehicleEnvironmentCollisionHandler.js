@@ -41,6 +41,12 @@ export class VehicleEnvironmentCollisionHandler {
         this.applyBounce(v, contact.normal, 0.6);
         this.applyBuildingDamping(v);
         this.applyImpactDamage(state, v, 5);
+        
+        // Emit sparks when hitting tree trunk
+        const impactSpeed = Math.hypot(v.vel?.x || 0, v.vel?.y || 0);
+        if (impactSpeed > 0.5) {
+            state.particleSystem?.emitSparks(state, v.pos, 8, 5);
+        }
     }
 
     handleBuildingCollision(state, v, gx, gy, obb) {
@@ -51,6 +57,12 @@ export class VehicleEnvironmentCollisionHandler {
         this.applyBounce(v, contact.normal, 0.6);
         this.applyBuildingDamping(v);
         this.applyImpactDamage(state, v, 8);
+        
+        // Emit sparks when hitting building
+        const impactSpeed = Math.hypot(v.vel?.x || 0, v.vel?.y || 0);
+        if (impactSpeed > 0.5) {
+            state.particleSystem?.emitSparks(state, v.pos, 10, 6);
+        }
     }
 
     applyBounce(v, normal, restitution) {

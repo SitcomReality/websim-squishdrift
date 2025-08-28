@@ -157,36 +157,39 @@ export class RenderSystem {
     const time = Date.now() * 0.001; // seconds
     const cycleDuration = 8.0; // total cycle including pause
     const pauseAtLargest = 2.0; // seconds to remain invisible at largest size (0 alpha)
-    const activeDuration = cycleDuration - pauseAtLargest; // time spent animating expand+contract
-
+    const motionTotal = cycleDuration - pauseAtLargest;
+    const halfMotion = motionTotal / 2; // expand duration and contract duration
+    
     // Compute position within cycle
     const t = time % cycleDuration;
-
-    // If we're in the pause segment (after expanding/fading out at largest size), show nothing
-    if (t >= activeDuration) {
-      return; // pause: no circle visible
+    
+    // Phase handling:
+    // 0 .. halfMotion            => expanding (0 -> 1)
+    // halfMotion .. halfMotion+pauseAtLargest => pause at largest (invisible)
+    // halfMotion+pause .. cycleDuration => contracting (1 -> 0)
+    if (t >= halfMotion && t < halfMotion + pauseAtLargest) {
+      return; // pause while at largest/0 alpha
     }
-
-    // Map t (0..activeDuration) to a normalized phase (0..1) for expand/contract
-    const phase = t / activeDuration;
-
-    // Expand for first half of activeDuration, contract during second half
+    
     let progress;
-    if (phase < 0.5) {
-      progress = phase * 2; // 0 -> 1 expanding
+    if (t < halfMotion) {
+      // expanding
+      progress = t / halfMotion; // 0 -> 1
     } else {
-      progress = 2 - phase * 2; // 1 -> 0 contracting
+      // contracting
+      const tc = t - (halfMotion + pauseAtLargest);
+      progress = 1 - (tc / halfMotion); // 1 -> 0
     }
-
+ 
     // Base and max sizes
     const baseSize = ts * 0.25;
     const maxSize = ts * 1.1;
-
+ 
     // Current radius and alpha: alpha inverse of progress so when largest (progress=1) alpha=0
     const currentSize = baseSize + (maxSize - baseSize) * progress;
     const maxAlpha = 0.2;
     const alpha = maxAlpha * (1 - progress);
-
+ 
     ctx.save();
     ctx.globalCompositeOperation = 'screen';
     ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`; // white outline

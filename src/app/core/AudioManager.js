@@ -139,10 +139,7 @@ export class AudioManager {
     if (this.sfxMuted && !this.isMusicLoop(key)) return;
     
     const volumeMultiplier = this.isMusicLoop(key) ? this.musicVolume : this.sfxVolume;
-    const adjustedOptions = {
-      ...options,
-      baseVolume: (options.baseVolume || 1) * volumeMultiplier
-    };
+    const adjustedBaseVolume = (baseVolume || 1) * volumeMultiplier;
     
     const buf = this.buffers.get(key);
     if (!buf) return;
@@ -177,7 +174,7 @@ export class AudioManager {
     // More severe falloff: quintic curve
     const x = Math.max(0, Math.min(1, (dist - minDistance) / Math.max(1e-3, (maxDistance - minDistance))));
     const att = dist <= minDistance ? 1 : Math.pow(1 - x, 5);
-    const finalVol = Math.max(0, Math.min(1, baseVolume * att));
+    const finalVol = Math.max(0, Math.min(1, adjustedBaseVolume * att));
     const panX = pos.x - cam.x;
     const pan = Math.max(-1, Math.min(1, panX / panMax));
 

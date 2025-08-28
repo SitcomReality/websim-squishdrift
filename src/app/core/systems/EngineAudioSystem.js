@@ -46,15 +46,16 @@ export class EngineAudioSystem {
 
       // Handle siren for police cars - fix the color check
       if (v.vehicleType === 'emergency' && (v.color === '#0000FF' || v.vehicleType === 'police')) {
-        const sirenId = { type: 'siren', vehicle: v };
-        audio.startOrUpdateLoopAt('siren', sirenId, v.pos, state, {
+        // create or reuse a stable siren id on the vehicle so Map key identity persists
+        v._sirenLoopId = v._sirenLoopId || { type: 'siren', vehicle: v };
+        audio.startOrUpdateLoopAt('siren', v._sirenLoopId, v.pos, state, {
           rate: 1.0, // Fixed speed for siren
           baseVolume: 0.4,
           minDistance: 1,
           maxDistance: 25,
           panMax: 8
         });
-        activeSet.add(sirenId);
+        activeSet.add(v._sirenLoopId);
       }
 
       activeSet.add(id);

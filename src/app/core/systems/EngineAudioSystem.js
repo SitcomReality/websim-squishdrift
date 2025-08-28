@@ -44,8 +44,8 @@ export class EngineAudioSystem {
         panMax: isPlayerVehicle ? 4 : 14        // Less panning for player vehicle
       });
 
-      // Handle siren for police cars
-      if (v.vehicleType === 'emergency' && v.color === '#0000FF') {
+      // Handle siren for police cars - fix the color check
+      if (v.vehicleType === 'emergency' && (v.color === '#0000FF' || v.vehicleType === 'police')) {
         const sirenId = { type: 'siren', vehicle: v };
         audio.startOrUpdateLoopAt('siren', sirenId, v.pos, state, {
           rate: 1.0, // Fixed speed for siren

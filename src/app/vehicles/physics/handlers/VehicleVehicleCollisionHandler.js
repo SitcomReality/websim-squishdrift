@@ -78,9 +78,6 @@ export class VehicleVehicleCollisionHandler {
         handleVehicleDestruction(state, vehicleA);
         handleVehicleDestruction(state, vehicleB);
         
-        if (canDamageA) addDamageIndicator(state, vehicleA.pos, damageA);
-        if (canDamageB) addDamageIndicator(state, vehicleB.pos, damageB);
-        
         if (impactSpeed > 3.0 && state.cameraSystem) {
             state.cameraSystem.addShake(Math.min(1, impactSpeed / 8));
         }

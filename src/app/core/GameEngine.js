@@ -27,7 +27,7 @@ export class GameEngine {
     this.explosionSystem = new ExplosionSystem();
     this.particleSystem = new ParticleSystem();
     this.audioManager = new AudioManager();
-    this.audioManager.init().catch(e => console.error("Error initializing AudioManager:", e));
+    this.audioManager.init().catch(()=>{});
     
     this.stateManager.initialize();
     this.hudManager.initialize();
@@ -246,23 +246,11 @@ export class GameEngine {
     this.loadPickupImages();
     this.loadPedestrianImages();
     
+    // Restart main theme from the beginning at current volume settings
+    this.audioManager.playMainTheme();
+
     // Ensure input manager is connected
     this.stateManager.inputManager = this.inputManager;
-
-    // Defensive: stop any stray HTMLAudio instances of the theme before restarting music
-    try {
-      document.querySelectorAll('audio').forEach(a => {
-        if (a && typeof a.src === 'string' && a.src.includes('/music/player2.mp3')) {
-          console.warn('[AudioDebug] Stopping rogue HTMLAudio on restart', a);
-          a.pause(); a.currentTime = 0;
-        }
-      });
-    } catch {}
-
-    // Restart main theme so music resumes after a death+restart
-    if (this.audioManager && typeof this.audioManager.playMainTheme === 'function') {
-      this.audioManager.playMainTheme();
-    }
   }
 
   resetHUD() {

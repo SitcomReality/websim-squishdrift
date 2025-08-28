@@ -69,22 +69,12 @@ export class DeathSystem {
   handlePlayerDeath(state) {
     this.isDead = true;
     this.deathTime = Date.now();
-    
-    // Fade out and stop the main soundtrack via AudioManager
-    state.audio?.stopMainTheme?.(2.0);
-    // Defensive: stop any stray HTMLAudio instances of the theme
-    try {
-      document.querySelectorAll('audio').forEach(a => {
-        if (a && typeof a.src === 'string' && a.src.includes('/music/player2.mp3')) {
-          console.warn('[AudioDebug] Pausing rogue HTMLAudio on death', a);
-          a.pause(); a.currentTime = 0;
-        }
-      });
-    } catch {}
-    
-    // Fade out all audio
-    this.fadeOutAllAudio(state);
-    
+
+    // Fade out all audio including main theme
+    if (state.audio && state.audio.stopAll) {
+      state.audio.stopAll();
+    }
+
     this.createDeathScreen(state);
   }
 

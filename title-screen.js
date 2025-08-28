@@ -112,6 +112,11 @@ export class TitleScreen {
       if (this.gameStarted) return;
       this.gameStarted = true;
       
+      // Start the main soundtrack via AudioManager only
+      if (window.game && window.game.audioManager) {
+        window.game.audioManager.playMainTheme();
+      }
+      
       callback();
     });
   }

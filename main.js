@@ -43,24 +43,6 @@ async function initializeWithLoading() {
       Object.assign(game.stateManager.state, loadedAssets);
     }
     
-    // Load the main soundtrack
-    const music = new Audio('/music/player2.mp3');
-    music.loop = true;
-    
-    // Instrumentation: log if any HTMLAudioElement attempts to play the main theme outside AudioManager
-    if (!window.__audioPlayPatched__) {
-      window.__audioPlayPatched__ = true;
-      const _origPlay = HTMLMediaElement.prototype.play;
-      HTMLMediaElement.prototype.play = function(...args) {
-        try {
-          if (typeof this.src === 'string' && this.src.includes('/music/player2.mp3')) {
-            console.warn('[AudioDebug] HTMLAudioElement.play() invoked for player2.mp3', this, '\nStack:', new Error().stack);
-          }
-        } catch {}
-        return _origPlay.apply(this, args);
-      };
-    }
-    
     // Setup audio controls after game is initialized
     setupAudioControls();
     
@@ -87,9 +69,6 @@ async function initializeWithLoading() {
       startButton.addEventListener('click', () => {
         gameStarted = true;
         loadingSystem.hideTitleScreen();
-        
-        // Start the main soundtrack
-        game.audioManager?.playMainTheme?.();
         
         gameLoop.start();
       });

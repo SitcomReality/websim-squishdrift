@@ -2,12 +2,25 @@ export class AudioManager {
   constructor() {
     this.ctx = null;
     this.buffers = new Map();
-    // Future-proofed controls
     this.sfxMuted = false;
     this.musicMuted = false;
     this.sfxVolume = 0.9;   // 0..1
     this.musicVolume = 0.6; // 0..1
     this.loops = new Map(); // id -> { src, gain, panner, key }
+    
+    // Add volume and mute state tracking
+    this.volumeSettings = {
+      sfx: 0.9,
+      music: 0.6,
+      sfxMuted: false,
+      musicMuted: false
+    };
+    
+    // Bind methods for external access
+    this.setSfxVolume = this.setSfxVolume.bind(this);
+    this.setMusicVolume = this.setMusicVolume.bind(this);
+    this.toggleSfxMute = this.toggleSfxMute.bind(this);
+    this.toggleMusicMute = this.toggleMusicMute.bind(this);
   }
 
   async init() {
@@ -53,6 +66,7 @@ export class AudioManager {
     }
   }
 
+  // Update play methods to respect volume settings
   playSfx(key, { volume = this.sfxVolume } = {}) {
     if (this.sfxMuted) return;
     const buf = this.buffers.get(key);
@@ -117,11 +131,19 @@ export class AudioManager {
     src.start(0);
   }
 
-  // Start or update a spatial looping sound with rate and volume
   startOrUpdateLoopAt(key, id, pos, state, { rate = 1.0, baseVolume = this.sfxVolume, minDistance = 2, maxDistance = 18, panMax = 12, startOffset = 0 } = {}) {
     if (!this.ctx || !key || !id) return;
     if (this.ctx.state === 'suspended') this.ctx.resume();
 
+    if (this.musicMuted && this.isMusicLoop(key)) return;
+    if (this.sfxMuted && !this.isMusicLoop(key)) return;
+    
+    const volumeMultiplier = this.isMusicLoop(key) ? this.musicVolume : this.sfxVolume;
+    const adjustedOptions = {
+      ...options,
+      baseVolume: (options.baseVolume || 1) * volumeMultiplier
+    };
+    
     const buf = this.buffers.get(key);
     if (!buf) return;
 
@@ -178,6 +200,12 @@ export class AudioManager {
     }
   }
 
+  // Helper to determine if a loop is music or sfx
+  isMusicLoop(key) {
+    const musicLoops = ['music_loop', 'background', 'ambient'];
+    return musicLoops.includes(key);
+  }
+
   stopLoop(id, { fadeOut = 0.1 } = {}) {
     const node = this.loops.get(id);
     if (!node) return;
@@ -209,5 +237,30 @@ export class AudioManager {
         this.masterGain.gain.linearRampToValueAtTime(0, t + 1.0);
       }
     }
+  }
+
+  // Add volume control methods
+  setSfxVolume(volume) {
+    this.volumeSettings.sfx = Math.max(0, Math.min(1, volume));
+    this.sfxVolume = this.volumeSettings.sfx;
+    this.sfxMuted = this.volumeSettings.sfxMuted;
+  }
+
+  setMusicVolume(volume) {
+    this.volumeSettings.music = Math.max(0, Math.min(1, volume));
+    this.musicVolume = this.volumeSettings.music;
+    this.musicMuted = this.volumeSettings.musicMuted;
+  }
+
+  toggleSfxMute() {
+    this.volumeSettings.sfxMuted = !this.volumeSettings.sfxMuted;
+    this.sfxMuted = this.volumeSettings.sfxMuted;
+    return this.sfxMuted;
+  }
+
+  toggleMusicMute() {
+    this.volumeSettings.musicMuted = !this.volumeSettings.musicMuted;
+    this.musicMuted = this.volumeSettings.musicMuted;
+    return this.musicMuted;
   }
 }

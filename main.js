@@ -40,6 +40,9 @@ async function initializeWithLoading() {
       Object.assign(game.stateManager.state, loadedAssets);
     }
     
+    // Setup audio controls after game is initialized
+    setupAudioControls();
+    
     // Create paused game loop
     gameLoop = createLoop({
       update: (dt) => {
@@ -72,6 +75,10 @@ async function initializeWithLoading() {
     // Fallback to basic initialization without loading screen
     game = new GameEngine(canvas, { debugEl });
     window.game = game; // Make globally accessible
+    
+    // Setup audio controls even in fallback
+    setupAudioControls();
+    
     gameLoop = createLoop({
       update: (dt) => game.update(dt),
       render: (interp) => game.render(interp),
@@ -79,6 +86,41 @@ async function initializeWithLoading() {
     gameStarted = true;
     gameLoop.start();
   }
+}
+
+// Add audio control setup after game initialization
+function setupAudioControls() {
+  const sfxVolume = document.getElementById('volume-sfx');
+  const musicVolume = document.getElementById('volume-music');
+  const muteSfx = document.getElementById('mute-sfx');
+  const muteMusic = document.getElementById('mute-music');
+
+  if (!game || !game.audioManager) return;
+
+  // Set initial values
+  sfxVolume.value = Math.round(game.audioManager.sfxVolume * 100);
+  musicVolume.value = Math.round(game.audioManager.musicVolume * 100);
+
+  // Event listeners
+  sfxVolume.addEventListener('input', (e) => {
+    game.audioManager.setSfxVolume(e.target.value / 100);
+  });
+
+  musicVolume.addEventListener('input', (e) => {
+    game.audioManager.setMusicVolume(e.target.value / 100);
+  });
+
+  muteSfx.addEventListener('click', () => {
+    const isMuted = game.audioManager.toggleSfxMute();
+    muteSfx.textContent = isMuted ? '🔇 SFX' : '🔊 SFX';
+    muteSfx.setAttribute('aria-pressed', isMuted);
+  });
+
+  muteMusic.addEventListener('click', () => {
+    const isMuted = game.audioManager.toggleMusicMute();
+    muteMusic.textContent = isMuted ? '🔇 Music' : '🎵 Music';
+    muteMusic.setAttribute('aria-pressed', isMuted);
+  });
 }
 
 // Replace direct initialization with loading system

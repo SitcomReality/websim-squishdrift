@@ -13,6 +13,12 @@
     <div class="game-title" aria-label="Getaway Tantrum Assault"></div>
     <div class="right" style="position: absolute; right: 14px; top: 8px;">
       <button id="toggle-debug" class="ghost" aria-pressed="false">Debug</button>
+      <div class="audio-controls" style="display: inline-block; margin-left: 10px;">
+        <button id="mute-sfx" class="ghost" title="Mute Sound Effects" aria-pressed="false">🔊 SFX</button>
+        <input type="range" id="volume-sfx" min="0" max="100" value="90" title="Sound Effects Volume" style="width: 60px; vertical-align: middle;">
+        <button id="mute-music" class="ghost" title="Mute Music" aria-pressed="false">🎵 Music</button>
+        <input type="range" id="volume-music" min="0" max="100" value="60" title="Music Volume" style="width: 60px; vertical-align: middle;">
+      </div>
       <span aria-live="polite" class="mono" id="zoom-indicator"></span>
     </div>
   </header>

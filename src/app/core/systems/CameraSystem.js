@@ -12,14 +12,33 @@ export class CameraSystem {
                   state.entities.find(e => e.type === 'player')?.pos;
     if (!target) return;
     const cam = state.camera; cam.defaultZoom = cam.defaultZoom || cam.zoom || 1;
+    
     // speed-based zoom using velocity when available (fallback to position delta)
     const now = performance.now() * 0.001; const dt = this._lastTime ? Math.max(1e-3, now - this._lastTime) : 0;
     let speed = 0;
+    
     if (state.control.inVehicle && state.control.vehicle?.vel) {
       const v = state.control.vehicle.vel; speed = Math.hypot(v.x || 0, v.y || 0);
     } else {
-      speed = (this._prevTarget && dt) ? Math.hypot(target.x - this._prevTarget.x, target.y - this._prevTarget.y) / dt : 0;
+      // Check if player is sprinting
+      const player = state.entities.find(e => e.type === 'player');
+      const isSprinting = player && (input.keys.has('ShiftLeft') || input.keys.has('ShiftRight')) && 
+                         (input.keys.has('KeyW') || input.keys.has('KeyS') || 
+                          input.keys.has('KeyA') || input.keys.has('KeyD') ||
+                          input.keys.has('ArrowUp') || input.keys.has('ArrowDown') ||
+                          input.keys.has('ArrowLeft') || input.keys.has('ArrowRight')) &&
+                          player.stamina > 0;
+      
+      if (isSprinting) {
+        // Calculate sprint speed for zoom purposes
+        const baseSpeed = player.moveSpeed || 1.5;
+        const sprintSpeed = baseSpeed * 1.8; // 80% faster when sprinting
+        speed = sprintSpeed;
+      } else {
+        speed = (this._prevTarget && dt) ? Math.hypot(target.x - this._prevTarget.x, target.y - this._prevTarget.y) / dt : 0;
+      }
     }
+    
     const maxRef = state.control.inVehicle ? (state.control.vehicle?.maxSpeed || 6) : ((state.entities.find(e=>e.type==='player')?.moveSpeed) || 6);
     const sensitivityMultiplier = 1.5; // Reduced from 3.5 to 1.5 for higher speed requirement
     const frac = Math.max(0, Math.min(1, (speed / (maxRef || 1)) * sensitivityMultiplier));

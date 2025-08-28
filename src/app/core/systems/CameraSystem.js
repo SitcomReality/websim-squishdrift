@@ -23,11 +23,11 @@ export class CameraSystem {
       // Check if player is sprinting
       const player = state.entities.find(e => e.type === 'player');
       const isSprinting = player && (input.keys.has('ShiftLeft') || input.keys.has('ShiftRight')) && 
-                         (input.keys.has('KeyW') || input.keys.has('KeyS') || 
-                          input.keys.has('KeyA') || input.keys.has('KeyD') ||
-                          input.keys.has('ArrowUp') || input.keys.has('ArrowDown') ||
-                          input.keys.has('ArrowLeft') || input.keys.has('ArrowRight')) &&
-                          player.stamina > 0;
+                          (input.keys.has('KeyW') || input.keys.has('KeyS') || 
+                           input.keys.has('KeyA') || input.keys.has('KeyD') ||
+                           input.keys.has('ArrowUp') || input.keys.has('ArrowDown') ||
+                           input.keys.has('ArrowLeft') || input.keys.has('ArrowRight')) &&
+                           player.stamina > 0;
       
       if (isSprinting) {
         // Calculate sprint speed for zoom purposes
@@ -41,41 +41,18 @@ export class CameraSystem {
     
     const maxRef = state.control.inVehicle ? (state.control.vehicle?.maxSpeed || 6) : ((state.entities.find(e=>e.type==='player')?.moveSpeed) || 6);
     const sensitivityMultiplier = 1.5; // Reduced from 3.5 to 1.5 for higher speed requirement
-    
-    // Determine zoom behavior based on context
-    let desiredZoom;
-    if (state.control.inVehicle) {
-      // Vehicle zoom - keep existing behavior
-      const frac = Math.max(0, Math.min(1, (speed / (maxRef || 1)) * sensitivityMultiplier));
-      const minZoom = cam.defaultZoom;
-      const maxZoom = cam.defaultZoom * 2;
-      desiredZoom = maxZoom - (maxZoom - minZoom) * frac;
-    } else {
-      // Check if player is sprinting
-      const player = state.entities.find(e => e.type === 'player');
-      const isSprinting = player && (input.keys.has('ShiftLeft') || input.keys.has('ShiftRight')) && 
-                         (input.keys.has('KeyW') || input.keys.has('KeyS') || 
-                          input.keys.has('KeyA') || input.keys.has('KeyD') ||
-                          input.keys.has('ArrowUp') || input.keys.has('ArrowDown') ||
-                          input.keys.has('ArrowLeft') || input.keys.has('ArrowRight')) &&
-                          player.stamina > 0;
-      
-      if (isSprinting) {
-        // Sprinting zoom - half the zoom range
-        const frac = Math.max(0, Math.min(1, (speed / (maxRef || 1)) * sensitivityMultiplier));
-        const minZoom = cam.defaultZoom;
-        const maxZoom = cam.defaultZoom * 1.5; // Half the zoom range (was 2x, now 1.5x)
-        desiredZoom = maxZoom - (maxZoom - minZoom) * frac;
-      } else {
-        // Normal movement zoom - no zoom out
-        const frac = Math.max(0, Math.min(1, (speed / (maxRef || 1)) * sensitivityMultiplier));
-        const minZoom = cam.defaultZoom;
-        const maxZoom = cam.defaultZoom * 2;
-        desiredZoom = maxZoom - (maxZoom - minZoom) * frac;
-      }
-    }
-    
-    const lerpRate = desiredZoom < (cam.zoom ?? cam.defaultZoom) ? 0.35 : 0.12;
+    const frac = Math.max(0, Math.min(1, (speed / (maxRef || 1)) * sensitivityMultiplier));
+    // If sprinting on foot, reduce the zoom-out effect by half (less dramatic than vehicle zoom)
+    const playerEntity = state.entities.find(e=>e.type==='player');
+    const onFootSprinting = playerEntity && !state.control.inVehicle && (input.keys.has('ShiftLeft') || input.keys.has('ShiftRight')) && playerEntity.stamina > 0;
+    const adjustedFrac = onFootSprinting ? frac * 0.5 : frac;
+    const minZoom = cam.defaultZoom;
+    const maxZoom = cam.defaultZoom * 2;
+    // INVERTED: fast = zoom OUT (far), slow = zoom IN (close)
+    const desiredZoom = maxZoom - (maxZoom - minZoom) * adjustedFrac;
+    // asymmetric lerp: faster snap-back when slowing/crashing
+    const fastSnap = speed < 0.3 && cam.zoom > cam.defaultZoom * 1.05;
+    const lerpRate = fastSnap ? 0.35 : (desiredZoom < (cam.zoom ?? cam.defaultZoom) ? 0.28 : 0.12);
     cam.zoom = (cam.zoom ?? cam.defaultZoom) + (desiredZoom - (cam.zoom ?? cam.defaultZoom)) * lerpRate;
     
     // manual zoom only when debug is enabled

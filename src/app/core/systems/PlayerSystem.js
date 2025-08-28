@@ -87,19 +87,17 @@ export class PlayerSystem {
                     input.keys.has('ArrowUp') || input.keys.has('ArrowDown') ||
                     input.keys.has('ArrowLeft') || input.keys.has('ArrowRight');
     
-    // Deplete stamina when running and moving
+    // Deplete stamina when running and moving, but only if there's stamina
     if (isRunning && isMoving && player.stamina > 0) {
       player.stamina = Math.max(0, player.stamina - this.staminaDepletionRate * dt);
-    } else {
+    } else if (!isRunning || !isMoving) {
       // Recharge stamina when not running or not moving
-      // Only recharge when stamina is not at maximum
-      if (player.stamina < player.maxStamina) {
-        player.stamina = Math.min(player.maxStamina, player.stamina + this.staminaRechargeRate * dt);
-      }
+      player.stamina = Math.min(player.maxStamina, player.stamina + this.staminaRechargeRate * dt);
     }
     
-    // Prevent instant reset - stamina must recharge naturally
-    player.stamina = Math.max(0, Math.min(player.maxStamina, player.stamina));
+    // If stamina is zero and player is trying to run, don't allow running
+    // This prevents the instant reset issue
+    player.canRun = player.stamina > 0;
     
     // Only update HUD visibility - we'll handle the canvas rendering separately
     // The stamina bar will now be drawn near the player instead of in HUD
@@ -143,11 +141,12 @@ export class PlayerSystem {
         const normalizedDx = dx / len;
         const normalizedDy = dy / len;
         
-        // Apply run speed if shift is held and stamina available
+        // Check if player can run based on stamina
         const isRunning = input.keys.has('ShiftLeft') || input.keys.has('ShiftRight');
         let moveSpeed = player.moveSpeed || 6;
         
-        if (isRunning && player.stamina > 0) {
+        // Only allow running if player has stamina
+        if (isRunning && player.canRun !== false) {
           moveSpeed *= 1.8; // 80% faster when running
         }
         

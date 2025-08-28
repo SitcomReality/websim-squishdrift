@@ -27,14 +27,13 @@ export function drawPlayer(r, state, player) {
   
   // Draw stamina bar below player when not full
   if (player.stamina !== undefined && player.stamina < player.maxStamina) {
-    updateStaminaBar(r, player, 0.5);
+    drawStaminaBar(r, player, 0.5);
   }
 }
 
-function updateStaminaBar(r, player, offsetY = 0.5) {
+function drawStaminaBar(r, player, offsetY = 0.5) {
   if (!player.health) return;
   if (player.hidden || player.inVehicle) return;
-  if (player.stamina === undefined || player.stamina >= player.maxStamina) return;
   
   const { ctx } = r;
   const ts = r.ts || 24;

@@ -71,7 +71,7 @@ export class DeathSystem {
     this.deathTime = Date.now();
     
     // Fade out and stop the main soundtrack via AudioManager
-    state.audio?.stopMainTheme?.(1.0);
+    state.audio?.stopMainTheme?.(2.0);
     
     // Fade out all audio
     this.fadeOutAllAudio(state);

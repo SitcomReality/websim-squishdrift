@@ -27,7 +27,7 @@ export class GameEngine {
     this.explosionSystem = new ExplosionSystem();
     this.particleSystem = new ParticleSystem();
     this.audioManager = new AudioManager();
-    this.audioManager.init().catch(()=>{});
+    this.audioManager.init().catch(e => console.error("Error initializing AudioManager:", e));
     
     this.stateManager.initialize();
     this.hudManager.initialize();

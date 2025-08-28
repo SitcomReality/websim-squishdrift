@@ -153,21 +153,22 @@ export class RenderSystem {
     const centerX = vehicle.pos.x * ts;
     const centerY = vehicle.pos.y * ts;
     
-    // Animation timing
+    // Animation timing - corrected to pause at largest size
     const time = Date.now() * 0.001; // Convert to seconds
     const cycleDuration = 8.0; // 8 seconds total cycle
+    const pauseDuration = 2.0; // 2 seconds pause at largest size
     
-    // Phase calculation: 2 seconds pause at 0 opacity when largest
-    const activeDuration = cycleDuration - 2.0; // 6 seconds for active animation
+    // Calculate the actual animation duration (excluding pause)
+    const activeDuration = cycleDuration - pauseDuration;
     const phase = (time % cycleDuration) / activeDuration;
     
     // Handle pause phase at largest size
     if (phase > 1) {
-      // In pause phase - show nothing (at largest size, 0 opacity)
+      // In pause phase - completely invisible at largest size
       return;
     }
     
-    // Create expansion/contraction effect
+    // Active animation phase (expansion/contraction without pause at largest)
     let progress;
     if (phase < 0.5) {
       // Expanding phase (0 to 0.5)

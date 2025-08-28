@@ -74,7 +74,8 @@ export class PlayerSystem {
   }
 
   ensureStamina(entity) {
-    if (!entity.stamina) {
+    // Only initialize stamina when it's missing (null/undefined), not when it's 0.
+    if (typeof entity.stamina !== 'number') {
       entity.stamina = this.maxStamina;
       entity.maxStamina = this.maxStamina;
     }

@@ -224,37 +224,41 @@ export class AudioManager {
   }
 
   playMainTheme() {
-    if (!this.mainTheme) {
+    // Use a single shared Audio element across all AudioManager instances to avoid double-play
+    if (window.__mainThemeAudio) {
+      this.mainTheme = window.__mainThemeAudio;
+    } else if (!this.mainTheme) {
       this.mainTheme = new Audio('/music/player2.mp3');
       this.mainTheme.loop = true;
+      window.__mainThemeAudio = this.mainTheme;
     }
+    
     this.mainTheme.muted = !!this.musicMuted;
     this.mainTheme.volume = this.musicMuted ? 0 : this.musicVolume;
-    if (this.mainTheme.paused) {
-      // Always reset to start so restart begins from the beginning
-      try { this.mainTheme.currentTime = 0; } catch (e) { /* some browsers may restrict setting currentTime */ }
-      this.mainTheme.play().catch(e => console.warn('Could not play main theme:', e));
-    } else {
-      // If already playing, ensure volume/mute reflect settings
-      this.mainTheme.volume = this.musicMuted ? 0 : this.musicVolume;
-      this.mainTheme.muted = !!this.musicMuted;
-    }
+    
+    // If it's already playing, rewind to start so restart begins from the beginning, otherwise start playback
+    try { this.mainTheme.currentTime = 0; } catch (e) { /* ignore */ }
+    this.mainTheme.play().catch(e => { /* don't spam console if autoplay blocked */ });
   }
 
   stopMainTheme(fadeOut = 1.0) {
-    if (!this.mainTheme) return;
+    // Fade and stop the shared main theme instance (if present)
+    const theme = this.mainTheme || window.__mainThemeAudio;
+    if (!theme) return;
     const targetMs = Math.max(0, fadeOut * 1000);
-    const startVol = this.mainTheme.volume;
+    const startVol = theme.volume;
     const start = performance.now();
     const step = (now) => {
       const t = Math.min(1, (now - start) / targetMs);
-      this.mainTheme.volume = startVol * (1 - t);
+      try { theme.volume = startVol * (1 - t); } catch(e) {}
       if (t < 1) {
         requestAnimationFrame(step);
       } else {
-        this.mainTheme.pause();
-        this.mainTheme.currentTime = 0;
-        this.mainTheme.volume = this.musicMuted ? 0 : this.musicVolume;
+        try { theme.pause(); theme.currentTime = 0; } catch(e) {}
+        theme.volume = this.musicMuted ? 0 : this.musicVolume;
+        // clear shared reference so future playMainTheme will create a fresh controlled instance
+        if (window.__mainThemeAudio === theme) delete window.__mainThemeAudio;
+        if (this.mainTheme === theme) this.mainTheme = null;
       }
     };
     requestAnimationFrame(step);

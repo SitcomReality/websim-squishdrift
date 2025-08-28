@@ -153,48 +153,45 @@ export class RenderSystem {
     const centerX = vehicle.pos.x * ts;
     const centerY = vehicle.pos.y * ts;
     
-    // Animation timing - corrected to pause at largest size
-    const time = Date.now() * 0.001; // Convert to seconds
-    const cycleDuration = 8.0; // 8 seconds total cycle
-    const pauseDuration = 2.0; // 2 seconds pause at largest size
-    
-    // Calculate the actual animation duration (excluding pause)
-    const activeDuration = cycleDuration - pauseDuration;
-    const phase = (time % cycleDuration) / activeDuration;
-    
-    // Handle pause phase at largest size
-    if (phase > 1) {
-      // In pause phase - completely invisible at largest size
-      return;
+    // Animation timing
+    const time = Date.now() * 0.001; // seconds
+    const cycleDuration = 8.0; // total cycle including pause
+    const pauseAtLargest = 2.0; // seconds to remain invisible at largest size (0 alpha)
+    const activeDuration = cycleDuration - pauseAtLargest; // time spent animating expand+contract
+
+    // Compute position within cycle
+    const t = time % cycleDuration;
+
+    // If we're in the pause segment (after expanding/fading out at largest size), show nothing
+    if (t >= activeDuration) {
+      return; // pause: no circle visible
     }
-    
-    // Active animation phase (expansion/contraction without pause at largest)
+
+    // Map t (0..activeDuration) to a normalized phase (0..1) for expand/contract
+    const phase = t / activeDuration;
+
+    // Expand for first half of activeDuration, contract during second half
     let progress;
     if (phase < 0.5) {
-      // Expanding phase (0 to 0.5)
-      progress = phase * 2;
+      progress = phase * 2; // 0 -> 1 expanding
     } else {
-      // Contracting phase (0.5 to 1)
-      progress = 2 - (phase * 2);
+      progress = 2 - phase * 2; // 1 -> 0 contracting
     }
-    
+
     // Base and max sizes
     const baseSize = ts * 0.25;
     const maxSize = ts * 1.1;
-    
-    // Calculate current size
+
+    // Current radius and alpha: alpha inverse of progress so when largest (progress=1) alpha=0
     const currentSize = baseSize + (maxSize - baseSize) * progress;
-    
-    // Calculate alpha based on progress (inverse relationship)
     const maxAlpha = 0.2;
     const alpha = maxAlpha * (1 - progress);
-    
+
     ctx.save();
     ctx.globalCompositeOperation = 'screen';
-    ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`; // White color
-    ctx.lineWidth = 3;
+    ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`; // white outline
+    ctx.lineWidth = Math.max(2, Math.round(ts * 0.125)); // keep outline reasonably thick on different tile sizes
     
-    // Draw single white circle
     ctx.beginPath();
     ctx.arc(centerX, centerY, currentSize, 0, Math.PI * 2);
     ctx.stroke();

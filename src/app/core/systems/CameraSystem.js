@@ -43,7 +43,7 @@ export class CameraSystem {
     const sensitivityMultiplier = 1.5; // Reduced from 3.5 to 1.5 for higher speed requirement
     const frac = Math.max(0, Math.min(1, (speed / (maxRef || 1)) * sensitivityMultiplier));
     const minZoom = cam.defaultZoom;
-    const maxZoom = cam.defaultZoom * 1.5;
+    const maxZoom = cam.defaultZoom * 1.25;
     // INVERTED: fast = zoom OUT (far), slow = zoom IN (close)
     const desiredZoom = maxZoom - (maxZoom - minZoom) * frac;
     // asymmetric lerp: faster snap-back when slowing/crashing
@@ -53,7 +53,7 @@ export class CameraSystem {
     
     // manual zoom only when debug is enabled
     if (state.debugOverlay?.enabled && input) { 
-      const minZ = cam.defaultZoom, maxZ = cam.defaultZoom * 1.5;
+      const minZ = cam.defaultZoom, maxZ = cam.defaultZoom * 1.25;
       cam.zoom = Math.min(maxZ, Math.max(minZ, cam.zoom + (input.zoomDelta || 0)));
       input.zoomDelta = 0;
     } else if (input) { input.zoomDelta = 0; }

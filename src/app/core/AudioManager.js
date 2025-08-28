@@ -92,8 +92,9 @@ export class AudioManager {
 
     const dx = pos.x - player.x, dy = pos.y - player.y;
     const dist = Math.hypot(dx, dy);
-    // Increased severity: cubic falloff instead of quadratic
-    const att = dist <= minDistance ? 1 : Math.max(0, 1 - Math.pow((dist - minDistance) / Math.max(1e-3, (maxDistance - minDistance)), 3));
+    // More severe falloff: quintic curve
+    const x = Math.max(0, Math.min(1, (dist - minDistance) / Math.max(1e-3, (maxDistance - minDistance))));
+    const att = dist <= minDistance ? 1 : Math.pow(1 - x, 5);
     const finalVol = Math.max(0, Math.min(1, effectiveVolume * att));
 
     const panX = pos.x - cam.x;
@@ -151,8 +152,9 @@ export class AudioManager {
     if (!player || !cam) return;
     const dx = pos.x - player.x, dy = pos.y - player.y;
     const dist = Math.hypot(dx, dy);
-    // Increased severity: cubic falloff instead of quadratic
-    const att = dist <= minDistance ? 1 : Math.max(0, 1 - Math.pow((dist - minDistance) / Math.max(1e-3, (maxDistance - minDistance)), 3));
+    // More severe falloff: quintic curve
+    const x = Math.max(0, Math.min(1, (dist - minDistance) / Math.max(1e-3, (maxDistance - minDistance))));
+    const att = dist <= minDistance ? 1 : Math.pow(1 - x, 5);
     const finalVol = Math.max(0, Math.min(1, baseVolume * att));
     const panX = pos.x - cam.x;
     const pan = Math.max(-1, Math.min(1, panX / panMax));

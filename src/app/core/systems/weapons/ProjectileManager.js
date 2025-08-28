@@ -20,7 +20,7 @@ export class ProjectileManager {
         Math.cos(angle) * weapon.projectileSpeed,
         Math.sin(angle) * weapon.projectileSpeed
       ),
-      damage: 0,
+      damage: 0, // Grenades deal no direct damage
       range: weapon.range,
       lifetime: weapon.range / weapon.projectileSpeed,
       age: 0,
@@ -61,21 +61,21 @@ export class ProjectileManager {
       
       proj.age += dt;
       if (proj.age >= proj.lifetime) {
-        // Play hit sound for lifetime expiration
-        state.audio?.playSfxAt?.('projectile_hit', proj.pos, state);
+        // Always explode grenades when lifetime expires
+        if (proj.isGrenade) {
+          this.explodeGrenade(state, proj);
+        }
         state.entities.splice(state.entities.indexOf(proj), 1);
         continue;
       }
       
-      if (proj.isGrenade) {
-        const collision = this.checkGrenadeCollision(state, proj);
-        if (collision || proj.age >= proj.lifetime) {
+      // Check for collisions and explode grenades on any collision
+      const collision = this.checkGrenadeCollision(state, proj);
+      if (collision || proj.age >= proj.lifetime) {
+        if (proj.isGrenade) {
           this.explodeGrenade(state, proj);
-          // Play hit sound for grenade collision
-          state.audio?.playSfxAt?.('projectile_hit', proj.pos, state);
-          state.entities.splice(state.entities.indexOf(proj), 1);
-          continue;
         }
+        state.entities.splice(state.entities.indexOf(proj), 1);
       }
     }
   }
@@ -105,13 +105,13 @@ export class ProjectileManager {
   }
 
   checkGrenadeCollision(state, grenade) {
+    if (!grenade.isGrenade) return false;
+    
     const map = state.world.map;
     
     // Check map boundaries
     if (grenade.pos.x < 0 || grenade.pos.x >= map.width || 
         grenade.pos.y < 0 || grenade.pos.y >= map.height) {
-      // Play hit sound for boundary collision
-      state.audio?.playSfxAt?.('projectile_hit', grenade.pos, state);
       return true;
     }
     
@@ -119,8 +119,6 @@ export class ProjectileManager {
     const tx = Math.floor(grenade.pos.x);
     const ty = Math.floor(grenade.pos.y);
     if (this.isTreeTrunkCollision(grenade.pos.x, grenade.pos.y, tx, ty, state)) {
-      // Play hit sound for tree collision
-      state.audio?.playSfxAt?.('projectile_hit', grenade.pos, state);
       return true;
     }
     
@@ -128,8 +126,24 @@ export class ProjectileManager {
     if (tx >= 0 && tx < map.width && ty >= 0 && ty < map.height) {
       const tile = map.tiles[ty][tx];
       if ([8, 9].includes(tile)) {
-        // Play hit sound for wall collision
-        state.audio?.playSfxAt?.('projectile_hit', grenade.pos, state);
+        return true;
+      }
+    }
+    
+    // Check entity collisions for grenades
+    const entities = state.entities.filter(e => 
+      (e.type === 'vehicle' || e.type === 'npc') && 
+      e !== grenade.owner
+    );
+    
+    for (const entity of entities) {
+      const distance = Math.hypot(
+        grenade.pos.x - entity.pos.x,
+        grenade.pos.y - entity.pos.y
+      );
+      
+      const radius = entity.type === 'vehicle' ? 0.5 : 0.2;
+      if (distance < radius + grenade.size) {
         return true;
       }
     }
@@ -171,6 +185,7 @@ export class ProjectileManager {
       state.entities.push(shrapnel);
     }
     
+    // Add screen shake
     if (state.cameraSystem) {
       state.cameraSystem.addShake(1.5);
     }

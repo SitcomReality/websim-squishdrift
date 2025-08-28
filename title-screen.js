@@ -33,6 +33,7 @@ export class TitleScreen {
             <div>
               <p><strong>Mouse:</strong> Aim & Click to Shoot</p>
               <p><strong>WASD / Arrows:</strong> Move</p>
+              <p><strong>Shift:</strong> Sprint</p>
             </div>
             <div>
               <p><strong>E:</strong> Enter/Exit Vehicle</p>

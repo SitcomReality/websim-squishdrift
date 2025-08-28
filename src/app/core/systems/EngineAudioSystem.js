@@ -44,8 +44,8 @@ export class EngineAudioSystem {
         panMax: isPlayerVehicle ? 4 : 14        // Less panning for player vehicle
       });
 
-      // Handle siren for police cars - fix the color check
-      if (v.vehicleType === 'emergency' && (v.color === '#0000FF' || v.vehicleType === 'police')) {
+      // Handle siren for police cars
+      if (v.vehicleType === 'police' && v.siren) {
         // create or reuse a stable siren id on the vehicle so Map key identity persists
         v._sirenLoopId = v._sirenLoopId || { type: 'siren', vehicle: v };
         audio.startOrUpdateLoopAt('siren', v._sirenLoopId, v.pos, state, {

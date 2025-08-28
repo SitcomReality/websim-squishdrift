@@ -3,6 +3,9 @@ import { createLoop } from './src/app/loop.js';
 import { LoadingSystem } from './loading.js';
 import { Vec2 } from './src/utils/Vec2.js';
 
+// Add music loop ID constant
+const MUSIC_LOOP_ID = 'main_theme';
+
 // Create global loading system
 const loadingSystem = new LoadingSystem();
 
@@ -40,6 +43,10 @@ async function initializeWithLoading() {
       Object.assign(game.stateManager.state, loadedAssets);
     }
     
+    // Load the main soundtrack
+    const music = new Audio('/music/player2.mp3');
+    music.loop = true;
+    
     // Setup audio controls after game is initialized
     setupAudioControls();
     
@@ -60,12 +67,17 @@ async function initializeWithLoading() {
     // Show title screen
     loadingSystem.showTitleScreen();
     
-    // Add start button listener
+    // Add start button listener with music
     const startButton = document.getElementById('start-button');
     if (startButton) {
       startButton.addEventListener('click', () => {
         gameStarted = true;
         loadingSystem.hideTitleScreen();
+        
+        // Start the main soundtrack
+        music.volume = game.audioManager?.musicVolume || 0.6;
+        music.play().catch(e => console.warn('Could not play music:', e));
+        
         gameLoop.start();
       });
     }

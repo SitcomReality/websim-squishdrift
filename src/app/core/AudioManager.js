@@ -7,6 +7,8 @@ export class AudioManager {
     this.sfxVolume = 0.9;   // 0..1
     this.musicVolume = 0.6; // 0..1
     this.loops = new Map(); // id -> { src, gain, panner, key }
+    this.musicLoop = null;
+    this.mainTheme = null;
     
     // Add volume and mute state tracking
     this.volumeSettings = {
@@ -52,6 +54,13 @@ export class AudioManager {
       this.load('/sfx/engine_truck.mp3', 'engine_truck'),
       this.load('/sfx/tire_skid_loop.mp3', 'tire_skid_loop') // new loop SFX
     ]).catch(()=>{ /* ignore load errors gracefully */ });
+    
+    // Load main theme
+    this.mainTheme = new Audio('/music/player2.mp3');
+    this.mainTheme.loop = true;
+    
+    // Add to audio controls
+    this.loadedAssets.push({ key: 'main_theme', audio: this.mainTheme });
   }
 
   async load(url, key) {
@@ -217,7 +226,31 @@ export class AudioManager {
     this.loops.delete(id);
   }
 
+  playMainTheme() {
+    if (this.mainTheme) {
+      this.mainTheme.volume = this.musicVolume;
+      this.mainTheme.play().catch(e => console.warn('Could not play main theme:', e));
+    }
+  }
+
+  stopMainTheme(fadeOut = 1.0) {
+    if (this.mainTheme && this.mainTheme.playbackRate !== 0) {
+      const fade = () => {
+        if (this.mainTheme.volume > 0.01) {
+          this.mainTheme.volume = Math.max(0, this.mainTheme.volume - 0.02);
+          setTimeout(fade, fadeOut * 50);
+        } else {
+          this.mainTheme.pause();
+          this.mainTheme.currentTime = 0;
+        }
+      };
+      fade();
+    }
+  }
+
   stopAll() {
+    this.stopMainTheme(1.0);
+    
     // Stop all loops with fade out
     if (this.loops && this.loops.size) {
       for (const [id] of this.loops) {

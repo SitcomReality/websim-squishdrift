@@ -70,6 +70,21 @@ export class DeathSystem {
     this.isDead = true;
     this.deathTime = Date.now();
     
+    // Fade out the main soundtrack
+    const music = document.querySelector('audio[src="/music/player2.mp3"]');
+    if (music) {
+      const fadeOut = () => {
+        if (music.volume > 0.01) {
+          music.volume = Math.max(0, music.volume - 0.02);
+          requestAnimationFrame(fadeOut);
+        } else {
+          music.pause();
+          music.currentTime = 0;
+        }
+      };
+      fadeOut();
+    }
+    
     // Fade out all audio
     this.fadeOutAllAudio(state);
     

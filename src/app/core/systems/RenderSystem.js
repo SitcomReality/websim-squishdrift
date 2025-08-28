@@ -124,7 +124,7 @@ export class RenderSystem {
     drawBuildings(renderer, state, 'walls');
     drawBuildings(renderer, state, 'roofs');
     
-    // Draw particles (simple circles)
+    // Draw particles (including smoke)
     this.drawParticles(state, renderer);
     
     // Draw damage text and floating text ON TOP of everything
@@ -300,16 +300,40 @@ export class RenderSystem {
   }
 
   drawParticles(state, renderer) {
-    const ps = state.particles || []; if (!ps.length) return;
-    const { ctx } = renderer; const ts = state.world.tileSize;
+    const ps = state.particles || [];
+    if (!ps.length) return;
+    
+    const { ctx } = renderer;
+    const ts = state.world.tileSize;
+    
     ctx.save();
+    
     for (const p of ps) {
-      const alpha = Math.max(0, Math.min(1, p.life)); // quick fade
-      ctx.fillStyle = p.type === 'spark' ? `rgba(255,200,50,${alpha})` : `rgba(139,0,0,${alpha})`;
-      ctx.beginPath();
-      ctx.arc(p.x * ts, p.y * ts, (p.size || 0.06) * ts, 0, Math.PI * 2);
-      ctx.fill();
+      if (p.type === 'smoke') {
+        // Draw smoke particles with soft edges
+        const radius = p.size * ts;
+        const gradient = ctx.createRadialGradient(p.x * ts, p.y * ts, 0, p.x * ts, p.y * ts, radius);
+        
+        // Create greyscale gradient for smoke
+        const color = p.color || 'hsl(0, 0%, 30%)';
+        gradient.addColorStop(0, color.replace('%)', `%, ${p.alpha})`));
+        gradient.addColorStop(0.7, color.replace('%)', `%, ${p.alpha * 0.5})`));
+        gradient.addColorStop(1, color.replace('%)', `%, 0%)`));
+        
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(p.x * ts, p.y * ts, radius, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        // Existing particle drawing
+        const alpha = Math.max(0, Math.min(1, p.life / p.maxLife || 1));
+        ctx.fillStyle = p.color.replace(')', `, ${alpha})`);
+        ctx.beginPath();
+        ctx.arc(p.x * ts, p.y * ts, p.size * ts, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
+    
     ctx.restore();
   }
 

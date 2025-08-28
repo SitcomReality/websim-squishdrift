@@ -2,10 +2,11 @@ import { Tile, TileColor } from '../map/TileTypes.js';
 import { drawExplosion } from '../app/entities/drawExplosion.js';
 
 export function drawTiles(r, state, layer = 'all') {
-  const { ctx, canvas } = r, ts = state.world.tileSize, map = state.world.map;
-  const z = state.camera.zoom || 1;
-  const wTiles = Math.ceil(canvas.width/(ts*z))+2, hTiles = Math.ceil(canvas.height/(ts*z))+2;
-  const sx = Math.floor(state.camera.x - wTiles/2), sy = Math.floor(state.camera.y - hTiles/2);
+  const { ctx } = r, ts = state.world.tileSize, map = state.world.map;
+  const cam = state.camera, perspectiveScale = 0.8;
+  const z = cam.zoom || 1;
+  const wTiles = Math.ceil(r.canvas.width/(ts*z))+2, hTiles = Math.ceil(r.canvas.height/(ts*z))+2;
+  const sx = Math.floor(cam.x - wTiles/2), sy = Math.floor(cam.y - hTiles/2);
   const floorTypes = new Set([Tile.BuildingFloor]);
   const seamPad = 0.5; // overlap tiles by 0.5px to hide seams
   
@@ -49,6 +50,9 @@ export function drawTiles(r, state, layer = 'all') {
   
   // Draw dashed lines on straight roads
   drawDashedLines(r, state);
+  
+  // Draw particles
+  drawParticles(r, state);
 }
 
 function isZebraCrossing(tile) {
@@ -299,4 +303,42 @@ function isIntersectionArea(map, x, y) {
   }
   
   return false;
+}
+
+function drawParticles(r, state) {
+  const ps = state.particles || [];
+  if (!ps.length) return;
+  
+  const { ctx } = r;
+  const ts = state.world.tileSize;
+  
+  ctx.save();
+  
+  for (const p of ps) {
+    if (p.type === 'smoke') {
+      // Draw smoke particles with soft edges
+      const radius = p.size * ts;
+      const gradient = ctx.createRadialGradient(p.x * ts, p.y * ts, 0, p.x * ts, p.y * ts, radius);
+      
+      // Create greyscale gradient for smoke
+      const color = p.color || 'hsl(0, 0%, 30%)';
+      gradient.addColorStop(0, color.replace('%)', `%, ${p.alpha})`));
+      gradient.addColorStop(0.7, color.replace('%)', `%, ${p.alpha * 0.5})`));
+      gradient.addColorStop(1, color.replace('%)', `%, 0%)`));
+      
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(p.x * ts, p.y * ts, radius, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      // Existing particle drawing
+      const alpha = Math.max(0, Math.min(1, p.life / p.maxLife || 1));
+      ctx.fillStyle = p.color.replace(')', `, ${alpha})`);
+      ctx.beginPath();
+      ctx.arc(p.x * ts, p.y * ts, p.size * ts, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  
+  ctx.restore();
 }

@@ -1,7 +1,7 @@
 /* ...existing styles... */
 :root {
-  /* Radial elliptical background with black center */
-  --bg: radial-gradient(ellipse at center, #000000 0%, #0a0a0a 60%, #000000 100%);
+  /* Radial elliptical background with dark center and light outer */
+  --bg: radial-gradient(ellipse at center, #000000 0%, #0a0a0a 30%, #1a1a1a 60%, #333333 85%, #555555 100%);
   --fg: #111;
   --muted: #6b7280;
   /* All borders/lines should be solid black, 2px */

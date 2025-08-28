@@ -248,9 +248,9 @@ export class GameEngine {
     
     // Ensure input manager is connected
     this.stateManager.inputManager = this.inputManager;
-    
-    // Restart the main theme music
-    if (this.audioManager) {
+
+    // Restart main theme so music resumes after a death+restart
+    if (this.audioManager && typeof this.audioManager.playMainTheme === 'function') {
       this.audioManager.playMainTheme();
     }
   }

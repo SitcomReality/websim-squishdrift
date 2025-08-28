@@ -230,12 +230,15 @@ export class AudioManager {
     }
     this.mainTheme.muted = !!this.musicMuted;
     this.mainTheme.volume = this.musicMuted ? 0 : this.musicVolume;
-    
-    // Always start from beginning
-    this.mainTheme.currentTime = 0;
-    
-    // Ensure it plays
-    this.mainTheme.play().catch(e => console.warn('Could not play main theme:', e));
+    if (this.mainTheme.paused) {
+      // Always reset to start so restart begins from the beginning
+      try { this.mainTheme.currentTime = 0; } catch (e) { /* some browsers may restrict setting currentTime */ }
+      this.mainTheme.play().catch(e => console.warn('Could not play main theme:', e));
+    } else {
+      // If already playing, ensure volume/mute reflect settings
+      this.mainTheme.volume = this.musicMuted ? 0 : this.musicVolume;
+      this.mainTheme.muted = !!this.musicMuted;
+    }
   }
 
   stopMainTheme(fadeOut = 1.0) {

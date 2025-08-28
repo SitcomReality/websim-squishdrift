@@ -1,5 +1,3 @@
-
-```javascript
 import { Vec2 } from '../../utils/Vec2.js';
 import { Health } from '../components/Health.js';
 
@@ -43,17 +41,23 @@ export class CollisionSystem {
           // Apply damage
           target.health.takeDamage(25);
           
+          // Emit blood for NPCs
+          if (target.type === 'npc') {
+            state.particleSystem?.emitBlood(state, target.pos, 10, 3);
+          }
+          
           // Play impact sound for vehicles hit by bullets
           if (target.type === 'vehicle') {
             const impactSound = ['impact02', 'impact03'][Math.floor(Math.random() * 2)];
             state.audio?.playSfxAt?.(impactSound, target.pos, state);
           }
           
-          // Handle NPC death with sound
+          // Handle NPC death with sound and particles
           if (target.type === 'npc' && !target.health.isAlive()) {
             state.audio?.playSfxAt?.('pedestrian_death', target.pos, state);
             state.audio?.playSfxAt?.('oof02', target.pos, state);
-
+            state.particleSystem?.emitBlood(state, target.pos, 12, 3);
+            
             const bloodStain = {
               type: 'blood',
               pos: new Vec2(target.pos.x, target.pos.y),
@@ -69,7 +73,6 @@ export class CollisionSystem {
           
           // Trigger screen shake for player damage
           if (target.type === 'npc') {
-            this.triggerShake(state, 0.5);
             state.particleSystem?.emitBlood(state, target.pos, 10, 3);
           }
           if (target.type === 'vehicle') {
@@ -217,9 +220,10 @@ export class CollisionSystem {
               this.triggerShake(state, Math.min(1, damageTaken / 50));
               // Play ouch sound for player damage
               state.audio?.playSfxAt?.('ouch', player.pos, state);
+              // Add blood particles for player damage
+              state.particleSystem?.emitBlood(state, player.pos, 8, 2.5);
               // Add floating damage text
               this.addDamageText(state, player.pos, damage);
-              state.particleSystem?.emitBlood(state, player.pos, 12, 2.5);
             }
             // Handle vehicle destruction if it runs out of health
             this.handleVehicleDestruction(state, vehicle);

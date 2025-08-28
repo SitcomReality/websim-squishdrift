@@ -16,14 +16,14 @@ body { margin:0; background:var(--bg); color:var(--fg); font-family:"Noto Sans",
 .app-header .game-title {
   /* Squeezed title sprite: use the spritesheet but scale to the 128px-high sprite row */
   width: 220px;
-  height: 64px;
+  height: 44px;
   background-image: url('/uisprites.png');
   /* Sprite is 128px high in source - scale down to fit header while preserving height reference */
   background-size: auto 128px;
   background-position: 0 0;
   background-repeat: no-repeat;
   role: img;
-  /* use the game title as accessible label via aria (the element itself already has aria-label in HTML) */
+  margin: 0 auto;
 }
 .app-header h1 { font-size:16px; margin:0; letter-spacing:.2px; }
 .app-header .ghost { padding:8px 10px; border-radius:10px; border:2px solid var(--line); background:transparent; cursor:pointer; }

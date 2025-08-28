@@ -56,6 +56,9 @@ export class ParticleSystem {
   }
 
   emitSmoke(state, vehicle, damageLevel) {
+    // Ensure particles array is initialized
+    state.particles = state.particles || [];
+    
     const count = 1 + Math.floor(damageLevel * 2); // More particles when heavily damaged
     
     for (let i = 0; i < count; i++) {
@@ -93,7 +96,9 @@ export class ParticleSystem {
   }
 
   emitSparks(state, pos, count = 6, power = 4) {
+    // Ensure particles array is initialized
     state.particles = state.particles || [];
+    
     for (let i = 0; i < count; i++) {
       const a = Math.random() * Math.PI * 2;
       const s = power * (0.5 + Math.random());
@@ -112,7 +117,9 @@ export class ParticleSystem {
   }
 
   emitBlood(state, pos, count = 8, power = 3) {
+    // Ensure particles array is initialized
     state.particles = state.particles || [];
+    
     for (let i = 0; i < count; i++) {
       const a = Math.random() * Math.PI * 2;
       const s = power * (0.4 + Math.random());

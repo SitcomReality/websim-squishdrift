@@ -60,7 +60,7 @@ export class ParticleSystem {
     
     for (let i = 0; i < count; i++) {
       // Calculate front position based on vehicle rotation
-      const frontOffset = 0.6; // Distance from center to front
+      const frontOffset = 0.2; // Reduced from 0.6 to 0.2 to move smoke closer to center
       const offsetX = Math.cos(vehicle.rot) * frontOffset;
       const offsetY = Math.sin(vehicle.rot) * frontOffset;
       

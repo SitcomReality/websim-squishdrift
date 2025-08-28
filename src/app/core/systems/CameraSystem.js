@@ -67,11 +67,8 @@ export class CameraSystem {
         const maxZoom = cam.defaultZoom * 1.5; // Half the zoom range (was 2x, now 1.5x)
         desiredZoom = maxZoom - (maxZoom - minZoom) * frac;
       } else {
-        // Normal movement zoom - no zoom out
-        const frac = Math.max(0, Math.min(1, (speed / (maxRef || 1)) * sensitivityMultiplier));
-        const minZoom = cam.defaultZoom;
-        const maxZoom = cam.defaultZoom * 2;
-        desiredZoom = maxZoom - (maxZoom - minZoom) * frac;
+        // Normal movement: no automatic zooming (keep default zoom)
+        desiredZoom = cam.defaultZoom;
       }
     }
     

@@ -327,10 +327,12 @@ export class RenderSystem {
       } else {
         // Existing particle drawing
         const alpha = Math.max(0, Math.min(1, p.life / p.maxLife || 1));
-        ctx.fillStyle = p.color.replace(')', `, ${alpha})`);
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = p.color; // use original color and globalAlpha instead of string replace
         ctx.beginPath();
         ctx.arc(p.x * ts, p.y * ts, p.size * ts, 0, Math.PI * 2);
         ctx.fill();
+        ctx.globalAlpha = 1;
       }
     }
     

@@ -61,25 +61,6 @@ export function drawVehicle(renderer, state, v) {
     imageHeight * scaleX
   );
   
-  // Draw health bar above vehicles
-  if (v.health && v.health.maxHealth) {
-    const healthPercent = v.health.hp / v.health.maxHealth;
-    const barWidth = targetWidth * 0.8;
-    const barHeight = 4;
-    const barX = -barWidth / 2;
-    const barY = offsetY - barHeight - 8;
-    
-    // Background
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-    ctx.fillRect(barX, barY, barWidth, barHeight);
-    
-    // Health bar
-    const healthColor = healthPercent > 0.6 ? '#4CAF50' : 
-                       healthPercent > 0.3 ? '#FF9800' : '#F44336';
-    ctx.fillStyle = healthColor;
-    ctx.fillRect(barX, barY, barWidth * healthPercent, barHeight);
-  }
-  
   // Draw siren for emergency vehicles
   if (v.siren && v.vehicleType === 'emergency') {
     const now = Date.now();

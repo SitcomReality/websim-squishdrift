@@ -31,6 +31,11 @@ export class VehicleCharacterCollisionHandler {
                 // Register kill with scoring system if this is a player-controlled vehicle
                 if (state.control?.inVehicle && state.control?.vehicle === v) {
                     state.scoringSystem?.addCrime(state, 'kill_pedestrian', ped);
+                    
+                    // Update the enemies killed stat for death screen
+                    if (state.stats) {
+                        state.stats.enemiesKilled = (state.stats.enemiesKilled || 0) + 1;
+                    }
                 }
                 
                 // Always play pedestrian death sound

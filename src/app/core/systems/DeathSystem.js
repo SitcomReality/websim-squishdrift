@@ -6,6 +6,7 @@ export class DeathSystem {
     this.deathTime = 0;
     this.fadeDuration = 2000; // 2 seconds
     this.blackScreen = false;
+    this.deathMusic = null;
   }
 
   update(state, dt) {
@@ -97,6 +98,9 @@ export class DeathSystem {
     if (state.audio.stopAll) {
       state.audio.stopAll();
     }
+    
+    // Stop death music
+    this.stopDeathMusic();
   }
 
   createDeathScreen(state) {
@@ -221,11 +225,74 @@ export class DeathSystem {
     show(vehP); await animate(document.getElementById('vehicles-destroyed'), veh, Math.min(1000, 600+veh*10));
     // score (prominent)
     show(scoreP); await animate(document.getElementById('final-score'), score, Math.min(1000, 600+score*0.5));
+    
+    // Play death music when restart button appears
+    this.playDeathMusic(state);
+    
     if(restartBtn){ restartBtn.style.display='block'; restartBtn.style.opacity='0'; restartBtn.style.transition='opacity .25s ease, transform .2s ease'; requestAnimationFrame(()=>{restartBtn.style.opacity='1';}); }
+  }
+
+  playDeathMusic(state) {
+    if (!state.audio) return;
+    
+    // Create new audio element for death music
+    this.deathMusic = new Audio('/music/damocles.mp3');
+    this.deathMusic.volume = state.audio.musicMuted ? 0 : state.audio.musicVolume;
+    this.deathMusic.muted = state.audio.musicMuted;
+    
+    // Play once, no loop
+    this.deathMusic.play().catch(e => console.warn('Could not play death music:', e));
+    
+    // Update volume when music volume changes
+    const updateVolume = () => {
+      if (this.deathMusic) {
+        this.deathMusic.volume = state.audio.musicMuted ? 0 : state.audio.musicVolume;
+        this.deathMusic.muted = state.audio.musicMuted;
+      }
+    };
+    
+    // Listen for volume changes
+    if (state.audio.setMusicVolume) {
+      const originalSetMusicVolume = state.audio.setMusicVolume;
+      state.audio.setMusicVolume = (volume) => {
+        originalSetMusicVolume(volume);
+        updateVolume();
+      };
+    }
+    
+    if (state.audio.toggleMusicMute) {
+      const originalToggleMusicMute = state.audio.toggleMusicMute;
+      state.audio.toggleMusicMute = () => {
+        const result = originalToggleMusicMute();
+        updateVolume();
+        return result;
+      };
+    }
+  }
+
+  stopDeathMusic() {
+    if (this.deathMusic) {
+      // Quick fade out
+      const fadeOut = () => {
+        const currentVolume = this.deathMusic.volume;
+        if (currentVolume > 0.05) {
+          this.deathMusic.volume = Math.max(0, currentVolume - 0.1);
+          setTimeout(fadeOut, 50);
+        } else {
+          this.deathMusic.pause();
+          this.deathMusic.currentTime = 0;
+          this.deathMusic = null;
+        }
+      };
+      fadeOut();
+    }
   }
 
   restartGame() {
     console.log('Restarting game...');
+    
+    // Stop death music
+    this.stopDeathMusic();
     
     // Remove death overlay
     const deathOverlay = document.getElementById('death-overlay');

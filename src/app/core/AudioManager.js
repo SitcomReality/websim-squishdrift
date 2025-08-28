@@ -9,6 +9,7 @@ export class AudioManager {
     this.loops = new Map(); // id -> { src, gain, panner, key }
     this.musicLoop = null;
     this.mainTheme = null;
+    this.deathMusic = null;
     
     // Add volume and mute state tracking
     this.volumeSettings = {
@@ -52,7 +53,9 @@ export class AudioManager {
       this.load('/sfx/engine_sedan.mp3', 'engine_sedan'),
       this.load('/sfx/engine_sport.mp3', 'engine_sport'),
       this.load('/sfx/engine_truck.mp3', 'engine_truck'),
-      this.load('/sfx/tire_skid_loop.mp3', 'tire_skid_loop') // new loop SFX
+      this.load('/sfx/tire_skid_loop.mp3', 'tire_skid_loop'), // new loop SFX
+      // Load death music
+      this.load('/music/damocles.mp3', 'damocles')
     ]).catch(()=>{ /* ignore load errors gracefully */ });
     
     // Load main theme
@@ -118,7 +121,6 @@ export class AudioManager {
     const x = Math.max(0, Math.min(1, (dist - minDistance) / Math.max(1e-3, (maxDistance - minDistance))));
     const att = dist <= minDistance ? 1 : Math.pow(1 - x, 5);
     const finalVol = Math.max(0, Math.min(1, effectiveVolume * att));
-
     const panX = pos.x - cam.x;
     const pan = Math.max(-1, Math.min(1, panX / panMax));
 
@@ -253,8 +255,42 @@ export class AudioManager {
     }
   }
 
+  playDeathMusic() {
+    if (this.deathMusic) return; // Already playing
+    
+    this.deathMusic = new Audio('/music/damocles.mp3');
+    this.deathMusic.volume = this.musicMuted ? 0 : this.musicVolume;
+    this.deathMusic.muted = this.musicMuted;
+    this.deathMusic.loop = false;
+    
+    this.deathMusic.play().catch(e => console.warn('Could not play death music:', e));
+    
+    // Clean up when done
+    this.deathMusic.addEventListener('ended', () => {
+      this.deathMusic = null;
+    });
+  }
+
+  stopDeathMusic() {
+    if (this.deathMusic) {
+      const fadeOut = () => {
+        const currentVolume = this.deathMusic.volume;
+        if (currentVolume > 0.05) {
+          this.deathMusic.volume = Math.max(0, currentVolume - 0.1);
+          setTimeout(fadeOut, 50);
+        } else {
+          this.deathMusic.pause();
+          this.deathMusic.currentTime = 0;
+          this.deathMusic = null;
+        }
+      };
+      fadeOut();
+    }
+  }
+
   stopAll() {
     this.stopMainTheme(1.0);
+    this.stopDeathMusic();
     
     // Stop all loops with fade out
     if (this.loops && this.loops.size) {
@@ -288,6 +324,9 @@ export class AudioManager {
     if (this.mainTheme) {
       this.mainTheme.volume = this.musicMuted ? 0 : this.musicVolume;
     }
+    if (this.deathMusic) {
+      this.deathMusic.volume = this.musicMuted ? 0 : this.musicVolume;
+    }
   }
 
   toggleSfxMute() {
@@ -302,6 +341,10 @@ export class AudioManager {
     if (this.mainTheme) {
       this.mainTheme.muted = this.musicMuted;
       if (!this.musicMuted) this.mainTheme.volume = this.musicVolume;
+    }
+    if (this.deathMusic) {
+      this.deathMusic.muted = this.musicMuted;
+      if (!this.musicMuted) this.deathMusic.volume = this.musicVolume;
     }
     return this.musicMuted;
   }

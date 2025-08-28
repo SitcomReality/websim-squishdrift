@@ -27,7 +27,7 @@ export class AudioManager {
       this.load('/sfx/tire_screech01.mp3', 'tire_screech01'),
       this.load('/sfx/tire_screech02.mp3', 'tire_screech02'),
       this.load('/sfx/tire_screech03.mp3', 'tire_screech03'),
-      this.load('/sfx/siren.mp3', 'siren'),
+      this.load('/sfx/siren.mp3', 'siren'), // Add siren audio
       this.load('/sfx/projectile_hit.mp3', 'projectile_hit'),
       this.load('/sfx/ouch.mp3', 'ouch'),
       this.load('/sfx/click.mp3', 'click'),

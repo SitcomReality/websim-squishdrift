@@ -44,6 +44,19 @@ export class EngineAudioSystem {
         panMax: isPlayerVehicle ? 4 : 14        // Less panning for player vehicle
       });
 
+      // Handle siren for police cars
+      if (v.vehicleType === 'emergency' && v.color === '#0000FF') {
+        const sirenId = { type: 'siren', vehicle: v };
+        audio.startOrUpdateLoopAt('siren', sirenId, v.pos, state, {
+          rate: 1.0, // Fixed speed for siren
+          baseVolume: 0.4,
+          minDistance: 1,
+          maxDistance: 25,
+          panMax: 8
+        });
+        activeSet.add(sirenId);
+      }
+
       activeSet.add(id);
     }
 
@@ -56,6 +69,10 @@ export class EngineAudioSystem {
         // also cleanup skid loops if vehicle no longer present
         if (id?.type === 'skid' && !vehicles.includes(id.vehicle)) {
           audio.stopLoop(id, { fadeOut: 0.1 });
+        }
+        // cleanup siren loops for non-existent vehicles
+        if (id?.type === 'siren' && !vehicles.includes(id.vehicle)) {
+          audio.stopLoop(id, { fadeOut: 0.15 });
         }
       }
     }

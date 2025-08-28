@@ -157,17 +157,17 @@ export class RenderSystem {
     const time = Date.now() * 0.001; // Convert to seconds
     const cycleDuration = 8.0; // 8 seconds total cycle
     
-    // Phase calculation: 0.5 seconds pause at 0 opacity
+    // Phase calculation: 0.5 seconds pause at 0 opacity (when largest)
     const activeDuration = cycleDuration - 0.5; // 7.5 seconds for active animation
     const phase = (time % cycleDuration) / activeDuration;
     
-    // Handle pause phase
+    // Handle pause phase - now at the END when circle is largest and 0 opacity
     if (phase > 1) {
-      // In pause phase - show nothing
+      // In pause phase - show nothing (circle is invisible at largest size)
       return;
     }
     
-    // Create expansion/contraction effect with pause
+    // Create expansion/contraction effect with pause at the end
     let progress;
     if (phase < 0.5) {
       // Expanding phase (0 to 0.5)

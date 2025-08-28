@@ -22,7 +22,7 @@ export function drawPlayer(r, state, player) {
     pos: player.pos,
     from: { x: Math.floor(p.x), y: Math.floor(p.y) },
     to: { x: Math.floor(p.x) + Math.cos(player.facingAngle || 0), y: Math.floor(p.y) + Math.sin(player.facingAngle || 0) },
-    t: (state.time || 0) * baseAnimSpeed * animMultiplier % 1, // Use proper animation timing
+    t: (player.t || 0) * baseAnimSpeed * animMultiplier % 1, // Use per-player animation timer
     speed: moveSpeed || 1.5,
     skinTone: player.skinTone,
     bodyIndex: player.bodyIndex,

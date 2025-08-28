@@ -8,12 +8,12 @@ export function drawPlayer(r, state, player) {
   // Create a dynamic NPC-like representation for player with arm movement
   const isMoving = player.lastMoveSpeed > 0.01;
   const moveSpeed = player.lastMoveSpeed || 0;
-  const baseAnimSpeed = 4; // NPC base animation speed
   
-  // Calculate animation speed multiplier based on movement
-  let animMultiplier = 1;
+  // Only animate arms when actually moving
+  let animMultiplier = 0;
   if (isMoving) {
-    animMultiplier = Math.max(1.5, moveSpeed / 0.5); // Player moves faster than NPCs
+    // Much more reasonable multiplier - only 20% faster than NPCs
+    animMultiplier = 1.2;
   }
   
   // Create NPC-like structure for player with custom animation
@@ -22,8 +22,8 @@ export function drawPlayer(r, state, player) {
     pos: player.pos,
     from: { x: Math.floor(p.x), y: Math.floor(p.y) },
     to: { x: Math.floor(p.x) + Math.cos(player.facingAngle || 0), y: Math.floor(p.y) + Math.sin(player.facingAngle || 0) },
-    t: (player.t || 0) * baseAnimSpeed * animMultiplier % 1, // Use per-player animation timer
-    speed: moveSpeed || 1.5,
+    t: isMoving ? ((player.t || 0) * animMultiplier % 1) : 0, // 0 when stationary
+    speed: isMoving ? moveSpeed : 0,
     skinTone: player.skinTone,
     bodyIndex: player.bodyIndex,
     armIndex: player.armIndex,

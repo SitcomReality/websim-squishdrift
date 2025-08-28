@@ -63,8 +63,13 @@ export class PlayerSystem {
       const dy = player.pos.y - prevPos.y;
       player.lastMoveSpeed = Math.hypot(dx, dy) / dt;
       
-      // Advance per-player animation timer so arms swing while moving (and idle slowly when standing)
-      player.t = (player.t || 0) + ((player.lastMoveSpeed > 0.01 ? player.lastMoveSpeed : 0.2) * 0.6) * dt;
+      // Only advance animation when moving - no idle arm swinging
+      if (player.lastMoveSpeed > 0.01) {
+        player.t = (player.t || 0) + (player.lastMoveSpeed * 0.6) * dt;
+      } else {
+        // Reset to stationary position when not moving
+        player.t = 0;
+      }
       
       this.updateStamina(state, player, input, dt);
     } else {
@@ -74,7 +79,9 @@ export class PlayerSystem {
         player.pos.x = v.pos.x;
         player.pos.y = v.pos.y;
         player.hidden = true;
+        player.inVehicle = true;
         player.lastMoveSpeed = 0; // No arm movement when in vehicle
+        player.t = 0; // Reset animation when in vehicle
       }
     }
   }

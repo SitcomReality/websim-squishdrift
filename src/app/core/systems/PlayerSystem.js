@@ -16,6 +16,12 @@ export class PlayerSystem {
     this.ensureHealth(player);
     this.ensureStamina(player);
     
+    // Ensure the player has the required animation properties
+    // This should already be handled by the drawPlayer function, but let's verify
+    if (!player.skinTone) player.skinTone = 0;
+    if (!player.bodyIndex) player.bodyIndex = 0;
+    if (!player.armIndex) player.armIndex = 0;
+    
     // Play ouch when player's health decreases
     try {
       const prevHp = (player.health && typeof player.health._prevHp === 'number') ? player.health._prevHp : player.health.hp;

@@ -17,16 +17,8 @@ const canvas = document.getElementById('game');
 const debugEl = document.getElementById('debug');
 const toggleBtn = document.getElementById('toggle-debug');
 
-let game = new GameEngine(canvas, { debugEl });
-window.game = game; // Make globally accessible
-let loop = createLoop({
-  update: (dt) => game.update(dt),
-  render: (interp) => game.render(interp),
-});
-
-// Game state - paused until start button is pressed
-let gameStarted = false;
-let gameLoop = null;
+let game = null;
+window.game = game;
 
 // Modify GameEngine to use loading system
 async function initializeWithLoading() {
@@ -140,6 +132,7 @@ initializeWithLoading();
 // Update button and event listeners to wait for initialization
 toggleBtn.addEventListener('click', () => {
   console.log('Debug button clicked');
+  if (!game) return;
   const next = !game.debugOverlay?.enabled;
   if (game.debugOverlay) {
     game.debugOverlay.enabled = next;
@@ -164,7 +157,7 @@ if (restartBtn) {
 
 // Add click handling for debug spawning
 canvas.addEventListener('click', (e) => {
-  if (!game.debugOverlay?.enabled) return;
+  if (!game?.debugOverlay?.enabled) return;
   
   const rect = canvas.getBoundingClientRect();
   const x = e.clientX - rect.left;
@@ -256,11 +249,11 @@ function updateZoomUI(){
 setInterval(updateZoomUI, 200);
 
 window.addEventListener('resize', () => {
-  if (game.renderer && game.renderer.resizeToDisplay) {
+  if (game && game.renderer && game.renderer.resizeToDisplay) {
     game.renderer.resizeToDisplay();
   }
 });
 
-if (game.renderer && game.renderer.resizeToDisplay) {
+if (game && game.renderer && game.renderer.resizeToDisplay) {
   game.renderer.resizeToDisplay();
 }

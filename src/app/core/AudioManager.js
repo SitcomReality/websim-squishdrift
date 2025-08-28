@@ -230,10 +230,12 @@ export class AudioManager {
     }
     this.mainTheme.muted = !!this.musicMuted;
     this.mainTheme.volume = this.musicMuted ? 0 : this.musicVolume;
-    if (this.mainTheme.paused) {
-      this.mainTheme.currentTime = this.mainTheme.currentTime || 0;
-      this.mainTheme.play().catch(e => console.warn('Could not play main theme:', e));
-    }
+    
+    // Always start from beginning
+    this.mainTheme.currentTime = 0;
+    
+    // Ensure it plays
+    this.mainTheme.play().catch(e => console.warn('Could not play main theme:', e));
   }
 
   stopMainTheme(fadeOut = 1.0) {

@@ -248,6 +248,11 @@ export class GameEngine {
     
     // Ensure input manager is connected
     this.stateManager.inputManager = this.inputManager;
+    
+    // Restart the main theme music
+    if (this.audioManager) {
+      this.audioManager.playMainTheme();
+    }
   }
 
   resetHUD() {

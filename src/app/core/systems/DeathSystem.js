@@ -78,6 +78,27 @@ export class DeathSystem {
     this.createDeathScreen(state);
   }
 
+  fadeOutAllAudio(state) {
+    if (!state.audio) return;
+    
+    // Stop all loops with fade out
+    if (state.audio.loops && state.audio.loops.size) {
+      for (const [id] of state.audio.loops) {
+        state.audio.stopLoop(id, { fadeOut: 1.0 });
+      }
+    }
+    
+    // Stop engine audio system
+    if (state.engineAudioSystem) {
+      state.engineAudioSystem.stopAll();
+    }
+    
+    // Stop any other playing sounds
+    if (state.audio.stopAll) {
+      state.audio.stopAll();
+    }
+  }
+
   createDeathScreen(state) {
     // Create death screen overlay
     const deathOverlay = document.createElement('div');
@@ -116,8 +137,9 @@ export class DeathSystem {
     // Start zooming out immediately
     if (state.camera) {
       const defaultZoom = state.camera.defaultZoom || 4;
-      const targetZoom = defaultZoom * 0.5;
+      const targetZoom = defaultZoom * 0.5; // Zoom out to half the default zoom
       
+      // Smooth zoom out over 2 seconds
       const startTime = Date.now();
       const zoomDuration = 2000;
       
@@ -125,6 +147,7 @@ export class DeathSystem {
         const elapsed = Date.now() - startTime;
         const progress = Math.min(elapsed / zoomDuration, 1);
         
+        // Ease out cubic for smooth zoom
         const easeOut = 1 - Math.pow(1 - progress, 3);
         state.camera.zoom = state.camera.defaultZoom - (state.camera.defaultZoom - targetZoom) * easeOut;
         
@@ -136,9 +159,11 @@ export class DeathSystem {
       zoomOut();
     }
 
+    // Use setTimeout to trigger the fade-in animation
     setTimeout(() => {
       deathOverlay.style.background = 'rgba(0, 0, 0, 0.8)';
       
+      // After fade completes, show content
       setTimeout(() => {
         const deathContent = document.getElementById('death-content');
         if (deathContent) {
@@ -148,58 +173,72 @@ export class DeathSystem {
       }, 2000);
     }, 100);
 
+    // Add restart button listener using direct assignment to ensure it works
     setTimeout(() => {
+      // Query the button inside the overlay to avoid colliding with any other element
       const restartBtn = deathOverlay.querySelector('#restart-button-sprite');
       if (restartBtn) {
+        console.log('Restart button found in death overlay, adding listener');
         restartBtn.addEventListener('click', () => {
+          console.log('Restart button clicked (death overlay)');
           this.restartGame();
         });
       }
-    }, 2100);
+    }, 2100); // Wait until after content is shown
+  }
+
+  updateDeathScreen(state, dt) {
+    // This method is now just for ongoing updates, not for the fade animation
+    // The actual fade is handled by CSS transitions and setTimeout
   }
 
   async runDeathStatsSequence(state){
     const overlay=document.getElementById('death-overlay');
     if(!overlay) return;
-    
+    // inject bulge keyframes once
     if(!document.getElementById('death-bulge-style')){
       const st=document.createElement('style'); st.id='death-bulge-style';
       st.textContent='@keyframes bulge{0%{transform:scale(1)}60%{transform:scale(1.15)}100%{transform:scale(1)}}';
       overlay.appendChild(st);
     }
-    
     const statsEl=document.getElementById('death-stats');
     const timeP=statsEl.children[0], pedP=statsEl.children[1], vehP=statsEl.children[2];
     pedP.innerHTML='Pedestrians Murdered: <span id="enemies-killed">0</span>';
     const scoreP=document.createElement('p'); scoreP.style.fontSize='24px'; scoreP.style.marginTop='6px'; scoreP.innerHTML='Score: <span id="final-score">0</span>'; scoreP.style.display='none'; statsEl.appendChild(scoreP);
     const restartBtn=document.getElementById('restart-button-sprite'); if(restartBtn) restartBtn.style.display='none';
-    
     const hide=(el)=>{el.style.opacity='0'; el.style.transform='scale(0.98)'; el.style.transition='opacity .2s ease, transform .2s ease'; el.style.display='none';};
     const show=(el)=>{el.style.display='block'; requestAnimationFrame(()=>{el.style.opacity='1'; el.style.transform='scale(1)';});};
-    
+    hide(pedP); hide(vehP);
     const timeAlive=Math.floor((Date.now()-(state.startTime||Date.now()))/1000);
     const peds=state.stats?.enemiesKilled||0, veh=state.stats?.vehiclesDestroyed||0, score=state.scoringSystem?.getScore?.()||0;
-    
     const animate=(span,to,dur,fmt=(v)=>String(v))=>new Promise(res=>{const t0=performance.now(); const step=(now)=>{let k=Math.min(1,(now-t0)/dur); let v=Math.floor(to*k); span.textContent=fmt(v); if(k<1) requestAnimationFrame(step); else{span.textContent=fmt(to); span.parentElement.style.animation='bulge .3s ease'; setTimeout(()=>{span.parentElement.style.animation=''; res();},320);} }; requestAnimationFrame(step);});
     const fmtTime=(s)=>{const m=Math.floor(s/60), ss=String(s%60).padStart(2,'0'); return `${m}:${ss}`;};
-    
+    // time alive
     show(timeP); await animate(document.getElementById('time-alive'), timeAlive, Math.min(1000, 600+timeAlive*5), fmtTime);
+    // pedestrians
     show(pedP); await animate(document.getElementById('enemies-killed'), peds, Math.min(1000, 600+peds*10));
+    // vehicles
     show(vehP); await animate(document.getElementById('vehicles-destroyed'), veh, Math.min(1000, 600+veh*10));
+    // score (prominent)
     show(scoreP); await animate(document.getElementById('final-score'), score, Math.min(1000, 600+score*0.5));
-    if(restartBtn){ restartBtn.style.display='block'; restartBtn.style.opacity='0'; restartBtn.style.transition='opacity .25s ease, transform .2s ease'; requestAnimationFrame(()=>{restartBtn.style.opacity='1';});}
+    if(restartBtn){ restartBtn.style.display='block'; restartBtn.style.opacity='0'; restartBtn.style.transition='opacity .25s ease, transform .2s ease'; requestAnimationFrame(()=>{restartBtn.style.opacity='1';}); }
   }
 
   restartGame() {
+    console.log('Restarting game...');
+    
+    // Remove death overlay
     const deathOverlay = document.getElementById('death-overlay');
     if (deathOverlay) {
       deathOverlay.remove();
     }
     
+    // Reset death state
     this.isDead = false;
     this.deathTime = 0;
     this.blackScreen = false;
     
+    // Emit restart event
     window.dispatchEvent(new CustomEvent('game-restart'));
   }
 }

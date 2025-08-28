@@ -7,8 +7,8 @@ export class AudioManager {
     this.sfxVolume = 0.9;   // 0..1
     this.musicVolume = 0.6; // 0..1
     this.loops = new Map(); // id -> { src, gain, panner, key }
+    this.musicLoop = null;
     this.mainTheme = null;
-    this.mainThemePlaying = false;
     
     // Add volume and mute state tracking
     this.volumeSettings = {
@@ -27,45 +27,39 @@ export class AudioManager {
 
   async init() {
     if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    await Promise.all([
+      this.load('/sfx/pickup_health.mp3', 'pickup_health'),
+      this.load('/sfx/pickup_bribe.mp3', 'pickup_bribe'),
+      this.load('/sfx/pickup_default.mp3', 'pickup_default'),
+      this.load('/sfx/shoot01.mp3', 'shoot01'),
+      this.load('/sfx/shoot02.mp3', 'shoot02'),
+      this.load('/sfx/explosion01.mp3', 'explosion01'),
+      this.load('/sfx/explosion02.mp3', 'explosion02'),
+      this.load('/sfx/impact02.mp3', 'impact02'),
+      this.load('/sfx/impact03.mp3', 'impact03'),
+      this.load('/sfx/pedestrian_death.mp3', 'pedestrian_death'),
+      this.load('/sfx/oof02.mp3', 'oof02'),
+      this.load('/sfx/tire_screech01.mp3', 'tire_screech01'),
+      this.load('/sfx/tire_screech02.mp3', 'tire_screech02'),
+      this.load('/sfx/tire_screech03.mp3', 'tire_screech03'),
+      this.load('/sfx/siren.mp3', 'siren'), // Add siren audio
+      this.load('/sfx/projectile_hit.mp3', 'projectile_hit'),
+      this.load('/sfx/ouch.mp3', 'ouch'),
+      this.load('/sfx/click.mp3', 'click'),
+      // engine loops
+      this.load('/sfx/engine_compact.mp3', 'engine_compact'),
+      this.load('/sfx/engine_emergency.mp3', 'engine_emergency'),
+      this.load('/sfx/engine_sedan.mp3', 'engine_sedan'),
+      this.load('/sfx/engine_sport.mp3', 'engine_sport'),
+      this.load('/sfx/engine_truck.mp3', 'engine_truck'),
+      this.load('/sfx/tire_skid_loop.mp3', 'tire_skid_loop') // new loop SFX
+    ]).catch(()=>{ /* ignore load errors gracefully */ });
     
-    // Only load if not already loaded
-    if (this.buffers.size === 0) {
-      await Promise.all([
-        this.load('/sfx/pickup_health.mp3', 'pickup_health'),
-        this.load('/sfx/pickup_bribe.mp3', 'pickup_bribe'),
-        this.load('/sfx/pickup_default.mp3', 'pickup_default'),
-        this.load('/sfx/shoot01.mp3', 'shoot01'),
-        this.load('/sfx/shoot02.mp3', 'shoot02'),
-        this.load('/sfx/explosion01.mp3', 'explosion01'),
-        this.load('/sfx/explosion02.mp3', 'explosion02'),
-        this.load('/sfx/impact02.mp3', 'impact02'),
-        this.load('/sfx/impact03.mp3', 'impact03'),
-        this.load('/sfx/pedestrian_death.mp3', 'pedestrian_death'),
-        this.load('/sfx/oof02.mp3', 'oof02'),
-        this.load('/sfx/tire_screech01.mp3', 'tire_screech01'),
-        this.load('/sfx/tire_screech02.mp3', 'tire_screech02'),
-        this.load('/sfx/tire_screech03.mp3', 'tire_screech03'),
-        this.load('/sfx/siren.mp3', 'siren'), // Add siren audio
-        this.load('/sfx/projectile_hit.mp3', 'projectile_hit'),
-        this.load('/sfx/ouch.mp3', 'ouch'),
-        this.load('/sfx/click.mp3', 'click'),
-        // engine loops
-        this.load('/sfx/engine_compact.mp3', 'engine_compact'),
-        this.load('/sfx/engine_emergency.mp3', 'engine_emergency'),
-        this.load('/sfx/engine_sedan.mp3', 'engine_sedan'),
-        this.load('/sfx/engine_sport.mp3', 'engine_sport'),
-        this.load('/sfx/engine_truck.mp3', 'engine_truck'),
-        this.load('/sfx/tire_skid_loop.mp3', 'tire_skid_loop') // new loop SFX
-      ]).catch(()=>{ /* ignore load errors gracefully */ });
-    }
-    
-    // Only create main theme if it doesn't exist
-    if (!this.mainTheme) {
-      this.mainTheme = new Audio('/music/player2.mp3');
-      this.mainTheme.loop = true;
-      this.mainTheme.volume = this.musicVolume;
-      this.mainTheme.muted = !!this.musicMuted;
-    }
+    // Load main theme
+    this.mainTheme = new Audio('/music/player2.mp3');
+    this.mainTheme.loop = true;
+    this.mainTheme.volume = this.musicVolume;
+    this.mainTheme.muted = !!this.musicMuted;
   }
 
   async load(url, key) {
@@ -232,57 +226,50 @@ export class AudioManager {
   }
 
   playMainTheme() {
-    if (!this.mainTheme || this.mainThemePlaying) return;
-    
-    // Ensure we're initialized
-    if (!this.ctx) this.init();
-    
-    // Stop any existing theme if playing
-    this.stopMainTheme();
-    
-    // Reset and play
-    this.mainTheme.currentTime = 0;
-    this.mainTheme.volume = this.musicMuted ? 0 : this.musicVolume;
-    this.mainTheme.muted = this.musicMuted;
-    this.mainTheme.loop = true;
-    
-    this.mainTheme.play()
-      .then(() => {
-        this.mainThemePlaying = true;
-      })
-      .catch(e => {
-        console.warn('Could not play main theme:', e);
-        this.mainThemePlaying = false;
-      });
+    if (this.mainTheme) {
+      this.mainTheme.muted = !!this.musicMuted;
+      this.mainTheme.volume = this.musicVolume;
+      this.mainTheme.currentTime = 0;
+      this.mainTheme.play().catch(e => console.warn('Could not play main theme:', e));
+    }
   }
 
   stopMainTheme(fadeOut = 1.0) {
-    if (!this.mainTheme || !this.mainThemePlaying) return;
-    
-    const step = Math.max(10, Math.floor(fadeOut * 50));
-    const fade = () => {
-      const v = this.mainTheme.volume;
-      if (v > 0.005) {
-        this.mainTheme.volume = Math.max(0, v - 0.04);
-        setTimeout(fade, step);
-      } else {
-        this.mainTheme.pause();
-        this.mainTheme.currentTime = 0;
-        this.mainTheme.volume = this.musicMuted ? 0 : this.musicVolume;
-        this.mainThemePlaying = false;
-      }
-    };
-    
-    fade();
+    if (this.mainTheme && !this.mainTheme.paused) {
+      const step = Math.max(10, Math.floor(fadeOut * 50));
+      const fade = () => {
+        const v = this.mainTheme.volume;
+        if (v > 0.005) {
+          this.mainTheme.volume = Math.max(0, v - 0.04);
+          setTimeout(fade, step);
+        } else {
+          this.mainTheme.pause();
+          this.mainTheme.currentTime = 0;
+          // restore volume for next start (respect mute state)
+          this.mainTheme.volume = this.musicMuted ? 0 : this.musicVolume;
+        }
+      };
+      fade();
+    }
   }
 
   stopAll() {
     this.stopMainTheme(1.0);
     
-    // Stop all loops
+    // Stop all loops with fade out
     if (this.loops && this.loops.size) {
       for (const [id] of this.loops) {
         this.stopLoop(id, { fadeOut: 1.0 });
+      }
+    }
+    
+    // Stop any other playing sounds
+    if (this.ctx) {
+      // Create a master gain node to fade out all sounds
+      if (this.masterGain) {
+        const t = this.ctx.currentTime;
+        this.masterGain.gain.cancelScheduledValues(t);
+        this.masterGain.gain.linearRampToValueAtTime(0, t + 1.0);
       }
     }
   }
@@ -298,9 +285,8 @@ export class AudioManager {
     this.volumeSettings.music = Math.max(0, Math.min(1, volume));
     this.musicVolume = this.volumeSettings.music;
     this.musicMuted = this.volumeSettings.musicMuted;
-    
-    if (this.mainTheme && !this.musicMuted) {
-      this.mainTheme.volume = this.musicVolume;
+    if (this.mainTheme) {
+      this.mainTheme.volume = this.musicMuted ? 0 : this.musicVolume;
     }
   }
 
@@ -313,14 +299,10 @@ export class AudioManager {
   toggleMusicMute() {
     this.volumeSettings.musicMuted = !this.volumeSettings.musicMuted;
     this.musicMuted = this.volumeSettings.musicMuted;
-    
     if (this.mainTheme) {
       this.mainTheme.muted = this.musicMuted;
-      if (!this.musicMuted) {
-        this.mainTheme.volume = this.musicVolume;
-      }
+      if (!this.musicMuted) this.mainTheme.volume = this.musicVolume;
     }
-    
     return this.musicMuted;
   }
 }

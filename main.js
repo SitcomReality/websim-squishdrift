@@ -3,9 +3,6 @@ import { createLoop } from './src/app/loop.js';
 import { LoadingSystem } from './loading.js';
 import { Vec2 } from './src/utils/Vec2.js';
 
-// Add music loop ID constant
-const MUSIC_LOOP_ID = 'main_theme';
-
 // Create global loading system
 const loadingSystem = new LoadingSystem();
 
@@ -17,16 +14,8 @@ const canvas = document.getElementById('game');
 const debugEl = document.getElementById('debug');
 const toggleBtn = document.getElementById('toggle-debug');
 
-let game = new GameEngine(canvas, { debugEl });
-window.game = game; // Make globally accessible
-let loop = createLoop({
-  update: (dt) => game.update(dt),
-  render: (interp) => game.render(interp),
-});
-
-// Game state - paused until start button is pressed
-let gameStarted = false;
-let gameLoop = null;
+let game = null; // defer creation until initializeWithLoading()
+window.game = null;
 
 // Modify GameEngine to use loading system
 async function initializeWithLoading() {
@@ -34,7 +23,7 @@ async function initializeWithLoading() {
     // Show loading screen and load assets
     const loadedAssets = await loadingSystem.loadAssets();
     
-    // Initialize game with loaded assets
+    // Initialize game with loaded assets (single authoritative instance)
     game = new GameEngine(canvas, { debugEl });
     window.game = game; // Make globally accessible
     

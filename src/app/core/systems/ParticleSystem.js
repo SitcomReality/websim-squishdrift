@@ -102,16 +102,23 @@ export class ParticleSystem {
     for (let i = 0; i < count; i++) {
       const a = Math.random() * Math.PI * 2;
       const s = power * (0.5 + Math.random());
+      
+      // Create smaller, more dynamic sparks
+      const sparkSize = 0.02 + Math.random() * 0.03; // Much smaller base size
+      
       state.particles.push({
         type: 'spark',
         x: pos.x,
         y: pos.y,
         vx: Math.cos(a) * s,
         vy: Math.sin(a) * s * 0.5,
-        life: 0.25 + Math.random() * 0.25,
-        size: 0.06 + Math.random() * 0.04,
+        life: 0.15 + Math.random() * 0.2, // Shorter life for quick spark effect
+        maxLife: 0.15 + Math.random() * 0.2,
+        size: sparkSize,
+        maxSize: sparkSize * 2.5, // Max size for expansion
         color: 'rgba(255,200,50,1)',
-        alpha: 1.0
+        alpha: 1.0,
+        maxAlpha: 1.0
       });
     }
   }
@@ -135,5 +142,56 @@ export class ParticleSystem {
         alpha: 1.0
       });
     }
+  }
+
+  drawParticles(state, renderer) {
+    const ps = state.particles || [];
+    if (!ps.length) return;
+    
+    const { ctx } = renderer;
+    const ts = state.world.tileSize;
+    
+    ctx.save();
+    
+    for (const p of ps) {
+      if (p.type === 'smoke') {
+        // ... existing smoke drawing ...
+      } else if (p.type === 'spark') {
+        // Draw dynamic sparks
+        const lifeRatio = Math.max(0, p.life / p.maxLife);
+        
+        // Sparks start small and expand briefly before fading
+        const currentSize = p.size + (p.maxSize - p.size) * (1 - lifeRatio) * 0.3;
+        const currentAlpha = p.alpha * lifeRatio;
+        
+        // Create gradient for spark effect
+        const gradient = ctx.createRadialGradient(
+          p.x * ts, p.y * ts, 0,
+          p.x * ts, p.y * ts, currentSize * ts
+        );
+        
+        // Bright yellow center fading to orange edges
+        gradient.addColorStop(0, `rgba(255,255,200,${currentAlpha})`);
+        gradient.addColorStop(0.3, `rgba(255,200,100,${currentAlpha * 0.8})`);
+        gradient.addColorStop(1, `rgba(255,100,50,${currentAlpha * 0.3})`);
+        
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(p.x * ts, p.y * ts, currentSize * ts, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Add small bright center
+        if (currentAlpha > 0.5) {
+          ctx.fillStyle = `rgba(255,255,255,${currentAlpha * 0.8})`;
+          ctx.beginPath();
+          ctx.arc(p.x * ts, p.y * ts, currentSize * ts * 0.3, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else {
+        // ... existing particle drawing ...
+      }
+    }
+    
+    ctx.restore();
   }
 }

@@ -6,12 +6,16 @@ import { Vec2 } from './src/utils/Vec2.js';
 // Create global loading system
 const loadingSystem = new LoadingSystem();
 
+// Make game globally accessible for title screen reset
+window.game = null;
+
 // Game elements - initialize game first
 const canvas = document.getElementById('game');
 const debugEl = document.getElementById('debug');
 const toggleBtn = document.getElementById('toggle-debug');
 
 let game = new GameEngine(canvas, { debugEl });
+window.game = game; // Make globally accessible
 let loop = createLoop({
   update: (dt) => game.update(dt),
   render: (interp) => game.render(interp),
@@ -29,6 +33,7 @@ async function initializeWithLoading() {
     
     // Initialize game with loaded assets
     game = new GameEngine(canvas, { debugEl });
+    window.game = game; // Make globally accessible
     
     // Pass loaded assets to game state
     if (game.stateManager && game.stateManager.state) {
@@ -66,6 +71,7 @@ async function initializeWithLoading() {
     console.error('Failed to initialize game:', error);
     // Fallback to basic initialization without loading screen
     game = new GameEngine(canvas, { debugEl });
+    window.game = game; // Make globally accessible
     gameLoop = createLoop({
       update: (dt) => game.update(dt),
       render: (interp) => game.render(interp),

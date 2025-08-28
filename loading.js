@@ -85,8 +85,14 @@ export class LoadingSystem {
   showTitleScreen() {
     this.titleScreen = new TitleScreen();
     this.titleScreen.show();
+    
+    // Override the start button behavior to reset start time
     this.titleScreen.onStart(() => {
       this.hideTitleScreen();
+      // Reset start time when game starts
+      if (window.game && window.game.stateManager && window.game.stateManager.state) {
+        window.game.stateManager.state.startTime = Date.now();
+      }
     });
 
     // Hide loading screen

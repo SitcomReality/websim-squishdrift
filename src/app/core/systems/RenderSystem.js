@@ -83,7 +83,7 @@ export class RenderSystem {
           break;
         case 'vehicle':
           drawVehicle(renderer, state, entity);
-          drawHealthBar(renderer, entity);
+          // Remove health bar for vehicles
           break;
         case 'npc':
           drawNPC(renderer, state, entity);

@@ -212,13 +212,13 @@ export class DeathSystem {
     const animate=(span,to,dur,fmt=(v)=>String(v))=>new Promise(res=>{const t0=performance.now(); const step=(now)=>{let k=Math.min(1,(now-t0)/dur); let v=Math.floor(to*k); span.textContent=fmt(v); if(k<1) requestAnimationFrame(step); else{span.textContent=fmt(to); span.parentElement.style.animation='bulge .3s ease'; setTimeout(()=>{span.parentElement.style.animation=''; res();},320);} }; requestAnimationFrame(step);});
     const fmtTime=(s)=>{const m=Math.floor(s/60), ss=String(s%60).padStart(2,'0'); return `${m}:${ss}`;};
     // time alive
-    show(timeP); await animate(document.getElementById('time-alive'), timeAlive, Math.min(2000, 1200+timeAlive*10), fmtTime);
+    show(timeP); await animate(document.getElementById('time-alive'), timeAlive, Math.min(1000, 600+timeAlive*5), fmtTime);
     // pedestrians
-    show(pedP); await animate(document.getElementById('enemies-killed'), peds, Math.min(2000, 1200+peds*20));
+    show(pedP); await animate(document.getElementById('enemies-killed'), peds, Math.min(1000, 600+peds*10));
     // vehicles
-    show(vehP); await animate(document.getElementById('vehicles-destroyed'), veh, Math.min(2000, 1200+veh*20));
+    show(vehP); await animate(document.getElementById('vehicles-destroyed'), veh, Math.min(1000, 600+veh*10));
     // score (prominent)
-    show(scoreP); await animate(document.getElementById('final-score'), score, Math.min(2000, 1200+score*1));
+    show(scoreP); await animate(document.getElementById('final-score'), score, Math.min(1000, 600+score*0.5));
     if(restartBtn){ restartBtn.style.display='block'; restartBtn.style.opacity='0'; restartBtn.style.transition='opacity .25s ease, transform .2s ease'; requestAnimationFrame(()=>{restartBtn.style.opacity='1';}); }
   }
 

@@ -249,6 +249,16 @@ export class GameEngine {
     // Ensure input manager is connected
     this.stateManager.inputManager = this.inputManager;
 
+    // Defensive: stop any stray HTMLAudio instances of the theme before restarting music
+    try {
+      document.querySelectorAll('audio').forEach(a => {
+        if (a && typeof a.src === 'string' && a.src.includes('/music/player2.mp3')) {
+          console.warn('[AudioDebug] Stopping rogue HTMLAudio on restart', a);
+          a.pause(); a.currentTime = 0;
+        }
+      });
+    } catch {}
+
     // Restart main theme so music resumes after a death+restart
     if (this.audioManager && typeof this.audioManager.playMainTheme === 'function') {
       this.audioManager.playMainTheme();

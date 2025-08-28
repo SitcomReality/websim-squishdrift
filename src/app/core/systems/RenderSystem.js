@@ -156,44 +156,55 @@ export class RenderSystem {
     // Animation timing
     const time = Date.now() * 0.001; // seconds
     const cycleDuration = 8.0; // total cycle including pause
-    const pauseAtLargest = 2.0; // seconds to remain invisible at largest size (0 alpha)
+    const pauseAtLargest = 2.0; // seconds to remain invisible at largest size
     const motionTotal = cycleDuration - pauseAtLargest;
-    const halfMotion = motionTotal / 2; // expand duration and contract duration
+    const halfMotion = motionTotal / 2;
     
     // Compute position within cycle
     const t = time % cycleDuration;
     
-    // Phase handling:
-    // 0 .. halfMotion            => expanding (0 -> 1)
-    // halfMotion .. halfMotion+pauseAtLargest => pause at largest (invisible)
-    // halfMotion+pause .. cycleDuration => contracting (1 -> 0)
+    // Skip during pause
     if (t >= halfMotion && t < halfMotion + pauseAtLargest) {
-      return; // pause while at largest/0 alpha
+      return;
     }
     
     let progress;
+    let isExpanding = false;
+    
     if (t < halfMotion) {
       // expanding
-      progress = t / halfMotion; // 0 -> 1
+      progress = t / halfMotion;
+      isExpanding = true;
     } else {
       // contracting
       const tc = t - (halfMotion + pauseAtLargest);
-      progress = 1 - (tc / halfMotion); // 1 -> 0
+      progress = 1 - (tc / halfMotion);
+      isExpanding = false;
     }
  
     // Base and max sizes
     const baseSize = ts * 0.25;
     const maxSize = ts * 1.1;
- 
-    // Current radius and alpha: alpha inverse of progress so when largest (progress=1) alpha=0
+    
+    // Current radius
     const currentSize = baseSize + (maxSize - baseSize) * progress;
+    
+    // Dynamic thickness based on size
+    // When expanding (progress 0->1), thickness increases from minimum to full
+    // When contracting (progress 1->0), thickness decreases from full to minimum
+    const minThickness = Math.max(1, Math.round(ts * 0.05)); // Minimum thickness
+    const maxThickness = Math.max(3, Math.round(ts * 0.125)); // Maximum thickness
+    
+    const currentThickness = minThickness + (maxThickness - minThickness) * progress;
+    
+    // Alpha - inverse of progress so when largest (progress=1) alpha=0
     const maxAlpha = 0.2;
     const alpha = maxAlpha * (1 - progress);
- 
+    
     ctx.save();
     ctx.globalCompositeOperation = 'screen';
-    ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`; // white outline
-    ctx.lineWidth = Math.max(2, Math.round(ts * 0.125)); // keep outline reasonably thick on different tile sizes
+    ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+    ctx.lineWidth = currentThickness;
     
     ctx.beginPath();
     ctx.arc(centerX, centerY, currentSize, 0, Math.PI * 2);

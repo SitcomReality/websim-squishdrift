@@ -87,7 +87,7 @@ export class PlayerSystem {
                     input.keys.has('ArrowUp') || input.keys.has('ArrowDown') ||
                     input.keys.has('ArrowLeft') || input.keys.has('ArrowRight');
     
-    // Deplete stamina when running and moving, but only if there's stamina
+    // Deplete stamina when running and moving
     if (isRunning && isMoving && player.stamina > 0) {
       player.stamina = Math.max(0, player.stamina - this.staminaDepletionRate * dt);
     } else if (!isRunning || !isMoving) {
@@ -95,12 +95,8 @@ export class PlayerSystem {
       player.stamina = Math.min(player.maxStamina, player.stamina + this.staminaRechargeRate * dt);
     }
     
-    // If stamina is zero and player is trying to run, don't allow running
-    // This prevents the instant reset issue
-    player.canRun = player.stamina > 0;
-    
-    // Only update HUD visibility - we'll handle the canvas rendering separately
-    // The stamina bar will now be drawn near the player instead of in HUD
+    // The key fix: do NOT automatically reset stamina to max when it hits 0
+    // Just allow it to recharge naturally
   }
 
   updateStaminaBar(player) {

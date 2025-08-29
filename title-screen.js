@@ -2,6 +2,7 @@ export class TitleScreen {
   constructor() {
     this.element = null;
     this.gameStarted = false;
+    this.paused = false;
   }
 
   create() {
@@ -34,6 +35,7 @@ export class TitleScreen {
               <p><strong>Mouse:</strong> Aim & Click to Shoot</p>
               <p><strong>WASD / Arrows:</strong> Move</p>
               <p><strong>Shift:</strong> Sprint</p>
+              <p><strong>P / Esc:</strong> Pause</p>
             </div>
             <div>
               <p><strong>E:</strong> Enter/Exit Vehicle</p>
@@ -88,6 +90,9 @@ export class TitleScreen {
       startButton.style.transform = 'scale(1)';
     });
 
+    // Add pause functionality
+    this.setupPauseControls();
+
     return overlay;
   }
 
@@ -96,11 +101,77 @@ export class TitleScreen {
       this.create();
     }
     this.element.style.display = 'flex';
+    this.paused = false;
   }
 
   hide() {
     if (this.element) {
       this.element.style.display = 'none';
+    }
+    this.paused = false;
+  }
+
+  setupPauseControls() {
+    document.addEventListener('keydown', (e) => {
+      if (this.element && this.element.style.display !== 'none') {
+        if (e.code === 'KeyP' || e.code === 'Escape') {
+          e.preventDefault();
+          this.togglePause();
+        }
+      }
+    });
+  }
+
+  togglePause() {
+    this.paused = !this.paused;
+    
+    // Toggle pause overlay
+    const pauseOverlay = document.getElementById('pause-overlay');
+    if (this.paused) {
+      this.showPauseOverlay();
+    } else {
+      this.hidePauseOverlay();
+    }
+  }
+
+  showPauseOverlay() {
+    // Remove existing pause overlay if any
+    const existingPause = document.getElementById('pause-overlay');
+    if (existingPause) {
+      existingPause.remove();
+    }
+
+    // Create pause overlay
+    const pauseOverlay = document.createElement('div');
+    pauseOverlay.id = 'pause-overlay';
+    pauseOverlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-family: 'Noto Sans', system-ui, sans-serif;
+      z-index: 10000;
+    `;
+
+    pauseOverlay.innerHTML = `
+      <h1 style="font-size: 48px; margin-bottom: 20px;">PAUSED</h1>
+      <p style="font-size: 20px; margin-bottom: 30px;">Press P or Escape to resume</p>
+    `;
+
+    document.body.appendChild(pauseOverlay);
+  }
+
+  hidePauseOverlay() {
+    const pauseOverlay = document.getElementById('pause-overlay');
+    if (pauseOverlay) {
+      pauseOverlay.remove();
     }
   }
 
@@ -126,5 +197,6 @@ export class TitleScreen {
       this.element.remove();
       this.element = null;
     }
+    this.paused = false;
   }
 }

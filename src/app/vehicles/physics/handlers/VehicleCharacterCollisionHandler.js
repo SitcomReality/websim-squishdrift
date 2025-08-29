@@ -51,6 +51,9 @@ export class VehicleCharacterCollisionHandler {
                     rotation: Math.random() * Math.PI * 2
                 };
                 
+                // Emit blood particles on pedestrian death (vehicle impact)
+                state.particleSystem?.emitBlood?.(state, ped.pos, 16, 3.5);
+                
                 state.entities.push(bloodStain);
                 
                 const pedIndex = state.entities.indexOf(ped);
@@ -80,5 +83,11 @@ export class VehicleCharacterCollisionHandler {
         resolveDynamicDynamic(v, player, correctedContact, 0.5);
         
         applyCollisionDamping(v, player);
+        
+        // Emit player blood particles on impactful vehicle collision
+        const impactSpeed = Math.hypot(v.vel?.x || 0, v.vel?.y || 0);
+        if (impactSpeed > 0.5) {
+            state.particleSystem?.emitBlood?.(state, player.pos, 8, 2.5);
+        }
     }
 }

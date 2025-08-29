@@ -11,6 +11,9 @@ export class AudioManager {
     this.mainTheme = null;
     this.deathMusic = null;
     
+    // Track when volume settings change
+    this.lastVolumeUpdate = Date.now();
+    
     // Add volume and mute state tracking
     this.volumeSettings = {
       sfx: 0.9,
@@ -310,17 +313,20 @@ export class AudioManager {
     }
   }
 
-  // Add volume control methods
+  // Update volume control methods
   setSfxVolume(volume) {
     this.volumeSettings.sfx = Math.max(0, Math.min(1, volume));
     this.sfxVolume = this.volumeSettings.sfx;
     this.sfxMuted = this.volumeSettings.sfxMuted;
+    this.lastVolumeUpdate = Date.now();
   }
 
   setMusicVolume(volume) {
     this.volumeSettings.music = Math.max(0, Math.min(1, volume));
     this.musicVolume = this.volumeSettings.music;
     this.musicMuted = this.volumeSettings.musicMuted;
+    this.lastVolumeUpdate = Date.now();
+    
     if (this.mainTheme) {
       this.mainTheme.volume = this.musicMuted ? 0 : this.musicVolume;
     }
@@ -332,12 +338,15 @@ export class AudioManager {
   toggleSfxMute() {
     this.volumeSettings.sfxMuted = !this.volumeSettings.sfxMuted;
     this.sfxMuted = this.volumeSettings.sfxMuted;
+    this.lastVolumeUpdate = Date.now();
     return this.sfxMuted;
   }
 
   toggleMusicMute() {
     this.volumeSettings.musicMuted = !this.volumeSettings.musicMuted;
     this.musicMuted = this.volumeSettings.musicMuted;
+    this.lastVolumeUpdate = Date.now();
+    
     if (this.mainTheme) {
       this.mainTheme.muted = this.musicMuted;
       if (!this.musicMuted) this.mainTheme.volume = this.musicVolume;
@@ -346,6 +355,7 @@ export class AudioManager {
       this.deathMusic.muted = this.musicMuted;
       if (!this.musicMuted) this.deathMusic.volume = this.musicVolume;
     }
+    
     return this.musicMuted;
   }
 }

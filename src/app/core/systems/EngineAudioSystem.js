@@ -5,11 +5,20 @@ export class EngineAudioSystem {
     this.volIdle = 0.18;
     this.volMax = 0.4;
     this.playerVehicleBoost = 2.0; // Boost volume when player is in vehicle
+    this.lastVolumeUpdate = 0; // Track when volume settings last changed
   }
 
   update(state, dt) {
     const audio = state.audio;
     if (!audio) return;
+
+    // Check if volume/mute settings changed
+    const currentTime = Date.now();
+    const volumeChanged = this.lastVolumeUpdate !== audio.lastVolumeUpdate;
+    
+    if (volumeChanged) {
+      this.lastVolumeUpdate = audio.lastVolumeUpdate;
+    }
 
     const vehicles = state.entities.filter(e => e.type === 'vehicle');
     const activeSet = new Set();
@@ -27,7 +36,7 @@ export class EngineAudioSystem {
       const t = Math.max(0, Math.min(1, speed / maxS));
 
       const rate = this.rateMin + (this.rateMax - this.rateMin) * t;
-      const baseVol = this.volIdle + (this.volMax - this.volIdle) * t;
+      let baseVol = this.volIdle + (this.volMax - this.volIdle) * t;
 
       // Check if player is in this vehicle
       const isPlayerVehicle = state.control?.inVehicle && state.control?.vehicle === v;
@@ -36,21 +45,25 @@ export class EngineAudioSystem {
       // Use vehicle object as loop id
       const id = v;
 
+      // Always update with current volume settings
+      const currentSfxVolume = audio.sfxMuted ? 0 : audio.sfxVolume;
+      const finalVolume = effectiveVolume * currentSfxVolume;
+
       audio.startOrUpdateLoopAt(key, id, v.pos, state, {
         rate,
-        baseVolume: effectiveVolume,
-        minDistance: isPlayerVehicle ? 0.5 : 2,  // Closer min distance for player vehicle
-        maxDistance: isPlayerVehicle ? 5 : 20, // Shorter max distance for player vehicle
-        panMax: isPlayerVehicle ? 4 : 14        // Less panning for player vehicle
+        baseVolume: finalVolume,
+        minDistance: isPlayerVehicle ? 0.5 : 2,
+        maxDistance: isPlayerVehicle ? 5 : 20,
+        panMax: isPlayerVehicle ? 4 : 14
       });
 
-      // Handle siren for police cars
+      // Handle siren for police cars with current volume
       if (v.vehicleType === 'police' && v.siren) {
-        // create or reuse a stable siren id on the vehicle so Map key identity persists
         v._sirenLoopId = v._sirenLoopId || { type: 'siren', vehicle: v };
+        const sirenVolume = audio.sfxMuted ? 0 : audio.sfxVolume * 0.4;
         audio.startOrUpdateLoopAt('siren', v._sirenLoopId, v.pos, state, {
-          rate: 1.0, // Fixed speed for siren
-          baseVolume: 0.4,
+          rate: 1.0,
+          baseVolume: sirenVolume,
           minDistance: 1,
           maxDistance: 25,
           panMax: 8
@@ -67,7 +80,7 @@ export class EngineAudioSystem {
         if (id?.type === 'vehicle' && !activeSet.has(id)) {
           audio.stopLoop(id, { fadeOut: 0.15 });
         }
-        // also cleanup skid loops if vehicle no longer present
+        // cleanup skid loops if vehicle no longer present
         if (id?.type === 'skid' && !vehicles.includes(id.vehicle)) {
           audio.stopLoop(id, { fadeOut: 0.1 });
         }

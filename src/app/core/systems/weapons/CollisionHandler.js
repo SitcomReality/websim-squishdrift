@@ -96,7 +96,10 @@ export class CollisionHandler {
       state.particleSystem?.emitBlood(state, entity.pos, 12, 3);
     } else {
       entity.health.takeDamage(projectile.damage);
-      state.particleSystem?.emitSparks(state, entity.pos, 10, 4);
+      
+      // Emit sparks at exact projectile impact point
+      state.particleSystem?.emitSparks(state, projectile.pos, 10, 4);
+      state.particleSystem?.emitCollisionSparks(state, entity, projectile.pos, 4);
     }
     
     // Show damage text

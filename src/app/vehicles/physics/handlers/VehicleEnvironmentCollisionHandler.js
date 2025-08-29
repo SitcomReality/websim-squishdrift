@@ -37,15 +37,22 @@ export class VehicleEnvironmentCollisionHandler {
         const contact = obbOverlap(obb, aabbForTrunk(gx, gy));
         if (!contact) return;
 
+        // Use contact point from collision, not tree center
+        const collisionPoint = {
+          x: v.pos.x + contact.normal.x * 0.1,
+          y: v.pos.y + contact.normal.y * 0.1
+        };
+
         resolveDynamicStatic(v, contact, 0.6); // Increased restitution
         this.applyBounce(v, contact.normal, 0.6);
         this.applyBuildingDamping(v);
-        this.applyImpactDamage(state, v, 5);
+        this.applyImpactDamage(state, v, 5, collisionPoint);
         
-        // Emit sparks when hitting tree trunk
+        // Emit sparks at collision point
         const impactSpeed = Math.hypot(v.vel?.x || 0, v.vel?.y || 0);
         if (impactSpeed > 0.5) {
-            state.particleSystem?.emitSparks(state, v.pos, 8, 5);
+          state.particleSystem?.emitSparks(state, collisionPoint, 8, 5);
+          state.particleSystem?.emitCollisionSparks(state, v, collisionPoint, 5);
         }
     }
 
@@ -53,15 +60,22 @@ export class VehicleEnvironmentCollisionHandler {
         const contact = obbOverlap(obb, aabbForTile(gx, gy));
         if (!contact) return;
 
+        // Use contact point from collision, not building center
+        const collisionPoint = {
+          x: v.pos.x + contact.normal.x * 0.1,
+          y: v.pos.y + contact.normal.y * 0.1
+        };
+
         resolveDynamicStatic(v, contact, 0.6); // Increased restitution
         this.applyBounce(v, contact.normal, 0.6);
         this.applyBuildingDamping(v);
-        this.applyImpactDamage(state, v, 8);
+        this.applyImpactDamage(state, v, 8, collisionPoint);
         
-        // Emit sparks when hitting building
+        // Emit sparks at collision point
         const impactSpeed = Math.hypot(v.vel?.x || 0, v.vel?.y || 0);
         if (impactSpeed > 0.5) {
-            state.particleSystem?.emitSparks(state, v.pos, 10, 6);
+          state.particleSystem?.emitSparks(state, collisionPoint, 10, 6);
+          state.particleSystem?.emitCollisionSparks(state, v, collisionPoint, 6);
         }
     }
 
@@ -85,24 +99,27 @@ export class VehicleEnvironmentCollisionHandler {
         }
     }
 
-    applyImpactDamage(state, v, damageMultiplier) {
+    applyImpactDamage(state, v, damageMultiplier, collisionPoint = null) {
         const now = Date.now();
         const canDamage = now - (v.lastDamageTime || 0) >= this.system.damageCooldown;
 
         if (canDamage) {
-            const impactSpeed = Math.hypot(v.vel?.x || 0, v.vel?.y || 0);
-            if (impactSpeed > this.system.collisionDamageThreshold) {
-                if (!v.health) v.health = new Health(v.maxHealth || 100);
-                const damage = Math.max(1, Math.round(impactSpeed * damageMultiplier));
-                v.health.takeDamage(damage);
-                v.lastDamageTime = now;
-                
-                const impactSound = ['impact02', 'impact03'][Math.floor(Math.random() * 2)];
-                state.audio?.playSfxAt?.(impactSound, v.pos, state);
-                
-                handleVehicleDestruction(state, v);
-                addDamageIndicator(state, v.pos, damage);
-            }
+          const impactSpeed = Math.hypot(v.vel?.x || 0, v.vel?.y || 0);
+          if (impactSpeed > this.system.collisionDamageThreshold) {
+            if (!v.health) v.health = new Health(v.maxHealth || 100);
+            const damage = Math.max(1, Math.round(impactSpeed * damageMultiplier));
+            v.health.takeDamage(damage);
+            v.lastDamageTime = now;
+            
+            // Use collision point if provided, otherwise use vehicle center
+            const sparkPoint = collisionPoint || v.pos;
+            
+            const impactSound = ['impact02', 'impact03'][Math.floor(Math.random() * 2)];
+            state.audio?.playSfxAt?.(impactSound, sparkPoint, state);
+            
+            handleVehicleDestruction(state, v);
+            addDamageIndicator(state, sparkPoint, damage);
+          }
         }
     }
 

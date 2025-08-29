@@ -36,6 +36,11 @@ export class VehicleVehicleCollisionHandler {
         const canDamageB = now - (vehicleB.lastDamageTime || 0) >= this.system.damageCooldown;
         
         if (!canDamageA && !canDamageB) return;
+
+        const collisionPoint = {
+            x: (vehicleA.pos.x + vehicleB.pos.x) / 2,
+            y: (vehicleA.pos.y + vehicleB.pos.y) / 2
+        };
         
         if (!vehicleA.health) {
             vehicleA.health = new Health(vehicleA.maxHealth || 100);
@@ -62,17 +67,19 @@ export class VehicleVehicleCollisionHandler {
         if (canDamageA) {
             vehicleA.health.takeDamage(damageA);
             vehicleA.lastDamageTime = now;
-            state.particleSystem?.emitSparks(state, vehicleA.pos, Math.min(12, 4 + Math.floor(damageA / 5)), 4);
+            state.particleSystem?.emitSparks(state, collisionPoint, Math.min(12, 4 + Math.floor(damageA / 5)), 4);
+            state.particleSystem?.emitCollisionSparks(state, vehicleA, collisionPoint, damageA * 0.5);
             const impactSound = ['impact02', 'impact03'][Math.floor(Math.random() * 2)];
-            state.audio?.playSfxAt?.(impactSound, vehicleA.pos, state, { volume: 0.3 });
+            state.audio?.playSfxAt?.(impactSound, collisionPoint, state, { volume: 0.3 });
         }
         
         if (canDamageB) {
             vehicleB.health.takeDamage(damageB);
             vehicleB.lastDamageTime = now;
-            state.particleSystem?.emitSparks(state, vehicleB.pos, Math.min(12, 4 + Math.floor(damageB / 5)), 4);
+            state.particleSystem?.emitSparks(state, collisionPoint, Math.min(12, 4 + Math.floor(damageB / 5)), 4);
+            state.particleSystem?.emitCollisionSparks(state, vehicleB, collisionPoint, damageB * 0.5);
             const impactSound = ['impact02', 'impact03'][Math.floor(Math.random() * 2)];
-            state.audio?.playSfxAt?.(impactSound, vehicleB.pos, state, { volume: 0.3 });
+            state.audio?.playSfxAt?.(impactSound, collisionPoint, state, { volume: 0.3 });
         }
         
         handleVehicleDestruction(state, vehicleA);

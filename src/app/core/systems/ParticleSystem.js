@@ -95,13 +95,13 @@ export class ParticleSystem {
     }
   }
 
-  emitSparks(state, pos, count = 6, power = 4) {
+  emitSparks(state, pos, count = 6, power = 4, collisionNormal = null) {
     // Ensure particles array is initialized
     state.particles = state.particles || [];
     
     for (let i = 0; i < count; i++) {
       const a = Math.random() * Math.PI * 2;
-      const s = power * (0.5 + Math.random());
+      const s = power * (0.4 + Math.random());
       
       // Create smaller sparks - halved the base size
       const sparkSize = 0.01 + Math.random() * 0.015; // Changed from 0.03 to 0.015
@@ -121,6 +121,14 @@ export class ParticleSystem {
         maxAlpha: 1.0
       });
     }
+  }
+
+  // Add method to emit sparks at a specific collision point
+  emitCollisionSparks(state, vehicle, contactPoint, power = 8) {
+    if (!vehicle || !contactPoint) return;
+    
+    // Calculate sparks at exact collision point
+    this.emitSparks(state, contactPoint, 10, power);
   }
 
   emitBlood(state, pos, count = 8, power = 3) {

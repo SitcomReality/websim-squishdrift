@@ -137,7 +137,8 @@ export class ParticleSystem {
         vx: Math.cos(a) * s * 0.6,
         vy: Math.sin(a) * s * 0.6,
         life: 0.4 + Math.random() * 0.6,
-        size: 0.07 + Math.random() * 0.05,
+        maxLife: 0.4 + Math.random() * 0.6,
+        size: 0.02 + Math.random() * 0.03, 
         color: 'rgba(139,0,0,1)',
         alpha: 1.0
       });
@@ -187,8 +188,35 @@ export class ParticleSystem {
           ctx.arc(p.x * ts, p.y * ts, currentSize * ts * 0.3, 0, Math.PI * 2);
           ctx.fill();
         }
+      } else if (p.type === 'blood') {
+        // Draw blood particles with fade-out
+        const lifeRatio = Math.max(0, p.life / p.maxLife);
+        const currentAlpha = p.alpha * lifeRatio;
+        const currentSize = p.size * ts;
+        
+        // Create gradient for fade effect
+        const gradient = ctx.createRadialGradient(
+          p.x * ts, p.y * ts, 0,
+          p.x * ts, p.y * ts, currentSize
+        );
+        
+        // Dark red with fade-out
+        gradient.addColorStop(0, `rgba(139,0,0,${currentAlpha})`);
+        gradient.addColorStop(1, `rgba(139,0,0,0)`);
+        
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(p.x * ts, p.y * ts, currentSize, 0, Math.PI * 2);
+        ctx.fill();
       } else {
-        // ... existing particle drawing ...
+        // Existing particle drawing
+        const alpha = Math.max(0, Math.min(1, p.life / p.maxLife || 1));
+        ctx.globalAlpha = alpha * p.alpha;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x * ts, p.y * ts, p.size * ts, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
       }
     }
     

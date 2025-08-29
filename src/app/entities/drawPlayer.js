@@ -53,14 +53,26 @@ function drawStaminaBar(r, player, offsetY = 0.5) {
   ctx.save();
   ctx.translate(player.pos.x * ts, (player.pos.y + offsetY) * ts);
   
-  // Background
+  // Background with black outline
+  const barWidth = ts * 0.6;
+  const barHeight = ts * 0.08;
+  const outlineThickness = Math.max(1, Math.round(ts * 0.01)); // ~2-3px equivalent
+  
+  // Draw black outline
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(-ts * 0.3 - outlineThickness, 
+               -ts * 0.1 - outlineThickness, 
+               barWidth + 2 * outlineThickness, 
+               barHeight + 2 * outlineThickness);
+  
+  // Background inside outline
   ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-  ctx.fillRect(-ts * 0.3, -ts * 0.1, ts * 0.6, ts * 0.08);
+  ctx.fillRect(-ts * 0.3, -ts * 0.1, barWidth, barHeight);
   
   // Stamina bar
-  const staminaColor = '#00BFFF'; // Blue for stamina
+  const staminaColor = '#00BFFF';
   ctx.fillStyle = staminaColor;
-  ctx.fillRect(-ts * 0.3, -ts * 0.1, ts * 0.6 * staminaPercent, ts * 0.08);
+  ctx.fillRect(-ts * 0.3, -ts * 0.1, barWidth * staminaPercent, barHeight);
   
   ctx.restore();
 }

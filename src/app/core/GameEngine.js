@@ -161,8 +161,8 @@ export class GameEngine {
   }
 
   update(dt) {
-    // Skip updates if player is dead
-    if (this.deathSystem.isDead) return;
+    // Skip updates only when fully paused (after zoom/fade completes)
+    if (this.deathSystem.isDead && this.deathSystem.pauseSimulation) return;
 
     // Run game systems which may read input.pressed; clear pressed AFTER systems run.
     this.systemManager.update(dt);

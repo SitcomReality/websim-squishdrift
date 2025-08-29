@@ -7,6 +7,7 @@ export class DeathSystem {
     this.fadeDuration = 2000; // 2 seconds
     this.blackScreen = false;
     this.deathMusic = null;
+    this.pauseSimulation = false; // NEW: track when to actually pause
   }
 
   update(state, dt) {
@@ -24,9 +25,10 @@ export class DeathSystem {
     // Check if vehicles (including player vehicle) go outside map
     this.checkMapBoundaries(state);
 
-    // Update death screen if player is dead
-    if (this.isDead) {
-      this.updateDeathScreen(state, dt);
+    // Keep game running during initial zoom/fade
+    if (this.isDead && !this.pauseSimulation) {
+      // Update death time but don't pause simulation yet
+      this.deathTime = Date.now();
     }
   }
 
@@ -70,6 +72,7 @@ export class DeathSystem {
   handlePlayerDeath(state) {
     this.isDead = true;
     this.deathTime = Date.now();
+    this.pauseSimulation = false; // Don't pause yet during zoom/fade
 
     // Fade out all audio including main theme
     if (state.audio && state.audio.stopAll) {
@@ -148,6 +151,8 @@ export class DeathSystem {
       const zoomDuration = 2000;
       
       const zoomOut = () => {
+        if (this.pauseSimulation) return; // Stop if paused
+        
         const elapsed = Date.now() - startTime;
         const progress = Math.min(elapsed / zoomDuration, 1);
         
@@ -157,6 +162,9 @@ export class DeathSystem {
         
         if (progress < 1) {
           requestAnimationFrame(zoomOut);
+        } else {
+          // Only pause simulation after zoom completes
+          this.pauseSimulation = true;
         }
       };
       
@@ -167,13 +175,14 @@ export class DeathSystem {
     setTimeout(() => {
       deathOverlay.style.background = 'rgba(0, 0, 0, 0.8)';
       
-      // After fade completes, show content
+      // After fade completes, show content and pause simulation
       setTimeout(() => {
         const deathContent = document.getElementById('death-content');
         if (deathContent) {
           deathContent.style.display = 'block';
           this.runDeathStatsSequence(state);
         }
+        this.pauseSimulation = true; // Ensure simulation is paused for death screen
       }, 2000);
     }, 100);
 
@@ -304,6 +313,7 @@ export class DeathSystem {
     this.isDead = false;
     this.deathTime = 0;
     this.blackScreen = false;
+    this.pauseSimulation = false; // Reset pause flag
     
     // Emit restart event
     window.dispatchEvent(new CustomEvent('game-restart'));

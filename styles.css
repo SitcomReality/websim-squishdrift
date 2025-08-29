@@ -48,11 +48,26 @@ body {
 .app-header h1 { font-size:16px; margin:0; letter-spacing:.2px; }
 .app-header .ghost { padding:8px 10px; border-radius:10px; border:2px solid var(--line); background:transparent; cursor:pointer; }
 .app-main { position:relative; max-width:1200px; margin:16px auto; padding:0 12px 12px; flex: 1; }
-#game { display:block; width:100%; height:auto; border:2px solid var(--line); border-radius:12px; background:rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(4px);
+
+/* Add a positioned wrapper around the canvas so HUDs are positioned relative to the canvas area */
+.canvas-wrap {
+  position: relative;
+  width: 100%;
+  display: block;
+  max-width: 1280px;
+  margin: 0 auto;
 }
 
-/* HUD positioning */
+/* make the canvas block-level and ensure wrapper determines its bounds */
+.canvas-wrap #game { display: block; width: 100%; height: auto; border-radius:12px; }
+
+/* HUD positioning now references the canvas-wrap instead of the page.
+   Keep the same 20px inset from canvas edges. */
+.score-hud { position: absolute; left: 20px; top: 20px; }
+.wanted-hud { position: absolute; right: 20px; top: 20px; }
+.item-hud { position: absolute; left: 20px; bottom: 20px; }
+.vehicle-hud { position: absolute; right: 20px; bottom: 20px; }
+
 .hud {
   position: absolute;
   display: flex;
@@ -66,43 +81,6 @@ body {
   backdrop-filter: blur(4px);
   font-size: 12px;
   box-shadow: 0px 0px 11px 0px #004effad;
-}
-
-/* Top left - Score */
-.score-hud {
-  left: 20px;
-  top: 10px;
-}
-
-/* Top right - Wanted level */
-.wanted-hud {
-  right: 20px;
-  top: 10px;
-}
-
-/* Bottom left - Item and ammo */
-.item-hud {
-  left: 20px;
-  bottom: 20px;
-}
-
-/* Bottom right - Vehicle */
-.vehicle-hud {
-  right: 20px;
-  bottom: 20px;
-}
-
-.hud .row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.hud .label { color: var(--muted); font-weight: 600; }
-.hud .bar { width: 80px; height: 8px; border-radius: 6px; background: rgba(255, 255, 255, 0.2); overflow: hidden; border: 2px solid var(--line); }
-.hud .bar .fill {
-  height: 100%;
-  background: #4CAF50;
-  transition: width .15s ease;
 }
 
 #stamina-bar {

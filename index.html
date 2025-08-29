@@ -24,44 +24,46 @@
   </header>
 
   <main class="app-main" role="main">
-    <canvas id="game" width="1280" height="720" aria-label="Game canvas" style="border: 2px solid #5a82cb; box-shadow: 0px 0px 11px 0px #004effad;"></canvas>
-    
-    <!-- Top left corner - Score only -->
-    <div id="score-hud" class="hud score-hud" aria-live="polite" aria-atomic="true">
-      <div class="row">
-        <span class="label">Score</span>
-        <span id="score">0</span>
+    <div class="canvas-wrap">
+      <canvas id="game" width="1280" height="720" aria-label="Game canvas" style="border: 2px solid #5a82cb; box-shadow: 0px 0px 11px 0px #004effad;"></canvas>
+      
+      <!-- Top left corner - Score only -->
+      <div id="score-hud" class="hud score-hud" aria-live="polite" aria-atomic="true">
+        <div class="row">
+          <span class="label">Score</span>
+          <span id="score">0</span>
+        </div>
       </div>
-    </div>
 
-    <!-- Top right corner - Wanted level -->
-    <div id="wanted-hud" class="hud wanted-hud" aria-live="polite" aria-atomic="true">
-      <div class="row">
-        <span class="label">Wanted</span>
-        <span id="wanted-level">0</span>
+      <!-- Top right corner - Wanted level -->
+      <div id="wanted-hud" class="hud wanted-hud" aria-live="polite" aria-atomic="true">
+        <div class="row">
+          <span class="label">Wanted</span>
+          <span id="wanted-level">0</span>
+        </div>
       </div>
-    </div>
 
-    <!-- Bottom left corner - Item and ammo -->
-    <div id="item-hud" class="hud item-hud" aria-live="polite" aria-atomic="true">
-      <div class="row">
-        <span class="label">Item</span>
-        <span id="item-name">None</span>
+      <!-- Bottom left corner - Item and ammo -->
+      <div id="item-hud" class="hud item-hud" aria-live="polite" aria-atomic="true">
+        <div class="row">
+          <span class="label">Item</span>
+          <span id="item-name">None</span>
+        </div>
+        <div class="row">
+          <span class="label">Ammo</span>
+          <div class="bar"><div id="ammo-bar" class="fill" style="width:100%"></div></div>
+          <span id="ammo-text">--/--</span>
+        </div>
       </div>
-      <div class="row">
-        <span class="label">Ammo</span>
-        <div class="bar"><div id="ammo-bar" class="fill" style="width:100%"></div></div>
-        <span id="ammo-text">--/--</span>
-      </div>
-    </div>
 
-    <!-- Bottom right corner - Vehicle -->
-    <div id="vehicle-hud" class="hud vehicle-hud" aria-live="polite" aria-atomic="true">
-      <div class="row">
-        <span class="label">Vehicle</span>
-        <span id="vehicle-state">On foot</span>
+      <!-- Bottom right corner - Vehicle -->
+      <div id="vehicle-hud" class="hud vehicle-hud" aria-live="polite" aria-atomic="true">
+        <div class="row">
+          <span class="label">Vehicle</span>
+          <span id="vehicle-state">On foot</span>
+        </div>
       </div>
-    </div>
+    </div> 
 
     <div id="interaction-prompt" class="interaction-prompt" style="display: none;">
       Press <kbd>E</kbd> to <span id="interaction-action">...</span>

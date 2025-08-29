@@ -7,8 +7,8 @@ export class DeathSystem {
     this.fadeDuration = 2000; // 2 seconds
     this.blackScreen = false;
     this.deathMusic = null;
-    this.freezeRequested = false;
-    this.hasCreatedDeathScreen = false; // Track if death screen already created
+    this.freezeRequested = false; // request engine pause when death UI shows
+    this.deathUIShown = false; // prevent duplicate UI/sequences
   }
 
   update(state, dt) {
@@ -70,11 +70,8 @@ export class DeathSystem {
   }
 
   handlePlayerDeath(state) {
-    if (this.hasCreatedDeathScreen) return; // Prevent multiple death screens
-    
     this.isDead = true;
     this.deathTime = Date.now();
-    this.hasCreatedDeathScreen = true;
 
     // Fade out all audio including main theme
     if (state.audio && state.audio.stopAll) {
@@ -109,6 +106,8 @@ export class DeathSystem {
   }
 
   createDeathScreen(state) {
+    // prevent duplicate overlays/listeners
+    if (document.getElementById('death-overlay')) return;
     // Create death screen overlay
     const deathOverlay = document.createElement('div');
     deathOverlay.id = 'death-overlay';
@@ -205,7 +204,8 @@ export class DeathSystem {
 
   async runDeathStatsSequence(state){
     const overlay=document.getElementById('death-overlay');
-    if(!overlay) return;
+    if(!overlay || this.deathUIShown) return;
+    this.deathUIShown = true;
     // inject bulge keyframes once
     if(!document.getElementById('death-bulge-style')){
       const st=document.createElement('style'); st.id='death-bulge-style';
@@ -222,7 +222,26 @@ export class DeathSystem {
     hide(pedP); hide(vehP);
     const timeAlive=Math.floor((Date.now()-(state.startTime||Date.now()))/1000);
     const peds=state.stats?.enemiesKilled||0, veh=state.stats?.vehiclesDestroyed||0, score=state.scoringSystem?.getScore?.()||0;
-    const animate=(span,to,dur,fmt=(v)=>String(v))=>new Promise(res=>{const t0=performance.now(); const step=(now)=>{let k=Math.min(1,(now-t0)/dur); let v=Math.floor(to*k); span.textContent=fmt(v); if(k<1) requestAnimationFrame(step); else{span.textContent=fmt(to); span.parentElement.style.animation='bulge .3s ease'; setTimeout(()=>{span.parentElement.style.animation=''; res();},320);} }; requestAnimationFrame(step);});
+    const animate=(span,to,dur,fmt=(v)=>String(v))=>new Promise(res=>{
+      if(!span){ res(); return; }
+      const t0=performance.now();
+      const step=(now)=>{
+        let k=Math.min(1,(now-t0)/dur);
+        let v=Math.floor(to*k);
+        span.textContent=fmt(v);
+        if(k<1) requestAnimationFrame(step);
+        else{
+          span.textContent=fmt(to);
+          if (span.parentElement && span.parentElement.style) {
+            span.parentElement.style.animation='bulge .3s ease';
+            setTimeout(()=>{span.parentElement.style.animation=''; res();},320);
+          } else {
+            res();
+          }
+        }
+      };
+      requestAnimationFrame(step);
+    });
     const fmtTime=(s)=>{const m=Math.floor(s/60), ss=String(s%60).padStart(2,'0'); return `${m}:${ss}`;};
     // time alive
     show(timeP); await animate(document.getElementById('time-alive'), timeAlive, Math.min(1000, 600+timeAlive*5), fmtTime);
@@ -234,53 +253,65 @@ export class DeathSystem {
     show(scoreP); await animate(document.getElementById('final-score'), score, Math.min(1000, 600+score*0.5));
     
     // Play death music when restart button appears
-    // Only play once
-    if (!this.deathMusic) {
-      this.playDeathMusic(state);
-    }
+    this.playDeathMusic(state);
     
-    // Only add listener once
-    const restartBtn = document.getElementById('restart-button-sprite');
-    if (restartBtn && !restartBtn.hasListener) {
-      console.log('DeathSystem: Adding single restart listener');
-      restartBtn.hasListener = true;
-      restartBtn.addEventListener('click', () => {
-        console.log('Restart button clicked');
-        this.restartGame();
-      });
-    }
+    if(restartBtn){ restartBtn.style.display='block'; restartBtn.style.opacity='0'; restartBtn.style.transition='opacity .25s ease, transform .2s ease'; requestAnimationFrame(()=>{restartBtn.style.opacity='1';}); }
   }
 
   playDeathMusic(state) {
-    if (!state.audio || this.deathMusic) return;
+    if (!state.audio) return;
+    if (this.deathMusic && !this.deathMusic.paused) return;
     
     // Create new audio element for death music
     this.deathMusic = new Audio('/music/damocles.mp3');
     this.deathMusic.volume = state.audio.musicMuted ? 0 : state.audio.musicVolume;
     this.deathMusic.muted = state.audio.musicMuted;
     
-    // Only play if we have a valid source
-    this.deathMusic.play().catch(e => {
-      console.warn('Could not play death music:', e);
-      // Fallback: remove death music reference if it fails
-      this.deathMusic = null;
-    });
+    // Play once, no loop
+    this.deathMusic.play().catch(e => console.warn('Could not play death music:', e));
     
-    // Clean up when done
-    this.deathMusic.addEventListener('ended', () => {
-      this.deathMusic = null;
-    });
+    // Update volume when music volume changes
+    const updateVolume = () => {
+      if (this.deathMusic) {
+        this.deathMusic.volume = state.audio.musicMuted ? 0 : state.audio.musicVolume;
+        this.deathMusic.muted = state.audio.musicMuted;
+      }
+    };
+    
+    // Listen for volume changes
+    if (state.audio.setMusicVolume) {
+      const originalSetMusicVolume = state.audio.setMusicVolume;
+      state.audio.setMusicVolume = (volume) => {
+        originalSetMusicVolume(volume);
+        updateVolume();
+      };
+    }
+    
+    if (state.audio.toggleMusicMute) {
+      const originalToggleMusicMute = state.audio.toggleMusicMute;
+      state.audio.toggleMusicMute = () => {
+        const result = originalToggleMusicMute();
+        updateVolume();
+        return result;
+      };
+    }
   }
 
   stopDeathMusic() {
     if (this.deathMusic) {
-      try {
-        this.deathMusic.pause();
-        this.deathMusic.currentTime = 0;
-      } catch (e) {
-        console.warn('Error stopping death music:', e);
-      }
-      this.deathMusic = null;
+      // Quick fade out
+      const fadeOut = () => {
+        const currentVolume = this.deathMusic.volume;
+        if (currentVolume > 0.05) {
+          this.deathMusic.volume = Math.max(0, currentVolume - 0.1);
+          setTimeout(fadeOut, 50);
+        } else {
+          this.deathMusic.pause();
+          this.deathMusic.currentTime = 0;
+          this.deathMusic = null;
+        }
+      };
+      fadeOut();
     }
   }
 
@@ -301,8 +332,7 @@ export class DeathSystem {
     this.deathTime = 0;
     this.blackScreen = false;
     this.freezeRequested = false;
-    this.hasCreatedDeathScreen = false;
-    this.deathMusic = null;
+    this.deathUIShown = false;
     
     // Emit restart event
     window.dispatchEvent(new CustomEvent('game-restart'));

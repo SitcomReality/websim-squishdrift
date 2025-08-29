@@ -161,8 +161,25 @@ export class GameEngine {
   }
 
   update(dt) {
-    // Skip updates only when fully paused (after zoom/fade completes)
-    if (this.deathSystem.isDead && this.deathSystem.pauseSimulation) return;
+    const state = this.stateManager.state;
+
+    // Handle manual pause toggle (P or Escape)
+    const input = this.inputManager.getInput?.();
+    if (input?.pressed?.has('KeyP') || input?.pressed?.has('Escape')) {
+      state.gamePaused = !state.gamePaused;
+    }
+    // Auto-pause when death UI is shown
+    if (this.deathSystem.freezeRequested) {
+      state.gamePaused = true;
+    }
+    // If paused, still update input & HUD/debug, but skip simulation systems
+    if (state.gamePaused) {
+      this.inputManager.update?.();
+      if (this.inputManager?.inputSystem?.clearPressed) this.inputManager.inputSystem.clearPressed();
+      this.debugManager.update();
+      this.hudManager.update();
+      return;
+    }
 
     // Run game systems which may read input.pressed; clear pressed AFTER systems run.
     this.systemManager.update(dt);
@@ -216,6 +233,7 @@ export class GameEngine {
     const newState = this.stateManager.getState();
     
     newState.canvas = this.renderingManager.renderer.canvas;
+    newState.gamePaused = false;
     newState.startTime = Date.now();
     newState.stats = {
       enemiesKilled: 0,

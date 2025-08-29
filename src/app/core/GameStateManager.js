@@ -15,6 +15,7 @@ export class GameStateManager {
     this.state = createInitialState(randomSeed);
     this.state.control = { inVehicle: false, vehicle: null, equipped: null };
     this.state.canvas = null;
+    this.state.gamePaused = false;
     
     this.emergencyServices = new EmergencyServices(this.state);
     this.bloodManager = new BloodManager(20);

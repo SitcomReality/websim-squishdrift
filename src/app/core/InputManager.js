@@ -13,4 +13,3 @@ export class InputManager {
     return this.inputSystem;
   }
 }
-

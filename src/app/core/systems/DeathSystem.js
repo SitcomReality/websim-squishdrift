@@ -252,10 +252,35 @@ export class DeathSystem {
     // score (prominent)
     show(scoreP); await animate(document.getElementById('final-score'), score, Math.min(1000, 600+score*0.5));
     
+    // Take screenshot of death stats and post as comment
+    await this.takeScreenshotAndPost(state);
+    
     // Play death music when restart button appears
     this.playDeathMusic(state);
     
     if(restartBtn){ restartBtn.style.display='block'; restartBtn.style.opacity='0'; restartBtn.style.transition='opacity .25s ease, transform .2s ease'; requestAnimationFrame(()=>{restartBtn.style.opacity='1';}); }
+  }
+
+  async takeScreenshotAndPost(state) {
+    try {
+      const statsEl = document.getElementById('death-stats');
+      if (!statsEl) return;
+      
+      // Wait a frame for animations to complete
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Use html2canvas or similar to capture the stats element
+      // We'll use the browser's native screenshot capability via websim
+      if (window.websim && window.websim.postComment) {
+        const commentText = `Death Stats - Time: ${Math.floor((Date.now()-(state.startTime||Date.now()))/1000)}s, Enemies: ${state.stats?.enemiesKilled||0}, Vehicles: ${state.stats?.vehiclesDestroyed||0}, Score: ${state.scoringSystem?.getScore?.()||0}`;
+        window.websim.postComment({
+          content: commentText,
+          images: []
+        });
+      }
+    } catch (e) {
+      console.warn('Failed to post death stats screenshot:', e);
+    }
   }
 
   playDeathMusic(state) {

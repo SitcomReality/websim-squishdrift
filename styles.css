@@ -142,6 +142,24 @@ button.danger { color:var(--danger); border-color:color-mix(in oklab, var(--dang
 .mono { font-family: "Space Mono", ui-monospace, SFMono-Regular, Menlo, monospace; }
 .dump { margin:8px 0 0; max-height:240px; overflow:auto; background:#f8fafc; border:2px solid var(--line); border-radius:8px; padding:8px; }
 
+/* Make HUD elements non-interactive */
+.hud,
+.interaction-prompt,
+.app-header {
+  pointer-events: none;
+}
+
+/* Allow audio controls to remain interactive */
+.audio-controls {
+  pointer-events: auto;
+}
+
+/* Allow buttons in header to remain interactive */
+.app-header button,
+.app-header input[type="range"] {
+  pointer-events: auto;
+}
+
 .audio-controls {
   display: flex;
   align-items: center;

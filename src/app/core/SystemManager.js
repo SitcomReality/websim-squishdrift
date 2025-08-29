@@ -30,11 +30,15 @@ export class SystemManager {
       particles: new ParticleSystem(),
       engineAudio: new EngineAudioSystem()
     };
+    this.particles = new ParticleSystem();
     // Connect camera system to collision system for screen shake
     this.systems.collision.cameraSystem = this.systems.camera;
     /* attach camera system to state for global access */
     const s = this.stateManager.getState?.();
-    if (s) s.cameraSystem = this.systems.camera;
+    if (s) {
+      s.particleSystem = this.particles;
+      s.cameraSystem = this.systems.camera;
+    }
   }
 
   update(dt) {

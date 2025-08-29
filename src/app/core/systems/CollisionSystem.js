@@ -39,27 +39,27 @@ export class CollisionSystem {
           }
           
           // Apply damage
-          if (entity.type === 'npc') {
-            entity.health.hp = 0;
-            state.scoringSystem.addCrime(state, 'kill_pedestrian', entity);
+          if (target.type === 'npc') {
+            target.health.hp = 0;
+            state.scoringSystem.addCrime(state, 'kill_pedestrian', target);
             
             // Ensure blood particles are emitted
-            state.particleSystem?.emitBlood(state, entity.pos, 12, 3);
+            state.particleSystem?.emitBlood(state, target.pos, 12, 3);
             
             // Play pedestrian death sound
-            state.audio?.playSfxAt?.('pedestrian_death', entity.pos, state);
-            state.audio?.playSfxAt?.('oof02', entity.pos, state);
+            state.audio?.playSfxAt?.('pedestrian_death', target.pos, state);
+            state.audio?.playSfxAt?.('oof02', target.pos, state);
             
             const bloodStain = {
               type: 'blood',
-              pos: new Vec2(entity.pos.x, entity.pos.y),
+              pos: new Vec2(target.pos.x, target.pos.y),
               size: 0.6 + Math.random() * 0.4,
               color: `hsl(0, 70%, ${30 + Math.random() * 20}%)`,
               rotation: Math.random() * Math.PI * 2
             };
             
             state.entities.push(bloodStain);
-            const targetIndex = state.entities.indexOf(entity);
+            const targetIndex = state.entities.indexOf(target);
             if (targetIndex > -1) state.entities.splice(targetIndex, 1);
           }
           
@@ -134,6 +134,9 @@ export class CollisionSystem {
             color: `hsl(0, 70%, ${30 + Math.random() * 20}%)`,
             rotation: Math.random() * Math.PI * 2
           };
+          
+          // Emit blood splatter particles on impact
+          state.particleSystem?.emitBlood(state, pedestrian.pos, 16, 3.5);
           
           // push blood and remove pedestrian entity
           state.entities.push({

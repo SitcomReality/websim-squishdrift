@@ -92,6 +92,8 @@ export class CollisionHandler {
       if (entity.isPolice) {
         state.scoringSystem.addCrime(state, 'kill_police', entity);
       }
+      // Immediate blood splatter on lethal hit
+      state.particleSystem?.emitBlood(state, entity.pos, 12, 3);
     } else {
       entity.health.takeDamage(projectile.damage);
       state.particleSystem?.emitSparks(state, entity.pos, 10, 4);
@@ -123,6 +125,8 @@ export class CollisionHandler {
       } else {
         state.entities.push(bloodStain);
       }
+      // Extra splatter burst on death cleanup
+      state.particleSystem?.emitBlood(state, bloodStain.pos, 10, 2.5);
     } else if (entity.type === 'vehicle') {
       state.stats.vehiclesDestroyed = (state.stats.vehiclesDestroyed || 0) + 1;
       state.scoringSystem.addCrime(state, 'destroy_vehicle', entity);

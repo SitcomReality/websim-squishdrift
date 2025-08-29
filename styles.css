@@ -163,6 +163,13 @@ button.danger { color:var(--danger); border-color:color-mix(in oklab, var(--dang
   pointer-events: auto;
 }
 
+.hud .bar { width: 80px; height: 8px; border-radius: 6px; background: rgba(255, 255, 255, 0.2); overflow: hidden; border: 2px solid var(--line); }
+.hud .bar .fill {
+  height: 100%;
+  background: #4CAF50;
+  transition: width .15s ease;
+}
+
 .audio-controls {
   display: flex;
   align-items: center;

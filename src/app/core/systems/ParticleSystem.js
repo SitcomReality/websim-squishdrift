@@ -101,22 +101,22 @@ export class ParticleSystem {
     
     for (let i = 0; i < count; i++) {
       const a = Math.random() * Math.PI * 2;
-      const s = power * (0.4 + Math.random());
+      const s = power * (0.5 + Math.random());
       
-      // Create smaller, more dynamic sparks
-      const sparkSize = 0.02 + Math.random() * 0.03; // Much smaller base size
+      // Create smaller sparks - halved the base size
+      const sparkSize = 0.01 + Math.random() * 0.015; // Changed from 0.03 to 0.015
           
       state.particles.push({
         type: 'spark',
         x: pos.x,
         y: pos.y,
-        vx: Math.cos(a) * s * 0.5, // Reduced distance by 50%
-        vy: Math.sin(a) * s * 0.5, // Reduced distance by 50%
-        life: 0.15 + Math.random() * 0.2, // Shorter life for quick spark effect
+        vx: Math.cos(a) * s * 0.5,
+        vy: Math.sin(a) * s * 0.5,
+        life: 0.15 + Math.random() * 0.2,
         maxLife: 0.15 + Math.random() * 0.2,
         size: sparkSize,
         maxSize: sparkSize * 1.25, // Max size reduced to 1.25x instead of 2.5x
-        color: 'rgba(255, 150, 50, 1)', // More orange hue
+        color: 'rgba(255,200,50,1)',
         alpha: 1.0,
         maxAlpha: 1.0
       });
@@ -171,10 +171,10 @@ export class ParticleSystem {
           p.x * ts, p.y * ts, currentSize * ts
         );
         
-        // Bright orange center fading to lighter orange edges
-        gradient.addColorStop(0, `rgba(255,180,50,${currentAlpha})`);
-        gradient.addColorStop(0.3, `rgba(255,150,30,${currentAlpha * 0.8})`);
-        gradient.addColorStop(1, `rgba(255,120,20,${currentAlpha * 0.3})`);
+        // Bright yellow center fading to orange edges
+        gradient.addColorStop(0, `rgba(255,255,200,${currentAlpha})`);
+        gradient.addColorStop(0.3, `rgba(255,200,100,${currentAlpha * 0.8})`);
+        gradient.addColorStop(1, `rgba(255,100,50,${currentAlpha * 0.3})`);
         
         ctx.fillStyle = gradient;
         ctx.beginPath();
@@ -183,7 +183,7 @@ export class ParticleSystem {
         
         // Add small bright center
         if (currentAlpha > 0.5) {
-          ctx.fillStyle = `rgba(255,255,200,${currentAlpha * 0.8})`;
+          ctx.fillStyle = `rgba(255,255,255,${currentAlpha * 0.8})`;
           ctx.beginPath();
           ctx.arc(p.x * ts, p.y * ts, currentSize * ts * 0.3, 0, Math.PI * 2);
           ctx.fill();

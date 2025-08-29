@@ -7,7 +7,8 @@ export class DeathSystem {
     this.fadeDuration = 2000; // 2 seconds
     this.blackScreen = false;
     this.deathMusic = null;
-    this.freezeRequested = false; // request engine pause when death UI shows
+    this.freezeRequested = false;
+    this.hasCreatedDeathScreen = false; // Track if death screen already created
   }
 
   update(state, dt) {
@@ -69,8 +70,11 @@ export class DeathSystem {
   }
 
   handlePlayerDeath(state) {
+    if (this.hasCreatedDeathScreen) return; // Prevent multiple death screens
+    
     this.isDead = true;
     this.deathTime = Date.now();
+    this.hasCreatedDeathScreen = true;
 
     // Fade out all audio including main theme
     if (state.audio && state.audio.stopAll) {
@@ -230,64 +234,53 @@ export class DeathSystem {
     show(scoreP); await animate(document.getElementById('final-score'), score, Math.min(1000, 600+score*0.5));
     
     // Play death music when restart button appears
-    this.playDeathMusic(state);
+    // Only play once
+    if (!this.deathMusic) {
+      this.playDeathMusic(state);
+    }
     
-    if(restartBtn){ restartBtn.style.display='block'; restartBtn.style.opacity='0'; restartBtn.style.transition='opacity .25s ease, transform .2s ease'; requestAnimationFrame(()=>{restartBtn.style.opacity='1';}); }
+    // Only add listener once
+    const restartBtn = document.getElementById('restart-button-sprite');
+    if (restartBtn && !restartBtn.hasListener) {
+      console.log('DeathSystem: Adding single restart listener');
+      restartBtn.hasListener = true;
+      restartBtn.addEventListener('click', () => {
+        console.log('Restart button clicked');
+        this.restartGame();
+      });
+    }
   }
 
   playDeathMusic(state) {
-    if (!state.audio) return;
+    if (!state.audio || this.deathMusic) return;
     
     // Create new audio element for death music
     this.deathMusic = new Audio('/music/damocles.mp3');
     this.deathMusic.volume = state.audio.musicMuted ? 0 : state.audio.musicVolume;
     this.deathMusic.muted = state.audio.musicMuted;
     
-    // Play once, no loop
-    this.deathMusic.play().catch(e => console.warn('Could not play death music:', e));
+    // Only play if we have a valid source
+    this.deathMusic.play().catch(e => {
+      console.warn('Could not play death music:', e);
+      // Fallback: remove death music reference if it fails
+      this.deathMusic = null;
+    });
     
-    // Update volume when music volume changes
-    const updateVolume = () => {
-      if (this.deathMusic) {
-        this.deathMusic.volume = state.audio.musicMuted ? 0 : state.audio.musicVolume;
-        this.deathMusic.muted = state.audio.musicMuted;
-      }
-    };
-    
-    // Listen for volume changes
-    if (state.audio.setMusicVolume) {
-      const originalSetMusicVolume = state.audio.setMusicVolume;
-      state.audio.setMusicVolume = (volume) => {
-        originalSetMusicVolume(volume);
-        updateVolume();
-      };
-    }
-    
-    if (state.audio.toggleMusicMute) {
-      const originalToggleMusicMute = state.audio.toggleMusicMute;
-      state.audio.toggleMusicMute = () => {
-        const result = originalToggleMusicMute();
-        updateVolume();
-        return result;
-      };
-    }
+    // Clean up when done
+    this.deathMusic.addEventListener('ended', () => {
+      this.deathMusic = null;
+    });
   }
 
   stopDeathMusic() {
     if (this.deathMusic) {
-      // Quick fade out
-      const fadeOut = () => {
-        const currentVolume = this.deathMusic.volume;
-        if (currentVolume > 0.05) {
-          this.deathMusic.volume = Math.max(0, currentVolume - 0.1);
-          setTimeout(fadeOut, 50);
-        } else {
-          this.deathMusic.pause();
-          this.deathMusic.currentTime = 0;
-          this.deathMusic = null;
-        }
-      };
-      fadeOut();
+      try {
+        this.deathMusic.pause();
+        this.deathMusic.currentTime = 0;
+      } catch (e) {
+        console.warn('Error stopping death music:', e);
+      }
+      this.deathMusic = null;
     }
   }
 
@@ -308,6 +301,8 @@ export class DeathSystem {
     this.deathTime = 0;
     this.blackScreen = false;
     this.freezeRequested = false;
+    this.hasCreatedDeathScreen = false;
+    this.deathMusic = null;
     
     // Emit restart event
     window.dispatchEvent(new CustomEvent('game-restart'));

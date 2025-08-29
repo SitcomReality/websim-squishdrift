@@ -168,14 +168,25 @@ export class GameEngine {
     if (input?.pressed?.has('KeyP') || input?.pressed?.has('Escape')) {
       state.gamePaused = !state.gamePaused;
     }
-    // Auto-pause when death UI is shown
-    if (this.deathSystem.freezeRequested) {
+    
+    // Only auto-pause when death UI is shown AND the death screen is fully active
+    if (this.deathSystem.freezeRequested && this.deathSystem.isDead) {
       state.gamePaused = true;
     }
+    
     // If paused, still update input & HUD/debug, but skip simulation systems
     if (state.gamePaused) {
       this.inputManager.update?.();
       if (this.inputManager?.inputSystem?.clearPressed) this.inputManager.inputSystem.clearPressed();
+      this.debugManager.update();
+      this.hudManager.update();
+      return;
+    }
+
+    // Skip updates if player is dead and death screen is active
+    if (this.deathSystem.isDead && this.deathSystem.hasCreatedDeathScreen) {
+      // Still update death screen animation if needed
+      this.deathSystem.update(state, dt);
       this.debugManager.update();
       this.hudManager.update();
       return;

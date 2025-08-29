@@ -293,10 +293,11 @@ export class PlayerSystem {
     if (vehicle) {
       vehicle.controlled = false;
       
+      // Spawn player at the BACK of the vehicle instead of front
       const spawnOffset = 0.8;
       const exitPos = {
-        x: vehicle.pos.x + Math.cos(vehicle.rot || 0) * spawnOffset,
-        y: vehicle.pos.y + Math.sin(vehicle.rot || 0) * spawnOffset
+        x: vehicle.pos.x - Math.cos(vehicle.rot || 0) * spawnOffset,
+        y: vehicle.pos.y - Math.sin(vehicle.rot || 0) * spawnOffset
       };
       
       // Check if exit position is outside map
@@ -311,8 +312,9 @@ export class PlayerSystem {
         player.pos.x = exitPos.x;
         player.pos.y = exitPos.y;
       } else {
-        player.pos.x = vehicle.pos.x + 1;
-        player.pos.y = vehicle.pos.y + 1;
+        // Fallback position if direct exit is blocked
+        player.pos.x = vehicle.pos.x - 1;
+        player.pos.y = vehicle.pos.y - 1;
       }
       
       player.hidden = false;
@@ -336,16 +338,19 @@ export class PlayerSystem {
     const map = state.world?.map;
     if (!map) return { x: vehicle.pos.x, y: vehicle.pos.y };
     
-    // Try positions around the vehicle
+    // Try positions around the vehicle, prioritizing the back
     const positions = [
-      { x: vehicle.pos.x + 1, y: vehicle.pos.y },
-      { x: vehicle.pos.x - 1, y: vehicle.pos.y },
-      { x: vehicle.pos.x, y: vehicle.pos.y + 1 },
-      { x: vehicle.pos.x, y: vehicle.pos.y - 1 },
+      // Back positions first
+      { x: vehicle.pos.x - Math.cos(vehicle.rot || 0) * 0.8, y: vehicle.pos.y - Math.sin(vehicle.rot || 0) * 0.8 },
+      { x: vehicle.pos.x - Math.cos(vehicle.rot || 0) * 1.5, y: vehicle.pos.y - Math.sin(vehicle.rot || 0) * 1.5 },
+      { x: vehicle.pos.x - Math.cos(vehicle.rot || 0) * 2.0, y: vehicle.pos.y - Math.sin(vehicle.rot || 0) * 2.0 },
+      // Side positions as fallback
+      { x: vehicle.pos.x + Math.cos((vehicle.rot || 0) + Math.PI/2) * 0.8, y: vehicle.pos.y + Math.sin((vehicle.rot || 0) + Math.PI/2) * 0.8 },
+      { x: vehicle.pos.x + Math.cos((vehicle.rot || 0) - Math.PI/2) * 0.8, y: vehicle.pos.y + Math.sin((vehicle.rot || 0) - Math.PI/2) * 0.8 },
       { x: vehicle.pos.x + 1, y: vehicle.pos.y + 1 },
+      { x: vehicle.pos.x - 1, y: vehicle.pos.y - 1 },
       { x: vehicle.pos.x + 1, y: vehicle.pos.y - 1 },
-      { x: vehicle.pos.x - 1, y: vehicle.pos.y + 1 },
-      { x: vehicle.pos.x - 1, y: vehicle.pos.y - 1 }
+      { x: vehicle.pos.x - 1, y: vehicle.pos.y + 1 }
     ];
     
     for (const pos of positions) {

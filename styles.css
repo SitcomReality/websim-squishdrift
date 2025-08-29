@@ -118,8 +118,10 @@ body { margin:0; background:var(--bg); color:var(--fg); font-family:"Noto Sans",
 }
 
 .debug { position:absolute; right:20px; top:20px; width:260px; max-height:50vh; overflow:auto; padding:10px; background:#f8fafc; border:2px solid var(--line); border-radius:10px; font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12px; }
-.app-footer { padding:10px 14px; border-top:2px solid var(--line); color:var(--muted); text-align: center; }
-.app-footer small { font-size: 14px; }
+.app-footer { padding:16px 14px; border-top:2px solid var(--line); color:var(--muted); text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.app-footer small { font-size: 12px; opacity: 0.8; line-height: 1.4; }
+.app-footer em { font-style: italic; color: rgba(255, 255, 255, 0.9); }
+.app-footer strong { color: rgba(255, 255, 255, 0.95); font-weight: 600; }
 .panel { border:2px solid var(--line); border-radius:12px; overflow:hidden; background:#fff; }
 .panel-header { display:flex; align-items:center; justify-content:space-between; padding:12px 12px; border-bottom:2px solid var(--line); gap:12px; }
 .panel-header h2 { margin:0; font-size:16px; }

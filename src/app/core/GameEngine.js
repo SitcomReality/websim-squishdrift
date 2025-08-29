@@ -92,11 +92,6 @@ export class GameEngine {
     window.addEventListener('game-restart', () => {
       this.restart();
     });
-
-    // Ensure particle system is available
-    if (this.stateManager.state) {
-      this.stateManager.state.particleSystem = this.systemManager.systems.particles;
-    }
   }
 
   loadPickupImages() {

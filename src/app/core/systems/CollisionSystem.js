@@ -39,36 +39,34 @@ export class CollisionSystem {
           }
           
           // Apply damage
-          target.health.takeDamage(25);
-          
-          // Emit blood for NPCs
-          if (target.type === 'npc') {
-            state.particleSystem?.emitBlood(state, target.pos, 10, 3);
-          }
-          
-          // Play impact sound for vehicles hit by bullets
-          if (target.type === 'vehicle') {
-            const impactSound = ['impact02', 'impact03'][Math.floor(Math.random() * 2)];
-            state.audio?.playSfxAt?.(impactSound, target.pos, state);
-          }
-          
-          // Handle NPC death with sound and particles
-          if (target.type === 'npc' && !target.health.isAlive()) {
-            state.audio?.playSfxAt?.('pedestrian_death', target.pos, state);
-            state.audio?.playSfxAt?.('oof02', target.pos, state);
-            state.particleSystem?.emitBlood(state, target.pos, 12, 3);
+          if (entity.type === 'npc') {
+            entity.health.hp = 0;
+            state.scoringSystem.addCrime(state, 'kill_pedestrian', entity);
+            
+            // Ensure blood particles are emitted
+            state.particleSystem?.emitBlood(state, entity.pos, 12, 3);
+            
+            // Play pedestrian death sound
+            state.audio?.playSfxAt?.('pedestrian_death', entity.pos, state);
+            state.audio?.playSfxAt?.('oof02', entity.pos, state);
             
             const bloodStain = {
               type: 'blood',
-              pos: new Vec2(target.pos.x, target.pos.y),
+              pos: new Vec2(entity.pos.x, entity.pos.y),
               size: 0.6 + Math.random() * 0.4,
               color: `hsl(0, 70%, ${30 + Math.random() * 20}%)`,
               rotation: Math.random() * Math.PI * 2
             };
             
             state.entities.push(bloodStain);
-            const targetIndex = state.entities.indexOf(target);
+            const targetIndex = state.entities.indexOf(entity);
             if (targetIndex > -1) state.entities.splice(targetIndex, 1);
+          }
+          
+          // Play impact sound for vehicles hit by bullets
+          if (target.type === 'vehicle') {
+            const impactSound = ['impact02', 'impact03'][Math.floor(Math.random() * 2)];
+            state.audio?.playSfxAt?.(impactSound, target.pos, state);
           }
           
           // Trigger screen shake for player damage

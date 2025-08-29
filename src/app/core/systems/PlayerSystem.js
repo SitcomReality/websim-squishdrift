@@ -273,11 +273,11 @@ export class PlayerSystem {
     
     vehicle.controlled = true;
     
-    delete vehicle.aiTargetSpeed;
-    delete vehicle.node;
-    delete vehicle.next;
-    delete vehicle.t;
-
+    // Reset glow state for this vehicle entry
+    if (vehicle._glowState) {
+      delete vehicle._glowState;
+    }
+    
     // Update HUD to show vehicle type
     const vehicleStateEl = document.getElementById('vehicle-state');
     if (vehicleStateEl) {
@@ -292,6 +292,11 @@ export class PlayerSystem {
     const vehicle = state.control.vehicle;
     if (vehicle) {
       vehicle.controlled = false;
+      
+      // Reset glow state when exiting vehicle
+      if (vehicle._glowState) {
+        delete vehicle._glowState;
+      }
       
       // Spawn player at the BACK of the vehicle instead of front
       const spawnOffset = 0.8;

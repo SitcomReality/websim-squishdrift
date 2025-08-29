@@ -110,8 +110,8 @@ export class ParticleSystem {
         type: 'spark',
         x: pos.x,
         y: pos.y,
-        vx: Math.cos(a) * s,
-        vy: Math.sin(a) * s * 0.5,
+        vx: Math.cos(a) * s * 0.5, // Reduced distance by 50%
+        vy: Math.sin(a) * s * 0.5, // Reduced distance by 50%
         life: 0.15 + Math.random() * 0.2, // Shorter life for quick spark effect
         maxLife: 0.15 + Math.random() * 0.2,
         size: sparkSize,
@@ -134,8 +134,8 @@ export class ParticleSystem {
         type: 'blood',
         x: pos.x,
         y: pos.y,
-        vx: Math.cos(a) * s * 0.6,
-        vy: Math.sin(a) * s * 0.6,
+        vx: Math.cos(a) * s * 0.5, // Reduced distance by 50%
+        vy: Math.sin(a) * s * 0.5, // Reduced distance by 50%
         life: 0.4 + Math.random() * 0.6,
         maxLife: 0.4 + Math.random() * 0.6,
         size: 0.02 + Math.random() * 0.03, 

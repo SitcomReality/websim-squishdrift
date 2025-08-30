@@ -203,67 +203,6 @@ export class WeaponSystem {
     }
   }
 
-  handleWeaponFiring(state, player, input, debugEnabled) {
-    if (!player.equippedWeapon) return;
-    
-    const weapon = player.equippedWeapon;
-    const now = Date.now();
-    
-    if (weapon.isReloading) {
-      if (now - weapon.reloadStartTime >= weapon.reloadTime) {
-        weapon.ammo = weapon.maxAmmo;
-        weapon.isReloading = false;
-      }
-      return;
-    }
-    
-    const isFiring = input.mousePos && input.keys.has('MouseLeft');
-    const justPressed = input.pressed && input.pressed.has('MouseLeft');
-    const CLICK_COOLDOWN = 250; // ms - rate limit click SFX when holding
-    
-    if (isFiring && now - weapon.lastFireTime >= weapon.fireRate) {
-      if (weapon.ammo <= 0 && !debugEnabled) {
-        // Only play click on a true mouse press (not while held) and rate-limit it
-        if (justPressed && now - (player.lastClickTime || 0) >= CLICK_COOLDOWN) {
-          const pos = (state.control?.inVehicle && state.control.vehicle?.pos) ? state.control.vehicle.pos : player.pos;
-          state.audio?.playSfxAt?.('click', pos, state);
-          player.lastClickTime = now;
-          // Remove weapon after the click as before
-          player.equippedWeapon = null;
-          
-          const itemNameEl = document.getElementById('item-name');
-          if (itemNameEl) itemNameEl.textContent = 'None';
-          const ammoContainer = document.getElementById('ammo-container');
-          if (ammoContainer) ammoContainer.remove();
-        }
-        return;
-      }
-      
-      // Play appropriate sound effect based on weapon type
-      const pos = (state.control?.inVehicle && state.control.vehicle?.pos) ? state.control.vehicle.pos : player.pos;
-      if (weapon.name === 'Pistol' || weapon.name === 'AK47') {
-        state.audio?.playSfxAt?.('shoot01', pos, state);
-      } else if (weapon.name === 'Shotgun') {
-        state.audio?.playSfxAt?.('shoot02', pos, state);
-      }
-      
-      this.projectileManager.fireProjectile(state, player);
-      weapon.lastFireTime = now;
-      
-      if (!debugEnabled) {
-        weapon.ammo--;
-      }
-    }
-    
-    // Handle click when no weapon is equipped (single-shot via pressed + cooldown)
-    const noWeapon = !player.equippedWeapon;
-    if (noWeapon && justPressed && now - (player.lastClickTime || 0) >= CLICK_COOLDOWN) {
-      const pos = (state.control?.inVehicle && state.control.vehicle?.pos) ? state.control.vehicle.pos : player.pos;
-      state.audio?.playSfxAt?.('click', pos, state);
-      player.lastClickTime = now;
-    }
-  }
-
   isTreeTrunkCollision(projX, projY, tileX, tileY, state) {
     if (!state.world.map.trees) return false;
     

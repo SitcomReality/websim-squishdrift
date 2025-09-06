@@ -168,21 +168,28 @@ function drawTree(r, state, tree) {
   const leafHeight = tree.currentLeafHeight ?? tree.leafHeight;
 
   if (trunkHeight + leafHeight <= 0.1) {
-    // When flattened, draw a simple representation on the ground
+    // When flattened, draw the leaf roof in front of the trunk
     const leafWidth = ts * tree.leafWidth;
     const leafX = tree.pos.x * ts - leafWidth / 2;
     const leafY = tree.pos.y * ts - leafWidth / 2;
     
+    // Draw trunk first (behind)
     ctx.globalAlpha = 0.75;
-    ctx.fillStyle = tree.leafColor;
-    ctx.fillRect(leafX, leafY, leafWidth, leafWidth);
-    ctx.globalAlpha = 1.0;
-    
+    ctx.fillStyle = tree.trunkColor;
     const trunkWidth = ts * 0.3;
     const trunkX = tree.pos.x * ts - trunkWidth / 2;
     const trunkY = tree.pos.y * ts - trunkWidth / 2;
-    ctx.fillStyle = tree.trunkColor;
     ctx.fillRect(trunkX, trunkY, trunkWidth, trunkWidth);
+    ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(trunkX, trunkY, trunkWidth, trunkWidth);
+    
+    // Draw leaves in front (with higher opacity)
+    ctx.globalAlpha = 0.9;
+    ctx.fillStyle = tree.leafColor;
+    ctx.fillRect(leafX, leafY, leafWidth, leafWidth);
+    ctx.strokeRect(leafX, leafY, leafWidth, leafWidth);
+    ctx.globalAlpha = 1.0;
     return;
   }
 

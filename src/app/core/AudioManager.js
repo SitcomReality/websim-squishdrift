@@ -58,7 +58,10 @@ export class AudioManager {
       this.load('/sfx/engine_truck.mp3', 'engine_truck'),
       this.load('/sfx/tire_skid_loop.mp3', 'tire_skid_loop'), // new loop SFX
       // Load death music
-      this.load('/music/damocles.mp3', 'damocles')
+      this.load('/music/damocles.mp3', 'damocles'),
+      // Add flatten ability sounds
+      this.load('/sfx/flatten_down.mp3', 'flatten_down'),
+      this.load('/sfx/flatten_up.mp3', 'flatten_up')
     ]).catch(()=>{ /* ignore load errors gracefully */ });
     
     // Load main theme

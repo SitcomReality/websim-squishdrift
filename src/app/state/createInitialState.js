@@ -177,5 +177,8 @@ export function createInitialState(seed = null) {
     }
   }
   
+  // Add flatten ability state
+  state.isFlattened = false;
+  
   return state;
 }

@@ -1,3 +1,5 @@
+
+```javascript
 import { CollisionSystem } from '../systems/CollisionSystem.js';
 import { PlayerSystem } from './systems/PlayerSystem.js';
 import { VehicleSystem } from './systems/VehicleSystem.js';
@@ -11,6 +13,7 @@ import { SkidmarkSystem } from './systems/SkidmarkSystem.js';
 import { WeaponSystem } from './systems/WeaponSystem.js';
 import { ParticleSystem } from './systems/ParticleSystem.js';
 import { EngineAudioSystem } from './systems/EngineAudioSystem.js';
+import { AnimationSystem } from './systems/AnimationSystem.js';
 
 export class SystemManager {
   constructor(stateManager) {
@@ -28,7 +31,8 @@ export class SystemManager {
       weapon: new WeaponSystem(),
       collision: new CollisionSystem(),
       particles: new ParticleSystem(),
-      engineAudio: new EngineAudioSystem()
+      engineAudio: new EngineAudioSystem(),
+      animation: new AnimationSystem()
     };
     // Connect camera system to collision system for screen shake
     this.systems.collision.cameraSystem = this.systems.camera;
@@ -55,6 +59,7 @@ export class SystemManager {
     this.systems.weapon.update(state, input, dt);
     this.systems.particles.update(state, dt);
     this.systems.engineAudio.update(state, dt);
+    this.systems.animation.update(state, dt);
   }
 
   getSystems() {

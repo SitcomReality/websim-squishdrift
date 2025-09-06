@@ -16,6 +16,22 @@ export class PlayerSystem {
     this.ensureHealth(player);
     this.ensureStamina(player);
     
+    // Handle Q key for flatten ability
+    if (input && input.pressed && input.pressed.has('KeyQ')) {
+      const wasFlattened = state.isFlattened;
+      state.isFlattened = !state.isFlattened;
+      // Play sound effect for toggle
+      if (state.isFlattened) {
+        state.audio?.playSfx?.('flatten_down');
+      } else {
+        state.audio?.playSfx?.('flatten_up');
+      }
+      // Trigger animations when state changes
+      if (state._engine?.systems?.animation) {
+        state._engine.systems.animation.triggerAnimations(state);
+      }
+    }
+    
     // Play ouch when player's health decreases
     try {
       const prevHp = (player.health && typeof player.health._prevHp === 'number') ? player.health._prevHp : player.health.hp;

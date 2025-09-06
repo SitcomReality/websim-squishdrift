@@ -72,9 +72,6 @@ export class CollisionHandler {
   }
 
   handleEntityCollision(state, projectile, entity) {
-    // If world is flattened, projectiles should not collide with the player character.
-    if (state?.isFlattened && entity?.type === 'player') return;
-     
     // Register crime
     if (entity.type === 'vehicle') {
       state.scoringSystem.addCrime(state, 'shoot_vehicle', entity);

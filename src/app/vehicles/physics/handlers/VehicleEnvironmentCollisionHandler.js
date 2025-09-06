@@ -25,15 +25,23 @@ export class VehicleEnvironmentCollisionHandler {
             
             const t = map.tiles[gy][gx];
             
-            if (this.isTreeTrunk(gx, gy, map)) {
-                this.handleTreeCollision(state, v, gx, gy, obb);
+            const tree = this.getTreeAt(gx, gy, map);
+            if (tree) {
+                this.handleTreeCollision(state, v, gx, gy, obb, tree);
             } else if (t === 8 || t === 9) { // BuildingFloor/Wall
-                this.handleBuildingCollision(state, v, gx, gy, obb);
+                const building = this.getBuildingAt(gx, gy, map);
+                if (building) {
+                    this.handleBuildingCollision(state, v, gx, gy, obb, building);
+                }
             }
         }
     }
 
-    handleTreeCollision(state, v, gx, gy, obb) {
+    handleTreeCollision(state, v, gx, gy, obb, tree) {
+        if ((tree.currentTrunkHeight ?? tree.trunkHeight) < 0.1) {
+            return; // No collision if tree is flattened
+        }
+
         const contact = obbOverlap(obb, aabbForTrunk(gx, gy));
         if (!contact) return;
 
@@ -56,7 +64,11 @@ export class VehicleEnvironmentCollisionHandler {
         }
     }
 
-    handleBuildingCollision(state, v, gx, gy, obb) {
+    handleBuildingCollision(state, v, gx, gy, obb, building) {
+        if ((building.currentHeight ?? building.height) < 0.1) {
+            return; // No collision if building is flattened
+        }
+        
         const contact = obbOverlap(obb, aabbForTile(gx, gy));
         if (!contact) return;
 
@@ -124,9 +136,21 @@ export class VehicleEnvironmentCollisionHandler {
     }
 
     isTreeTrunk(x, y, map) {
-        if (!map.trees) return false;
-        return map.trees.some(tree => 
+        return !!this.getTreeAt(x, y, map);
+    }
+
+    getTreeAt(x, y, map) {
+        if (!map.trees) return null;
+        return map.trees.find(tree => 
             Math.floor(tree.pos.x) === x && Math.floor(tree.pos.y) === y
+        );
+    }
+
+    getBuildingAt(x, y, map) {
+        if (!map.buildings) return null;
+        return map.buildings.find(b =>
+            x >= b.rect.x && x < b.rect.x + b.rect.width &&
+            y >= b.rect.y && y < b.rect.y + b.rect.height
         );
     }
 }

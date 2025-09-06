@@ -25,10 +25,13 @@ export class CollisionHandler {
     // Check tree trunk collision
     const tx = Math.floor(projectile.pos.x);
     const ty = Math.floor(projectile.pos.y);
-    if (this.isTreeTrunkCollision(projectile.pos.x, projectile.pos.y, tx, ty, state)) {
-      // Play hit sound for tree collision
-      state.audio?.playSfxAt?.('projectile_hit', projectile.pos, state);
-      return true;
+    const tree = this.getTreeAt(tx, ty, state.world.map);
+    if (tree && (tree.currentTrunkHeight ?? tree.trunkHeight) > 0.1) {
+      if (this.isTreeTrunkCollision(projectile.pos.x, projectile.pos.y, tx, ty, state)) {
+        // Play hit sound for tree collision
+        state.audio?.playSfxAt?.('projectile_hit', projectile.pos, state);
+        return true;
+      }
     }
     
     // Check tile collision
@@ -150,9 +153,7 @@ export class CollisionHandler {
   isTreeTrunkCollision(projX, projY, tx, ty, state) {
     if (!state.world.map.trees) return false;
     
-    const tree = state.world.map.trees.find(tree => 
-      Math.floor(tree.pos.x) === tx && Math.floor(tree.pos.y) === ty
-    );
+    const tree = this.getTreeAt(tx, ty, state.world.map);
     
     if (!tree) return false;
     
@@ -165,5 +166,12 @@ export class CollisionHandler {
     const dy = Math.abs(projY - trunkCenterY);
     
     return dx <= trunkHalf && dy <= trunkHalf;
+  }
+
+  getTreeAt(x, y, map) {
+    if (!map.trees) return null;
+    return map.trees.find(tree => 
+      Math.floor(tree.pos.x) === x && Math.floor(tree.pos.y) === y
+    );
   }
 }

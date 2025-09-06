@@ -119,6 +119,7 @@ body {
 
 .debug { position:absolute; right:20px; top:20px; width:260px; max-height:50vh; overflow:auto; padding:10px; background:#f8fafc; border:2px solid var(--line); border-radius:10px; font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12px; }
 .app-footer { padding:16px 14px; border-top:2px solid var(--line); color:var(--muted); text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px; background: rgb(0 0 0 / 40%); backdrop-filter: blur(4px); margin-top: auto; width: 100%; }
+.app-footer div { color: #ccc; }
 .app-footer small { font-size: 12px; opacity: 0.8; line-height: 1.4; }
 .app-footer em { font-style: italic; color: rgba(255, 255, 255, 0.9); }
 .app-footer strong { color: rgba(255, 255, 255, 0.95); font-weight: 600; }

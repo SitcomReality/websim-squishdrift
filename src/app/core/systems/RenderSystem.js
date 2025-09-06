@@ -125,16 +125,10 @@ export class RenderSystem {
       drawExplosion(renderer, state, explosion);
     }
     
-    // Draw buildings (walls and roofs) in front, but only if not flattened
-    // Draw remaining walls and roofs for any non-flattened (or still-tall) buildings.
-    if (!state.isFlattened) {
-      drawBuildings(renderer, state, 'walls');
-      drawBuildings(renderer, state, 'roofs');
-    } else {
-      // When flattened, draw all roofs (both flattened and animating) 
-      // but skip walls for buildings that are still tall
-      drawBuildings(renderer, state, 'roofs');
-    }
+    // Draw buildings: always render walls for any building that still has height,
+    // then draw roofs. drawBuildings internally skips walls/roofs based on currentHeight.
+    drawBuildings(renderer, state, 'walls');
+    drawBuildings(renderer, state, 'roofs');
     
     // Draw particles (including smoke)
     this.drawParticles(state, renderer);

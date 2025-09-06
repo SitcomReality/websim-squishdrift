@@ -11,11 +11,6 @@ export class CollisionHandler {
     const map = state.world.map;
     const tileSize = state.world.tileSize;
     
-    // Skip collision with projectiles when in flattened mode
-    if (state.isFlattened && projectile.owner === 'player') {
-      return false;
-    }
-    
     // Allow freshly spawned grenade shrapnel to move out of walls/trees before colliding
     if (projectile.isShrapnel && projectile.age < 0.05) return false;
     
@@ -77,6 +72,9 @@ export class CollisionHandler {
   }
 
   handleEntityCollision(state, projectile, entity) {
+    // If world is flattened, projectiles should not collide with the player character.
+    if (state?.isFlattened && entity?.type === 'player') return;
+     
     // Register crime
     if (entity.type === 'vehicle') {
       state.scoringSystem.addCrime(state, 'shoot_vehicle', entity);

@@ -35,14 +35,28 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
     // Only add if center tile is the special RoundaboutCenter (safety)
     if (tiles[rb.cy] && tiles[rb.cy][rb.cx] === Tile.RoundaboutCenter) {
       // Make roundabout trees ~50% taller than park trees while keeping same width
-      trees.push({
+      const tree = {
         pos: { x: rb.cx + 0.5, y: rb.cy + 0.5 },
         trunkHeight: 30 + rand() * 22, // Increased from 20-35 to 30-52 (50% taller)
         leafHeight: (20 + rand() * 15) * 0.5, // Increased from 15-25 to 20-35 (50% taller)
         leafWidth: (1.5 + rand() * 0.5) * 0.5, // Keep same width as park trees
         leafColor: `hsl(${100 + rand() * 40}, 60%, ${35 + Math.floor(rand() * 20)}%)`,
-        trunkColor: `hsl(${30 + Math.floor(rand() * 20)}, 40%, ${25 + Math.floor(rand() * 15)}%)`
-      });
+        trunkColor: `hsl(${30 + Math.floor(rand() * 20)}, 40%, ${25 + Math.floor(rand() * 15)}%)`,
+        // Add missing properties for animation
+        originalTrunkHeight: 0,
+        currentTrunkHeight: 0,
+        originalLeafHeight: 0,
+        currentLeafHeight: 0,
+        animationState: null
+      };
+      
+      // Initialize animation properties correctly
+      tree.originalTrunkHeight = tree.trunkHeight;
+      tree.currentTrunkHeight = tree.trunkHeight;
+      tree.originalLeafHeight = tree.leafHeight;
+      tree.currentLeafHeight = tree.leafHeight;
+
+      trees.push(tree);
     }
   }
   

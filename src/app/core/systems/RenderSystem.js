@@ -54,6 +54,11 @@ export class RenderSystem {
     drawTiles(renderer, state, 'floors');
     drawSkidmarks(renderer, state);
     
+    // When flattened, draw roofs on the ground before entities
+    if (state.isFlattened) {
+      drawBuildings(renderer, state, 'roofs');
+    }
+
     // Sort entities by y-position for proper z-ordering
     const entities = [...(state.entities || [])].sort((a, b) => {
       // Blood stains should be drawn behind everything
@@ -120,9 +125,11 @@ export class RenderSystem {
       drawExplosion(renderer, state, explosion);
     }
     
-    // Draw buildings (walls and roofs) in front
-    drawBuildings(renderer, state, 'walls');
-    drawBuildings(renderer, state, 'roofs');
+    // Draw buildings (walls and roofs) in front, but only if not flattened
+    if (!state.isFlattened) {
+      drawBuildings(renderer, state, 'walls');
+      drawBuildings(renderer, state, 'roofs');
+    }
     
     // Draw particles (including smoke)
     this.drawParticles(state, renderer);

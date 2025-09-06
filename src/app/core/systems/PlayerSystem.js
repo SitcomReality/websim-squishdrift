@@ -440,7 +440,27 @@ export class PlayerSystem {
     const tx = Math.floor(x);
     const ty = Math.floor(y);
     if (tx < 0 || ty < 0 || tx >= state.world.map.width || ty >= state.world.map.height) return false;
-    return isWalkable(state.world.map.tiles[ty][tx]);
+    
+    const tile = state.world.map.tiles[ty][tx];
+
+    // If tile is a building tile, check if it's flattened
+    if (tile === 8 || tile === 9) { // BuildingFloor or BuildingWall
+        const building = this.getBuildingAt(state, tx, ty);
+        if (building && (building.currentHeight ?? building.height) < 0.1) {
+            return true; // Walkable if flattened
+        }
+    }
+    
+    return isWalkable(tile);
+  }
+
+  getBuildingAt(state, x, y) {
+    const map = state.world.map;
+    if (!map.buildings) return null;
+    return map.buildings.find(b =>
+        x >= b.rect.x && x < b.rect.x + b.rect.width &&
+        y >= b.rect.y && y < b.rect.y + b.rect.height
+    );
   }
 
   triggerFlattenAnimations(state) {

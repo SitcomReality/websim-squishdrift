@@ -38,9 +38,12 @@ export class CollisionHandler {
     if (tx >= 0 && tx < map.width && ty >= 0 && ty < map.height) {
       const tile = map.tiles[ty][tx];
       if ([8, 9].includes(tile)) {
-        // Play hit sound for wall collision
-        state.audio?.playSfxAt?.('projectile_hit', projectile.pos, state);
-        return true;
+        const building = this.getBuildingAt(tx, ty, state.world.map);
+        if (building && (building.currentHeight ?? building.height) > 0.1) {
+            // Play hit sound for wall collision
+            state.audio?.playSfxAt?.('projectile_hit', projectile.pos, state);
+            return true;
+        }
       }
     }
     
@@ -172,6 +175,14 @@ export class CollisionHandler {
     if (!map.trees) return null;
     return map.trees.find(tree => 
       Math.floor(tree.pos.x) === x && Math.floor(tree.pos.y) === y
+    );
+  }
+
+  getBuildingAt(x, y, map) {
+    if (!map.buildings) return null;
+    return map.buildings.find(b =>
+        x >= b.rect.x && x < b.rect.x + b.rect.width &&
+        y >= b.rect.y && y < b.rect.y + b.rect.height
     );
   }
 }

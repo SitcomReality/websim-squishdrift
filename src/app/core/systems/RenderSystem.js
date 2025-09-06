@@ -51,13 +51,17 @@ export class RenderSystem {
     ctx.fillRect(sx*ts, sy*ts, wTiles*ts, hTiles*ts);
     
     drawTiles(renderer, state, 'ground');
+    // When flattened, draw roofs on the ground before entities.
+    if (state.isFlattened) {
+      drawBuildings(renderer, state, 'roofs_flat');
+    }
     drawTiles(renderer, state, 'floors');
     drawSkidmarks(renderer, state);
     
-    // When flattened, draw roofs on the ground before entities.
+    // When flattened, draw roofs on the ground before entities
     // Draw only already-flattened roofs on the ground before entities.
     // This ensures tall building walls remain visible while they are animating.
-    drawBuildings(renderer, state, 'roofs_flat');
+    drawBuildings(renderer, state, 'roofs_flat_animating');
     
     // Sort entities by y-position for proper z-ordering
     const entities = [...(state.entities || [])].sort((a, b) => {
@@ -127,8 +131,14 @@ export class RenderSystem {
     
     // Draw buildings: always render walls for any building that still has height,
     // then draw roofs. drawBuildings internally skips walls/roofs based on currentHeight.
-    drawBuildings(renderer, state, 'walls');
-    drawBuildings(renderer, state, 'roofs');
+    if (!state.isFlattened) {
+      drawBuildings(renderer, state, 'walls');
+      drawBuildings(renderer, state, 'roofs');
+    } else {
+      // In flattened mode, only draw walls/roofs for buildings that are still animating down.
+      drawBuildings(renderer, state, 'walls_animating');
+      drawBuildings(renderer, state, 'roofs_animating');
+    }
     
     // Draw particles (including smoke)
     this.drawParticles(state, renderer);

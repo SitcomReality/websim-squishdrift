@@ -30,7 +30,7 @@ export function drawBuildings(r, state, mode = 'all') {
 
   for (const element of sortedElements) {
     if (element.type === 'tree') {
-      drawTree(r, state, element.tree);
+      drawTree(r, state, element.tree, mode);
     } else {
       const b = element;
       const floorRect = { 
@@ -49,7 +49,6 @@ export function drawBuildings(r, state, mode = 'all') {
       const bHeight = b.currentHeight ?? b.height;
       if (bHeight <= 0.1) { // When flattened, just draw the roof on the ground
         if (mode === 'roofs' || mode === 'all' || mode === 'roofs_flat') {
-          // Draw flattened roofs as simple background tiles
           ctx.fillStyle = b.color;
           ctx.fillRect(floorRect.x, floorRect.y, floorRect.w, floorRect.h);
           ctx.strokeStyle = 'rgba(0,0,0,0.2)';
@@ -59,8 +58,8 @@ export function drawBuildings(r, state, mode = 'all') {
         continue;
       }
       
-      // If mode is 'roofs_flat' and building isn't flattened, skip drawing anything for this building
-      if (mode === 'roofs_flat' && bHeight > 0.1) continue;
+      // If mode is for flat things and building isn't flattened, skip drawing anything for this building
+      if ((mode === 'roofs_flat' || mode === 'roofs_flat_animating') && bHeight > 0.1) continue;
       
       // Calculate roof offset based on camera position
       let roofOffset = { x: 0, y: 0 };
@@ -94,7 +93,7 @@ export function drawBuildings(r, state, mode = 'all') {
       const sideWallColor = `hsl(${hue}, 20%, 65%)`;
       
       // Draw walls connecting floor to roof
-      if (mode === 'walls' || mode === 'all') {
+      if (mode === 'walls' || mode === 'all' || mode === 'walls_animating') {
         ctx.fillStyle = sideWallColor;
         ctx.beginPath();
         ctx.moveTo(floorRect.x, floorRect.y);
@@ -150,7 +149,7 @@ export function drawBuildings(r, state, mode = 'all') {
       }
       
       // Draw roof
-      if (mode === 'roofs' || mode === 'all' || mode === 'roofs_flat') {
+      if (mode === 'roofs' || mode === 'all' || mode === 'roofs_animating') {
         ctx.fillStyle = b.color;
         ctx.fillRect(roofRect.x, roofRect.y, roofRect.w, roofRect.h);
         ctx.strokeStyle = 'rgba(0,0,0,0.2)';
@@ -161,7 +160,7 @@ export function drawBuildings(r, state, mode = 'all') {
   }
 }
 
-function drawTree(r, state, tree) {
+function drawTree(r, state, tree, mode) {
   const { ctx } = r, ts = state.world.tileSize;
   const cam = state.camera, perspectiveScale = 0.8;
   
@@ -169,6 +168,9 @@ function drawTree(r, state, tree) {
   const leafHeight = tree.currentLeafHeight ?? tree.leafHeight;
 
   if (trunkHeight + leafHeight <= 0.1) {
+    if (mode !== 'roofs_flat') {
+        return;
+    }
     // When flattened, draw the leaf roof in front of the trunk
     const leafWidth = ts * tree.leafWidth;
     const leafX = tree.pos.x * ts - leafWidth / 2;

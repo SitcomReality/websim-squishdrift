@@ -54,7 +54,7 @@ export class RenderSystem {
     drawTiles(renderer, state, 'floors');
     drawSkidmarks(renderer, state);
     
-    // When flattened, draw roofs on the ground before entities
+    // When flattened, draw roofs on the ground before entities.
     // Draw only already-flattened roofs on the ground before entities.
     // This ensures tall building walls remain visible while they are animating.
     drawBuildings(renderer, state, 'roofs_flat');

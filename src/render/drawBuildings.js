@@ -48,7 +48,8 @@ export function drawBuildings(r, state, mode = 'all') {
       
       const bHeight = b.currentHeight ?? b.height;
       if (bHeight <= 0.1) { // When flattened, just draw the roof on the ground
-        if (mode === 'roofs' || mode === 'all' || (mode === 'roofs_flat' && bHeight <= 0.1)) {
+        if (mode === 'roofs' || mode === 'all' || mode === 'roofs_flat') {
+          // Draw flattened roofs as simple background tiles
           ctx.fillStyle = b.color;
           ctx.fillRect(floorRect.x, floorRect.y, floorRect.w, floorRect.h);
           ctx.strokeStyle = 'rgba(0,0,0,0.2)';

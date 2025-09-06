@@ -267,9 +267,55 @@ export class CollisionSystem {
     }
   }
 
+  getTreeAt(x, y, map) {
+    if (!map.trees) return null;
+    return map.trees.find(tree => 
+      Math.floor(tree.pos.x) === x && Math.floor(tree.pos.y) === y
+    );
+  }
+
   update(state) {
+    const now = Date.now();
+    const player = state.entities.find(e => e.type === 'player');
+    if (!player || !player.health) return;
+    if (state.control?.inVehicle) return; // disable player collisions while inside a vehicle
+    if (player.collisionDisabled) return; // Skip if player collision is disabled
+
+    // Check invincibility frames
+    if (now - this.lastDamageTime < this.invincibilityDuration) {
+      return; // Player is invincible
+    }
+    
+    const map = state.world.map;
+    const tx = Math.floor(player.pos.x);
+    const ty = Math.floor(player.pos.y);
+    const tree = this.getTreeAt(tx, ty, map);
+    
+    // Only treat the small trunk area as solid (same size used elsewhere)
+    if (tree && (tree.currentTrunkHeight ?? tree.trunkHeight) > 0.1 && !state.isFlattened) {
+      const trunkHalf = 0.3 / 2; // trunkSize / 2
+      const playerHw = (player.hitboxW || 0.15) / 2;
+      const playerHh = (player.hitboxH || 0.15) / 2;
+      const trunkCenterX = tx + 0.5, trunkCenterY = ty + 0.5;
+      const overlapX = Math.abs(player.pos.x - trunkCenterX) < (trunkHalf + playerHw);
+      const overlapY = Math.abs(player.pos.y - trunkCenterY) < (trunkHalf + playerHh);
+      if (overlapX && overlapY) {
+        // push player away from trunk center only when overlapping trunk AABB
+        const dx = player.pos.x - trunkCenterX;
+        const dy = player.pos.y - trunkCenterY;
+        const len = Math.hypot(dx, dy) || 1;
+        player.pos.x += (dx / len) * 0.2;
+        player.pos.y += (dy / len) * 0.2;
+        return;
+      }
+    }
+    
+    const vehicles = state.entities.filter(e => e.type === 'vehicle');
+    for (const vehicle of vehicles) {
+      if (vehicle.controlled) continue; // Skip player-controlled vehicle
+      // add player-vehicle collision logic here
+    }
+    
     this.checkBulletCollisions(state);
-    this.checkVehiclePedestrianCollisions(state);
-    this.checkPlayerVehicleCollisions(state);
   }
 }

@@ -17,19 +17,19 @@ export class PlayerSystem {
     this.ensureStamina(player);
     
     // Handle Q key for flatten ability
-    if (input && input.pressed && input.pressed.has('KeyQ')) {
+    if (input?.pressed?.has('KeyQ')) {
       const wasFlattened = state.isFlattened;
       state.isFlattened = !state.isFlattened;
+
       // Play sound effect for toggle
       if (state.isFlattened) {
-        state.audio?.playSfx?.('flatten_down');
+        state.audio?.playSfx('flatten_down');
       } else {
-        state.audio?.playSfx?.('flatten_up');
+        state.audio?.playSfx('flatten_up');
       }
-      // Trigger animations when state changes
-      if (state._engine?.systems?.animation) {
-        state._engine.systems.animation.triggerAnimations(state);
-      }
+      
+      // Trigger animations
+      this.triggerFlattenAnimations(state);
     }
     
     // Play ouch when player's health decreases
@@ -441,5 +441,31 @@ export class PlayerSystem {
     const ty = Math.floor(y);
     if (tx < 0 || ty < 0 || tx >= state.world.map.width || ty >= state.world.map.height) return false;
     return isWalkable(state.world.map.tiles[ty][tx]);
+  }
+
+  triggerFlattenAnimations(state) {
+    const map = state.world.map;
+    const isFlattening = state.isFlattened;
+    const now = performance.now();
+
+    if (map.buildings) {
+      for (const building of map.buildings) {
+        building.animationState = {
+          type: isFlattening ? 'shrink' : 'grow',
+          startTime: now,
+          duration: isFlattening ? 300 : 600
+        };
+      }
+    }
+
+    if (map.trees) {
+      for (const tree of map.trees) {
+        tree.animationState = {
+          type: isFlattening ? 'shrink' : 'grow',
+          startTime: now,
+          duration: isFlattening ? 300 : 600
+        };
+      }
+    }
   }
 }

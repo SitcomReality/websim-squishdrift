@@ -38,6 +38,7 @@ export class TitleScreen {
             </div>
             <div>
               <p><strong>E:</strong> Enter/Exit Vehicle</p>
+              <p><strong>Q:</strong> Flatten 2.5D View</p>
               <p><strong>Space:</strong> Handbrake</p>
               <p style="margin:0;"><strong>P / Esc:</strong> Pause</p>
             </div>

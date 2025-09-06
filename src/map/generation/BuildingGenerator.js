@@ -54,8 +54,14 @@ export class BuildingGenerator {
     const building = {
       rect,
       height: 40 + this.rand() * 80,
-      color: `hsl(${Math.floor(this.rand() * 40 + 190)}, 20%, ${Math.floor(this.rand() * 20 + 55)}%)`
+      color: `hsl(${Math.floor(this.rand() * 40 + 190)}, 20%, ${Math.floor(this.rand() * 20 + 55)}%)`,
+      // Add properties for animation
+      originalHeight: 0,
+      currentHeight: 0,
+      animationState: null
     };
+    building.originalHeight = building.height;
+    building.currentHeight = building.height;
     this.buildings.push(building);
 
     // Create building with floor and walls
@@ -99,15 +105,28 @@ export class BuildingGenerator {
       // Mark cell as occupied
       occupiedCells.add(`${cellX},${cellY}`);
       
-      // Place tree at center of cell
-      this.trees.push({
+      const tree = {
         pos: { x: cellX + 0.5, y: cellY + 0.5 },
         trunkHeight: 20 + this.rand() * 15,
         leafHeight: (15 + this.rand() * 10) * 0.5,
         leafWidth: (1.5 + this.rand() * 0.5) * 0.5,
         leafColor: `hsl(${100 + this.rand() * 40}, 60%, ${35 + this.rand() * 20}%)`,
-        trunkColor: `hsl(${30 + this.rand() * 20}, 40%, ${25 + this.rand() * 15}%)`
-      });
+        trunkColor: `hsl(${30 + this.rand() * 20}, 40%, ${25 + this.rand() * 15}%)`,
+        // Add properties for animation
+        originalTrunkHeight: 0,
+        currentTrunkHeight: 0,
+        originalLeafHeight: 0,
+        currentLeafHeight: 0,
+        animationState: null
+      };
+      
+      tree.originalTrunkHeight = tree.trunkHeight;
+      tree.currentTrunkHeight = tree.trunkHeight;
+      tree.originalLeafHeight = tree.leafHeight;
+      tree.currentLeafHeight = tree.leafHeight;
+      
+      // Place tree at center of cell
+      this.trees.push(tree);
     }
   }
 

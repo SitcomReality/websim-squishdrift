@@ -11,7 +11,7 @@ export function drawBuildings(r, state, mode = 'all') {
       sortedElements.push({
         type: 'tree',
         pos: tree.pos,
-        height: tree.trunkHeight + tree.leafHeight,
+        height: (tree.currentTrunkHeight ?? tree.trunkHeight) + (tree.currentLeafHeight ?? tree.leafHeight),
         tree: tree
       });
     });
@@ -21,8 +21,10 @@ export function drawBuildings(r, state, mode = 'all') {
   sortedElements.sort((a, b) => {
     const aY = a.rect ? (a.rect.y + a.rect.height) : (a.pos.y + 1);
     const bY = b.rect ? (b.rect.y + b.rect.height) : (b.pos.y + 1);
-    const aZ = aY + ((a.height || 0) / ts) * 0.1;
-    const bZ = bY + ((b.height || 0) / ts) * 0.1;
+    const aHeight = a.currentHeight ?? a.height ?? 0;
+    const bHeight = b.currentHeight ?? b.height ?? 0;
+    const aZ = aY + (aHeight / ts) * 0.1;
+    const bZ = bY + (bHeight / ts) * 0.1;
     return aZ - bZ;
   });
 
@@ -44,6 +46,18 @@ export function drawBuildings(r, state, mode = 'all') {
                           cam.y >= b.rect.y && 
                           cam.y < b.rect.y + b.rect.height);
       
+      const bHeight = b.currentHeight ?? b.height;
+      if (bHeight <= 0.1) { // When flattened, just draw the roof on the ground
+        if (mode === 'roofs' || mode === 'all') {
+          ctx.fillStyle = b.color;
+          ctx.fillRect(floorRect.x, floorRect.y, floorRect.w, floorRect.h);
+          ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(floorRect.x, floorRect.y, floorRect.w, floorRect.h);
+        }
+        continue;
+      }
+      
       // Calculate roof offset based on camera position
       let roofOffset = { x: 0, y: 0 };
       let roofScale = 1;
@@ -53,12 +67,12 @@ export function drawBuildings(r, state, mode = 'all') {
         const dir = { x: bx - cam.x, y: by - cam.y };
         const len = Math.hypot(dir.x, dir.y) || 1;
         dir.x /= len; dir.y /= len; // unit vector away from camera
-        const offsetMagnitude = b.height * perspectiveScale * Math.min(1, len / 20);
+        const offsetMagnitude = bHeight * perspectiveScale * Math.min(1, len / 20);
         roofOffset.x = dir.x * offsetMagnitude;
         roofOffset.y = dir.y * offsetMagnitude;
         
         // Perspective scale increases with building height
-        const heightFactor = Math.min(1.2, 1 + (b.height / 200) * 0.3);
+        const heightFactor = Math.min(1.2, 1 + (bHeight / 200) * 0.3);
         roofScale = heightFactor;
       }
       
@@ -147,15 +161,35 @@ function drawTree(r, state, tree) {
   const { ctx } = r, ts = state.world.tileSize;
   const cam = state.camera, perspectiveScale = 0.8;
   
+  const trunkHeight = tree.currentTrunkHeight ?? tree.trunkHeight;
+  const leafHeight = tree.currentLeafHeight ?? tree.leafHeight;
+
+  if (trunkHeight + leafHeight <= 0.1) {
+    // When flattened, draw a simple representation on the ground
+    const leafWidth = ts * tree.leafWidth;
+    const leafX = tree.pos.x * ts - leafWidth / 2;
+    const leafY = tree.pos.y * ts - leafWidth / 2;
+    
+    ctx.globalAlpha = 0.75;
+    ctx.fillStyle = tree.leafColor;
+    ctx.fillRect(leafX, leafY, leafWidth, leafWidth);
+    ctx.globalAlpha = 1.0;
+    
+    const trunkWidth = ts * 0.3;
+    const trunkX = tree.pos.x * ts - trunkWidth / 2;
+    const trunkY = tree.pos.y * ts - trunkWidth / 2;
+    ctx.fillStyle = tree.trunkColor;
+    ctx.fillRect(trunkX, trunkY, trunkWidth, trunkWidth);
+    return;
+  }
+
   // Tree trunk dimensions
   const trunkWidth = ts * 0.3;
-  const trunkHeight = tree.trunkHeight;
   const trunkX = tree.pos.x * ts - trunkWidth / 2;
   const trunkY = tree.pos.y * ts - trunkWidth / 2;
   
   // Tree leaves dimensions
   const leafWidth = ts * tree.leafWidth;
-  const leafHeight = tree.leafHeight;
   const leafX = tree.pos.x * ts - leafWidth / 2;
   const leafY = tree.pos.y * ts - leafWidth / 2;
   
@@ -172,7 +206,7 @@ function drawTree(r, state, tree) {
   trunkRoofOffset.x = dir.x * offsetMagnitude;
   trunkRoofOffset.y = dir.y * offsetMagnitude;
   
-  const leafOffsetMagnitude = (tree.trunkHeight + leafHeight) * perspectiveScale * Math.min(1, len / 20);
+  const leafOffsetMagnitude = (trunkHeight + leafHeight) * perspectiveScale * Math.min(1, len / 20);
   leafRoofOffset.x = dir.x * leafOffsetMagnitude;
   leafRoofOffset.y = dir.y * leafOffsetMagnitude;
   

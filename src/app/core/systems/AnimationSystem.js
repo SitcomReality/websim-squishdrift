@@ -4,16 +4,17 @@ export class AnimationSystem {
     this.animatingTrees = new Set();
   }
 
-  update(state, dt) {
-    if (!state || !state.world || !state.world.map) return;
+  update(state) {
+    if (!state?.world?.map) return;
     
     const map = state.world.map;
+    const now = performance.now();
     
     // Update building animations
     if (map.buildings) {
       for (const building of map.buildings) {
         if (building.animationState) {
-          this.updateBuildingAnimation(building, state.isFlattened, dt);
+          this.updateBuildingAnimation(building, now);
         }
       }
     }
@@ -22,33 +23,25 @@ export class AnimationSystem {
     if (map.trees) {
       for (const tree of map.trees) {
         if (tree.animationState) {
-          this.updateTreeAnimation(tree, state.isFlattened, dt);
+          this.updateTreeAnimation(tree, now);
         }
       }
     }
   }
 
-  updateBuildingAnimation(building, isFlattened, dt) {
+  updateBuildingAnimation(building, now) {
     const anim = building.animationState;
-    const now = Date.now();
     const elapsed = now - anim.startTime;
     const progress = Math.min(elapsed / anim.duration, 1);
     
     if (anim.type === 'shrink') {
-      // Linear interpolation to 0
       building.currentHeight = building.originalHeight * (1 - progress);
       if (progress >= 1) {
         building.currentHeight = 0;
         building.animationState = null;
       }
     } else if (anim.type === 'grow') {
-      // Elastic easing for bounce effect
-      const easeOutElastic = (t) => {
-        const c4 = (2 * Math.PI) / 3;
-        return t === 0 ? 0 : t === 1 ? 1 : Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
-      };
-      
-      const easedProgress = easeOutElastic(progress);
+      const easedProgress = this.easeOutElastic(progress);
       building.currentHeight = building.originalHeight * easedProgress;
       
       if (progress >= 1) {
@@ -58,14 +51,12 @@ export class AnimationSystem {
     }
   }
 
-  updateTreeAnimation(tree, isFlattened, dt) {
+  updateTreeAnimation(tree, now) {
     const anim = tree.animationState;
-    const now = Date.now();
     const elapsed = now - anim.startTime;
     const progress = Math.min(elapsed / anim.duration, 1);
     
     if (anim.type === 'shrink') {
-      // Linear interpolation to 0
       tree.currentTrunkHeight = tree.originalTrunkHeight * (1 - progress);
       tree.currentLeafHeight = tree.originalLeafHeight * (1 - progress);
       if (progress >= 1) {
@@ -74,13 +65,7 @@ export class AnimationSystem {
         tree.animationState = null;
       }
     } else if (anim.type === 'grow') {
-      // Elastic easing for bounce effect
-      const easeOutElastic = (t) => {
-        const c4 = (2 * Math.PI) / 3;
-        return t === 0 ? 0 : t === 1 ? 1 : Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
-      };
-      
-      const easedProgress = easeOutElastic(progress);
+      const easedProgress = this.easeOutElastic(progress);
       tree.currentTrunkHeight = tree.originalTrunkHeight * easedProgress;
       tree.currentLeafHeight = tree.originalLeafHeight * easedProgress;
       
@@ -90,6 +75,13 @@ export class AnimationSystem {
         tree.animationState = null;
       }
     }
+  }
+
+  easeOutElastic(t) {
+    const c4 = (2 * Math.PI) / 3;
+    if (t === 0) return 0;
+    if (t === 1) return 1;
+    return Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
   }
 
   triggerAnimations(state) {

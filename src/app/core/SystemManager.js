@@ -57,11 +57,10 @@ export class SystemManager {
     this.systems.weapon.update(state, input, dt);
     this.systems.particles.update(state, dt);
     this.systems.engineAudio.update(state, dt);
-    this.systems.animation.update(state, dt);
+    this.systems.animation.update(state);
   }
 
   getSystems() {
     return this.systems;
   }
 }
-

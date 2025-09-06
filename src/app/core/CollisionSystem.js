@@ -72,7 +72,10 @@ export class CollisionSystem {
   }
 
   isTreeTrunk(x, y, map) {
-    return !!this.getTreeAt(x, y, map);
+    if (!map.trees) return false;
+    return map.trees.some(tree => 
+      Math.floor(tree.pos.x) === x && Math.floor(tree.pos.y) === y
+    );
   }
 
   getTreeAt(x, y, map) {

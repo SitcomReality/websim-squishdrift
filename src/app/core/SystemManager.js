@@ -1,5 +1,3 @@
-
-```javascript
 import { CollisionSystem } from '../systems/CollisionSystem.js';
 import { PlayerSystem } from './systems/PlayerSystem.js';
 import { VehicleSystem } from './systems/VehicleSystem.js';
@@ -66,3 +64,4 @@ export class SystemManager {
     return this.systems;
   }
 }
+

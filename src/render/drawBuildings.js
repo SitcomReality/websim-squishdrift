@@ -59,7 +59,7 @@ export function drawBuildings(r, state, mode = 'all') {
       }
       
       // If mode is 'roofs_flat' and building isn't flattened, skip drawing anything for this building
-      if (mode === 'roofs_flat') continue;
+      if (mode === 'roofs_flat' && bHeight > 0.1) continue;
       
       // Calculate roof offset based on camera position
       let roofOffset = { x: 0, y: 0 };
@@ -149,7 +149,7 @@ export function drawBuildings(r, state, mode = 'all') {
       }
       
       // Draw roof
-      if (mode === 'roofs' || mode === 'all') {
+      if (mode === 'roofs' || mode === 'all' || mode === 'roofs_flat') {
         ctx.fillStyle = b.color;
         ctx.fillRect(roofRect.x, roofRect.y, roofRect.w, roofRect.h);
         ctx.strokeStyle = 'rgba(0,0,0,0.2)';

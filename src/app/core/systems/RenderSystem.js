@@ -130,6 +130,10 @@ export class RenderSystem {
     if (!state.isFlattened) {
       drawBuildings(renderer, state, 'walls');
       drawBuildings(renderer, state, 'roofs');
+    } else {
+      // When flattened, draw all roofs (both flattened and animating) 
+      // but skip walls for buildings that are still tall
+      drawBuildings(renderer, state, 'roofs');
     }
     
     // Draw particles (including smoke)

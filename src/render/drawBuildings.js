@@ -48,7 +48,7 @@ export function drawBuildings(r, state, mode = 'all') {
       
       const bHeight = b.currentHeight ?? b.height;
       if (bHeight <= 0.1) { // When flattened, just draw the roof on the ground
-        if (mode === 'roofs' || mode === 'all') {
+        if (mode === 'roofs' || mode === 'all' || (mode === 'roofs_flat' && bHeight <= 0.1)) {
           ctx.fillStyle = b.color;
           ctx.fillRect(floorRect.x, floorRect.y, floorRect.w, floorRect.h);
           ctx.strokeStyle = 'rgba(0,0,0,0.2)';
@@ -57,6 +57,9 @@ export function drawBuildings(r, state, mode = 'all') {
         }
         continue;
       }
+      
+      // If mode is 'roofs_flat' and building isn't flattened, skip drawing anything for this building
+      if (mode === 'roofs_flat') continue;
       
       // Calculate roof offset based on camera position
       let roofOffset = { x: 0, y: 0 };

@@ -55,10 +55,10 @@ export class RenderSystem {
     drawSkidmarks(renderer, state);
     
     // When flattened, draw roofs on the ground before entities
-    if (state.isFlattened) {
-      drawBuildings(renderer, state, 'roofs');
-    }
-
+    // Draw only already-flattened roofs on the ground before entities.
+    // This ensures tall building walls remain visible while they are animating.
+    drawBuildings(renderer, state, 'roofs_flat');
+    
     // Sort entities by y-position for proper z-ordering
     const entities = [...(state.entities || [])].sort((a, b) => {
       // Blood stains should be drawn behind everything
@@ -126,6 +126,7 @@ export class RenderSystem {
     }
     
     // Draw buildings (walls and roofs) in front, but only if not flattened
+    // Draw remaining walls and roofs for any non-flattened (or still-tall) buildings.
     if (!state.isFlattened) {
       drawBuildings(renderer, state, 'walls');
       drawBuildings(renderer, state, 'roofs');

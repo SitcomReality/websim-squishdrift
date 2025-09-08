@@ -256,12 +256,6 @@ export class InteractionSystem {
     return isWalkable(tile);
   }
 }
-```
-
-src/app/core/systems/DeathSystem.js
-```
-import { Vec2 } from '../../../utils/Vec2.js';
-import { Health } from '../../components/Health.js';
 
 export class DeathSystem {
   constructor() {
@@ -470,10 +464,7 @@ export class DeathSystem {
     window.dispatchEvent(new CustomEvent('game-restart'));
   }
 }
-```
 
-src/app/core/systems/ScoringSystem.js
-```
 export class ScoringSystem {
   constructor() {
     this.score = 0;
@@ -482,3 +473,4 @@ export class ScoringSystem {
   }
 
   addCrime(state, crimeType,
+}

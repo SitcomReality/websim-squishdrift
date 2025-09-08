@@ -22,11 +22,14 @@ export class TitleScreen {
       z-index: 9998;
       font-family: 'Noto Sans', system-ui, sans-serif;
       color: white;
+      overflow-y: auto;
+      padding: 20px;
+      box-sizing: border-box;
     `;
 
     overlay.innerHTML = `
-      <div id="title-content" style="text-align: center; max-width: 600px;">
-        <div id="title-image" style="width: 512px; height: 128px; margin: 0 auto 40px; background-image: url('/uisprites.png'); background-size: 512px 384px; background-position: 0 0; background-repeat: no-repeat;"></div>
+      <div id="title-content" style="text-align: center; max-width: 600px; width: 100%;">
+        <div id="title-image" style="width: 512px; height: 128px; margin: 0 auto 40px; background-image: url('/uisprites.png'); background-size: 512px 384px; background-position: 0 0; background-repeat: no-repeat; max-width: 100%; height: auto; aspect-ratio: 4/1;"></div>
         
         <div style="margin-bottom: 30px;">
           <h2 style="font-size: 24px; margin-bottom: 20px; color: #FFD700;">Controls</h2>
@@ -47,7 +50,7 @@ export class TitleScreen {
 
         <div style="margin-bottom: 40px;">
           <h2 style="font-size: 24px; margin-bottom: 20px; color: #FFD700;">Find Items Between Buildings</h2>
-          <div style="display: flex; justify-content: center; gap: 30px; flex-wrap: wrap;">
+          <div style="display: flex; justify-content: center; gap: 30px; flex-wrap: wrap; margin: 0 auto;">
             <div style="text-align: center;">
               <div style="width: 64px; height: 64px; margin: 0 auto 8px; background-image: url('/pickup_pistol.png'); background-size: contain; background-repeat: no-repeat;"></div>
               <p style="font-size: 14px;">Pistol</p>
@@ -75,7 +78,7 @@ export class TitleScreen {
           </div>
         </div>
 
-        <div id="start-button" style="width: 256px; height: 128px; margin: 0 auto; background-image: url('/uisprites.png'); background-size: 512px 384px; background-position: 0 -256px; background-repeat: no-repeat; cursor: pointer; transition: transform 0.2s ease;"></div>
+        <div id="start-button" style="width: 256px; height: 128px; margin: 0 auto; background-image: url('/uisprites.png'); background-size: 512px 384px; background-position: 0 -256px; background-repeat: no-repeat; cursor: pointer; transition: transform 0.2s ease; max-width: 100%; height: auto; aspect-ratio: 2/1;"></div>
       </div>
     `;
 

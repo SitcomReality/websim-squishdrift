@@ -149,9 +149,30 @@ export class InputSystem {
     const thr=12, max=60;
     const vec=(start,pos)=>{ if (!start||!pos) return {x:0,y:0}; return {x:Math.max(-max,Math.min(max,pos.x-start.x)), y:Math.max(-max,Math.min(max,pos.y-start.y))}; };
     const l=vec(this._touch.lStart,this._touch.lPos);
+    
+    // Update joystick position and visibility
+    const joystick = document.getElementById('joystick-indicator');
+    if (joystick) {
+      if (this._touch.lStart) {
+        joystick.style.display = 'block';
+        joystick.style.left = (this._touch.lStart.x - 50) + 'px';
+        joystick.style.top = (this._touch.lStart.y - 50) + 'px';
+        
+        // Update knob position
+        const knob = joystick.querySelector('.joystick-knob');
+        if (knob) {
+          const knobX = Math.max(-40, Math.min(40, l.x * 0.67));
+          const knobY = Math.max(-40, Math.min(40, l.y * 0.67));
+          knob.style.transform = `translate(${knobX}px, ${knobY}px)`;
+        }
+      } else {
+        joystick.style.display = 'none';
+      }
+    }
+    
     // Left stick: A/D and W/S
-    if (l.x < -thr) out.add('KeyA'); if (l.x > thr) out.add('KeyD');
-    if (l.y < -thr) out.add('KeyW'); if (l.y > thr) out.add('KeyS');
+    if (l.x < -thr) out.add('KeyA'); else if (l.x > thr) out.add('KeyD');
+    if (l.y < -thr) out.add('KeyW'); else if (l.y > thr) out.add('KeyS');
     this.virtualKeys = out;
   }
 }

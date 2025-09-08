@@ -162,6 +162,17 @@ export class PlayerSystem {
     if (input.keys.has('KeyD')) strafe += 0.75; // 75% speed for strafing
     if (input.keys.has('ArrowRight')) strafe += 0.75;
     
+    // Handle joystick facing direction
+    if (input.keys.has('FacingEast')) {
+      player.facingAngle = 0;
+    } else if (input.keys.has('FacingSouth')) {
+      player.facingAngle = Math.PI/2;
+    } else if (input.keys.has('FacingNorth')) {
+      player.facingAngle = -Math.PI/2;
+    } else if (input.keys.has('FacingWest')) {
+      player.facingAngle = Math.PI;
+    }
+    
     if (forward || strafe) {
       // Calculate movement in world space based on player facing
       const facingAngle = player.facingAngle || 0;

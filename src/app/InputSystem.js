@@ -170,7 +170,25 @@ export class InputSystem {
       }
     }
     
-    // Left stick: A/D and W/S
+    // Calculate angle from joystick position for player facing
+    if (l.x !== 0 || l.y !== 0) {
+      const angle = Math.atan2(l.y, l.x);
+      this.joystickAngle = angle;
+      
+      // Add facing direction keys based on angle
+      const facingAngle = angle;
+      if (facingAngle >= -Math.PI/4 && facingAngle < Math.PI/4) {
+        out.add('FacingEast');
+      } else if (facingAngle >= Math.PI/4 && facingAngle < 3*Math.PI/4) {
+        out.add('FacingSouth');
+      } else if (facingAngle >= -3*Math.PI/4 && facingAngle < -Math.PI/4) {
+        out.add('FacingNorth');
+      } else {
+        out.add('FacingWest');
+      }
+    }
+    
+    // Left stick: A/D and W/S for movement
     if (l.x < -thr) out.add('KeyA'); else if (l.x > thr) out.add('KeyD');
     if (l.y < -thr) out.add('KeyW'); else if (l.y > thr) out.add('KeyS');
     this.virtualKeys = out;

@@ -61,7 +61,12 @@ body {
 }
 
 /* make the canvas block-level and ensure wrapper determines its bounds */
-.canvas-wrap #game { display: block; width: 100%; height: 100%; border-radius:12px; }
+.canvas-wrap #game { 
+  display: block; 
+  width: 100%; 
+  height: 100%; 
+  border-radius: 12px; 
+}
 
 /* HUD positioning now references the canvas-wrap instead of the page.
    Keep the same 20px inset from canvas edges. */

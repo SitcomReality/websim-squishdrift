@@ -1,9 +1,32 @@
 import { Vec2 } from '../../../utils/Vec2.js';
 
 export class FacingSystem {
+  constructor() {
+    this.lastAimingInput = 'mouse'; // 'mouse' or 'gamepad'
+    this.lastMousePos = { x: -1, y: -1 };
+  }
+
   updateFacingFromMouse(state, player, input) {
+    const isGamepadAiming = input.gamepadAimVector && (input.gamepadAimVector.x !== 0 || input.gamepadAimVector.y !== 0);
+
+    // Check for mouse activity to switch input priority
+    const mouseMoved = input.mousePos && (this.lastMousePos.x !== input.mousePos.x || this.lastMousePos.y !== input.mousePos.y);
+    const mouseClicked = input.pressed.has('MouseLeft');
+
+    if (isGamepadAiming) {
+        this.lastAimingInput = 'gamepad';
+    } else if (mouseMoved || mouseClicked) {
+        this.lastAimingInput = 'mouse';
+    }
+    
+    // Store current mouse position for next frame's comparison
+    if (input.mousePos) {
+        this.lastMousePos.x = input.mousePos.x;
+        this.lastMousePos.y = input.mousePos.y;
+    }
+
     // Handle gamepad right stick for aiming if it's active
-    if (input.gamepadAimVector && (input.gamepadAimVector.x !== 0 || input.gamepadAimVector.y !== 0)) {
+    if (isGamepadAiming) {
         player.facingAngle = Math.atan2(input.gamepadAimVector.y, input.gamepadAimVector.x);
         player.facing = player.facing || new Vec2();
         player.facing.x = Math.cos(player.facingAngle);
@@ -19,6 +42,15 @@ export class FacingSystem {
       player.facing.x = Math.cos(player.facingAngle);
       player.facing.y = Math.sin(player.facingAngle);
       return;
+    }
+
+    // If gamepad was the last aiming input, hold the character's facing direction
+    if (this.lastAimingInput === 'gamepad') {
+        // Ensure facing vector is consistent with the last known angle
+        player.facing = player.facing || new Vec2();
+        player.facing.x = Math.cos(player.facingAngle);
+        player.facing.y = Math.sin(player.facingAngle);
+        return;
     }
 
     // Skip if no canvas or mouse position

@@ -1,5 +1,17 @@
+import { Vec2 } from '../../../utils/Vec2.js';
+
 export class FacingSystem {
   updateFacingFromMouse(state, player, input) {
+    // Handle joystick facing first if it's active
+    if (input.joystickAngle != null) {
+      player.facingAngle = input.joystickAngle;
+      // Update facing vector
+      player.facing = player.facing || new Vec2();
+      player.facing.x = Math.cos(player.facingAngle);
+      player.facing.y = Math.sin(player.facingAngle);
+      return;
+    }
+
     // Skip if no canvas or mouse position
     if (!state.canvas || !input || !input.mousePos) return;
     

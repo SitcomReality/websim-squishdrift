@@ -4,9 +4,6 @@ export class InputSystem {
     this.pressed = new Set();
     this.zoomDelta = 0;
     this.mousePos = null;
-    this.joystickAngle = null;
-    this.joystickX = 0;
-    this.joystickY = 0;
     
     // Mouse tracking
     if (target instanceof HTMLCanvasElement) {
@@ -70,6 +67,7 @@ export class InputSystem {
   // have consumed the input for the frame. This preserves one-frame "pressed" events.
   update(){
     // Rebuild virtual input each frame
+    this.virtualKeys.clear();
     this._pollGamepad();
     this._updateTouchVirtualKeys();
     // Remove old virtual keys, apply new, and emit pressed transitions
@@ -148,7 +146,7 @@ export class InputSystem {
   }
   _updateTouchVirtualKeys(){
     if (!this._touch) return;
-    const out = new Set(this.virtualKeys);
+    
     const thr=12, max=60;
     const vec=(start,pos)=>{ if (!start||!pos) return {x:0,y:0}; return {x:Math.max(-max,Math.min(max,pos.x-start.x)), y:Math.max(-max,Math.min(max,pos.y-start.y))}; };
     const l=vec(this._touch.lStart,this._touch.lPos);
@@ -174,33 +172,21 @@ export class InputSystem {
     }
     
     // Calculate angle from joystick position for player facing
-    if (l.x !== 0 || l.y !== 0) {
+    if (Math.hypot(l.x, l.y) > thr) {
       const angle = Math.atan2(l.y, l.x);
       this.joystickAngle = angle;
-      this.joystickX = l.x;
-      this.joystickY = l.y;
-      
-      // Add facing direction keys based on angle
-      const facingAngle = angle;
-      if (facingAngle >= -Math.PI/4 && facingAngle < Math.PI/4) {
-        out.add('FacingEast');
-      } else if (facingAngle >= Math.PI/4 && facingAngle < 3*Math.PI/4) {
-        out.add('FacingSouth');
-      } else if (facingAngle >= -3*Math.PI/4 && facingAngle < -Math.PI/4) {
-        out.add('FacingNorth');
-      } else {
-        out.add('FacingWest');
-      }
     } else {
-      // Reset joystick when not touching
       this.joystickAngle = null;
-      this.joystickX = 0;
-      this.joystickY = 0;
     }
     
-    // Left stick: A/D and W/S for movement
-    if (l.x < -thr) out.add('KeyA'); else if (l.x > thr) out.add('KeyD');
-    if (l.y < -thr) out.add('KeyW'); else if (l.y > thr) out.add('KeyS');
-    this.virtualKeys = out;
+    // Left stick: A/D and W/S for movement. Using a single key for movement
+    // and a vector for direction/magnitude.
+    if (Math.hypot(l.x, l.y) > thr) {
+      this.virtualKeys.add('KeyW'); // Treat any joystick movement as forward intention.
+      const mag = Math.min(1, Math.hypot(l.x, l.y) / max);
+      this.joystickVector = { x: l.x / max * mag, y: l.y / max * mag };
+    } else {
+      this.joystickVector = null;
+    }
   }
 }

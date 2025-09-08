@@ -4,58 +4,46 @@ export class MovementSystem {
   handlePlayerMovement(state, player, input, dt) {
     if (!state || !player || !input || !dt) return;
     
-    // Get movement input relative to player facing
-    let forward = 0, strafe = 0;
-    if (input.keys.has('KeyW')) forward += 1;
-    if (input.keys.has('ArrowUp')) forward += 1;
-    if (input.keys.has('KeyS')) forward -= 0.75; // 75% speed for backward
-    if (input.keys.has('ArrowDown')) forward -= 0.75;
-    if (input.keys.has('KeyA')) strafe -= 0.75; // 75% speed for strafing
-    if (input.keys.has('ArrowLeft')) strafe -= 0.75;
-    if (input.keys.has('KeyD')) strafe += 0.75; // 75% speed for strafing
-    if (input.keys.has('ArrowRight')) strafe += 0.75;
-    
-    // Handle joystick movement
-    if (input.keys.has('KeyW') || input.keys.has('KeyA') || input.keys.has('KeyS') || input.keys.has('KeyD')) {
-      // Keyboard movement
-    } else if (input.joystickAngle !== undefined) {
-      // Virtual joystick movement
-      const angle = input.joystickAngle;
-      const magnitude = Math.min(1, Math.hypot(input.joystickX || 0, input.joystickY || 0) / 60);
-      
-      forward = Math.cos(angle) * magnitude;
-      strafe = Math.sin(angle) * magnitude;
-      
-      // Handle facing direction from joystick
-      player.facingAngle = angle;
+    let moveVec = { x: 0, y: 0 };
+    let isMoving = false;
+
+    if (input.joystickVector) {
+      // Use joystick vector for movement
+      const angle = Math.atan2(input.joystickVector.y, input.joystickVector.x);
+      const magnitude = Math.hypot(input.joystickVector.x, input.joystickVector.y);
+      moveVec.x = Math.cos(angle) * magnitude;
+      moveVec.y = Math.sin(angle) * magnitude;
+      isMoving = true;
+    } else {
+      // Use keyboard input
+      let forward = 0, strafe = 0;
+      if (input.keys.has('KeyW')) forward += 1;
+      if (input.keys.has('ArrowUp')) forward += 1;
+      if (input.keys.has('KeyS')) forward -= 0.75; // 75% speed for backward
+      if (input.keys.has('ArrowDown')) forward -= 0.75;
+      if (input.keys.has('KeyA')) strafe -= 0.75; // 75% speed for strafing
+      if (input.keys.has('ArrowLeft')) strafe -= 0.75;
+      if (input.keys.has('KeyD')) strafe += 0.75; // 75% speed for strafing
+      if (input.keys.has('ArrowRight')) strafe += 0.75;
+
+      if (forward || strafe) {
+        // Calculate movement in world space based on player facing for keyboard
+        const facingAngle = player.facingAngle || 0;
+        const cos = Math.cos(facingAngle);
+        const sin = Math.sin(facingAngle);
+        
+        moveVec.x = forward * cos + strafe * -sin;
+        moveVec.y = forward * sin + strafe * cos;
+        isMoving = true;
+      }
     }
     
-    // Handle joystick facing direction
-    if (input.keys.has('FacingEast')) {
-      player.facingAngle = 0;
-    } else if (input.keys.has('FacingSouth')) {
-      player.facingAngle = Math.PI/2;
-    } else if (input.keys.has('FacingNorth')) {
-      player.facingAngle = -Math.PI/2;
-    } else if (input.keys.has('FacingWest')) {
-      player.facingAngle = Math.PI;
-    }
-    
-    if (forward || strafe) {
-      // Calculate movement in world space based on player facing
-      const facingAngle = player.facingAngle || 0;
-      const cos = Math.cos(facingAngle);
-      const sin = Math.sin(facingAngle);
-      
-      // Forward/backward movement
-      const dx = forward * cos + strafe * -sin;
-      const dy = forward * sin + strafe * cos;
-      
+    if (isMoving) {
       // Normalize diagonal movement
-      const len = Math.hypot(dx, dy);
+      const len = Math.hypot(moveVec.x, moveVec.y);
       if (len > 0) {
-        const normalizedDx = dx / len;
-        const normalizedDy = dy / len;
+        const normalizedDx = moveVec.x / len;
+        const normalizedDy = moveVec.y / len;
         
         // Check if player can run based on stamina
         const isRunning = input.keys.has('ShiftLeft') || input.keys.has('ShiftRight');
@@ -66,17 +54,15 @@ export class MovementSystem {
           moveSpeed *= 1.8; // 80% faster when running
         }
         
-        const nx = player.pos.x + normalizedDx * moveSpeed * dt;
-        const ny = player.pos.y + normalizedDy * moveSpeed * dt;
+        // Apply magnitude from joystick
+        const magnitude = input.joystickVector ? Math.hypot(input.joystickVector.x, input.joystickVector.y) : 1;
+        
+        const nx = player.pos.x + normalizedDx * moveSpeed * magnitude * dt;
+        const ny = player.pos.y + normalizedDy * moveSpeed * magnitude * dt;
         
         if (this.isWalkableTile(state, nx, player.pos.y)) player.pos.x = nx;
         if (this.isWalkableTile(state, player.pos.x, ny)) player.pos.y = ny;
-        
-        // Update last move speed for animation
-        player.lastMoveSpeed = moveSpeed * len;
       }
-    } else {
-      player.lastMoveSpeed = 0;
     }
   }
 

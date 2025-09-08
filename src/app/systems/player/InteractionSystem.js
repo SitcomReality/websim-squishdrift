@@ -1,113 +1,4 @@
-import { Vec2 } from '../../../utils/Vec2.js';
-import { Health } from '../../components/Health.js';
-import { StaminaSystem } from '../systems/player/StaminaSystem.js';
-import { HealthSystem } from '../systems/player/HealthSystem.js';
-import { FlattenSystem } from '../systems/player/FlattenSystem.js';
-import { MovementSystem } from '../systems/player/MovementSystem.js';
-import { FacingSystem } from '../systems/player/FacingSystem.js';
-import { InteractionSystem } from '../systems/player/InteractionSystem.js';
-
-export class PlayerSystem {
-  constructor() {
-    this.staminaSystem = new StaminaSystem();
-    this.healthSystem = new HealthSystem();
-    this.flattenSystem = new FlattenSystem();
-    this.movementSystem = new MovementSystem();
-    this.facingSystem = new FacingSystem();
-    this.interactionSystem = new InteractionSystem();
-  }
-
-  update(state, input, dt) {
-    const player = state.entities.find(e => e.type === 'player');
-    if (!player) return;
-    
-    this.healthSystem.ensureHealth(player);
-    this.staminaSystem.ensureStamina(player);
-    
-    // Handle flatten ability
-    this.flattenSystem.update(state, input);
-    
-    // Always update facing from mouse (even in vehicle for aiming)
-    this.facingSystem.updateFacingFromMouse(state, player, input);
-    
-    // Always handle interaction so E can exit vehicles
-    this.interactionSystem.handleInteraction(state, player, input);
-    
-    // Ensure control object exists
-    if (!state.control) {
-      state.control = { inVehicle: false };
-    }
-    
-    // Update HUD interaction prompt: show when near an unoccupied vehicle and not in a vehicle
-    this.interactionSystem.updateInteractionPrompt(state, player);
-    
-    if (!state.control.inVehicle) {
-      // Track movement speed for arm animation
-      const prevPos = { x: player.pos.x, y: player.pos.y };
-      this.movementSystem.handlePlayerMovement(state, player, input, dt);
-      
-      // Calculate movement speed for animation
-      const dx = player.pos.x - prevPos.x;
-      const dy = player.pos.y - prevPos.y;
-      player.lastMoveSpeed = Math.hypot(dx, dy) / dt;
-      
-      // Only advance animation when moving - no idle arm swinging
-      if (player.lastMoveSpeed > 0.01) {
-        player.t = (player.t || 0) + (player.lastMoveSpeed * 0.6) * dt;
-      } else {
-        // Reset to stationary position when not moving
-        player.t = 0;
-      }
-      
-      this.staminaSystem.updateStamina(state, player, input, dt);
-      this.healthSystem.updateHealth(state, player);
-    } else {
-      // Keep player "attached" to vehicle while inside
-      const v = state.control.vehicle;
-      if (v && v.pos) {
-        player.pos.x = v.pos.x;
-        player.pos.y = v.pos.y;
-        player.hidden = true;
-        player.inVehicle = true;
-        player.lastMoveSpeed = 0; // No arm movement when in vehicle
-        player.t = 0; // Reset animation when in vehicle
-      }
-    }
-  }
-
-  updateFacingFromMouse(state, player, input) {
-    // Skip if no canvas or mouse position
-    if (!state.canvas || !input || !input.mousePos) return;
-    
-    const canvas = state.canvas;
-    const ts = state.world.tileSize || 24;
-    
-    // Convert mouse position to world coordinates
-    const rect = canvas.getBoundingClientRect();
-    const mouseX = input.mousePos.x - rect.left;
-    const mouseY = input.mousePos.y - rect.top;
-    
-    // Apply camera transform to get world coordinates
-    const cx = Math.floor(canvas.width / 2);
-    const cy = Math.floor(canvas.height / 2);
-    const zoom = state.camera?.zoom || 1;
-    const camX = state.camera?.x || 0;
-    const camY = state.camera?.y || 0;
-    
-    const worldX = (mouseX - cx) / zoom + camX;
-    const worldY = (mouseY - cy) / zoom + camY;
-    
-    // Calculate angle from player to mouse
-    const dx = worldX - player.pos.x;
-    const dy = worldY - player.pos.y;
-    player.facingAngle = Math.atan2(dy, dx);
-    
-    // Update facing vector
-    player.facing = player.facing || new Vec2();
-    player.facing.x = Math.cos(player.facingAngle);
-    player.facing.y = Math.sin(player.facingAngle);
-  }
-
+export class InteractionSystem {
   updateInteractionPrompt(state, player) {
     try {
       const promptEl = document.getElementById('interaction-prompt');
@@ -347,7 +238,7 @@ export class PlayerSystem {
         }
     }
     
-    return isWalkable(tile);
+    return this.isWalkable(tile);
   }
 
   getBuildingAt(state, x, y) {
@@ -359,11 +250,235 @@ export class PlayerSystem {
     );
   }
 
-  updateStaminaBar(player) {
-    // Remove HUD stamina bar - now drawn near player on canvas
-    const staminaBar = document.getElementById('stamina-container');
-    if (staminaBar) {
-      staminaBar.style.display = 'none';
-    }
+  isWalkable(tile) {
+    // Import the isWalkable function from TileTypes
+    const { isWalkable } = require('../../../map/TileTypes.js');
+    return isWalkable(tile);
   }
 }
+```
+
+src/app/core/systems/DeathSystem.js
+```
+import { Vec2 } from '../../../utils/Vec2.js';
+import { Health } from '../../components/Health.js';
+
+export class DeathSystem {
+  constructor() {
+    this.isDead = false;
+    this.deathTime = 0;
+    this.blackScreen = false;
+    this.freezeRequested = false;
+    this.deathUIShown = false;
+    this.lastIncident = Date.now();
+  }
+
+  update(state, dt) {
+    const player = state.entities.find(e => e.type === 'player');
+    if (!player || !player.health) return;
+
+    // Check if player is dead
+    if (player.health.hp <= 0 && !this.isDead) {
+      this.handlePlayerDeath(state);
+    }
+
+    // Check if vehicles (including player vehicle) go outside map
+    this.checkMapBoundaries(state);
+
+    // Update death screen if player is dead
+    if (this.isDead) {
+      this.updateDeathScreen(state, dt);
+    }
+  }
+
+  checkPlayerDeath(state) {
+    const player = state.entities.find(e => e.type === 'player');
+    if (!player || !player.health) return;
+
+    // Check if player health is depleted
+    if (player.health.hp <= 0) {
+      return true;
+    }
+    return false;
+  }
+
+  checkMapBoundaries(state) {
+    const map = state.world?.map;
+    if (!map) return;
+
+    // Check all vehicles
+    for (const v of state.entities.filter(e => e.type === 'vehicle')) {
+      if (!v.pos) continue;
+      
+      // Check if vehicle is outside map boundaries
+      if (v.pos.x < 0 || v.pos.x >= map.width || 
+          v.pos.y < 0 || v.pos.y >= map.height) {
+        // Remove vehicle from entities
+        const idx = state.entities.indexOf(v);
+        if (idx > -1) state.entities.splice(idx, 1);
+      }
+    }
+  }
+
+  handlePlayerDeath(state) {
+    this.isDead = true;
+    this.deathTime = Date.now();
+    
+    // Fade out all audio including main theme
+    if (state.audio && state.audio.stopAll) {
+      state.audio.stopAll();
+    }
+
+    // Create death screen overlay
+    this.createDeathScreen(state);
+  }
+
+  createDeathScreen(state) {
+    const overlay = document.createElement('div');
+    overlay.id = 'death-overlay';
+    overlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+    `;
+
+    overlay.innerHTML = `
+      <div id="death-content" style="text-align: center; width: 100%; max-width: 600px;">
+        <div id="wasted-image" style="width: 90vw; max-width: 512px; height: auto; aspect-ratio: 4/1; background-image: url('/uisprites.png'); background-size: auto 128px; background-position: 0; background-repeat: no-repeat; margin: 0 auto 20px;"></div>
+        <div id="death-stats" style="margin-bottom: 30px; font-size: 18px;">
+          <p>Time Alive: <span id="time-alive">0:00</span></p>
+          <p>Enemies Eliminated: <span id="enemies-killed">0</span></p>
+          <p> Vehicles Destroyed: <span id="vehicles-destroyed">0</span></p>
+        </div>
+        <div id="restart-button-sprite" style="width: 256px; height: 128px; margin: 0 auto; background-image: url('/uisprites.png'); background-size: 512px 384px; background-position: -256px -256px; background-repeat: no-repeat; cursor: pointer; transition: transform 0.1s ease;"></div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    // Use setTimeout to trigger the fade-in animation
+    setTimeout(() => {
+      overlay.style.background = 'rgba(0, 0, 0, 0.8)';
+    }, 100);
+
+    // After fade completes, show content
+    setTimeout(() => {
+      const deathContent = document.getElementById('death-content');
+      deathContent.style.display = 'block';
+      this.freezeRequested = true;
+      if (state) state.gamePaused = true;
+    }, 2100); // Wait until after content is shown
+  }
+
+  updateDeathScreen(state, dt) {
+    const now = Date.now();
+    const timeAlive = Math.floor((now - state.startTime) / 1000);
+    document.getElementById('time-alive').textContent = `0:${timeAlive.toString().padStart(2, '0')}`;
+    
+    // Calculate stats
+    const enemiesKilled = state.stats?.enemiesKilled || 0;
+    const vehiclesDestroyed = state.stats?.vehiclesDestroyed || 0;
+    
+    document.getElementById('enemies-killed').textContent = enemiesKilled;
+    document.getElementById('vehicles-destroyed').textContent = vehiclesDestroyed;
+    
+    // Add restart button listener using direct assignment to ensure it works
+    const restartBtn = document.getElementById('restart-button-sprite');
+    if (restartBtn) {
+      restartBtn.addEventListener('click', () => {
+        console.log('Restart button clicked (death overlay)');
+        this.restart();
+      });
+    }
+    
+    // Add a check for restart button listener in the death screen
+    if (document.getElementById('death-overlay')) {
+      const overlay = document.getElementById('death-overlay');
+      const restartBtn = overlay.querySelector('#restart-button-sprite');
+      if (restartBtn) {
+        restartBtn.addEventListener('click', () => {
+          console.log('Restart button clicked (death overlay)');
+          this.restart();
+        });
+      }
+    }
+
+    // Play death music when restart button appears
+    this.playDeathMusic();
+  }
+
+  playDeathMusic() {
+    if (!state.audio) return;
+    if (this.deathMusic && !this.deathMusic.paused) return;
+    
+    this.deathMusic = new Audio('/music/damocles.mp3');
+    this.deathMusic.volume = state.audio.musicMuted ? 0 : state.audio.musicVolume;
+    this.deathMusic.muted = state.audio.musicMuted;
+    
+    this.deathMusic.play().catch(e => console.warn('Could not play death music:', e));
+    
+    // Update volume when music volume changes
+    if (state.audio.setMusicVolume) {
+      this.deathMusic.volume = state.audio.musicMuted ? 0 : state.audio.musicVolume;
+    }
+    
+    if (state.audio.toggleMusicMute) {
+      this.deathMusic.muted = state.audio.musicMuted;
+    }
+  }
+
+  stopDeathMusic() {
+    if (this.deathMusic) {
+      const fadeOut = () => {
+        const currentVolume = this.deathMusic.volume;
+        this.deathMusic.volume = Math.max(0, currentVolume - 0.1);
+        if (this.deathMusic.volume > 0) {
+          setTimeout(fadeOut, 50);
+        } else {
+          this.deathMusic.pause();
+          this.deathMusic.currentTime = 0;
+          this.deathMusic = null;
+        }
+      };
+      fadeOut();
+    }
+  }
+
+  restart() {
+    console.log('Restarting game...');
+    
+    // Stop death music
+    this.stopDeathMusic();
+    
+    // Remove death overlay
+    const deathOverlay = document.getElementById('death-overlay');
+    if (deathOverlay) {
+      deathOverlay.remove();
+    }
+    
+    // Reset death state
+    this.isDead = false;
+    this.deathTime = 0;
+    this.blackScreen = false;
+    this.freezeRequested = false;
+    this.deathUIShown = false;
+    
+    // Emit restart event
+    window.dispatchEvent(new CustomEvent('game-restart'));
+  }
+}
+```
+
+src/app/core/systems/ScoringSystem.js
+```
+export class ScoringSystem {
+  constructor() {
+    this.score = 0;
+    this.wantedPoints = 0;
+    this.wantedLevel = 0;
+  }
+
+  addCrime(state, crimeType,

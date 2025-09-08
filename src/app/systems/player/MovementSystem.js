@@ -89,5 +89,3 @@ export class MovementSystem {
     );
   }
 }
-```
-</code>

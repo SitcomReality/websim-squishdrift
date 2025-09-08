@@ -1,45 +1,27 @@
-import { isWalkable } from '../../../map/TileTypes.js';
 import { Vec2 } from '../../../utils/Vec2.js';
 import { Health } from '../../components/Health.js';
+import { StaminaSystem } from '../systems/player/StaminaSystem.js';
+import { HealthSystem } from '../systems/player/HealthSystem.js';
+import { FlattenSystem } from '../systems/player/FlattenSystem.js';
+import { MovementSystem } from '../systems/player/MovementSystem.js';
 
 export class PlayerSystem {
   constructor() {
-    this.maxStamina = 100;
-    this.staminaDepletionRate = 20; // per second
-    this.staminaRechargeRate = 40; // per second (2x depletion)
+    this.staminaSystem = new StaminaSystem();
+    this.healthSystem = new HealthSystem();
+    this.flattenSystem = new FlattenSystem();
+    this.movementSystem = new MovementSystem();
   }
 
   update(state, input, dt) {
     const player = state.entities.find(e => e.type === 'player');
     if (!player) return;
     
-    this.ensureHealth(player);
-    this.ensureStamina(player);
+    this.healthSystem.ensureHealth(player);
+    this.staminaSystem.ensureStamina(player);
     
-    // Handle Q key for flatten ability
-    if (input?.pressed?.has('KeyQ')) {
-      const wasFlattened = state.isFlattened;
-      state.isFlattened = !state.isFlattened;
-
-      // Play sound effect for toggle
-      if (state.isFlattened) {
-        state.audio?.playSfx('flatten_down');
-      } else {
-        state.audio?.playSfx('flatten_up');
-      }
-      
-      // Trigger animations
-      this.triggerFlattenAnimations(state);
-    }
-    
-    // Play ouch when player's health decreases
-    try {
-      const prevHp = (player.health && typeof player.health._prevHp === 'number') ? player.health._prevHp : player.health.hp;
-      if (player.health.hp < prevHp) {
-        state.audio?.playSfx?.('ouch');
-      }
-      player.health._prevHp = player.health.hp;
-    } catch (e) { /* swallow audio errors */ }
+    // Handle flatten ability
+    this.flattenSystem.update(state, input);
     
     // Always update facing from mouse (even in vehicle for aiming)
     this.updateFacingFromMouse(state, player, input);
@@ -53,26 +35,12 @@ export class PlayerSystem {
     }
     
     // Update HUD interaction prompt: show when near an unoccupied vehicle and not in a vehicle
-    try {
-      const promptEl = document.getElementById('interaction-prompt');
-      const actionEl = document.getElementById('interaction-action');
-      if (promptEl && actionEl && player.pos && !state.control.inVehicle) {
-        const nearbyVehicle = this.findNearbyVehicle(state, player);
-        if (nearbyVehicle) {
-          actionEl.textContent = 'enter vehicle';
-          promptEl.style.display = '';
-        } else {
-          promptEl.style.display = 'none';
-        }
-      } else if (promptEl) {
-        promptEl.style.display = 'none';
-      }
-    } catch (e) { /* DOM may be unavailable in some contexts */ }
+    this.updateInteractionPrompt(state, player);
     
     if (!state.control.inVehicle) {
       // Track movement speed for arm animation
       const prevPos = { x: player.pos.x, y: player.pos.y };
-      this.handlePlayerMovement(state, player, input, dt);
+      this.movementSystem.handlePlayerMovement(state, player, input, dt);
       
       // Calculate movement speed for animation
       const dx = player.pos.x - prevPos.x;
@@ -87,7 +55,8 @@ export class PlayerSystem {
         player.t = 0;
       }
       
-      this.updateStamina(state, player, input, dt);
+      this.staminaSystem.updateStamina(state, player, input, dt);
+      this.healthSystem.updateHealth(state, player);
     } else {
       // Keep player "attached" to vehicle while inside
       const v = state.control.vehicle;
@@ -98,111 +67,6 @@ export class PlayerSystem {
         player.inVehicle = true;
         player.lastMoveSpeed = 0; // No arm movement when in vehicle
         player.t = 0; // Reset animation when in vehicle
-      }
-    }
-  }
-
-  ensureHealth(entity) {
-    if (!entity.health) {
-      entity.health = new Health(100);
-    }
-  }
-
-  ensureStamina(entity) {
-    // Only initialize stamina when it's missing (null/undefined), not when it's 0.
-    if (typeof entity.stamina !== 'number') {
-      entity.stamina = this.maxStamina;
-      entity.maxStamina = this.maxStamina;
-    }
-  }
-
-  updateStamina(state, player, input, dt) {
-    const isRunning = input.keys.has('ShiftLeft') || input.keys.has('ShiftRight');
-    const isMoving = input.keys.has('KeyW') || input.keys.has('KeyS') || 
-                    input.keys.has('KeyA') || input.keys.has('KeyD') ||
-                    input.keys.has('ArrowUp') || input.keys.has('ArrowDown') ||
-                    input.keys.has('ArrowLeft') || input.keys.has('ArrowRight');
-    
-    // Deplete stamina when running and moving, but only if there's stamina
-    if (isRunning && isMoving && player.stamina > 0) {
-      // actively depleting while running and moving
-      player.stamina = Math.max(0, player.stamina - this.staminaDepletionRate * dt);
-    } else if (!(isRunning && isMoving)) {
-      // only recharge when the player is NOT holding run+movement
-      player.stamina = Math.min(player.maxStamina, player.stamina + this.staminaRechargeRate * dt);
-    }
-    
-    // If stamina is zero and player is trying to run, don't allow running
-    // This prevents the instant reset issue
-    player.canRun = player.stamina > 0;
-    
-    // Only update HUD visibility - we'll handle the canvas rendering separately
-    // The stamina bar will now be drawn near the player instead of in HUD
-  }
-
-  updateStaminaBar(player) {
-    // Remove HUD stamina bar - now drawn near player on canvas
-    const staminaBar = document.getElementById('stamina-container');
-    if (staminaBar) {
-      staminaBar.style.display = 'none';
-    }
-  }
-
-  handlePlayerMovement(state, player, input, dt) {
-    if (!state || !player || !input || !dt) return;
-    
-    // Get movement input relative to player facing
-    let forward = 0, strafe = 0;
-    if (input.keys.has('KeyW')) forward += 1;
-    if (input.keys.has('ArrowUp')) forward += 1;
-    if (input.keys.has('KeyS')) forward -= 0.75; // 75% speed for backward
-    if (input.keys.has('ArrowDown')) forward -= 0.75;
-    if (input.keys.has('KeyA')) strafe -= 0.75; // 75% speed for strafing
-    if (input.keys.has('ArrowLeft')) strafe -= 0.75;
-    if (input.keys.has('KeyD')) strafe += 0.75; // 75% speed for strafing
-    if (input.keys.has('ArrowRight')) strafe += 0.75;
-    
-    // Handle joystick facing direction
-    if (input.keys.has('FacingEast')) {
-      player.facingAngle = 0;
-    } else if (input.keys.has('FacingSouth')) {
-      player.facingAngle = Math.PI/2;
-    } else if (input.keys.has('FacingNorth')) {
-      player.facingAngle = -Math.PI/2;
-    } else if (input.keys.has('FacingWest')) {
-      player.facingAngle = Math.PI;
-    }
-    
-    if (forward || strafe) {
-      // Calculate movement in world space based on player facing
-      const facingAngle = player.facingAngle || 0;
-      const cos = Math.cos(facingAngle);
-      const sin = Math.sin(facingAngle);
-      
-      // Forward/backward movement
-      const dx = forward * cos + strafe * -sin;
-      const dy = forward * sin + strafe * cos;
-      
-      // Normalize diagonal movement
-      const len = Math.hypot(dx, dy);
-      if (len > 0) {
-        const normalizedDx = dx / len;
-        const normalizedDy = dy / len;
-        
-        // Check if player can run based on stamina
-        const isRunning = input.keys.has('ShiftLeft') || input.keys.has('ShiftRight');
-        let moveSpeed = player.moveSpeed || 1.5;
-        
-        // Only allow running if player has stamina
-        if (isRunning && player.canRun !== false) {
-          moveSpeed *= 1.8; // 80% faster when running
-        }
-        
-        const nx = player.pos.x + normalizedDx * moveSpeed * dt;
-        const ny = player.pos.y + normalizedDy * moveSpeed * dt;
-        
-        if (this.isWalkableTile(state, nx, player.pos.y)) player.pos.x = nx;
-        if (this.isWalkableTile(state, player.pos.x, ny)) player.pos.y = ny;
       }
     }
   }
@@ -238,6 +102,24 @@ export class PlayerSystem {
     player.facing = player.facing || new Vec2();
     player.facing.x = Math.cos(player.facingAngle);
     player.facing.y = Math.sin(player.facingAngle);
+  }
+
+  updateInteractionPrompt(state, player) {
+    try {
+      const promptEl = document.getElementById('interaction-prompt');
+      const actionEl = document.getElementById('interaction-action');
+      if (promptEl && actionEl && player.pos && !state.control.inVehicle) {
+        const nearbyVehicle = this.findNearbyVehicle(state, player);
+        if (nearbyVehicle) {
+          actionEl.textContent = 'enter vehicle';
+          promptEl.style.display = '';
+        } else {
+          promptEl.style.display = 'none';
+        }
+      } else if (promptEl) {
+        promptEl.style.display = 'none';
+      }
+    } catch (e) { /* DOM may be unavailable in some contexts */ }
   }
 
   handleInteraction(state, player, input) {
@@ -294,7 +176,6 @@ export class PlayerSystem {
     player.hidden = true;
     player.inVehicle = true;
     player.lastMoveSpeed = 0; // Stop arm movement when entering vehicle
-    
     player.collisionDisabled = true;
     player.canUseItems = false;
     
@@ -474,29 +355,11 @@ export class PlayerSystem {
     );
   }
 
-  triggerFlattenAnimations(state) {
-    const map = state.world.map;
-    const isFlattening = state.isFlattened;
-    const now = performance.now();
-
-    if (map.buildings) {
-      for (const building of map.buildings) {
-        building.animationState = {
-          type: isFlattening ? 'shrink' : 'grow',
-          startTime: now,
-          duration: isFlattening ? 300 : 600
-        };
-      }
-    }
-
-    if (map.trees) {
-      for (const tree of map.trees) {
-        tree.animationState = {
-          type: isFlattening ? 'shrink' : 'grow',
-          startTime: now,
-          duration: isFlattening ? 300 : 600
-        };
-      }
+  updateStaminaBar(player) {
+    // Remove HUD stamina bar - now drawn near player on canvas
+    const staminaBar = document.getElementById('stamina-container');
+    if (staminaBar) {
+      staminaBar.style.display = 'none';
     }
   }
 }

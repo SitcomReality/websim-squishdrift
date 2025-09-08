@@ -126,17 +126,19 @@ export class DeathSystem {
       font-family: 'Noto Sans', system-ui, sans-serif;
       z-index: 1000;
       transition: background 2s ease;
+      padding: 20px;
+      box-sizing: border-box;
     `;
 
     deathOverlay.innerHTML = `
-      <div id="death-content" style="display: none; text-align: center;">
-        <div id="wasted-image"></div>
+      <div id="death-content" style="display: none; text-align: center; width: 100%; max-width: 600px;">
+        <div id="wasted-image" style="width: 90vw; max-width: 512px; height: auto; aspect-ratio: 4/1; background-image: url('/uisprites.png'); background-size: auto 128px; background-position: 0 -128px; background-repeat: no-repeat; margin: 0 auto 20px;"></div>
         <div id="death-stats" style="margin-bottom: 30px; font-size: 18px;">
           <p>Time Alive: <span id="time-alive">0:00</span></p>
           <p>Enemies Eliminated: <span id="enemies-killed">0</span></p>
           <p>Vehicles Destroyed: <span id="vehicles-destroyed">0</span></p>
         </div>
-        <div id="restart-button-sprite" style="margin-left: 128px;"></div>
+        <div id="restart-button-sprite" style="width: 256px; height: 128px; background-image: url('/uisprites.png'); background-size: 512px 384px; background-position: -256px -256px; background-repeat: no-repeat; cursor: pointer; transition: transform 0.1s ease; margin: 0 auto;"></div>
       </div>
     `;
 

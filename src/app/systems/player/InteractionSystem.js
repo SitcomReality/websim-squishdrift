@@ -231,14 +231,14 @@ export class InteractionSystem {
     const tile = state.world.map.tiles[ty][tx];
 
     // If tile is a building tile, check if it's flattened
-    if (tile === 8 || tile === 9) { // BuildingFloor or BuildingWall
+    if (tile === Tile.BuildingFloor || tile === Tile.BuildingWall) {
         const building = this.getBuildingAt(state, tx, ty);
         if (building && (building.currentHeight ?? building.height) < 0.1) {
             return true; // Walkable if flattened
         }
     }
     
-    return this.isWalkable(tile);
+    return isWalkable(tile);
   }
 
   getBuildingAt(state, x, y) {
@@ -248,12 +248,6 @@ export class InteractionSystem {
         x >= b.rect.x && x < b.rect.x + b.rect.width &&
         y >= b.rect.y && y < b.rect.y + b.rect.height
     );
-  }
-
-  isWalkable(tile) {
-    // Import the isWalkable function from TileTypes
-    const { isWalkable } = require('../../../map/TileTypes.js');
-    return isWalkable(tile);
   }
 }
 

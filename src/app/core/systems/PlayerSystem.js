@@ -1,3 +1,5 @@
+
+```javascript
 import { Vec2 } from '../../../utils/Vec2.js';
 import { Health } from '../../components/Health.js';
 import { StaminaSystem } from '../systems/player/StaminaSystem.js';

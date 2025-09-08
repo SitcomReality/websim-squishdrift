@@ -4,6 +4,9 @@ export class InputSystem {
     this.pressed = new Set();
     this.zoomDelta = 0;
     this.mousePos = null;
+    this.joystickAngle = null;
+    this.joystickX = 0;
+    this.joystickY = 0;
     
     // Mouse tracking
     if (target instanceof HTMLCanvasElement) {
@@ -174,6 +177,8 @@ export class InputSystem {
     if (l.x !== 0 || l.y !== 0) {
       const angle = Math.atan2(l.y, l.x);
       this.joystickAngle = angle;
+      this.joystickX = l.x;
+      this.joystickY = l.y;
       
       // Add facing direction keys based on angle
       const facingAngle = angle;
@@ -186,6 +191,11 @@ export class InputSystem {
       } else {
         out.add('FacingWest');
       }
+    } else {
+      // Reset joystick when not touching
+      this.joystickAngle = null;
+      this.joystickX = 0;
+      this.joystickY = 0;
     }
     
     // Left stick: A/D and W/S for movement

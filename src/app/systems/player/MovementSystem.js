@@ -15,6 +15,21 @@ export class MovementSystem {
     if (input.keys.has('KeyD')) strafe += 0.75; // 75% speed for strafing
     if (input.keys.has('ArrowRight')) strafe += 0.75;
     
+    // Handle joystick movement
+    if (input.keys.has('KeyW') || input.keys.has('KeyA') || input.keys.has('KeyS') || input.keys.has('KeyD')) {
+      // Keyboard movement
+    } else if (input.joystickAngle !== undefined) {
+      // Virtual joystick movement
+      const angle = input.joystickAngle;
+      const magnitude = Math.min(1, Math.hypot(input.joystickX || 0, input.joystickY || 0) / 60);
+      
+      forward = Math.cos(angle) * magnitude;
+      strafe = Math.sin(angle) * magnitude;
+      
+      // Handle facing direction from joystick
+      player.facingAngle = angle;
+    }
+    
     // Handle joystick facing direction
     if (input.keys.has('FacingEast')) {
       player.facingAngle = 0;
@@ -56,7 +71,12 @@ export class MovementSystem {
         
         if (this.isWalkableTile(state, nx, player.pos.y)) player.pos.x = nx;
         if (this.isWalkableTile(state, player.pos.x, ny)) player.pos.y = ny;
+        
+        // Update last move speed for animation
+        player.lastMoveSpeed = moveSpeed * len;
       }
+    } else {
+      player.lastMoveSpeed = 0;
     }
   }
 

@@ -12,6 +12,15 @@ export class FacingSystem {
       return;
     }
 
+    // Handle gamepad right stick for aiming if it's active
+    if (input.gamepadAimVector && (Math.abs(input.gamepadAimVector.x) > 0.1 || Math.abs(input.gamepadAimVector.y) > 0.1)) {
+        player.facingAngle = Math.atan2(input.gamepadAimVector.y, input.gamepadAimVector.x);
+        player.facing = player.facing || new Vec2();
+        player.facing.x = Math.cos(player.facingAngle);
+        player.facing.y = Math.sin(player.facingAngle);
+        return;
+    }
+
     // Skip if no canvas or mouse position
     if (!state.canvas || !input || !input.mousePos) return;
     

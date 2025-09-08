@@ -38,9 +38,9 @@ export class TitleScreen {
         ${!isMobile ? `
         <div id="controls-section" style="margin-bottom: 30px;">
           <h2 style="font-size: 24px; margin-bottom: 20px; color: #FFD700;">Controls</h2>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; text-align: left; margin-bottom: 30px;">
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; text-align: left; margin-bottom: 30px;">
             <div>
-              <p><strong>Mouse:</strong> Aim & Click to Shoot</p>
+              <p><strong>Mouse:</strong> Aim & Shoot</p>
               <p><strong>WASD / Arrows:</strong> Move</p>
               <p style="margin:0;"><strong>Shift:</strong> Sprint</p>
             </div>
@@ -49,6 +49,12 @@ export class TitleScreen {
               <p><strong>Q:</strong> Flatten 2.5D View</p>
               <p><strong>Space:</strong> Handbrake</p>
               <p style="margin:0;"><strong>P / Esc:</strong> Pause</p>
+            </div>
+            <div>
+              <p><strong>Gamepad Left Stick:</strong> Move</p>
+              <p><strong>Gamepad Right Stick:</strong> Aim</p>
+              <p><strong>Gamepad Right Trigger:</strong> Shoot</p>
+              <p style="margin:0;"><strong>Gamepad A/Cross:</strong> Handbrake</p>
             </div>
           </div>
         </div>

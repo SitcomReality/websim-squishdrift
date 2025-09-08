@@ -1,3 +1,5 @@
+import { Tile } from '../../../map/TileTypes.js';
+
 export class InteractionSystem {
   updateInteractionPrompt(state, player) {
     try {
@@ -221,6 +223,11 @@ export class InteractionSystem {
     }
   }
 
+  isWalkable(tile) {
+    // Use the imported isWalkable function from TileTypes
+    return Tile.isWalkable ? Tile.isWalkable(tile) : (tile !== 8 && tile !== 9);
+  }
+
   isWalkableTile(state, x, y) {
     if (!state || !state.world || !state.world.map) return false;
     
@@ -238,7 +245,7 @@ export class InteractionSystem {
         }
     }
     
-    return isWalkable(tile);
+    return this.isWalkable(tile);
   }
 
   getBuildingAt(state, x, y) {

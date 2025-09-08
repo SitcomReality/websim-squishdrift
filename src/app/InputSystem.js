@@ -104,7 +104,7 @@ export class InputSystem {
     const rootWrap = (target instanceof HTMLCanvasElement) ? target.closest('.canvas-wrap') || document.body : document.body;
     const ui = document.createElement('div');
     ui.id = 'mobile-controls';
-    Object.assign(ui.style, {position:'absolute', inset:'0', pointerEvents:'none', touchAction:'none', zIndex:'50'});
+    Object.assign(ui.style, {position:'absolute', inset:'0', pointerEvents:'none', touchAction:'none', zIndex:'50', display: 'block' }); 
     // Left joystick area (within canvas)
     const left = document.createElement('div');
     Object.assign(left.style,{position:'absolute', left:'12px', bottom:'12px', width:'40%', height:'45%', pointerEvents:'auto'});

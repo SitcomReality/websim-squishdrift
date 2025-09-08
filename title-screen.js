@@ -27,11 +27,16 @@ export class TitleScreen {
       box-sizing: border-box;
     `;
 
+    // Check if mobile device
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                    (window.innerWidth <= 768 && 'ontouchstart' in window);
+
     overlay.innerHTML = `
       <div id="title-content" style="text-align: center; max-width: 600px; width: 100%;">
         <div id="title-image" style="width: 512px; height: 128px; margin: 0 auto 40px; background-image: url('/uisprites.png'); background-size: 512px 384px; background-position: 0 0; background-repeat: no-repeat; max-width: 100%; height: auto; aspect-ratio: 4/1;"></div>
         
-        <div style="margin-bottom: 30px;">
+        ${!isMobile ? `
+        <div id="controls-section" style="margin-bottom: 30px;">
           <h2 style="font-size: 24px; margin-bottom: 20px; color: #FFD700;">Controls</h2>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; text-align: left; margin-bottom: 30px;">
             <div>
@@ -47,7 +52,8 @@ export class TitleScreen {
             </div>
           </div>
         </div>
-
+        ` : ''}
+        
         <div style="margin-bottom: 40px;">
           <h2 style="font-size: 24px; margin-bottom: 20px; color: #FFD700;">Find Items Between Buildings</h2>
           <div style="display: flex; justify-content: center; gap: 30px; flex-wrap: wrap; margin: 0 auto;">

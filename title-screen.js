@@ -53,8 +53,10 @@ export class TitleScreen {
             <div>
               <p><strong>Gamepad Left Stick:</strong> Move</p>
               <p><strong>Gamepad Right Stick:</strong> Aim</p>
-              <p><strong>Gamepad Right Trigger:</strong> Shoot</p>
-              <p style="margin:0;"><strong>Gamepad A/Cross:</strong> Handbrake</p>
+              <p><strong>Gamepad RT/R1:</strong> Shoot</p>
+              <p><strong>Gamepad A/Cross:</strong> Handbrake</p>
+              <p><strong>Gamepad Y/Triangle:</strong> Enter/Exit Vehicle</p>
+              <p style="margin:0;"><strong>Gamepad LB/L1:</strong> Flatten</p>
             </div>
           </div>
         </div>

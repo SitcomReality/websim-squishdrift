@@ -117,8 +117,8 @@ export class InputSystem {
     }
 
     if (gp.buttons[0]?.pressed) this.virtualKeys.add('Space'); // A/Cross -> ability/handbrake
-    if (gp.buttons[1]?.pressed) this.virtualKeys.add('KeyE'); // B/Circle -> enter/exit
-    if (gp.buttons[6]?.pressed || gp.buttons[4]?.pressed) this.virtualKeys.add('KeyQ'); // LT/L1 -> flatten
+    if (gp.buttons[3]?.pressed) this.virtualKeys.add('KeyE'); // Y/Triangle -> enter/exit
+    if (gp.buttons[4]?.pressed) this.virtualKeys.add('KeyQ'); // LB -> flatten
     if (gp.buttons[7]?.pressed || gp.buttons[5]?.pressed) this.virtualKeys.add('MouseLeft'); // RT/R1 -> fire
   }
   _initTouch(target){

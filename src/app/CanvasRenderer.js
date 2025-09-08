@@ -8,8 +8,9 @@ export class CanvasRenderer {
   resizeToDisplay(){
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     const rect = this.canvas.getBoundingClientRect();
-    const w = Math.max(640, Math.floor(rect.width * dpr));
-    const h = Math.max(360, Math.floor(rect.height * dpr));
+    // Use the container's actual display rect (scaled by DPR) so the canvas can be taller on mobile
+    const w = Math.max(320, Math.floor(rect.width * dpr));
+    const h = Math.max(200, Math.floor(rect.height * dpr));
     if (this.canvas.width !== w || this.canvas.height !== h) {
       this.canvas.width = w; this.canvas.height = h;
     }

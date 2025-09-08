@@ -19,7 +19,7 @@ export class TitleScreen {
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      z-index: 9998;
+      z-index: 9999; /* Higher z-index than mobile controls */
       font-family: 'Noto Sans', system-ui, sans-serif;
       color: white;
       overflow-y: auto;
@@ -100,10 +100,44 @@ export class TitleScreen {
       startButton.style.transform = 'scale(1)';
     });
 
+    // Add click/touch event for mobile compatibility
+    startButton.addEventListener('click', () => {
+      this.handleStart();
+    });
+    
+    startButton.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      startButton.style.transform = 'scale(0.95)';
+    });
+    
+    startButton.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      startButton.style.transform = 'scale(1)';
+      this.handleStart();
+    });
+
     // Add pause functionality
     this.setupPauseControls();
 
     return overlay;
+  }
+
+  handleStart() {
+    if (this.gameStarted) return;
+    this.gameStarted = true;
+    
+    // Start the main soundtrack via AudioManager only
+    if (window.game && window.game.audioManager) {
+      window.game.audioManager.playMainTheme();
+    }
+    
+    // Hide title screen
+    this.hide();
+    
+    // Start the game
+    if (window.gameLoop) {
+      window.gameLoop.start();
+    }
   }
 
   show() {
@@ -112,6 +146,9 @@ export class TitleScreen {
     }
     this.element.style.display = 'flex';
     this.paused = false;
+    
+    // Ensure mobile controls are hidden when title screen is shown
+    this.hideMobileControls();
   }
 
   hide() {
@@ -119,6 +156,25 @@ export class TitleScreen {
       this.element.style.display = 'none';
     }
     this.paused = false;
+    
+    // Show mobile controls when game starts
+    this.showMobileControls();
+  }
+
+  hideMobileControls() {
+    // Hide the mobile touch controls UI
+    const mobileControls = document.querySelector('[style*="position:fixed"][style*="inset:0"][style*="pointerEvents:none"]');
+    if (mobileControls) {
+      mobileControls.style.display = 'none';
+    }
+  }
+
+  showMobileControls() {
+    // Show the mobile touch controls UI
+    const mobileControls = document.querySelector('[style*="position:fixed"][style*="inset:0"][style*="pointerEvents:none"]');
+    if (mobileControls) {
+      mobileControls.style.display = 'block';
+    }
   }
 
   setupPauseControls() {
@@ -208,5 +264,8 @@ export class TitleScreen {
       this.element = null;
     }
     this.paused = false;
+    
+    // Show mobile controls when title screen is destroyed
+    this.showMobileControls();
   }
 }

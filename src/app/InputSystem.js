@@ -113,15 +113,17 @@ export class InputSystem {
     const right = document.createElement('div');
     Object.assign(right.style,{display:'none'}); // deprecated
     // Buttons (primary fire and ability)
-    const mkBtn = (txt,rightPx,bottomPx)=>{ const b=document.createElement('button');
-      b.textContent=txt; Object.assign(b.style,{position:'absolute', right:rightPx, bottom:bottomPx,
+    const mkBtn = (txt,rightPx,bottomPx, id)=>{ const b=document.createElement('button'); // Add id parameter
+      b.textContent=txt; 
+      if (id) b.id = id; // Assign ID if provided
+      Object.assign(b.style,{position:'absolute', right:rightPx, bottom:bottomPx,
       padding:'12px 16px', font:'600 14px system-ui, -apple-system, Segoe UI, Noto Sans, sans-serif',
       opacity:'0.9', border:'2px solid #000', borderRadius:'10px', background:'#fff', pointerEvents:'auto', zIndex:'51'});
       b.addEventListener('touchstart',(e)=>{ e.preventDefault(); e.stopPropagation(); });
       b.addEventListener('touchend',(e)=>{ e.preventDefault(); e.stopPropagation(); });
       b.addEventListener('click',(e)=>{ e.preventDefault(); e.stopPropagation(); });
       return b; };
-    const btnFire = mkBtn('Fire','20px','20px'); const btnAbility = mkBtn('Ability','20px','70px');
+    const btnFire = mkBtn('Fire','20px','20px'); const btnAbility = mkBtn('Flatten','20px','70px', 'mobile-ability-button');
     ui.append(left, right, btnFire, btnAbility); rootWrap.appendChild(ui);
     // Touch state
     this._touch = { ui,left,right, lId:null, rId:null, lStart:null, rStart:null, lPos:null, rPos:null };
@@ -137,12 +139,33 @@ export class InputSystem {
     ui.addEventListener('touchcancel',onUp,{passive:false});
     // Buttons map to actions
     const press=(code)=>{ this.virtualKeys.add(code); if (!this.keys.has(code)) this.pressed.add(code); };
-    btnFire.addEventListener('touchstart',(e)=>{ press('MouseLeft'); e.preventDefault(); e.stopPropagation(); },{passive:false});
-    btnFire.addEventListener('touchend',(e)=>{ this.virtualKeys.delete('MouseLeft'); e.preventDefault(); e.stopPropagation(); });
+    btnFire.addEventListener('touchstart',(e)=>{ this.keys.add('MouseLeft'); this.pressed.add('MouseLeft'); e.preventDefault(); e.stopPropagation(); },{passive:false});
+    btnFire.addEventListener('touchend',(e)=>{ this.keys.delete('MouseLeft'); e.preventDefault(); e.stopPropagation(); });
     btnFire.addEventListener('click',(e)=>{ press('MouseLeft'); setTimeout(()=>this.virtualKeys.delete('MouseLeft'),50); e.preventDefault(); e.stopPropagation(); });
-    btnAbility.addEventListener('touchstart',(e)=>{ press('KeyF'); e.preventDefault(); e.stopPropagation(); },{passive:false});
-    btnAbility.addEventListener('touchend',(e)=>{ this.virtualKeys.delete('KeyF'); e.preventDefault(); e.stopPropagation(); });
-    btnAbility.addEventListener('click',(e)=>{ press('KeyF'); setTimeout(()=>this.virtualKeys.delete('KeyF'),50); e.preventDefault(); e.stopPropagation(); });
+    
+    // Context-sensitive ability button
+    btnAbility.addEventListener('touchstart', (e) => {
+      const action = btnAbility.dataset.action || 'KeyQ'; // Default to flatten
+      press(action);
+      e.preventDefault();
+      e.stopPropagation();
+    }, { passive: false });
+    
+    btnAbility.addEventListener('touchend', (e) => {
+      const action = btnAbility.dataset.action || 'KeyQ';
+      this.virtualKeys.delete(action);
+      this.keys.delete(action); // Also clear from main keys set
+      e.preventDefault();
+      e.stopPropagation();
+    });
+    
+    btnAbility.addEventListener('click', (e) => {
+      const action = btnAbility.dataset.action || 'KeyQ';
+      press(action);
+      setTimeout(() => this.virtualKeys.delete(action), 50);
+      e.preventDefault();
+      e.stopPropagation();
+    });
   }
   _updateTouchVirtualKeys(){
     if (!this._touch) return;

@@ -2,21 +2,56 @@ import { Tile } from '../../../map/TileTypes.js';
 
 export class InteractionSystem {
   updateInteractionPrompt(state, player) {
+    // Detect if on mobile
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                   (window.innerWidth <= 768 && 'ontouchstart' in window);
+
+    // Desktop prompt logic
     try {
       const promptEl = document.getElementById('interaction-prompt');
-      const actionEl = document.getElementById('interaction-action');
-      if (promptEl && actionEl && player.pos && !state.control.inVehicle) {
-        const nearbyVehicle = this.findNearbyVehicle(state, player);
-        if (nearbyVehicle) {
-          actionEl.textContent = 'enter vehicle';
-          promptEl.style.display = '';
+      if (promptEl) {
+        if (isMobile) {
+          promptEl.style.display = 'none'; // Hide desktop prompt on mobile
         } else {
-          promptEl.style.display = 'none';
+          const actionEl = document.getElementById('interaction-action');
+          if (actionEl && player.pos && !state.control.inVehicle) {
+            const nearbyVehicle = this.findNearbyVehicle(state, player);
+            if (nearbyVehicle) {
+              actionEl.textContent = 'enter vehicle';
+              promptEl.style.display = '';
+            } else {
+              promptEl.style.display = 'none';
+            }
+          } else {
+            promptEl.style.display = 'none';
+          }
         }
-      } else if (promptEl) {
-        promptEl.style.display = 'none';
       }
     } catch (e) { /* DOM may be unavailable in some contexts */ }
+
+    // Mobile button logic
+    if (isMobile) {
+      this.updateMobileInteraction(state, player);
+    }
+  }
+
+  updateMobileInteraction(state, player) {
+    const abilityButton = document.getElementById('mobile-ability-button');
+    if (!abilityButton) return;
+
+    if (state.control?.inVehicle) {
+      abilityButton.textContent = 'Exit';
+      abilityButton.dataset.action = 'KeyE';
+    } else {
+      const nearbyVehicle = this.findNearbyVehicle(state, player);
+      if (nearbyVehicle) {
+        abilityButton.textContent = 'Enter';
+        abilityButton.dataset.action = 'KeyE';
+      } else {
+        abilityButton.textContent = 'Flatten';
+        abilityButton.dataset.action = 'KeyQ';
+      }
+    }
   }
 
   handleInteraction(state, player, input) {

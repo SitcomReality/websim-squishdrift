@@ -228,3 +228,10 @@ button.danger { color:var(--danger); border-color:color-mix(in oklab, var(--dang
   cursor: pointer;
   border: none;
 }
+
+@media (max-width: 768px) {
+  .canvas-wrap #game {
+    height: 78vh; /* taller canvas on mobile, preserves graphics */
+    width: 100%;
+  }
+}

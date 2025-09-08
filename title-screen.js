@@ -162,16 +162,14 @@ export class TitleScreen {
   }
 
   hideMobileControls() {
-    // Hide the mobile touch controls UI
-    const mobileControls = document.querySelector('[style*="position:fixed"][style*="inset:0"][style*="pointerEvents:none"]');
+    const mobileControls = document.getElementById('mobile-controls');
     if (mobileControls) {
       mobileControls.style.display = 'none';
     }
   }
 
   showMobileControls() {
-    // Show the mobile touch controls UI
-    const mobileControls = document.querySelector('[style*="position:fixed"][style*="inset:0"][style*="pointerEvents:none"]');
+    const mobileControls = document.getElementById('mobile-controls');
     if (mobileControls) {
       mobileControls.style.display = 'block';
     }

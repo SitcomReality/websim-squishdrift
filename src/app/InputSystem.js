@@ -100,28 +100,31 @@ export class InputSystem {
   _initTouch(target){
     const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints>0;
     if (!isTouch) { this._touch = null; return; }
-    // Overlay
-    const root = (target instanceof HTMLCanvasElement) ? target.parentElement || document.body : document.body;
+    // Overlay inside canvas-wrap, not full screen, so it doesn't hit footer or block page
+    const rootWrap = (target instanceof HTMLCanvasElement) ? target.closest('.canvas-wrap') || document.body : document.body;
     const ui = document.createElement('div');
-    Object.assign(ui.style, {position:'fixed', inset:'0', pointerEvents:'none', touchAction:'none', zIndex:'9999'});
-    // Left joystick area
+    ui.id = 'mobile-controls';
+    Object.assign(ui.style, {position:'absolute', inset:'0', pointerEvents:'none', touchAction:'none', zIndex:'50'});
+    // Left joystick area (within canvas)
     const left = document.createElement('div');
-    Object.assign(left.style,{position:'absolute', left:'0', bottom:'0', width:'50%', height:'100%', pointerEvents:'auto'});
-    // Right joystick area
+    Object.assign(left.style,{position:'absolute', left:'12px', bottom:'12px', width:'40%', height:'45%', pointerEvents:'auto'});
+    // Remove full-screen right stick; use buttons at bottom-right above HUD
     const right = document.createElement('div');
-    Object.assign(right.style,{position:'absolute', right:'0', bottom:'0', width:'50%', height:'100%', pointerEvents:'auto'});
+    Object.assign(right.style,{display:'none'}); // deprecated
     // Buttons (primary fire and ability)
     const mkBtn = (txt,rightPx,bottomPx)=>{ const b=document.createElement('button');
       b.textContent=txt; Object.assign(b.style,{position:'absolute', right:rightPx, bottom:bottomPx,
-      padding:'10px 14px', font:'600 14px system-ui, -apple-system, Segoe UI, Noto Sans, sans-serif',
-      opacity:'0.6', border:'1px solid #000', borderRadius:'8px', background:'#fff', pointerEvents:'auto'});
+      padding:'12px 16px', font:'600 14px system-ui, -apple-system, Segoe UI, Noto Sans, sans-serif',
+      opacity:'0.9', border:'2px solid #000', borderRadius:'10px', background:'#fff', pointerEvents:'auto', zIndex:'51'});
+      b.addEventListener('touchstart',(e)=>{ e.preventDefault(); e.stopPropagation(); });
+      b.addEventListener('touchend',(e)=>{ e.preventDefault(); e.stopPropagation(); });
+      b.addEventListener('click',(e)=>{ e.preventDefault(); e.stopPropagation(); });
       return b; };
-    const btnFire = mkBtn('Fire','16px','16px'); const btnAbility = mkBtn('Ability','16px','64px');
-    ui.append(left,right,btnFire,btnAbility); root.appendChild(ui);
+    const btnFire = mkBtn('Fire','20px','20px'); const btnAbility = mkBtn('Ability','20px','70px');
+    ui.append(left, right, btnFire, btnAbility); rootWrap.appendChild(ui);
     // Touch state
     this._touch = { ui,left,right, lId:null, rId:null, lStart:null, rStart:null, lPos:null, rPos:null };
-    const onDown=(e,side)=>{ for (const t of e.changedTouches){ if (side==='L' && this._touch.lId==null && t.clientX<window.innerWidth*0.5){ this._touch.lId=t.identifier; this._touch.lStart={x:t.clientX,y:t.clientY}; this._touch.lPos=this._touch.lStart; }
-      if (side==='R' && this._touch.rId==null && t.clientX>=window.innerWidth*0.5){ this._touch.rId=t.identifier; this._touch.rStart={x:t.clientX,y:t.clientY}; this._touch.rPos=this._touch.rStart; } } e.preventDefault(); };
+    const onDown=(e,side)=>{ for (const t of e.changedTouches){ if (side==='L' && this._touch.lId==null){ this._touch.lId=t.identifier; this._touch.lStart={x:t.clientX,y:t.clientY}; this._touch.lPos=this._touch.lStart; } } e.preventDefault(); e.stopPropagation(); };
     const onMove=(e)=>{ for (const t of e.changedTouches){ if (t.identifier===this._touch.lId) this._touch.lPos={x:t.clientX,y:t.clientY};
       if (t.identifier===this._touch.rId) this._touch.rPos={x:t.clientX,y:t.clientY}; } e.preventDefault(); };
     const onUp=(e)=>{ for (const t of e.changedTouches){ if (t.identifier===this._touch.lId){ this._touch.lId=null; this._touch.lStart=this._touch.lPos=null; }
@@ -133,10 +136,12 @@ export class InputSystem {
     ui.addEventListener('touchcancel',onUp,{passive:false});
     // Buttons map to actions
     const press=(code)=>{ this.virtualKeys.add(code); if (!this.keys.has(code)) this.pressed.add(code); };
-    btnFire.addEventListener('touchstart',(e)=>{ press('MouseLeft'); e.preventDefault(); },{passive:false});
-    btnFire.addEventListener('touchend',()=>{ this.virtualKeys.delete('MouseLeft'); });
-    btnAbility.addEventListener('touchstart',(e)=>{ press('KeyF'); e.preventDefault(); },{passive:false});
-    btnAbility.addEventListener('touchend',()=>{ this.virtualKeys.delete('KeyF'); });
+    btnFire.addEventListener('touchstart',(e)=>{ press('MouseLeft'); e.preventDefault(); e.stopPropagation(); },{passive:false});
+    btnFire.addEventListener('touchend',(e)=>{ this.virtualKeys.delete('MouseLeft'); e.preventDefault(); e.stopPropagation(); });
+    btnFire.addEventListener('click',(e)=>{ press('MouseLeft'); setTimeout(()=>this.virtualKeys.delete('MouseLeft'),50); e.preventDefault(); e.stopPropagation(); });
+    btnAbility.addEventListener('touchstart',(e)=>{ press('KeyF'); e.preventDefault(); e.stopPropagation(); },{passive:false});
+    btnAbility.addEventListener('touchend',(e)=>{ this.virtualKeys.delete('KeyF'); e.preventDefault(); e.stopPropagation(); });
+    btnAbility.addEventListener('click',(e)=>{ press('KeyF'); setTimeout(()=>this.virtualKeys.delete('KeyF'),50); e.preventDefault(); e.stopPropagation(); });
   }
   _updateTouchVirtualKeys(){
     if (!this._touch) return;
@@ -144,11 +149,9 @@ export class InputSystem {
     const thr=12, max=60;
     const vec=(start,pos)=>{ if (!start||!pos) return {x:0,y:0}; return {x:Math.max(-max,Math.min(max,pos.x-start.x)), y:Math.max(-max,Math.min(max,pos.y-start.y))}; };
     const l=vec(this._touch.lStart,this._touch.lPos);
-    const r=vec(this._touch.rStart,this._touch.rPos);
-    // Left stick: steer (A/D) and strafe if used elsewhere
+    // Left stick: A/D and W/S
     if (l.x < -thr) out.add('KeyA'); if (l.x > thr) out.add('KeyD');
-    // Right stick: throttle/brake (W/S)
-    if (r.y < -thr) out.add('KeyW'); if (r.y > thr) out.add('KeyS');
+    if (l.y < -thr) out.add('KeyW'); if (l.y > thr) out.add('KeyS');
     this.virtualKeys = out;
   }
 }

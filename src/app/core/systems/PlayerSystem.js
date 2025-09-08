@@ -7,3 +7,4 @@ import { MovementSystem } from '../systems/player/MovementSystem.js';
 import { FacingSystem } from '../systems/player/FacingSystem.js';
 import { InteractionSystem } from '../systems/player/InteractionSystem.js';
 
+

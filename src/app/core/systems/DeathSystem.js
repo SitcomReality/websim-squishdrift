@@ -132,7 +132,7 @@ export class DeathSystem {
 
     deathOverlay.innerHTML = `
       <div id="death-content" style="display: none; text-align: center; width: 100%; max-width: 600px;">
-        <div id="wasted-image" style="width: 90vw; max-width: 512px; height: auto; aspect-ratio: 4/1; background-image: url('/uisprites.png'); background-size: auto 128px; background-position: 0 -128px; background-repeat: no-repeat; margin: 0 auto 20px;"></div>
+        <div id="wasted-image" style="width: 90vw; max-width: 512px; height: auto; aspect-ratio: 4/1; background-image: url('/uisprites.png'); background-size: auto 256px; background-position: 0; background-repeat: no-repeat; margin: 0 auto 20px;"></div>
         <div id="death-stats" style="margin-bottom: 30px; font-size: 18px;">
           <p>Time Alive: <span id="time-alive">0:00</span></p>
           <p>Enemies Eliminated: <span id="enemies-killed">0</span></p>

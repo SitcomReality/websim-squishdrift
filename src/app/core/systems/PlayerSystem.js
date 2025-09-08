@@ -56,6 +56,7 @@ export class PlayerSystem {
       if (player.lastMoveSpeed > 0.01) player.t = (player.t || 0) + (player.lastMoveSpeed * 0.6) * dt;
       else player.t = 0;
       updateStamina(state, player, input, dt);
+      updateStaminaBar(); // ensure HUD stamina container remains hidden (drawn near player instead)
     } else {
       const v = state.control.vehicle;
       if (v && v.pos) {

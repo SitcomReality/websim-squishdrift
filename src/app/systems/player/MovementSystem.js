@@ -6,40 +6,50 @@ export class MovementSystem {
     
     let moveVec = { x: 0, y: 0 };
     let isMoving = false;
+    let magnitude = 1;
 
     if (input.joystickVector) {
       // Use joystick vector for movement
       const angle = Math.atan2(input.joystickVector.y, input.joystickVector.x);
-      const magnitude = Math.hypot(input.joystickVector.x, input.joystickVector.y);
-      moveVec.x = Math.cos(angle) * magnitude;
-      moveVec.y = Math.sin(angle) * magnitude;
+      magnitude = Math.hypot(input.joystickVector.x, input.joystickVector.y);
+      moveVec.x = Math.cos(angle); // Use normalized vector for direction
+      moveVec.y = Math.sin(angle);
       isMoving = true;
+    } else if (input.gamepadMoveVector && (input.gamepadMoveVector.x !== 0 || input.gamepadMoveVector.y !== 0)) {
+        const fwd = input.gamepadMoveVector.y * -1; // Y is inverted on gamepad
+        const strafe = input.gamepadMoveVector.x;
+        magnitude = Math.hypot(fwd, strafe);
+
+        const facingAngle = player.facingAngle || 0;
+        const cos = Math.cos(facingAngle);
+        const sin = Math.sin(facingAngle);
+
+        moveVec.x = fwd * cos - strafe * sin;
+        moveVec.y = fwd * sin + strafe * cos;
+        isMoving = true;
     } else {
       // Use keyboard input
       let forward = 0, strafe = 0;
-      if (input.keys.has('KeyW')) forward += 1;
-      if (input.keys.has('ArrowUp')) forward += 1;
-      if (input.keys.has('KeyS')) forward -= 0.75; // 75% speed for backward
-      if (input.keys.has('ArrowDown')) forward -= 0.75;
-      if (input.keys.has('KeyA')) strafe -= 0.75; // 75% speed for strafing
-      if (input.keys.has('ArrowLeft')) strafe -= 0.75;
-      if (input.keys.has('KeyD')) strafe += 0.75; // 75% speed for strafing
-      if (input.keys.has('ArrowRight')) strafe += 0.75;
+      if (input.keys.has('KeyW') || input.keys.has('ArrowUp')) forward += 1;
+      if (input.keys.has('KeyS') || input.keys.has('ArrowDown')) forward -= 0.75;
+      if (input.keys.has('KeyA') || input.keys.has('ArrowLeft')) strafe -= 1;
+      if (input.keys.has('KeyD') || input.keys.has('ArrowRight')) strafe += 1;
 
-      if (forward || strafe) {
+      if (forward !== 0 || strafe !== 0) {
         // Calculate movement in world space based on player facing for keyboard
         const facingAngle = player.facingAngle || 0;
         const cos = Math.cos(facingAngle);
         const sin = Math.sin(facingAngle);
         
-        moveVec.x = forward * cos + strafe * -sin;
+        moveVec.x = forward * cos - strafe * sin;
         moveVec.y = forward * sin + strafe * cos;
         isMoving = true;
       }
     }
     
+    player.lastMoveSpeed = 0;
     if (isMoving) {
-      // Normalize diagonal movement
+      // Normalize direction vector
       const len = Math.hypot(moveVec.x, moveVec.y);
       if (len > 0) {
         const normalizedDx = moveVec.x / len;
@@ -54,8 +64,7 @@ export class MovementSystem {
           moveSpeed *= 1.8; // 80% faster when running
         }
         
-        // Apply magnitude from joystick
-        const magnitude = input.joystickVector ? Math.hypot(input.joystickVector.x, input.joystickVector.y) : 1;
+        player.lastMoveSpeed = moveSpeed * magnitude;
         
         const nx = player.pos.x + normalizedDx * moveSpeed * magnitude * dt;
         const ny = player.pos.y + normalizedDy * moveSpeed * magnitude * dt;

@@ -61,6 +61,8 @@ export class InputSystem {
     this.virtualKeys = new Set(); this.prevVirtualKeys = new Set();
     this.gamepadIndex = null; this._bindGamepadEvents();
     this._initTouch(target);
+    this.gamepadMoveVector = { x: 0, y: 0 };
+    this.gamepadAimVector = { x: 0, y: 0 };
   }
   
   // Note: do not clear this.pressed here — callers should clear it once systems
@@ -90,13 +92,34 @@ export class InputSystem {
     this.virtualKeys = new Set(this.virtualKeys);
     const pads = navigator.getGamepads ? navigator.getGamepads() : [];
     const gp = pads && pads[this.gamepadIndex ?? 0];
-    if (!gp) return;
-    const dead=0.25, axX=gp.axes[0]||0, axY=gp.axes[1]||0;
-    if (axY < -dead) this.virtualKeys.add('KeyW'); else if (axY > dead) this.virtualKeys.add('KeyS');
-    if (axX < -dead) this.virtualKeys.add('KeyA'); else if (axX > dead) this.virtualKeys.add('KeyD');
-    if (gp.buttons[0]?.pressed) this.virtualKeys.add('MouseLeft'); // A/Cross -> primary
-    if (gp.buttons[1]?.pressed || gp.buttons[2]?.pressed) this.virtualKeys.add('Space'); // B/Circle or X/Square
-    if (gp.buttons[3]?.pressed) this.virtualKeys.add('KeyF'); // Y/Triangle -> ability
+    if (!gp) {
+      this.gamepadMoveVector = { x: 0, y: 0 };
+      this.gamepadAimVector = { x: 0, y: 0 };
+      return;
+    }
+    const dead=0.25;
+
+    // Left stick for movement
+    const axX=gp.axes[0]||0, axY=gp.axes[1]||0;
+    if (Math.hypot(axX, axY) > dead) {
+        this.gamepadMoveVector = { x: axX, y: axY };
+    } else {
+        this.gamepadMoveVector = { x: 0, y: 0 };
+    }
+
+    // Right stick for aiming
+    const rightAxX = gp.axes[2] || 0;
+    const rightAxY = gp.axes[3] || 0;
+    if (Math.hypot(rightAxX, rightAxY) > dead) {
+        this.gamepadAimVector = { x: rightAxX, y: rightAxY };
+    } else {
+        this.gamepadAimVector = { x: 0, y: 0 };
+    }
+
+    if (gp.buttons[0]?.pressed) this.virtualKeys.add('Space'); // A/Cross -> ability/handbrake
+    if (gp.buttons[1]?.pressed) this.virtualKeys.add('KeyE'); // B/Circle -> enter/exit
+    if (gp.buttons[6]?.pressed || gp.buttons[4]?.pressed) this.virtualKeys.add('KeyQ'); // LT/L1 -> flatten
+    if (gp.buttons[7]?.pressed || gp.buttons[5]?.pressed) this.virtualKeys.add('MouseLeft'); // RT/R1 -> fire
   }
   _initTouch(target){
     const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints>0;

@@ -2,6 +2,15 @@ import { Vec2 } from '../../../utils/Vec2.js';
 
 export class FacingSystem {
   updateFacingFromMouse(state, player, input) {
+    // Handle gamepad right stick for aiming if it's active
+    if (input.gamepadAimVector && (input.gamepadAimVector.x !== 0 || input.gamepadAimVector.y !== 0)) {
+        player.facingAngle = Math.atan2(input.gamepadAimVector.y, input.gamepadAimVector.x);
+        player.facing = player.facing || new Vec2();
+        player.facing.x = Math.cos(player.facingAngle);
+        player.facing.y = Math.sin(player.facingAngle);
+        return;
+    }
+    
     // Handle joystick facing first if it's active
     if (input.joystickAngle != null) {
       player.facingAngle = input.joystickAngle;
@@ -10,15 +19,6 @@ export class FacingSystem {
       player.facing.x = Math.cos(player.facingAngle);
       player.facing.y = Math.sin(player.facingAngle);
       return;
-    }
-
-    // Handle gamepad right stick for aiming if it's active
-    if (input.gamepadAimVector && (Math.abs(input.gamepadAimVector.x) > 0.1 || Math.abs(input.gamepadAimVector.y) > 0.1)) {
-        player.facingAngle = Math.atan2(input.gamepadAimVector.y, input.gamepadAimVector.x);
-        player.facing = player.facing || new Vec2();
-        player.facing.x = Math.cos(player.facingAngle);
-        player.facing.y = Math.sin(player.facingAngle);
-        return;
     }
 
     // Skip if no canvas or mouse position

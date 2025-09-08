@@ -113,7 +113,7 @@ export class TitleScreen {
     startButton.addEventListener('touchend', (e) => {
       e.preventDefault();
       startButton.style.transform = 'scale(1)';
-      this.handleStart();
+      this.handleStart(); // directly start on touch
     });
 
     // Add pause functionality
@@ -125,18 +125,15 @@ export class TitleScreen {
   handleStart() {
     if (this.gameStarted) return;
     this.gameStarted = true;
-    
     // Start the main soundtrack via AudioManager only
     if (window.game && window.game.audioManager) {
       window.game.audioManager.playMainTheme();
     }
-    
-    // Hide title screen
-    this.hide();
-    
-    // Start the game
-    if (window.gameLoop) {
-      window.gameLoop.start();
+    // Start game via global starter and hide
+    if (typeof window.__startGame === 'function') {
+      window.__startGame();
+    } else {
+      this.hide();
     }
   }
 
@@ -241,17 +238,16 @@ export class TitleScreen {
 
   onStart(callback) {
     if (!this.element) return;
-    
     const startButton = this.element.querySelector('#start-button');
     startButton.addEventListener('click', () => {
       if (this.gameStarted) return;
       this.gameStarted = true;
-      
-      // Start the main soundtrack via AudioManager only
       if (window.game && window.game.audioManager) {
         window.game.audioManager.playMainTheme();
       }
-      
+      if (typeof window.__startGame === 'function') {
+        window.__startGame();
+      }
       callback();
     });
   }

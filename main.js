@@ -50,6 +50,14 @@ async function initializeWithLoading() {
         }
       },
     });
+    // expose loop + unified starter for TitleScreen/mobile
+    window.gameLoop = gameLoop;
+    window.__startGame = () => {
+      if (gameStarted) return;
+      gameStarted = true;
+      loadingSystem.hideTitleScreen();
+      gameLoop.start();
+    };
     
     // Show title screen
     loadingSystem.showTitleScreen();
@@ -58,10 +66,7 @@ async function initializeWithLoading() {
     const startButton = document.getElementById('start-button');
     if (startButton) {
       startButton.addEventListener('click', () => {
-        gameStarted = true;
-        loadingSystem.hideTitleScreen();
-        
-        gameLoop.start();
+        window.__startGame(); // use unified starter
       });
     }
     

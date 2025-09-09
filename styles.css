@@ -91,7 +91,6 @@ body {
   transition: width .15s ease;
 }
 .interaction-prompt { position: absolute; left: 50%; top: 75%; transform: translateX(-50%); padding: 10px 16px; background: rgba(0,0,0,0.7); color: white; border-radius: 8px; font-size: 14px; backdrop-filter: blur(4px); }
-.interaction-prompt kbd { background: #fff; color: #111; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
 
 #death-overlay #wasted-image {
   width: 512px;

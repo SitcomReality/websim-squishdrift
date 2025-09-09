@@ -18,18 +18,31 @@ export class DamageTextSystem {
         continue;
       }
       
-      // Update position (float upward)
-      text.pos.y -= 0.5 * dt; // Slow upward movement
+      // Update position based on type for visual separation
+      if (text.type === 'score_text') {
+        text.pos.y -= 0.6 * dt; // Score moves up faster
+        text.pos.x += 0.3 * dt; // and to the right
+      } else if (text.type === 'damage_text') {
+        text.pos.y -= 0.4 * dt; // Damage moves up slower
+        text.pos.x -= 0.2 * dt; // and to the left
+      } else {
+        text.pos.y -= 0.5 * dt; // Other texts float straight up
+      }
       
       // Handle animation
-      if (text.animation) {
-        const progress = text.age / text.lifetime;
-        let maxScale = 1.0;
-        if (text.animation === 'bulge') maxScale = 1.5;
-        if (text.animation === 'bulge_small') maxScale = 1.2;
-        
-        // Simple bulge effect using a sine curve
-        text.currentScale = 1 + (maxScale - 1) * Math.sin(progress * Math.PI);
+      const progress = text.age / text.lifetime;
+      if (text.animation === 'bulge' || text.animation === 'bulge_small') {
+        const maxScale = text.animation === 'bulge' ? 1.6 : 1.3;
+        // Bouncier bulge effect using a new easing function
+        text.currentScale = 1 + (maxScale - 1) * this.easeOutElastic(progress);
+      } else if (text.animation === 'pop') {
+        // Quick pop-in animation for damage
+        const popDuration = 0.2; // 200ms for the pop
+        if (progress < popDuration) {
+          text.currentScale = 1 + (1.2 - 1) * Math.sin((progress / popDuration) * Math.PI);
+        } else {
+          text.currentScale = 1;
+        }
       } else {
         text.currentScale = 1;
       }
@@ -41,7 +54,16 @@ export class DamageTextSystem {
     }
   }
 
-  addDamageText(state, pos, damage, color = '#ff3333') {
+  // Bouncier easing function for score text animation
+  easeOutElastic(t) {
+    if (t === 0 || t === 1) return t;
+    const c4 = (2 * Math.PI) / 3;
+    const p = Math.pow(2, -10 * t);
+    const s = Math.sin((t * 10 - 0.75) * c4);
+    return p * s + 1;
+  }
+
+  addDamageText(state, pos, damage, color = '#ff4757') { // Slightly brighter red
     if (!state.damageTexts) state.damageTexts = [];
     
     const text = {
@@ -51,7 +73,9 @@ export class DamageTextSystem {
       color,
       age: 0,
       lifetime: this.fadeDuration,
-      size: 7 // Reduced from 14 to 7 (50% of original)
+      size: 8, // Slightly larger base size for damage
+      animation: 'pop', // Add pop animation
+      currentScale: 1
     };
     
     state.damageTexts.push(text);
@@ -116,22 +140,22 @@ export class DamageTextSystem {
       return {
         color: '#FFD700', // Gold
         lifetime: 2.5,
-        size: 16,
+        size: 14, // Slightly smaller max size
         animation: 'bulge',
       };
     } else if (score >= 10) { // Medium score
       return {
         color: '#FFA500', // Orange
         lifetime: 2.0,
-        size: 12,
+        size: 11,
         animation: 'bulge_small',
       };
     } else { // Small score
       return {
-        color: '#FFFFFF', // White
+        color: '#E0E0E0', // Light Grey instead of pure white
         lifetime: 1.5,
-        size: 9,
-        animation: null,
+        size: 8,
+        animation: 'bulge_small', // Give small scores a subtle bulge too
       };
     }
   }

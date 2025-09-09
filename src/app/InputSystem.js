@@ -187,8 +187,14 @@ export class InputSystem {
       b.addEventListener('touchend',(e)=>{ e.preventDefault(); e.stopPropagation(); });
       b.addEventListener('click',(e)=>{ e.preventDefault(); e.stopPropagation(); });
       return b; };
-    const btnFire = mkBtn('Fire','20px','20px'); const btnAbility = mkBtn('Flatten','20px','70px', 'mobile-ability-button');
-    ui.append(left, right, btnFire, btnAbility); rootWrap.appendChild(ui);
+    const btnFire = mkBtn('Fire','20px','20px');
+    const btnAbility = mkBtn('Flatten','20px','70px', 'mobile-ability-button');
+    // New driving controls
+    const btnAccel = mkBtn('▲','110px','20px','mobile-accel'); // accelerate
+    const btnBrake = mkBtn('▼','110px','70px','mobile-brake'); // brake
+    const btnLeft = mkBtn('◀','200px','45px','mobile-steer-left'); // steer left
+    const btnRight = mkBtn('▶','60px','45px','mobile-steer-right'); // steer right
+    ui.append(left, right, btnFire, btnAbility, btnAccel, btnBrake, btnLeft, btnRight); rootWrap.appendChild(ui);
     // Touch state
     this._touch = { ui,left,right, lId:null, rId:null, lStart:null, rStart:null, lPos:null, rPos:null };
     const onDown=(e,side)=>{ for (const t of e.changedTouches){ if (side==='L' && this._touch.lId==null){ this._touch.lId=t.identifier; this._touch.lStart={x:t.clientX,y:t.clientY}; this._touch.lPos=this._touch.lStart; } } e.preventDefault(); e.stopPropagation(); };
@@ -201,8 +207,10 @@ export class InputSystem {
     ui.addEventListener('touchmove',onMove,{passive:false});
     ui.addEventListener('touchend',onUp,{passive:false});
     ui.addEventListener('touchcancel',onUp,{passive:false});
+    
     // Buttons map to actions
     const press=(code)=>{ this.virtualKeys.add(code); if (!this.keys.has(code)) this.pressed.add(code); };
+    
     btnFire.addEventListener('touchstart',(e)=>{ this.keys.add('MouseLeft'); this.pressed.add('MouseLeft'); e.preventDefault(); e.stopPropagation(); },{passive:false});
     btnFire.addEventListener('touchend',(e)=>{ this.keys.delete('MouseLeft'); e.preventDefault(); e.stopPropagation(); });
     btnFire.addEventListener('click',(e)=>{ press('MouseLeft'); setTimeout(()=>this.virtualKeys.delete('MouseLeft'),50); e.preventDefault(); e.stopPropagation(); });
@@ -230,6 +238,13 @@ export class InputSystem {
       e.preventDefault();
       e.stopPropagation();
     });
+    
+    // Accelerate / Brake / Steer handlers
+    const holdKey = (el, code)=>{ el.addEventListener('touchstart', (e)=>{ this.keys.add(code); this.pressed.add(code); e.preventDefault(); e.stopPropagation(); }, { passive:false }); el.addEventListener('touchend', (e)=>{ this.keys.delete(code); e.preventDefault(); e.stopPropagation(); }, { passive:false }); el.addEventListener('mousedown', (e)=>{ this.keys.add(code); this.pressed.add(code); e.preventDefault(); }, { passive:false }); el.addEventListener('mouseup', (e)=>{ this.keys.delete(code); e.preventDefault(); }, { passive:false }); };
+    holdKey(btnAccel, 'KeyW'); // accelerate
+    holdKey(btnBrake, 'KeyS'); // brake
+    holdKey(btnLeft, 'ArrowLeft'); // steer left
+    holdKey(btnRight, 'ArrowRight'); // steer right
   }
   _updateTouchVirtualKeys(){
     if (!this._touch) return;

@@ -56,7 +56,8 @@ export class MovementSystem {
         const normalizedDy = moveVec.y / len;
         
         // Check if player can run based on stamina
-        const isRunning = input.keys.has('ShiftLeft') || input.keys.has('ShiftRight');
+        const gp = navigator.getGamepads()[input.gamepadIndex ?? 0];
+        const isRunning = input.keys.has('ShiftLeft') || input.keys.has('ShiftRight') || gp?.buttons[0]?.pressed;
         let moveSpeed = player.moveSpeed || 1.5;
         
         // Only allow running if player has stamina

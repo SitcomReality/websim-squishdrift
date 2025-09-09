@@ -131,7 +131,6 @@ export class InputSystem {
         this.gamepadAimVector = { x: 0, y: 0 };
     }
 
-    if (gp.buttons[0]?.pressed) this.virtualKeys.add('Space'); // A/Cross -> ability/handbrake
     // Primary mappings
     if (gp.buttons[3]?.pressed) this.virtualKeys.add('KeyE'); // Y/Triangle -> enter/exit (only one)
     // Only Y (buttons[3]) is used for enter/exit. Flatten should only be triggered by B (buttons[1]) or X (buttons[2]).

@@ -14,7 +14,8 @@ export class StaminaSystem {
   }
 
   updateStamina(state, player, input, dt) {
-    const isRunning = input.keys.has('ShiftLeft') || input.keys.has('ShiftRight');
+    const gp = navigator.getGamepads()[input.gamepadIndex ?? 0];
+    const isRunning = input.keys.has('ShiftLeft') || input.keys.has('ShiftRight') || gp?.buttons[0]?.pressed;
     const isMoving = input.keys.has('KeyW') || input.keys.has('KeyS') || 
                     input.keys.has('KeyA') || input.keys.has('KeyD') ||
                     input.keys.has('ArrowUp') || input.keys.has('ArrowDown') ||

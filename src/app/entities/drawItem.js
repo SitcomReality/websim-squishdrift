@@ -17,7 +17,8 @@ export function drawItem(r, state, item){
   // Handle image-based pickups
   if (imageName && state.pickupImages?.[imageName]) {
     const img = state.pickupImages[imageName];
-    const itemSize = ts * 0.75; // Make the pickup image about 3/4 of a tile size
+    // Make pickups 25% of their previous size (previously ~0.75*ts -> now 0.75*0.25 = 0.1875*ts)
+    const itemSize = ts * 0.1875;
     const aspect = img.width / img.height;
     const w = itemSize;
     const h = itemSize / aspect;
@@ -46,13 +47,15 @@ export function drawItem(r, state, item){
   if (item.name === 'Health') {
     // Draw health cross
     ctx.fillStyle = '#00ff00';
-    ctx.fillRect(-ts * 0.15, -ts * 0.3, ts * 0.3, ts * 0.15);
-    ctx.fillRect(-ts * 0.075, -ts * 0.375, ts * 0.15, ts * 0.375);
+    // Scale health cross down to 25% of previous dimensions
+    ctx.fillRect(-ts * 0.0375, -ts * 0.075, ts * 0.075, ts * 0.0375);
+    ctx.fillRect(-ts * 0.01875, -ts * 0.09375, ts * 0.0375, ts * 0.09375);
   } else {
     // Default circle for other items
     ctx.fillStyle = item.color || '#FFD700';
     ctx.beginPath();
-    ctx.arc(0, 0, ts * 0.25, 0, Math.PI * 2);
+    // Reduce circle radius to 25% of previous (0.25 -> 0.0625)
+    ctx.arc(0, 0, ts * 0.0625, 0, Math.PI * 2);
     ctx.fill();
   }
   

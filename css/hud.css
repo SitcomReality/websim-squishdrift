@@ -16,19 +16,13 @@
   100% { transform: scale(1); filter: drop-shadow(0 0 6px rgba(255,200,60,0.25)); }
 }
 
-/* Apply to the entire score container (keeps combo inline positioning intact) */
-#score-display.score-pop {
+/* This animation is now applied directly to the #score element, not the container.
+   This prevents conflicts with other animations on #score-display. */
+#score.score-pop {
   animation: score-pop-scale 0.32s cubic-bezier(.2,.9,.2,1);
   will-change: transform, filter;
-}
-
-/* Move the pop animation to the inner score element so combo classes on the container
-   can't fully suppress or conflict with the pop. This rule intentionally targets
-   the #score inside a #score-display that has .score-pop. Placed after combo rules
-   so it takes precedence when both exist. */
-#score-display.score-pop #score {
-  animation: score-pop-scale 0.32s cubic-bezier(.2,.9,.2,1);
-  will-change: transform, filter;
+  /* Make sure it's an inline-block to allow transform */
+  display: inline-block; 
 }
 
 /* Ensure score text is styled for impact */

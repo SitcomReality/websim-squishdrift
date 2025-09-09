@@ -233,23 +233,20 @@ export class GameEngine {
       scoreEl.textContent = state.scoringSystem.getScore();
     }
 
-    // NEW: toggle pop class on the inner score element instead of the whole container
-    const scoreDisplayEl = document.getElementById('score-display');
-    if (scoreDisplayEl) {
-      const now = (typeof performance !== 'undefined') ? performance.now() : Date.now();
-      const last = state.lastScoreAt || 0;
-      const POP_WINDOW = 320; // ms - duration of visible pop state
-      const scoreInner = document.getElementById('score');
-      if (scoreInner) {
-        if (now - last <= POP_WINDOW) {
-          scoreInner.classList.add('score-pop');
-        } else {
-          scoreInner.classList.remove('score-pop');
-        }
+    // Toggle pop class on the inner score element to avoid animation conflicts on the container
+    const now = (typeof performance !== 'undefined') ? performance.now() : Date.now();
+    const last = state.lastScoreAt || 0;
+    const POP_WINDOW = 320; // ms - duration of visible pop state
+    const scoreInner = document.getElementById('score');
+    if (scoreInner) {
+      if (now - last <= POP_WINDOW) {
+        scoreInner.classList.add('score-pop');
+      } else {
+        scoreInner.classList.remove('score-pop');
       }
     }
     
-    // NEW: Add flaming border effects based on combo state
+    // Add flaming border effects based on combo state
     const comboInline = document.getElementById('combo-inline');
     const drainEl = document.getElementById('score-drain');
     const scoreBox = document.getElementById('score-display');

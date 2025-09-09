@@ -37,26 +37,27 @@ export class TitleScreen {
         
         ${!isMobile ? `
         <div id="controls-section" style="margin-bottom: 30px;">
-          <h2 style="font-size: 24px; margin-bottom: 20px; color: #FFD700;">Controls</h2>
-          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; text-align: left; margin-bottom: 30px;">
-            <div>
-              <p><strong>Mouse:</strong> Aim & Shoot</p>
-              <p><strong>WASD / Arrows:</strong> Move</p>
-              <p style="margin:0;"><strong>Shift:</strong> Sprint</p>
+          <h2 style="font-size: 24px; margin-bottom: 16px; color: #FFD700;">Desktop Controls</h2>
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; text-align: left;">
+            <div style="border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 12px; background: rgba(0,0,0,0.35);">
+              <div style="font-weight: 600; margin-bottom: 8px;">Movement</div>
+              <div style="line-height: 1.6;"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / <kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd> — move<br><kbd>Shift</kbd> — sprint</div>
             </div>
-            <div>
-              <p><strong>E:</strong> Enter/Exit Vehicle</p>
-              <p><strong>Q:</strong> Flatten 2.5D View</p>
-              <p><strong>Space:</strong> Handbrake</p>
-              <p style="margin:0;"><strong>P / Esc:</strong> Pause</p>
+            <div style="border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 12px; background: rgba(0,0,0,0.35);">
+              <div style="font-weight: 600; margin-bottom: 8px;">Combat</div>
+              <div style="line-height: 1.6;">Mouse — aim<br><kbd>LMB</kbd> — fire</div>
             </div>
-            <div>
-              <p><strong>Gamepad Left Stick:</strong> Move</p>
-              <p><strong>Gamepad Right Stick:</strong> Aim</p>
-              <p><strong>Gamepad RT/R1:</strong> Shoot</p>
-              <p><strong>Gamepad A/Cross:</strong> Handbrake</p>
-              <p><strong>Gamepad Y/Triangle:</strong> Enter/Exit Vehicle</p>
-              <p style="margin:0;"><strong>Gamepad LB/L1:</strong> Flatten</p>
+            <div style="border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 12px; background: rgba(0,0,0,0.35);">
+              <div style="font-weight: 600; margin-bottom: 8px;">Interaction</div>
+              <div style="line-height: 1.6;"><kbd>E</kbd> — enter/exit vehicle, pick up items<br><kbd>Q</kbd> — toggle flatten view</div>
+            </div>
+            <div style="border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 12px; background: rgba(0,0,0,0.35);">
+              <div style="font-weight: 600; margin-bottom: 8px;">Driving</div>
+              <div style="line-height: 1.6;"><kbd>W/S</kbd> or <kbd>↑/↓</kbd> — throttle/reverse<br><kbd>A/D</kbd> or <kbd>←/→</kbd> — steer<br><kbd>Space</kbd> — handbrake</div>
+            </div>
+            <div style="grid-column: 1 / -1; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 12px; background: rgba(0,0,0,0.35);">
+              <div style="font-weight: 600; margin-bottom: 8px;">System</div>
+              <div style="line-height: 1.6;"><kbd>P</kbd> / <kbd>Esc</kbd> — pause</div>
             </div>
           </div>
         </div>

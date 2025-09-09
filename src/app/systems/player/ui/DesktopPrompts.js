@@ -23,4 +23,3 @@ export class DesktopPrompts {
     } catch (e) { /* DOM may be unavailable in some contexts */ }
   }
 }
-``` 

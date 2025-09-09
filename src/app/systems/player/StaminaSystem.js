@@ -16,10 +16,15 @@ export class StaminaSystem {
   updateStamina(state, player, input, dt) {
     const gp = navigator.getGamepads()[input.gamepadIndex ?? 0];
     const isRunning = input.keys.has('ShiftLeft') || input.keys.has('ShiftRight') || gp?.buttons[0]?.pressed;
-    const isMoving = input.keys.has('KeyW') || input.keys.has('KeyS') || 
-                    input.keys.has('KeyA') || input.keys.has('KeyD') ||
-                    input.keys.has('ArrowUp') || input.keys.has('ArrowDown') ||
-                    input.keys.has('ArrowLeft') || input.keys.has('ArrowRight');
+    // Consider joystick/gamepad movement as movement as well
+    const isMoving = !!(
+      input.joystickVector ||
+      (input.gamepadMoveVector && (input.gamepadMoveVector.x !== 0 || input.gamepadMoveVector.y !== 0)) ||
+      input.keys.has('KeyW') || input.keys.has('KeyS') || 
+      input.keys.has('KeyA') || input.keys.has('KeyD') ||
+      input.keys.has('ArrowUp') || input.keys.has('ArrowDown') ||
+      input.keys.has('ArrowLeft') || input.keys.has('ArrowRight')
+    );
     
     // Deplete stamina when running and moving, but only if there's stamina
     if (isRunning && isMoving && player.stamina > 0) {

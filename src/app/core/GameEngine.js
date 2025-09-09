@@ -233,16 +233,19 @@ export class GameEngine {
       scoreEl.textContent = state.scoringSystem.getScore();
     }
 
-    // NEW: simple pop animation when player scores
+    // NEW: toggle pop class on the inner score element instead of the whole container
     const scoreDisplayEl = document.getElementById('score-display');
     if (scoreDisplayEl) {
       const now = (typeof performance !== 'undefined') ? performance.now() : Date.now();
       const last = state.lastScoreAt || 0;
       const POP_WINDOW = 320; // ms - duration of visible pop state
-      if (now - last <= POP_WINDOW) {
-        scoreDisplayEl.classList.add('score-pop');
-      } else {
-        scoreDisplayEl.classList.remove('score-pop');
+      const scoreInner = document.getElementById('score');
+      if (scoreInner) {
+        if (now - last <= POP_WINDOW) {
+          scoreInner.classList.add('score-pop');
+        } else {
+          scoreInner.classList.remove('score-pop');
+        }
       }
     }
     

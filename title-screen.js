@@ -1,3 +1,5 @@
+
+```javascript
 export class TitleScreen {
   constructor() {
     this.element = null;
@@ -8,92 +10,80 @@ export class TitleScreen {
   create() {
     const overlay = document.createElement('div');
     overlay.id = 'title-screen';
-    overlay.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999; /* Higher z-index than mobile controls */
-      font-family: 'Noto Sans', system-ui, sans-serif;
-      color: white;
-      overflow-y: auto;
-      padding: 20px;
-      box-sizing: border-box;
-    `;
+
+    // Ensure title screen stylesheet is present
+    if (!document.getElementById('title-screen-styles')) {
+      const link = document.createElement('link');
+      link.id = 'title-screen-styles';
+      link.rel = 'stylesheet';
+      link.href = '/title-screen.css';
+      document.head.appendChild(link);
+    }
 
     // Check if mobile device
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
-                    (window.innerWidth <= 768 && 'ontouchstart' in window);
+                      (window.innerWidth <= 768 && 'ontouchstart' in window);
 
     overlay.innerHTML = `
-      <div id="title-content" style="text-align: center; max-width: 600px; width: 100%;">
-        <div id="title-image" style="width: 512px; height: 128px; margin: 0 auto 40px; background-image: url('/uisprites.png'); background-size: 512px 384px; background-position: 0 0; background-repeat: no-repeat; max-width: 100%; height: auto; aspect-ratio: 4/1;"></div>
-        
+      <div id="title-content">
+        <div id="title-image"></div>
         ${!isMobile ? `
-        <div id="controls-section" style="margin-bottom: 30px;">
-          <h2 style="font-size: 24px; margin-bottom: 16px; color: #FFD700;">Desktop Controls</h2>
-          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; text-align: left;">
-            <div style="border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 12px; background: rgba(0,0,0,0.35);">
-              <div style="font-weight: 600; margin-bottom: 8px;">Movement</div>
-              <div style="line-height: 1.6;"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / <kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd> — move<br><kbd>Shift</kbd> — sprint</div>
+        <div id="controls-section">
+          <h2>Desktop Controls</h2>
+          <div class="controls-grid">
+            <div class="control-card">
+              <div class="title">Movement</div>
+              <div class="content"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / <kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd> — move<br><kbd>Shift</kbd> — sprint</div>
             </div>
-            <div style="border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 12px; background: rgba(0,0,0,0.35);">
-              <div style="font-weight: 600; margin-bottom: 8px;">Combat</div>
-              <div style="line-height: 1.6;">Mouse — aim<br><kbd>LMB</kbd> — fire</div>
+            <div class="control-card">
+              <div class="title">Combat</div>
+              <div class="content">Mouse — aim<br><kbd>LMB</kbd> — fire</div>
             </div>
-            <div style="border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 12px; background: rgba(0,0,0,0.35);">
-              <div style="font-weight: 600; margin-bottom: 8px;">Interaction</div>
-              <div style="line-height: 1.6;"><kbd>E</kbd> — enter/exit vehicle, pick up items<br><kbd>Q</kbd> — toggle flatten view</div>
+            <div class="control-card">
+              <div class="title">Interaction</div>
+              <div class="content"><kbd>E</kbd> — enter/exit vehicle, pick up items<br><kbd>Q</kbd> — toggle flatten view</div>
             </div>
-            <div style="border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 12px; background: rgba(0,0,0,0.35);">
-              <div style="font-weight: 600; margin-bottom: 8px;">Driving</div>
-              <div style="line-height: 1.6;"><kbd>W/S</kbd> or <kbd>↑/↓</kbd> — throttle/reverse<br><kbd>A/D</kbd> or <kbd>←/→</kbd> — steer<br><kbd>Space</kbd> — handbrake</div>
+            <div class="control-card">
+              <div class="title">Driving</div>
+              <div class="content"><kbd>W/S</kbd> or <kbd>↑/↓</kbd> — throttle/reverse<br><kbd>A/D</kbd> or <kbd>←/→</kbd> — steer<br><kbd>Space</kbd> — handbrake</div>
             </div>
-            <div style="grid-column: 1 / -1; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 12px; background: rgba(0,0,0,0.35);">
-              <div style="font-weight: 600; margin-bottom: 8px;">System</div>
-              <div style="line-height: 1.6;"><kbd>P</kbd> / <kbd>Esc</kbd> — pause</div>
+            <div class="control-card" style="grid-column:1 / -1;">
+              <div class="title">System</div>
+              <div class="content"><kbd>P</kbd> / <kbd>Esc</kbd> — pause</div>
             </div>
           </div>
         </div>
         ` : ''}
-        
         <div style="margin-bottom: 40px;">
           <h2 style="font-size: 24px; margin-bottom: 20px; color: #FFD700;">Find Items Between Buildings</h2>
-          <div style="display: flex; justify-content: center; gap: 30px; flex-wrap: wrap; margin: 0 auto;">
+          <div class="items-grid">
             <div style="text-align: center;">
-              <div style="width: 64px; height: 64px; margin: 0 auto 8px; background-image: url('/pickup_pistol.png'); background-size: contain; background-repeat: no-repeat;"></div>
-              <p style="font-size: 14px;">Pistol</p>
+              <div class="item-sprite item-pistol"></div>
+              <p class="item-label">Pistol</p>
             </div>
             <div style="text-align: center;">
-              <div style="width: 64px; height: 64px; margin: 0 auto 8px; background-image: url('/pickup_shotgun.png'); background-size: contain; background-repeat: no-repeat;"></div>
-              <p style="font-size: 14px;">Shotgun</p>
+              <div class="item-sprite item-shotgun"></div>
+              <p class="item-label">Shotgun</p>
             </div>
             <div style="text-align: center;">
-              <div style="width: 64px; height: 64px; margin: 0 auto 8px; background-image: url('/pickup_ak47.png'); background-size: contain; background-repeat: no-repeat;"></div>
-              <p style="font-size: 14px;">AK47</p>
+              <div class="item-sprite item-ak"></div>
+              <p class="item-label">AK47</p>
             </div>
             <div style="text-align: center;">
-              <div style="width: 64px; height: 64px; margin: 0 auto 8px; background-image: url('/pickup_grenade.png'); background-size: contain; background-repeat: no-repeat;"></div>
-              <p style="font-size: 14px;">Grenade</p>
+              <div class="item-sprite item-grenade"></div>
+              <p class="item-label">Grenade</p>
             </div>
             <div style="text-align: center;">
-              <div style="width: 64px; height: 64px; margin: 0 auto 8px; background-image: url('/pickup_health.png'); background-size: contain; background-repeat: no-repeat;"></div>
-              <p style="font-size: 14px;">Health</p>
+              <div class="item-sprite item-health"></div>
+              <p class="item-label">Health</p>
             </div>
             <div style="text-align: center;">
-              <div style="width: 64px; height: 64px; margin: 0 auto 8px; background-image: url('/pickup_bribe.png'); background-size: contain; background-repeat: no-repeat;"></div>
-              <p style="font-size: 14px;">Bribe</p>
+              <div class="item-sprite item-bribe"></div>
+              <p class="item-label">Bribe</p>
             </div>
           </div>
         </div>
-
-        <div id="start-button" style="width: 256px; height: 128px; margin: 0 auto; background-image: url('/uisprites.png'); background-size: 512px 384px; background-position: 0 -256px; background-repeat: no-repeat; cursor: pointer; transition: transform 0.2s ease; max-width: 100%; height: auto; aspect-ratio: 2/1;"></div>
+        <div id="start-button"></div>
       </div>
     `;
 
@@ -116,12 +106,12 @@ export class TitleScreen {
     startButton.addEventListener('click', () => {
       this.handleStart();
     });
-    
+
     startButton.addEventListener('touchstart', (e) => {
       e.preventDefault();
       startButton.style.transform = 'scale(0.95)';
     });
-    
+
     startButton.addEventListener('touchend', (e) => {
       e.preventDefault();
       startButton.style.transform = 'scale(1)';
@@ -155,7 +145,7 @@ export class TitleScreen {
     }
     this.element.style.display = 'flex';
     this.paused = false;
-    
+
     // Ensure mobile controls are hidden when title screen is shown
     this.hideMobileControls();
   }
@@ -165,7 +155,7 @@ export class TitleScreen {
       this.element.style.display = 'none';
     }
     this.paused = false;
-    
+
     // Show mobile controls when game starts
     this.showMobileControls();
   }
@@ -197,7 +187,7 @@ export class TitleScreen {
 
   togglePause() {
     this.paused = !this.paused;
-    
+
     // Toggle pause overlay
     const pauseOverlay = document.getElementById('pause-overlay');
     if (this.paused) {
@@ -217,25 +207,11 @@ export class TitleScreen {
     // Create pause overlay
     const pauseOverlay = document.createElement('div');
     pauseOverlay.id = 'pause-overlay';
-    pauseOverlay.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.7);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-family: 'Noto Sans', system-ui, sans-serif;
-      z-index: 10000;
-    `;
-
+    // Styles moved to title-screen.css for consistency
+    pauseOverlay.className = 'pause-overlay';
     pauseOverlay.innerHTML = `
-      <h1 style="font-size: 48px; margin-bottom: 20px;">PAUSED</h1>
-      <p style="font-size: 20px; margin-bottom: 30px;">Press P or Escape to resume</p>
+      <h1>PAUSED</h1>
+      <p>Press P or Escape to resume</p>
     `;
 
     document.body.appendChild(pauseOverlay);
@@ -270,7 +246,7 @@ export class TitleScreen {
       this.element = null;
     }
     this.paused = false;
-    
+
     // Show mobile controls when title screen is destroyed
     this.showMobileControls();
   }

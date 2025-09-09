@@ -1,0 +1,159 @@
+#title-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999; /* Higher z-index than mobile controls */
+  font-family: 'Noto Sans', system-ui, sans-serif;
+  color: white;
+  overflow-y: auto;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+#title-content {
+  text-align: center;
+  max-width: 600px;
+  width: 100%;
+}
+
+#title-image {
+  width: 512px;
+  height: 128px;
+  margin: 0 auto 40px;
+  background-image: url('/uisprites.png');
+  background-size: 512px 384px;
+  background-position: 0 0;
+  background-repeat: no-repeat;
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 4/1;
+}
+
+#controls-section {
+  margin-bottom: 30px;
+}
+
+#controls-section h2 {
+  font-size: 24px;
+  margin-bottom: 16px;
+  color: #FFD700;
+}
+
+.controls-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  text-align: left;
+}
+
+.control-card {
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 10px;
+  padding: 12px;
+  background: rgba(0,0,0,0.35);
+}
+
+.control-card .title {
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.control-card .content {
+  line-height: 1.6;
+}
+
+.items-grid {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  flex-wrap: wrap;
+  margin: 0 auto;
+}
+
+.item-sprite {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 8px;
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+
+.item-label {
+  font-size: 14px;
+}
+
+/* Start button sprite */
+#start-button {
+  width: 256px;
+  height: 128px;
+  margin: 0 auto;
+  background-image: url('/uisprites.png');
+  background-size: 512px 384px;
+  background-position: 0 -256px;
+  background-repeat: no-repeat;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 2/1;
+}
+
+/* Hover/active state handled via JS transform, this prevents pointer-events issues */
+#title-screen,
+#title-content,
+#start-button {
+  pointer-events: auto;
+}
+
+/* Pause overlay */
+#pause-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-family: 'Noto Sans', system-ui, sans-serif;
+  z-index: 10000;
+}
+
+#pause-overlay h1 {
+  font-size: 48px;
+  margin-bottom: 20px;
+}
+
+#pause-overlay p {
+  font-size: 20px;
+  margin-bottom: 30px;
+}
+
+/* Item sprite backgrounds */
+.item-pistol { background-image: url('/pickup_pistol.png'); }
+.item-shotgun { background-image: url('/pickup_shotgun.png'); }
+.item-ak { background-image: url('/pickup_ak47.png'); }
+.item-grenade { background-image: url('/pickup_grenade.png'); }
+.item-health { background-image: url('/pickup_health.png'); }
+.item-bribe { background-image: url('/pickup_bribe.png'); }
+
+/* Responsive tweaks to keep parity with existing site styles */
+@media (max-width: 768px) {
+  #title-image { margin-bottom: 24px; }
+  #controls-section { margin-bottom: 18px; }
+  #start-button { width: 200px; height: 100px; aspect-ratio: 2/1; }
+  .controls-grid { grid-template-columns: 1fr; gap: 12px; }
+  .items-grid { gap: 16px; }
+}
+```
+</output>

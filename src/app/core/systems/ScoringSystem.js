@@ -94,6 +94,10 @@ export class ScoringSystem {
         state.score = this.score;
         state.wantedLevel = this.wantedLevel;
         state.wantedPoints = this.wantedPoints;
+
+        // Record a timestamp so HUD can animate the score pop/bulge
+        state.lastScoreAt = (typeof performance !== 'undefined') ? performance.now() : Date.now();
+        state.lastScoreGain = scoreGain;
       }
     }
   }

@@ -8,3 +8,31 @@
 #death-overlay #restart-button-sprite{width:256px;height:128px;background-image:url('/uisprites.png');background-size:512px 384px;background-position:-256px -256px;cursor:pointer;border:none;background-color:transparent;transition:transform .1s ease;margin-left:128px}
 #death-overlay #restart-button-sprite:hover{transform:scale(1.05)}
 
+/* Score pop / bulge animation */
+@keyframes score-pop-scale {
+  0%   { transform: scale(1); filter: drop-shadow(0 0 6px rgba(255,200,60,0.25)); }
+  20%  { transform: scale(1.22); filter: drop-shadow(0 0 18px rgba(255,200,60,0.5)); }
+  50%  { transform: scale(1.08); filter: drop-shadow(0 0 10px rgba(255,160,40,0.4)); }
+  100% { transform: scale(1); filter: drop-shadow(0 0 6px rgba(255,200,60,0.25)); }
+}
+
+/* Apply to the entire score container (keeps combo inline positioning intact) */
+#score-display.score-pop {
+  animation: score-pop-scale 0.32s cubic-bezier(.2,.9,.2,1);
+  will-change: transform, filter;
+}
+
+/* Ensure score text is styled for impact */
+#score-display {
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:6px 12px;
+  border-radius:8px;
+  background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.00));
+  color:#fff;
+  font-weight:700;
+  font-size:20px;
+  text-shadow:0 2px 8px rgba(0,0,0,0.6);
+  transition:transform .12s ease;
+}

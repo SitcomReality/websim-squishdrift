@@ -230,23 +230,20 @@ export class GameEngine {
     }
     
     if (scoreEl) {
-      const currentScore = state.scoringSystem.getScore();
-      const previousScore = scoreEl.dataset.previousScore ? parseInt(scoreEl.dataset.previousScore) : 0;
-      
-      // Check if score increased
-      if (currentScore > previousScore) {
-        // Add bulge animation class
-        scoreDisplay.classList.add('score-bulge');
-        
-        // Remove class after animation completes
-        setTimeout(() => {
-          scoreDisplay.classList.remove('score-bulge');
-        }, 600);
+      scoreEl.textContent = state.scoringSystem.getScore();
+    }
+
+    // NEW: simple pop animation when player scores
+    const scoreDisplayEl = document.getElementById('score-display');
+    if (scoreDisplayEl) {
+      const now = (typeof performance !== 'undefined') ? performance.now() : Date.now();
+      const last = state.lastScoreAt || 0;
+      const POP_WINDOW = 320; // ms - duration of visible pop state
+      if (now - last <= POP_WINDOW) {
+        scoreDisplayEl.classList.add('score-pop');
+      } else {
+        scoreDisplayEl.classList.remove('score-pop');
       }
-      
-      // Update score and store previous value
-      scoreEl.textContent = currentScore;
-      scoreEl.dataset.previousScore = currentScore;
     }
     
     // NEW: Add flaming border effects based on combo state

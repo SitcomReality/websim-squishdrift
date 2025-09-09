@@ -11,7 +11,8 @@ export class DesktopPrompts {
         if (actionEl && player.pos && !state.control.inVehicle) {
           const nearbyVehicle = this.vehicleInteraction.findNearbyVehicle(state, player);
           if (nearbyVehicle) {
-            actionEl.textContent = 'enter vehicle';
+            // Use same styled buttons as title screen: keyboard + gamepad
+            actionEl.innerHTML = 'Press <kbd>E</kbd> / <kbd class="gamepad-button">Y</kbd> to enter vehicle';
             promptEl.style.display = '';
           } else {
             promptEl.style.display = 'none';

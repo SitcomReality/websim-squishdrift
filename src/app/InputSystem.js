@@ -97,6 +97,9 @@ export class InputSystem {
       this.gamepadAimVector = { x: 0, y: 0 };
       return;
     }
+    // DEBUG: log gamepad state to help diagnose button mapping issues
+    try { console.debug('Gamepad poll:', { index: gp.index, id: gp.id, axes: gp.axes.slice(0,4), buttons: gp.buttons.map(b=>b.pressed) }); } catch(e) {}
+    
     const dead=0.25;
 
     // Left stick for movement

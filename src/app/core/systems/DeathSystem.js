@@ -224,7 +224,7 @@ export class DeathSystem {
     const hide=(el)=>{el.style.opacity='0'; el.style.transform='scale(0.98)'; el.style.transition='opacity .2s ease, transform .2s ease'; el.style.display='none';};
     const show=(el)=>{el.style.display='block'; requestAnimationFrame(()=>{el.style.opacity='1'; el.style.transform='scale(1)';});};
     hide(pedP); hide(vehP);
-    const timeAlive=Math.floor((Date.now()-(state.startTime||Date.now()))/1000);
+    const timeAlive=Math.floor((Date.now()-(state.startTime||Date.now()))/1000));
     const peds=state.stats?.enemiesKilled||0, veh=state.stats?.vehiclesDestroyed||0, score=state.scoringSystem?.getScore?.()||0, highestCombo=state.scoringSystem?.getHighestCombo?.()||0;
     const animate=(span,to,dur,fmt=(v)=>String(v))=>new Promise(res=>{
       if(!span){ res(); return; }
@@ -253,10 +253,10 @@ export class DeathSystem {
     show(pedP); await animate(document.getElementById('enemies-killed'), peds, Math.min(1000, 600+peds*10));
     // vehicles
     show(vehP); await animate(document.getElementById('vehicles-destroyed'), veh, Math.min(1000, 600+veh*10));
-    // score (prominent)
-    show(scoreP); await animate(document.getElementById('final-score'), score, Math.min(1000, 600+score*0.5));
-    // highest combo (moved to show BEFORE score as final stat)
+    // highest combo (before score)
     show(comboP); await animate(document.getElementById('highest-combo'), highestCombo, 800);
+    // score (final stat)
+    show(scoreP); await animate(document.getElementById('final-score'), score, Math.min(1000, 600+score*0.5));
     
     // Play death music when restart button appears
     this.playDeathMusic(state);

@@ -241,24 +241,30 @@ export class GameEngine {
     if (comboInline && drainEl && scoreBox) {
       const { comboCount, comboTimer, comboMaxTime, comboPaused } = state.scoringSystem;
       
-      // Remove existing classes
-      scoreBox.classList.remove('combo-active', 'combo-paused', 'high-combo');
+      // Remove existing classes to reset state
+      scoreBox.classList.remove('combo-active', 'combo-paused', 'combo-paused-intense', 'high-combo');
       
       if (comboCount > 0) {
         comboInline.style.display = '';
         comboInline.textContent = `x${comboCount}`;
         
-        // Add combo active class for flaming border
+        // Add base class for an active combo
         scoreBox.classList.add('combo-active');
         
-        // High combo effects
+        // High combo effects for combo >= 5 (non-paused state)
         if (comboCount >= 5) {
           scoreBox.classList.add('high-combo');
         }
 
-        // Special electric rainbow flames when paused (skidding)
+        // Handle paused states
         if (comboPaused) {
-          scoreBox.classList.add('combo-paused');
+          if (comboCount >= 10) {
+            // Intense rainbow effect for high combos (10+)
+            scoreBox.classList.add('combo-paused-intense');
+          } else {
+            // Standard paused effect for lower combos (1-9)
+            scoreBox.classList.add('combo-paused');
+          }
         }
         
         const pct = Math.max(0, Math.min(100, (comboTimer / comboMaxTime) * 100));

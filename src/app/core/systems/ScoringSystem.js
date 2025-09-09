@@ -36,6 +36,11 @@ export class ScoringSystem {
       const scoreGain = basePoints * multiplier;
       this.score += scoreGain;
 
+      // Add floating score text
+      if (state.damageTextSystem && scoreGain > 0) {
+        state.damageTextSystem.addScoreText(state, target.pos, scoreGain);
+      }
+
       // Update state for other systems to access
       if (state) {
         state.score = this.score;

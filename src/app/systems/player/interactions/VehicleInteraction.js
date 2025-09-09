@@ -7,12 +7,15 @@ export class VehicleInteraction {
 
     if (state.control?.inVehicle) {
       this.exitVehicle(state, player);
+      return false; // Did not enter a vehicle
     } else {
       const nearbyVehicle = this.findNearbyVehicle(state, player);
       if (nearbyVehicle) {
         this.enterVehicle(state, player, nearbyVehicle);
+        return true; // Successfully entered a vehicle
       }
     }
+    return false; // Did not enter a vehicle
   }
 
   findNearbyVehicle(state, player) {

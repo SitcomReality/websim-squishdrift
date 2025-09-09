@@ -165,6 +165,10 @@ export class GameEngine {
 
     // Handle manual pause toggle (P or Escape)
     const input = this.inputManager.getInput?.();
+
+    // First, update the input manager to poll gamepad and other inputs for this frame.
+    this.inputManager.update();
+
     if (input?.pressed?.has('KeyP') || input?.pressed?.has('Escape')) {
       state.gamePaused = !state.gamePaused;
     }
@@ -198,7 +202,6 @@ export class GameEngine {
     // Now update input manager to perform any end-of-frame housekeeping.
     // Note: InputSystem.update() is intentionally a no-op; we need to clear the
     // one-frame 'pressed' set so presses are only valid for a single update cycle.
-    this.inputManager.update();
     if (this.inputManager?.inputSystem?.clearPressed) {
       this.inputManager.inputSystem.clearPressed();
     }

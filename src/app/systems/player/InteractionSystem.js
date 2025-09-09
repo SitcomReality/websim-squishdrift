@@ -25,18 +25,22 @@ export class InteractionSystem {
   handleInteraction(state, player, input) {
     if (!input || !input.pressed || !input.pressed.has) return;
     
-    if (input.pressed.has('KeyE')) {
+    const shouldInteract = input.pressed.has('KeyE');
+
+    if (shouldInteract) {
       if (!state.control) {
         state.control = { inVehicle: false };
       }
-      
+
       if (state.control.inVehicle) {
         this.vehicleInteraction.exitVehicle(state, player);
       } else {
-        this.vehicleInteraction.handleVehicleInteraction(state, player);
-        this.itemPickup.pickupItem(state, player);
+        // Try to enter a vehicle. If that doesn't happen, try to pick up an item.
+        const enteredVehicle = this.vehicleInteraction.handleVehicleInteraction(state, player);
+        if (!enteredVehicle) {
+          this.itemPickup.pickupItem(state, player);
+        }
       }
     }
   }
 }
-

@@ -73,7 +73,7 @@ button.danger{color:var(--danger);border-color:color-mix(in oklab,var(--danger) 
   border-radius: 12px;
 }
 
-#death-overlay #death-title { width: 90vw; max-width: 640px; margin: 0 auto 20px; }
+#death-overlay #death-title { max-width: 640px; margin: 0 auto 20px; }
 #death-overlay .death-title-text { font-size: clamp(28px, 6vw, 44px); }
 #death-overlay .death-subtitle { font-size: clamp(12px, 2.6vw, 16px); margin-bottom: 8px; }
 

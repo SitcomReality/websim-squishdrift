@@ -89,7 +89,6 @@ export class InputSystem {
     window.addEventListener('gamepaddisconnected', (e)=>{ if (this.gamepadIndex===e.gamepad.index) this.gamepadIndex=null; });
   }
   _pollGamepad(){
-    this.virtualKeys = new Set(this.virtualKeys);
     const pads = navigator.getGamepads ? navigator.getGamepads() : [];
     const gp = pads && pads[this.gamepadIndex ?? 0];
     if (!gp) {
@@ -98,7 +97,16 @@ export class InputSystem {
       return;
     }
     // DEBUG: log gamepad state to help diagnose button mapping issues
-    try { console.debug('Gamepad poll:', { index: gp.index, id: gp.id, axes: gp.axes.slice(0,4), buttons: gp.buttons.map(b=>b.pressed) }); } catch(e) {}
+    if (gp.buttons.some(b => b.pressed) || gp.axes.some(a => Math.abs(a) > 0.1)) {
+        try { 
+            console.debug('Gamepad poll:', { 
+                index: gp.index, 
+                id: gp.id, 
+                axes: gp.axes.slice(0,4).map(a => a.toFixed(2)), 
+                buttons: gp.buttons.map(b=>b.pressed) 
+            }); 
+        } catch(e) {}
+    }
     
     const dead=0.25;
 

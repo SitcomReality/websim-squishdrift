@@ -223,6 +223,7 @@ export class GameEngine {
     
     const wantedLevelEl = document.getElementById('wanted-level');
     const scoreEl = document.getElementById('score');
+    const scoreDisplay = document.getElementById('score-display');
     
     if (wantedLevelEl) {
       wantedLevelEl.textContent = state.scoringSystem.getWantedLevel();
@@ -232,15 +233,34 @@ export class GameEngine {
       scoreEl.textContent = state.scoringSystem.getScore();
     }
     
-    // NEW: inline combo + draining timer
+    // NEW: Add flaming border effects based on combo state
     const comboInline = document.getElementById('combo-inline');
     const drainEl = document.getElementById('score-drain');
     const scoreBox = document.getElementById('score-display');
+    
     if (comboInline && drainEl && scoreBox) {
       const { comboCount, comboTimer, comboMaxTime, comboPaused } = state.scoringSystem;
+      
+      // Remove existing classes
+      scoreBox.classList.remove('combo-active', 'combo-paused', 'high-combo');
+      
       if (comboCount > 0) {
         comboInline.style.display = '';
         comboInline.textContent = `x${comboCount}`;
+        
+        // Add combo active class for flaming border
+        scoreBox.classList.add('combo-active');
+        
+        // Special electric rainbow flames when paused (skidding)
+        if (comboPaused) {
+          scoreBox.classList.add('combo-paused');
+        }
+        
+        // High combo effects
+        if (comboCount >= 5) {
+          scoreBox.classList.add('high-combo');
+        }
+        
         const pct = Math.max(0, Math.min(100, (comboTimer / comboMaxTime) * 100));
         drainEl.style.width = `${pct}%`;
         drainEl.classList.toggle('paused', !!comboPaused);

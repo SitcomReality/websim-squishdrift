@@ -77,31 +77,106 @@ body {
   pointer-events: none;
 }
 
+/* Enhanced score display with flaming border effects */
 #score-display {
   position: relative;
   background: rgba(0,0,0,0.85);
   border: 2px solid #0ea5e9;
   border-radius: 12px;
-  padding: 6px 18px;
+  padding: 8px 24px;
   box-shadow: 0 0 18px rgba(14,165,233,0.35);
   text-align: center;
-  min-width: 150px;
+  min-width: 180px;
+  transition: all 0.3s ease;
+}
+
+/* Base flame effect for active combo */
+#score-display.combo-active {
+  border: none;
+  box-shadow: 
+    0 0 20px rgba(255, 100, 0, 0.8),
+    0 0 40px rgba(255, 150, 0, 0.6),
+    0 0 60px rgba(255, 200, 0, 0.4),
+    inset 0 0 20px rgba(255, 100, 0, 0.3);
+  animation: flame-border 0.5s ease-in-out infinite alternate;
+}
+
+/* Electric rainbow flames when combo is paused (skidding) */
+#score-display.combo-paused {
+  border: none;
+  box-shadow: 
+    0 0 30px rgba(0, 255, 255, 0.9),
+    0 0 60px rgba(255, 0, 255, 0.7),
+    0 0 90px rgba(255, 255, 0, 0.5),
+    0 0 120px rgba(0, 255, 0, 0.3),
+    inset 0 0 30px rgba(255, 255, 255, 0.4);
+  animation: electric-rainbow-flames 0.3s ease-in-out infinite alternate;
+}
+
+/* Flaming border animation */
+@keyframes flame-border {
+  0% {
+    box-shadow: 
+      0 0 20px rgba(255, 100, 0, 0.8),
+      0 0 40px rgba(255, 150, 0, 0.6),
+      0 0 60px rgba(255, 200, 0, 0.4),
+      inset 0 0 20px rgba(255, 100, 0, 0.3);
+  }
+  100% {
+    box-shadow: 
+      0 0 30px rgba(255, 50, 0, 1),
+      0 0 60px rgba(255, 100, 0, 0.8),
+      0 0 90px rgba(255, 150, 0, 0.6),
+      inset 0 0 30px rgba(255, 50, 0, 0.5);
+  }
+}
+
+/* Electric rainbow flames animation */
+@keyframes electric-rainbow-flames {
+  0% {
+    box-shadow: 
+      0 0 30px rgba(0, 255, 255, 0.9),
+      0 0 60px rgba(255, 0, 255, 0.7),
+      0 0 90px rgba(255, 255, 0, 0.5),
+      0 0 120px rgba(0, 255, 0, 0.3),
+      inset 0 0 30px rgba(255, 255, 255, 0.4);
+  }
+  25% {
+    box-shadow: 
+      0 0 35px rgba(255, 0, 255, 0.9),
+      0 0 70px rgba(255, 255, 0, 0.7),
+      0 0 105px rgba(0, 255, 0, 0.5),
+      0 0 140px rgba(0, 255, 255, 0.3),
+      inset 0 0 35px rgba(255, 255, 255, 0.5);
+  }
+  50% {
+    box-shadow: 
+      0 0 40px rgba(255, 255, 0, 0.9),
+      0 0 80px rgba(0, 255, 0, 0.7),
+      0 0 120px rgba(0, 255, 255, 0.5),
+      0 0 160px rgba(255, 0, 255, 0.3),
+      inset 0 0 40px rgba(255, 255, 255, 0.6);
+  }
+  75% {
+    box-shadow: 
+      0 0 35px rgba(0, 255, 0, 0.9),
+      0 0 70px rgba(0, 255, 255, 0.7),
+      0 0 105px rgba(255, 0, 255, 0.5),
+      0 0 140px rgba(255, 255, 0, 0.3),
+      inset 0 0 35px rgba(255, 255, 255, 0.5);
+  }
+  100% {
+    box-shadow: 
+      0 0 30px rgba(0, 255, 255, 0.9),
+      0 0 60px rgba(255, 0, 255, 0.7),
+      0 0 90px rgba(255, 255, 0, 0.5),
+      0 0 120px rgba(0, 255, 0, 0.3),
+      inset 0 0 30px rgba(255, 255, 255, 0.4);
+  }
 }
 
 #score-display .label {
-  font-size: 10px;
-  font-weight: 600;
-  color: #7dd3fc;
-  letter-spacing: 1.5px;
-}
-
-#score-display #score {
-  font-size: 32px;
-  font-weight: bold;
-  color: #f8fafc;
-  text-shadow: 0 0 6px rgba(248,250,252,0.9);
-  display: block;
-  line-height: 1;
+  display: none;
 }
 
 #combo-display {
@@ -356,7 +431,7 @@ kbd {
     min-width: 30px;
     height: 30px;
     background-color: #0b1220;
-    border-color: #1e88e5;
+    border-color: #1e88e1;
     color: #dbeafe;
     border-radius: 50%;
 }
@@ -367,11 +442,29 @@ kbd {
   font-size: 20px;
   font-weight: 800;
   color: #e91e63;
-  text-shadow: 0 0 10px rgba(233,30,99,0.6);
+  text-shadow: 
+    0 0 10px rgba(233,30,99,0.6),
+    0 0 20px rgba(233,30,99,0.4);
   vertical-align: baseline;
+  animation: combo-pulse 0.6s ease-in-out infinite alternate;
 }
 
-/* draining background behind score */
+@keyframes combo-pulse {
+  0% {
+    transform: scale(1);
+    text-shadow: 
+      0 0 10px rgba(233,30,99,0.6),
+      0 0 20px rgba(233,30,99,0.4);
+  }
+  100% {
+    transform: scale(1.1);
+    text-shadow: 
+      0 0 15px rgba(233,30,99,0.8),
+      0 0 30px rgba(233,30,99,0.6);
+  }
+}
+
+/* Enhanced drain track for more dramatic effect */
 #score-display .drain-track {
   position: absolute;
   inset: 0;
@@ -379,32 +472,68 @@ kbd {
   overflow: hidden;
   z-index: 0;
 }
+
 #score-drain {
   position: absolute;
   left: 0;
   top: 0;
   bottom: 0;
   width: 0%;
-  background: linear-gradient(90deg, rgba(56,189,248,0.18), rgba(56,189,248,0.05));
+  background: linear-gradient(90deg, 
+    rgba(56,189,248,0.25), 
+    rgba(56,189,248,0.1));
   transition: width 0.1s linear;
 }
 
-/* bring text above drain */
-#score-display .label, #score-display #score, #combo-inline { position: relative; z-index: 1; }
-
-/* paused state: shimmering cyan to indicate frozen combo */
+/* Special effects for paused combo state */
 #score-drain.paused {
-  background: linear-gradient(90deg, rgba(34,197,94,0.25), rgba(16,185,129,0.15));
-  animation: paused-glow 1s ease-in-out infinite alternate;
-}
-#score-display.paused {
-  box-shadow: 0 0 22px rgba(16,185,129,0.45), 0 0 8px rgba(16,185,129,0.35);
-  border-color: #22c55e;
+  background: linear-gradient(90deg, 
+    rgba(34,197,94,0.3), 
+    rgba(16,185,129,0.15));
+  animation: drain-paused-glow 1s ease-in-out infinite alternate;
 }
 
-@keyframes paused-glow {
-  from { filter: brightness(1); }
-  to { filter: brightness(1.25); }
+@keyframes drain-paused-glow {
+  0% {
+    filter: brightness(1) hue-rotate(0deg);
+  }
+  100% {
+    filter: brightness(1.3) hue-rotate(20deg);
+  }
+}
+
+/* Make score numbers more dramatic during big combos */
+#score-display.combo-active #score {
+  animation: score-explosion 0.8s ease-out;
+}
+
+@keyframes score-explosion {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Special styling for when combo count is high */
+#score-display.high-combo {
+  animation: high-combo-frenzy 1s ease-in-out infinite;
+}
+
+@keyframes high-combo-frenzy {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+  }
+  25% {
+    transform: scale(1.05) rotate(-1deg);
+  }
+  75% {
+    transform: scale(1.05) rotate(1deg);
+  }
 }
 
 /* Mobile styles - replace existing @media (max-width: 768px) block */

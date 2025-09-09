@@ -251,25 +251,23 @@ export class GameEngine {
         // Add combo active class for flaming border
         scoreBox.classList.add('combo-active');
         
+        // High combo effects
+        if (comboCount >= 5) {
+          scoreBox.classList.add('high-combo');
+        }
+
         // Special electric rainbow flames when paused (skidding)
         if (comboPaused) {
           scoreBox.classList.add('combo-paused');
         }
         
-        // High combo effects
-        if (comboCount >= 5) {
-          scoreBox.classList.add('high-combo');
-        }
-        
         const pct = Math.max(0, Math.min(100, (comboTimer / comboMaxTime) * 100));
         drainEl.style.width = `${pct}%`;
         drainEl.classList.toggle('paused', !!comboPaused);
-        scoreBox.classList.toggle('paused', !!comboPaused);
       } else {
         comboInline.style.display = 'none';
         drainEl.style.width = '0%';
         drainEl.classList.remove('paused');
-        scoreBox.classList.remove('paused');
       }
     }
   }

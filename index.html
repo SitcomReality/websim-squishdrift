@@ -149,15 +149,13 @@
       <canvas id="game" width="1280" height="720" aria-label="Game canvas" style="border: 2px solid #5a82cb; box-shadow: 0px 0px 11px 0px #004effad;"></canvas>
       
       <div id="score-combo-container">
-        <div id="combo-display" class="hidden">
-          <span id="combo-count" data-last-combo="0">x0</span>
-          <div id="combo-timer-bar-container">
-            <div id="combo-timer-bar"></div>
-          </div>
-        </div>
         <div id="score-display">
+          <div class="drain-track">
+            <div id="score-drain"></div>
+          </div>
           <span class="label">SCORE</span>
           <span id="score">0</span>
+          <span id="combo-inline" style="display:none">x0</span>
         </div>
       </div>
 

@@ -232,39 +232,24 @@ export class GameEngine {
       scoreEl.textContent = state.scoringSystem.getScore();
     }
     
-    // Update Combo HUD
-    const comboDisplay = document.getElementById('combo-display');
-    const comboCountEl = document.getElementById('combo-count');
-    const comboBarEl = document.getElementById('combo-timer-bar');
-
-    if (comboDisplay && comboCountEl && comboBarEl) {
+    // NEW: inline combo + draining timer
+    const comboInline = document.getElementById('combo-inline');
+    const drainEl = document.getElementById('score-drain');
+    const scoreBox = document.getElementById('score-display');
+    if (comboInline && drainEl && scoreBox) {
       const { comboCount, comboTimer, comboMaxTime, comboPaused } = state.scoringSystem;
-      
       if (comboCount > 0) {
-        comboDisplay.classList.remove('hidden');
-        
-        // Combo count animation
-        const lastCombo = parseInt(comboCountEl.dataset.lastCombo || '0');
-        if (comboCount > lastCombo) {
-          comboCountEl.classList.add('popped');
-          setTimeout(() => {
-            if (comboCountEl) comboCountEl.classList.remove('popped');
-          }, 200);
-        }
-        comboCountEl.dataset.lastCombo = comboCount;
-        comboCountEl.textContent = `x${comboCount}`;
-        
-        const timerPercent = (comboTimer / comboMaxTime) * 100;
-        comboBarEl.style.width = `${timerPercent}%`;
-        
-        if (comboPaused) {
-          comboBarEl.classList.add('paused');
-        } else {
-          comboBarEl.classList.remove('paused');
-        }
+        comboInline.style.display = '';
+        comboInline.textContent = `x${comboCount}`;
+        const pct = Math.max(0, Math.min(100, (comboTimer / comboMaxTime) * 100));
+        drainEl.style.width = `${pct}%`;
+        drainEl.classList.toggle('paused', !!comboPaused);
+        scoreBox.classList.toggle('paused', !!comboPaused);
       } else {
-        comboDisplay.classList.add('hidden');
-        comboCountEl.dataset.lastCombo = '0'; // Reset for next time
+        comboInline.style.display = 'none';
+        drainEl.style.width = '0%';
+        drainEl.classList.remove('paused');
+        scoreBox.classList.remove('paused');
       }
     }
   }

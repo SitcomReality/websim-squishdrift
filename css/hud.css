@@ -5,49 +5,6 @@
 .hud .bar .fill{height:100%;background:#4CAF50;transition:width .15s ease}#stamina-bar{height:100%;background:#00BFFF;transition:width .15s ease}
 .interaction-prompt{position:absolute;left:50%;top:75%;transform:translateX(-50%);padding:10px 16px;background:rgba(0,0,0,.7);color:#fff;border-radius:8px;font-size:14px;backdrop-filter:blur(4px)}
 #stamina-bar{height:100%;background:#00BFFF;transition:width .15s ease}
-#death-overlay #wasted-image{ display:none; }
-
-/* New death screen styles */
-#death-overlay #death-title {
-  text-align: center;
-  margin-bottom: 18px;
-}
-.death-title-text {
-  font-family: "Noto Sans", system-ui, sans-serif;
-  font-size: 44px;
-  margin: 0 0 6px;
-  color: #ff6b6b;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  filter: drop-shadow(0 6px 18px rgba(255,107,107,0.18));
-}
-.death-subtitle {
-  margin: 0;
-  font-size: 14px;
-  color: rgba(255,255,255,0.85);
-}
-
-/* Restart button (HTML/CSS, accessible) */
-.death-restart-btn {
-  display: inline-block;
-  padding: 12px 28px;
-  font-size: 18px;
-  font-weight: 700;
-  color: #08131a;
-  background: linear-gradient(180deg,#fff 0%, #f0f0f3 100%);
-  border: 0;
-  border-radius: 12px;
-  cursor: pointer;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.45), inset 0 -2px 0 rgba(0,0,0,0.06);
-  transition: transform .12s ease, box-shadow .12s ease, opacity .12s ease;
-  margin: 0 auto;
-}
-.death-restart-btn:active { transform: translateY(1px) scale(.995); }
-.death-restart-btn:hover { transform: scale(1.03); }
-
-/* Keep legacy id selector harmless (no sprite dependency) */
-#death-overlay #restart-button-sprite{ display:none; }
-
 /* Score pop / bulge animation */
 @keyframes score-pop-scale {
   0%   { transform: scale(1); filter: drop-shadow(0 0 6px rgba(255,200,60,0.25)); }
@@ -55,16 +12,12 @@
   50%  { transform: scale(1.08); filter: drop-shadow(0 0 10px rgba(255,160,40,0.4)); }
   100% { transform: scale(1); filter: drop-shadow(0 0 6px rgba(255,200,60,0.25)); }
 }
-
-/* This animation is now applied directly to the #score element, not the container.
-   This prevents conflicts with other animations on #score-display. */
 #score.score-pop {
   animation: score-pop-scale 0.32s cubic-bezier(.2,.9,.2,1);
   will-change: transform, filter;
   /* Make sure it's an inline-block to allow transform */
   display: inline-block; 
 }
-
 /* Ensure score text is styled for impact */
 #score-display {
   display:inline-flex;

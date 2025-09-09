@@ -255,7 +255,7 @@ export class DeathSystem {
     show(vehP); await animate(document.getElementById('vehicles-destroyed'), veh, Math.min(1000, 600+veh*10));
     // score (prominent)
     show(scoreP); await animate(document.getElementById('final-score'), score, Math.min(1000, 600+score*0.5));
-    // highest combo
+    // highest combo (moved to show BEFORE score as final stat)
     show(comboP); await animate(document.getElementById('highest-combo'), highestCombo, 800);
     
     // Play death music when restart button appears

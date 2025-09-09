@@ -60,8 +60,11 @@ async function initializeWithLoading() {
       if (gameStarted) return;
       gameStarted = true;
       loadingSystem.hideTitleScreen();
-      gameLoop.start();
+      // The loop is already running, so we don't need to start it here.
     };
+    
+    // Start the loop immediately so input is processed on title screen.
+    gameLoop.start();
     
     // Show title screen
     loadingSystem.showTitleScreen();

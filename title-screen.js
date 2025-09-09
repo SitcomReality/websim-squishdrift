@@ -29,40 +29,50 @@ export class TitleScreen {
         <div id="controls-section">
           <h2>Desktop Controls</h2>
           <div class="controls-grid">
-            <div class="control-card">
-              <div class="title">Movement</div>
-              <div class="content">
-                <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or <kbd class="gamepad-button">LS</kbd> — Move<br>
-                <kbd>Shift</kbd> or <kbd class="gamepad-button">A</kbd>/<kbd class="gamepad-button">RT</kbd> — Sprint
+            <div class="controls-column">
+              <h3>On Foot</h3>
+              <div class="control-item">
+                <span class="action">Move</span>
+                <span class="keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / <kbd class="gamepad-button">LS</kbd></span>
+              </div>
+              <div class="control-item">
+                <span class="action">Aim</span>
+                <span class="keys">Mouse / <kbd class="gamepad-button">RS</kbd></span>
+              </div>
+              <div class="control-item">
+                <span class="action">Sprint</span>
+                <span class="keys"><kbd>Shift</kbd> / <kbd class="gamepad-button">A</kbd> / <kbd class="gamepad-button">RT</kbd></span>
+              </div>
+              <div class="control-item">
+                <span class="action">Fire</span>
+                <span class="keys"><kbd>LMB</kbd> / <kbd class="gamepad-button">RT</kbd></span>
+              </div>
+              <div class="control-item">
+                <span class="action">Interact</span>
+                <span class="keys"><kbd>E</kbd> / <kbd class="gamepad-button">Y</kbd></span>
+              </div>
+              <div class="control-item">
+                <span class="action">Flatten World</span>
+                <span class="keys"><kbd>Q</kbd> / <kbd class="gamepad-button">B</kbd> or <kbd class="gamepad-button">X</kbd></span>
               </div>
             </div>
-            <div class="control-card">
-              <div class="title">Combat</div>
-              <div class="content">
-                Mouse or <kbd class="gamepad-button">RS</kbd> — Aim<br>
-                <kbd>LMB</kbd> or <kbd class="gamepad-button">RT</kbd> — Fire
+            <div class="controls-column">
+              <h3>In Vehicle</h3>
+              <div class="control-item">
+                <span class="action">Steer</span>
+                <span class="keys"><kbd>A</kbd><kbd>D</kbd> / <kbd class="gamepad-button">LS</kbd></span>
               </div>
-            </div>
-            <div class="control-card">
-              <div class="title">Interaction</div>
-              <div class="content">
-                <kbd>E</kbd> or <kbd class="gamepad-button">Y</kbd> — Interact<br>
-                <kbd>Q</kbd> or <kbd class="gamepad-button">B</kbd>/<kbd class="gamepad-button">X</kbd> — Flatten
+              <div class="control-item">
+                <span class="action">Accelerate/Brake</span>
+                <span class="keys"><kbd>W</kbd><kbd>S</kbd> / <kbd class="gamepad-button">RT</kbd> <kbd class="gamepad-button">LT</kbd></span>
               </div>
-            </div>
-            <div class="control-card">
-              <div class="title">Driving</div>
-              <div class="content">
-                <kbd>W</kbd>/<kbd>S</kbd> or <kbd class="gamepad-button">RT</kbd>/<kbd class="gamepad-button">LT</kbd> — Accelerate/Brake<br>
-                <kbd>A</kbd>/<kbd>D</kbd> or <kbd class="gamepad-button">LS</kbd> — Steer<br>
-                <kbd>Space</kbd> or <kbd class="gamepad-button">A</kbd> — Handbrake
+              <div class="control-item">
+                <span class="action">Handbrake</span>
+                <span class="keys"><kbd>Space</kbd> / <kbd class="gamepad-button">A</kbd></span>
               </div>
-            </div>
-            <div class="control-card" style="grid-column:1 / -1;">
-              <div class="title">System</div>
-              <div class="content" style="text-align:center;">
-                <kbd>P</kbd>/<kbd>Esc</kbd> or <kbd class="gamepad-button">Menu</kbd> — Pause Game<br>
-                <kbd class="gamepad-button">Menu</kbd> or <kbd class="gamepad-button">A</kbd> — Start / Restart Game
+              <div class="control-item">
+                <span class="action">Exit Vehicle</span>
+                <span class="keys"><kbd>E</kbd> / <kbd class="gamepad-button">Y</kbd></span>
               </div>
             </div>
           </div>

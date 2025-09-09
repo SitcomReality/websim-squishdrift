@@ -190,6 +190,9 @@ export class GameEngine {
     this.spawnManager.update(dt);
     this.deathSystem.update(this.stateManager.state, dt);
     
+    // Update scoring system
+    this.scoringSystem.update(this.stateManager.state, dt);
+    
     // Always update damage text system regardless of player state
     this.damageTextSystem.update(this.stateManager.state, dt);
     
@@ -227,6 +230,33 @@ export class GameEngine {
     
     if (scoreEl) {
       scoreEl.textContent = state.scoringSystem.getScore();
+    }
+    
+    // Update Combo HUD
+    const comboHud = document.getElementById('combo-hud');
+    const comboCountEl = document.getElementById('combo-count');
+    const comboBarEl = document.getElementById('combo-bar');
+    const comboPausedEl = document.getElementById('combo-paused-indicator');
+
+    if (comboHud && comboCountEl && comboBarEl && comboPausedEl) {
+      const { comboCount, comboTimer, comboMaxTime, comboPaused } = state.scoringSystem;
+      if (comboCount > 0) {
+        comboHud.style.display = 'flex';
+        comboCountEl.textContent = `x${comboCount}`;
+        
+        const timerPercent = (comboTimer / comboMaxTime) * 100;
+        comboBarEl.style.width = `${timerPercent}%`;
+        
+        if (comboPaused) {
+          comboPausedEl.style.display = 'inline';
+          comboBarEl.classList.add('paused');
+        } else {
+          comboPausedEl.style.display = 'none';
+          comboBarEl.classList.remove('paused');
+        }
+      } else {
+        comboHud.style.display = 'none';
+      }
     }
   }
 

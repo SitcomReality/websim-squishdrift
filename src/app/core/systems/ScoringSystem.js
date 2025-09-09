@@ -77,7 +77,7 @@ export class ScoringSystem {
 
       // Add floating score text
       if (state.damageTextSystem && scoreGain > 0) {
-        state.damageTextSystem.addScoreText(state, target.pos, scoreGain);
+        state.damageTextSystem.addScoreText(state, target.pos, scoreGain, this.comboCount);
       }
 
       // Update state for other systems to access

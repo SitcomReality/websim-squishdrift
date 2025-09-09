@@ -113,16 +113,22 @@ export class DamageTextSystem {
     state.damageTexts.push(pickupText);
   }
 
-  addScoreText(state, pos, score) {
+  addScoreText(state, pos, score, comboCount) {
     if (!state.damageTexts) state.damageTexts = [];
     if (score <= 0) return;
 
     const flair = this.getFlairForScore(score);
 
+    let textContent = `+${score}`;
+    if (comboCount > 1) { // Only show combo if it's greater than 1 (since it's incremented before this call)
+        const comboMultiplier = (1 + (comboCount - 1) * 0.1).toFixed(1);
+        textContent = `+${score} (x${comboMultiplier})`;
+    }
+
     const text = {
       type: 'score_text',
       pos: { x: pos.x, y: pos.y },
-      text: `+${score}`,
+      text: textContent,
       color: flair.color,
       age: 0,
       lifetime: flair.lifetime,

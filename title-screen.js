@@ -31,23 +31,39 @@ export class TitleScreen {
           <div class="controls-grid">
             <div class="control-card">
               <div class="title">Movement</div>
-              <div class="content"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / <kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd> — move<br><kbd>Shift</kbd> — sprint</div>
+              <div class="content">
+                <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or <kbd>LS</kbd> — Move<br>
+                <kbd>Shift</kbd> or <kbd class="gamepad-button">A</kbd>/<kbd class="gamepad-button">RT</kbd> — Sprint
+              </div>
             </div>
             <div class="control-card">
               <div class="title">Combat</div>
-              <div class="content">Mouse — aim<br><kbd>LMB</kbd> — fire</div>
+              <div class="content">
+                Mouse or <kbd>RS</kbd> — Aim<br>
+                <kbd>LMB</kbd> or <kbd class="gamepad-button">RT</kbd> — Fire
+              </div>
             </div>
             <div class="control-card">
               <div class="title">Interaction</div>
-              <div class="content"><kbd>E</kbd> — enter/exit vehicle, pick up items<br><kbd>Q</kbd> — toggle flatten view</div>
+              <div class="content">
+                <kbd>E</kbd> or <kbd class="gamepad-button">Y</kbd> — Interact<br>
+                <kbd>Q</kbd> or <kbd class="gamepad-button">B</kbd>/<kbd class="gamepad-button">X</kbd> — Flatten
+              </div>
             </div>
             <div class="control-card">
               <div class="title">Driving</div>
-              <div class="content"><kbd>W/S</kbd> or <kbd>↑/↓</kbd> — throttle/reverse<br><kbd>A/D</kbd> or <kbd>←/→</kbd> — steer<br><kbd>Space</kbd> — handbrake</div>
+              <div class="content">
+                <kbd>W</kbd>/<kbd>S</kbd> or <kbd class="gamepad-button">RT</kbd>/<kbd class="gamepad-button">LT</kbd> — Accelerate/Brake<br>
+                <kbd>A</kbd>/<kbd>D</kbd> or <kbd>LS</kbd> — Steer<br>
+                <kbd>Space</kbd> or <kbd class="gamepad-button">A</kbd> — Handbrake
+              </div>
             </div>
             <div class="control-card" style="grid-column:1 / -1;">
               <div class="title">System</div>
-              <div class="content"><kbd>P</kbd> / <kbd>Esc</kbd> — pause</div>
+              <div class="content" style="text-align:center;">
+                <kbd>P</kbd>/<kbd>Esc</kbd> or <kbd class="gamepad-button">Menu</kbd> — Pause Game<br>
+                <kbd class="gamepad-button">Menu</kbd> or <kbd class="gamepad-button">A</kbd> — Start / Restart Game
+              </div>
             </div>
           </div>
         </div>

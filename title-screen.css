@@ -147,6 +147,33 @@
 .item-health { background-image: url('/pickup_health.png'); }
 .item-bribe { background-image: url('/pickup_bribe.png'); }
 
+/* Add new styles for controls keys and buttons */
+.control-card .content kbd {
+  display: inline-block;
+  padding: 4px 8px;
+  margin: 0 3px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 14px;
+  font-weight: bold;
+  line-height: 1;
+  color: #e2e8f0;
+  background-color: #334155;
+  border: 2px solid #64748b;
+  border-radius: 6px;
+  vertical-align: middle;
+}
+
+.control-card .content kbd.gamepad-button {
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* Responsive tweaks to keep parity with existing site styles */
 @media (max-width: 768px) {
   #title-image { margin-bottom: 24px; }
@@ -155,5 +182,3 @@
   .controls-grid { grid-template-columns: 1fr; gap: 12px; }
   .items-grid { gap: 16px; }
 }
-```
-</output>

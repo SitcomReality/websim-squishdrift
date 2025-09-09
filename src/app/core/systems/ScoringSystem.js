@@ -10,6 +10,9 @@ export class ScoringSystem {
     this.comboMaxTime = 5; // seconds
     this.timeSinceLastScore = 0;
     this.comboPaused = false;
+    
+    // Track highest combo achieved
+    this.highestCombo = 0;
   }
 
   update(state, dt) {
@@ -35,6 +38,7 @@ export class ScoringSystem {
       state.comboTimer = this.comboTimer;
       state.comboMaxTime = this.comboMaxTime;
       state.comboPaused = this.comboPaused;
+      state.highestCombo = this.highestCombo;
     }
   }
 
@@ -75,6 +79,11 @@ export class ScoringSystem {
       this.comboTimer = this.comboMaxTime;
       this.timeSinceLastScore = 0;
 
+      // Update highest combo if current is higher
+      if (this.comboCount > this.highestCombo) {
+        this.highestCombo = this.comboCount;
+      }
+
       // Add floating score text
       if (state.damageTextSystem && scoreGain > 0) {
         state.damageTextSystem.addScoreText(state, target.pos, scoreGain, this.comboCount);
@@ -97,6 +106,10 @@ export class ScoringSystem {
     return this.score;
   }
 
+  getHighestCombo() {
+    return this.highestCombo;
+  }
+
   reset() {
     this.score = 0;
     this.wantedPoints = 0;
@@ -105,5 +118,6 @@ export class ScoringSystem {
     this.comboTimer = 0;
     this.timeSinceLastScore = 0;
     this.comboPaused = false;
+    this.highestCombo = 0;
   }
 }

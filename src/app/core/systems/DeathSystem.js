@@ -216,12 +216,13 @@ export class DeathSystem {
     const timeP=statsEl.children[0], pedP=statsEl.children[1], vehP=statsEl.children[2];
     pedP.innerHTML='Pedestrians Murdered: <span id="enemies-killed">0</span>';
     const scoreP=document.createElement('p'); scoreP.style.fontSize='24px'; scoreP.style.marginTop='6px'; scoreP.innerHTML='Score: <span id="final-score">0</span>'; scoreP.style.display='none'; statsEl.appendChild(scoreP);
+    const comboP=document.createElement('p'); comboP.style.fontSize='18px'; comboP.style.marginTop='4px'; comboP.innerHTML='Highest Combo: <span id="highest-combo">0</span>'; comboP.style.display='none'; statsEl.appendChild(comboP);
     const restartBtn=document.getElementById('restart-button-sprite'); if(restartBtn) restartBtn.style.display='none';
     const hide=(el)=>{el.style.opacity='0'; el.style.transform='scale(0.98)'; el.style.transition='opacity .2s ease, transform .2s ease'; el.style.display='none';};
     const show=(el)=>{el.style.display='block'; requestAnimationFrame(()=>{el.style.opacity='1'; el.style.transform='scale(1)';});};
     hide(pedP); hide(vehP);
     const timeAlive=Math.floor((Date.now()-(state.startTime||Date.now()))/1000);
-    const peds=state.stats?.enemiesKilled||0, veh=state.stats?.vehiclesDestroyed||0, score=state.scoringSystem?.getScore?.()||0;
+    const peds=state.stats?.enemiesKilled||0, veh=state.stats?.vehiclesDestroyed||0, score=state.scoringSystem?.getScore?.()||0, highestCombo=state.scoringSystem?.getHighestCombo?.()||0;
     const animate=(span,to,dur,fmt=(v)=>String(v))=>new Promise(res=>{
       if(!span){ res(); return; }
       const t0=performance.now();
@@ -251,6 +252,8 @@ export class DeathSystem {
     show(vehP); await animate(document.getElementById('vehicles-destroyed'), veh, Math.min(1000, 600+veh*10));
     // score (prominent)
     show(scoreP); await animate(document.getElementById('final-score'), score, Math.min(1000, 600+score*0.5));
+    // highest combo
+    show(comboP); await animate(document.getElementById('highest-combo'), highestCombo, 800);
     
     // Play death music when restart button appears
     this.playDeathMusic(state);

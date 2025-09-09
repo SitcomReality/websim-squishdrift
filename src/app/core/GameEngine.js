@@ -233,29 +233,38 @@ export class GameEngine {
     }
     
     // Update Combo HUD
-    const comboHud = document.getElementById('combo-hud');
+    const comboDisplay = document.getElementById('combo-display');
     const comboCountEl = document.getElementById('combo-count');
-    const comboBarEl = document.getElementById('combo-bar');
-    const comboPausedEl = document.getElementById('combo-paused-indicator');
+    const comboBarEl = document.getElementById('combo-timer-bar');
 
-    if (comboHud && comboCountEl && comboBarEl && comboPausedEl) {
+    if (comboDisplay && comboCountEl && comboBarEl) {
       const { comboCount, comboTimer, comboMaxTime, comboPaused } = state.scoringSystem;
+      
       if (comboCount > 0) {
-        comboHud.style.display = 'flex';
+        comboDisplay.classList.remove('hidden');
+        
+        // Combo count animation
+        const lastCombo = parseInt(comboCountEl.dataset.lastCombo || '0');
+        if (comboCount > lastCombo) {
+          comboCountEl.classList.add('popped');
+          setTimeout(() => {
+            if (comboCountEl) comboCountEl.classList.remove('popped');
+          }, 200);
+        }
+        comboCountEl.dataset.lastCombo = comboCount;
         comboCountEl.textContent = `x${comboCount}`;
         
         const timerPercent = (comboTimer / comboMaxTime) * 100;
         comboBarEl.style.width = `${timerPercent}%`;
         
         if (comboPaused) {
-          comboPausedEl.style.display = 'inline';
           comboBarEl.classList.add('paused');
         } else {
-          comboPausedEl.style.display = 'none';
           comboBarEl.classList.remove('paused');
         }
       } else {
-        comboHud.style.display = 'none';
+        comboDisplay.classList.add('hidden');
+        comboCountEl.dataset.lastCombo = '0'; // Reset for next time
       }
     }
   }

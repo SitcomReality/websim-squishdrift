@@ -164,14 +164,10 @@
 }
 
 .control-card .content kbd.gamepad-button {
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  font-size: 12px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  background-color: #0b1220; /* darker background for gamepad buttons */
+  border: 2px solid #1e88e5; /* blue border to distinguish gamepad controls */
+  color: #dbeafe; /* lighter text for contrast */
+  box-shadow: 0 1px 0 rgba(30,136,229,0.12) inset;
 }
 
 /* Responsive tweaks to keep parity with existing site styles */

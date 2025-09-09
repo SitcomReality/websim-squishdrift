@@ -132,13 +132,16 @@ export class DeathSystem {
 
     deathOverlay.innerHTML = `
       <div id="death-content" style="display: none; text-align: center; width: 100%; max-width: 600px;">
-        <div id="wasted-image" style="width: 90vw; max-width: 512px; height: auto; aspect-ratio: 4/1; background-image: url('/uisprites.png'); background-size: auto 256px; background-position: 0; background-repeat: no-repeat; margin: 0 auto 20px;"></div>
+        <div id="death-title" style="margin: 0 auto 20px;">
+          <h1 class="death-title-text">GAME OVER</h1>
+          <p class="death-subtitle">You got squished. Try again?</p>
+        </div>
         <div id="death-stats" style="margin-bottom: 30px; font-size: 18px;">
           <p>Time Alive: <span id="time-alive">0:00</span></p>
           <p>Enemies Eliminated: <span id="enemies-killed">0</span></p>
           <p>Vehicles Destroyed: <span id="vehicles-destroyed">0</span></p>
         </div>
-        <div id="restart-button-sprite" style="width: 256px; height: 128px; background-image: url('/uisprites.png'); background-size: 512px 384px; background-position: -256px -256px; background-repeat: no-repeat; cursor: pointer; transition: transform 0.1s ease; margin: 0 auto;"></div>
+        <button id="restart-button" class="death-restart-btn" aria-label="Restart game">Restart</button>
       </div>
     `;
 
@@ -188,7 +191,7 @@ export class DeathSystem {
     // Add restart button listener using direct assignment to ensure it works
     setTimeout(() => {
       // Query the button inside the overlay to avoid colliding with any other element
-      const restartBtn = deathOverlay.querySelector('#restart-button-sprite');
+      const restartBtn = deathOverlay.querySelector('#restart-button');
       if (restartBtn) {
         restartBtn.addEventListener('click', () => {
           this.restartGame();
@@ -217,7 +220,7 @@ export class DeathSystem {
     pedP.innerHTML='Pedestrians Murdered: <span id="enemies-killed">0</span>';
     const scoreP=document.createElement('p'); scoreP.style.fontSize='24px'; scoreP.style.marginTop='6px'; scoreP.innerHTML='Score: <span id="final-score">0</span>'; scoreP.style.display='none'; statsEl.appendChild(scoreP);
     const comboP=document.createElement('p'); comboP.style.fontSize='18px'; comboP.style.marginTop='4px'; comboP.innerHTML='Highest Combo: <span id="highest-combo">0</span>'; comboP.style.display='none'; statsEl.appendChild(comboP);
-    const restartBtn=document.getElementById('restart-button-sprite'); if(restartBtn) restartBtn.style.display='none';
+    const restartBtn=document.getElementById('restart-button'); if(restartBtn) restartBtn.style.display='none';
     const hide=(el)=>{el.style.opacity='0'; el.style.transform='scale(0.98)'; el.style.transition='opacity .2s ease, transform .2s ease'; el.style.display='none';};
     const show=(el)=>{el.style.display='block'; requestAnimationFrame(()=>{el.style.opacity='1'; el.style.transform='scale(1)';});};
     hide(pedP); hide(vehP);

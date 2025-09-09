@@ -130,11 +130,9 @@ export class InputSystem {
     if (gp.buttons[0]?.pressed) this.virtualKeys.add('Space'); // A/Cross -> ability/handbrake
     // Primary mappings
     if (gp.buttons[3]?.pressed) this.virtualKeys.add('KeyE'); // Y/Triangle -> enter/exit (only one)
-    if (gp.buttons[4]?.pressed) this.virtualKeys.add('KeyQ'); // LB -> flatten
-    // Alternate mappings (some controllers map buttons differently). Allow B/X to also trigger enter/exit,
-    // and LT (6) / back buttons as fallback for flatten so controller layouts are more forgiving.
-    if (gp.buttons[1]?.pressed) this.virtualKeys.add('KeyQ'); // B/Circle -> flatten (changed from KeyE)
-    if (gp.buttons[2]?.pressed) this.virtualKeys.add('KeyQ'); // X/Square -> flatten (changed from KeyE)
+    // Only Y (buttons[3]) is used for enter/exit. Flatten should only be triggered by B (buttons[1]) or X (buttons[2]).
+    if (gp.buttons[1]?.pressed) this.virtualKeys.add('KeyQ'); // B/Circle -> flatten
+    if (gp.buttons[2]?.pressed) this.virtualKeys.add('KeyQ'); // X/Square -> flatten
     if (gp.buttons[6]?.pressed || gp.buttons[8]?.pressed) this.virtualKeys.add('KeyQ'); // LT or Back -> flatten (fallback)
     if (gp.buttons[7]?.pressed || gp.buttons[5]?.pressed) this.virtualKeys.add('MouseLeft'); // RT/R1 -> fire
   }

@@ -3,6 +3,39 @@ export class ScoringSystem {
     this.score = 0;
     this.wantedPoints = 0;
     this.wantedLevel = 0;
+    
+    // Combo system properties
+    this.comboCount = 0;
+    this.comboTimer = 0;
+    this.comboMaxTime = 5; // seconds
+    this.timeSinceLastScore = 0;
+    this.comboPaused = false;
+  }
+
+  update(state, dt) {
+    const playerVehicle = state.control?.inVehicle ? state.control.vehicle : null;
+    this.comboPaused = playerVehicle ? !!playerVehicle.isSkidding : false;
+
+    if (!this.comboPaused && this.comboCount > 0) {
+      // The longer without a score, the faster the timer drains
+      const countdownAcceleration = 1 + (this.timeSinceLastScore / 10);
+      this.comboTimer -= dt * countdownAcceleration;
+
+      if (this.comboTimer <= 0) {
+        this.comboCount = 0;
+        this.comboTimer = 0;
+      }
+    }
+    
+    this.timeSinceLastScore += dt;
+    
+    // Expose combo info to state for HUD
+    if (state) {
+      state.comboCount = this.comboCount;
+      state.comboTimer = this.comboTimer;
+      state.comboMaxTime = this.comboMaxTime;
+      state.comboPaused = this.comboPaused;
+    }
   }
 
   addCrime(state, crimeType, target) {
@@ -31,10 +64,16 @@ export class ScoringSystem {
       this.wantedPoints += basePoints;
       this.wantedLevel = Math.min(3, Math.floor(this.wantedPoints / 10));
 
-      // Calculate score with multiplier
-      const multiplier = this.wantedLevel + 1;
-      const scoreGain = basePoints * multiplier;
+      // Calculate score with multipliers
+      const wantedMultiplier = this.wantedLevel + 1;
+      const comboMultiplier = 1 + this.comboCount * 0.1; // Multiplier based on current combo
+      const scoreGain = Math.round(basePoints * wantedMultiplier * comboMultiplier);
       this.score += scoreGain;
+
+      // Update combo state AFTER calculating score for this crime
+      this.comboCount++;
+      this.comboTimer = this.comboMaxTime;
+      this.timeSinceLastScore = 0;
 
       // Add floating score text
       if (state.damageTextSystem && scoreGain > 0) {
@@ -62,5 +101,9 @@ export class ScoringSystem {
     this.score = 0;
     this.wantedPoints = 0;
     this.wantedLevel = 0;
+    this.comboCount = 0;
+    this.comboTimer = 0;
+    this.timeSinceLastScore = 0;
+    this.comboPaused = false;
   }
 }

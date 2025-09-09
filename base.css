@@ -1,0 +1,23 @@
+.app-header .game-title{
+  height:44px;
+  background:url('/uisprites.png') no-repeat 0 0;
+  background-size:auto 128px;
+  role:img;
+  margin:0 auto;
+  font-size: 32px;
+  font-weight: 800;
+  color: #00e5ff;
+  text-shadow: 
+    0 0 10px rgba(0, 229, 255, 0.8),
+    0 0 20px rgba(0, 229, 255, 0.6),
+    0 0 30px rgba(0, 229, 255, 0.4),
+    0 0 40px rgba(0, 229, 255, 0.2);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  background: linear-gradient(45deg, #00e5ff, #00ffcc);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: squishdrift-glow 2s ease-in-out infinite alternate;
+}
+

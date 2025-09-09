@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Getaway Tantrum Assault</title>
+  <title>Squishdrift</title>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="./css/base.css" />
@@ -134,11 +134,37 @@
       background-repeat: no-repeat;
       margin: 0 auto 20px;
     }
+
+    .game-title {
+      font-size: 32px;
+      font-weight: 800;
+      color: #00e5ff;
+      text-shadow: 
+        0 0 10px rgba(0, 229, 255, 0.8),
+        0 0 20px rgba(0, 229, 255, 0.6),
+        0 0 30px rgba(0, 229, 255, 0.4),
+        0 0 40px rgba(0, 229, 255, 0.2);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      background: linear-gradient(45deg, #00e5ff, #00ffcc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: squishdrift-glow 2s ease-in-out infinite alternate;
+    }
+
+    @keyframes squishdrift-glow {
+      0% {
+        filter: drop-shadow(0 0 5px rgba(0, 229, 255, 0.6)) brightness(1);
+      }
+      100% {
+        filter: drop-shadow(0 0 15px rgba(0, 229, 255, 1)) brightness(1.2);
+      }
   </style>
 </head>
 <body>
   <header class="app-header" role="banner">
-    <div class="game-title" aria-label="Getaway Tantrum Assault"></div>
+    <div class="game-title" aria-label="Squishdrift">Squishdrift</div>
     <div class="right" style="position: absolute; right: 14px; top: 8px;">
       <button id="toggle-debug" class="ghost" aria-pressed="false">Debug</button>
       <div class="audio-controls" style="display: inline-block; margin-left: 10px;">

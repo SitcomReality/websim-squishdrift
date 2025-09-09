@@ -32,14 +32,14 @@ export class TitleScreen {
             <div class="control-card">
               <div class="title">Movement</div>
               <div class="content">
-                <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or <kbd>LS</kbd> — Move<br>
+                <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or <kbd class="gamepad-button">LS</kbd> — Move<br>
                 <kbd>Shift</kbd> or <kbd class="gamepad-button">A</kbd>/<kbd class="gamepad-button">RT</kbd> — Sprint
               </div>
             </div>
             <div class="control-card">
               <div class="title">Combat</div>
               <div class="content">
-                Mouse or <kbd>RS</kbd> — Aim<br>
+                Mouse or <kbd class="gamepad-button">RS</kbd> — Aim<br>
                 <kbd>LMB</kbd> or <kbd class="gamepad-button">RT</kbd> — Fire
               </div>
             </div>
@@ -54,7 +54,7 @@ export class TitleScreen {
               <div class="title">Driving</div>
               <div class="content">
                 <kbd>W</kbd>/<kbd>S</kbd> or <kbd class="gamepad-button">RT</kbd>/<kbd class="gamepad-button">LT</kbd> — Accelerate/Brake<br>
-                <kbd>A</kbd>/<kbd>D</kbd> or <kbd>LS</kbd> — Steer<br>
+                <kbd>A</kbd>/<kbd>D</kbd> or <kbd class="gamepad-button">LS</kbd> — Steer<br>
                 <kbd>Space</kbd> or <kbd class="gamepad-button">A</kbd> — Handbrake
               </div>
             </div>

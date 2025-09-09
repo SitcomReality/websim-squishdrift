@@ -63,6 +63,7 @@ export class InputSystem {
     this._initTouch(target);
     this.gamepadMoveVector = { x: 0, y: 0 };
     this.gamepadAimVector = { x: 0, y: 0 };
+    this._prevGamepadButtons = [];
   }
   
   // Note: do not clear this.pressed here — callers should clear it once systems
@@ -96,6 +97,9 @@ export class InputSystem {
       this.gamepadAimVector = { x: 0, y: 0 };
       return;
     }
+    // Compare button transitions to detect single-press events (for start/restart)
+    const prevButtons = this._prevGamepadButtons || [];
+    this._prevGamepadButtons = gp.buttons.map(b => !!b.pressed);
     // DEBUG: log gamepad state to help diagnose button mapping issues
     if (gp.buttons.some(b => b.pressed) || gp.axes.some(a => Math.abs(a) > 0.1)) {
         try { 
@@ -136,6 +140,20 @@ export class InputSystem {
     // Start button -> toggle pause (map to Escape to reuse existing pause handling)
     if (gp.buttons[9]?.pressed) this.virtualKeys.add('Escape');
     if (gp.buttons[7]?.pressed || gp.buttons[5]?.pressed) this.virtualKeys.add('MouseLeft'); // RT/R1 -> fire
+
+    // Dispatch start/restart actions on single-press transitions:
+    // A (buttons[0]) or Start (buttons[9]) should act like pressing start/restart.
+    const aPressed = !!gp.buttons[0]?.pressed;
+    const startPressed = !!gp.buttons[9]?.pressed;
+    const prevAPressed = !!prevButtons[0];
+    const prevStartPressed = !!prevButtons[9];
+    if ((aPressed && !prevAPressed) || (startPressed && !prevStartPressed)) {
+      // If death overlay visible, request restart; always emit game-start for title handling too.
+      window.dispatchEvent(new CustomEvent('game-start'));
+      if (document.getElementById('death-overlay')) {
+        window.dispatchEvent(new CustomEvent('game-restart'));
+      }
+    }
   }
   _initTouch(target){
     const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints>0;

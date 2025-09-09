@@ -99,6 +99,9 @@ export class TitleScreen {
     document.body.appendChild(overlay);
     this.element = overlay;
 
+    // Listen for controller start to begin the game (also fired by InputSystem)
+    window.addEventListener('game-start', () => { this.handleStart(); });
+
     // Add hover effects
     const startButton = overlay.querySelector('#start-button');
     startButton.addEventListener('mouseenter', () => {

@@ -1,5 +1,3 @@
-
-```javascript
 export class TitleScreen {
   constructor() {
     this.element = null;

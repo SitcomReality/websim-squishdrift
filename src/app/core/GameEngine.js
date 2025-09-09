@@ -230,7 +230,23 @@ export class GameEngine {
     }
     
     if (scoreEl) {
-      scoreEl.textContent = state.scoringSystem.getScore();
+      const currentScore = state.scoringSystem.getScore();
+      const previousScore = scoreEl.dataset.previousScore ? parseInt(scoreEl.dataset.previousScore) : 0;
+      
+      // Check if score increased
+      if (currentScore > previousScore) {
+        // Add bulge animation class
+        scoreDisplay.classList.add('score-bulge');
+        
+        // Remove class after animation completes
+        setTimeout(() => {
+          scoreDisplay.classList.remove('score-bulge');
+        }, 600);
+      }
+      
+      // Update score and store previous value
+      scoreEl.textContent = currentScore;
+      scoreEl.dataset.previousScore = currentScore;
     }
     
     // NEW: Add flaming border effects based on combo state

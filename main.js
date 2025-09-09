@@ -40,6 +40,10 @@ async function initializeWithLoading() {
     // Create paused game loop
     gameLoop = createLoop({
       update: (dt) => {
+        // Always update the input manager to detect gamepad presses on title/death screens
+        if (game && game.inputManager) {
+          game.inputManager.update();
+        }
         if (gameStarted) {
           game.update(dt);
         }

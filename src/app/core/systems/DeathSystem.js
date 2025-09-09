@@ -190,9 +190,7 @@ export class DeathSystem {
       // Query the button inside the overlay to avoid colliding with any other element
       const restartBtn = deathOverlay.querySelector('#restart-button-sprite');
       if (restartBtn) {
-        console.log('Restart button found in death overlay, adding listener');
         restartBtn.addEventListener('click', () => {
-          console.log('Restart button clicked (death overlay)');
           this.restartGame();
         });
       }

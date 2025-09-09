@@ -150,8 +150,16 @@ export class InputSystem {
     if ((aPressed && !prevAPressed) || (startPressed && !prevStartPressed)) {
       // If death overlay visible, request restart; always emit game-start for title handling too.
       window.dispatchEvent(new CustomEvent('game-start'));
-      if (document.getElementById('death-overlay')) {
-        window.dispatchEvent(new CustomEvent('game-restart'));
+      const deathOverlay = document.getElementById('death-overlay');
+      if (deathOverlay) {
+        // Click the restart button to trigger the existing, robust restart logic
+        const restartButton = deathOverlay.querySelector('#restart-button-sprite');
+        if (restartButton) {
+          restartButton.click();
+        } else {
+          // Fallback if button isn't found for some reason
+          window.dispatchEvent(new CustomEvent('game-restart'));
+        }
       }
     }
   }

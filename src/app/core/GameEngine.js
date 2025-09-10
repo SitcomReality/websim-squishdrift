@@ -164,6 +164,7 @@ export class GameEngine {
 
   update(dt) {
     const state = this.stateManager.state;
+    state.time += dt; // Correctly increment game time
 
     // Handle manual pause toggle (P or Escape)
     const input = this.inputManager.getInput?.();

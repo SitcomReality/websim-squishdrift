@@ -79,7 +79,11 @@ export class SkidmarkSystem {
 
           // Only update if it was a "big drift"
           const wasBigDrift = duration > 2.0 || distance > 5.0;
-          if (wasBigDrift) {
+          
+          // Only player vehicle drifts contribute to stats
+          const isPlayerVehicle = state.control.inVehicle && state.control.vehicle === v;
+
+          if (wasBigDrift && isPlayerVehicle) {
             if (!state.stats) state.stats = {}; // safety
             state.stats.totalDriftDistance = (state.stats.totalDriftDistance || 0) + distance;
             if (duration > (state.stats.longestDriftDuration || 0)) {

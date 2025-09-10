@@ -209,6 +209,23 @@ export class DeathSystem {
     const overlay=document.getElementById('death-overlay');
     if(!overlay || this.deathUIShown) return;
     this.deathUIShown = true;
+    
+    // --- NEW: Finalize any active drift when player dies ---
+    const playerVehicle = state.control?.inVehicle ? state.control.vehicle : null;
+    if (playerVehicle && playerVehicle.driftState && (playerVehicle.driftState.active || playerVehicle.driftState.gracePeriodTimer > 0)) {
+        const duration = state.time - playerVehicle.driftState.startTime;
+        const distance = playerVehicle.driftState.distance;
+        
+        // Only update if it was a "big drift"
+        const wasBigDrift = duration > 2.0 || distance > 5.0;
+        if (wasBigDrift) {
+            state.stats.totalDriftDistance = (state.stats.totalDriftDistance || 0) + distance;
+            if (duration > (state.stats.longestDriftDuration || 0)) {
+              state.stats.longestDriftDuration = duration;
+            }
+        }
+    }
+    
     // inject bulge keyframes once
     if(!document.getElementById('death-bulge-style')){
       const st=document.createElement('style'); st.id='death-bulge-style';
@@ -257,7 +274,7 @@ export class DeathSystem {
     // vehicles
     show(vehP); await animate(document.getElementById('vehicles-destroyed'), veh, Math.min(1000, 600+veh*10));
     // distance drifted
-    show(driftDistP); await animate(document.getElementById('drift-distance'), Math.round(totalDriftDist), Math.min(1000, 600+totalDriftDist*2));
+    show(driftDistP); await animate(document.getElementById('drift-distance'), Math.round(totalDriftDist * 10), Math.min(1000, 600+totalDriftDist*2));
     // longest drift
     show(driftDurP); await animate(document.getElementById('drift-duration'), longestDrift, 800, (v)=>v.toFixed(1));
     // highest combo (before score)

@@ -17,7 +17,7 @@ export class ScoringSystem {
 
   update(state, dt) {
     const playerVehicle = state.control?.inVehicle ? state.control.vehicle : null;
-    this.comboPaused = playerVehicle ? !!playerVehicle.isSkidding : false;
+    this.comboPaused = playerVehicle ? !!playerVehicle.isBigDrifting : false;
 
     if (!this.comboPaused && this.comboCount > 0) {
       // The longer without a score, the faster the timer drains

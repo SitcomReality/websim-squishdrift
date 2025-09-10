@@ -75,7 +75,9 @@ export class SkidmarkSystem {
       const isBigDrift = v.driftState.active && (duration > 2.0 || v.driftState.distance > 5.0);
       const inGracePeriod = !v.driftState.active && v.driftState.gracePeriodTimer > 0 && (duration > 2.0 || v.driftState.distance > 5.0);
 
-      if ((isBigDrift || inGracePeriod) && speed > 0.1) {
+      v.isBigDrifting = (isBigDrift || inGracePeriod) && speed > 0.1;
+
+      if (v.isBigDrifting) {
           state.particleSystem?.emitDriftParticles(state, v);
       }
 

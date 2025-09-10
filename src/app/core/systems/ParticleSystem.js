@@ -71,6 +71,16 @@ export class ParticleSystem {
     if (lateralImportance < 0.08) return; // effectively no big-drift when almost straight
     const slipDirection = Math.sign((vx * fwdY - vy * fwdX)); // -1 right, 1 left
 
+    // --- NEW: Combo-based intensity scaling ---
+    // Only apply combo intensity to the player's vehicle
+    const isPlayerVehicle = state.control?.inVehicle && state.control.vehicle === vehicle;
+    const comboCount = isPlayerVehicle ? (state.comboCount || 0) : 0;
+    const comboForScaling = Math.min(comboCount, 10);
+
+    // This factor scales from ~0.2 (0x combo) up to ~1.26 (10x combo).
+    // Reaches 1.0 (current base intensity) at ~7.5x combo.
+    const comboIntensity = (comboForScaling + 2) / 9.5;
+
     // Calculate rear wheel positions - same logic as skidmarks
     const perpX = -fwdY;
     const perpY = fwdX;
@@ -96,7 +106,7 @@ export class ParticleSystem {
     };
 
     // Scale counts/speed/life by lateral intensity more strongly than by overall speed
-    const baseCount = 1 + Math.ceil(lateral * 0.6); // Reduced particle count by 50%
+    const baseCount = (1 + Math.ceil(lateral * 0.6)) * comboIntensity; // Reduced particle count by 50% and scaled by combo
 
     // Bias particle count heavily to the side being slid into
     let leftCount = Math.floor(baseCount * (slipDirection >= 0 ? (1 + lateralImportance * 3.0) : (1 - lateralImportance * 0.5)));
@@ -116,7 +126,8 @@ export class ParticleSystem {
             const particleSpeed = (0.6 + Math.random() * 0.9) * (1 + lateral * 1.6);
 
             // --- NEW FLAIR ---
-            const isSuperSpark = Math.random() < 0.05; // 5% chance for a super spark
+            const superSparkChance = 0.02 + 0.1 * (comboForScaling / 10); // 2% at 0x, up to 12% at 10x
+            const isSuperSpark = Math.random() < superSparkChance;
 
             let color;
             let size;
@@ -124,20 +135,36 @@ export class ParticleSystem {
 
             if (isSuperSpark) {
                 color = 'rgba(255, 255, 180, 1.0)'; // Bright yellow
-                life = (0.1 + Math.random() * 0.1) * (1 + lateral * 2.0); // Reduced to 25% of original
-                size = (0.01 + Math.random() * 0.005) * (0.8 + lateralImportance); // Reduced max size of super sparks
+                life = (0.1 + Math.random() * 0.1) * (1 + lateral * 2.0) * comboIntensity; // Reduced to 25% of original, scaled by combo
+                size = (0.01 + Math.random() * 0.005) * (0.8 + lateralImportance) * comboIntensity; // Reduced max size of super sparks, scaled by combo
             } else {
-                // Mix of fiery colors + purple
+                // --- NEW: Colorfulness scales with combo ---
+                const colorfulness = comboForScaling / 10; // 0.0 to 1.0
                 const randColor = Math.random();
-                if (randColor < 0.4) {
+                
+                // Chance of white sparks decreases as combo increases (from 40% to 20%)
+                if (randColor < 0.4 * (1 - colorfulness * 0.5)) {
                     color = 'rgba(255, 255, 255, 0.9)'; // White
-                } else if (randColor < 0.7) {
+                } 
+                // Orange/Yellow is a constant 30% chance
+                else if (randColor < 0.7) {
                     color = 'rgba(255, 220, 100, 0.9)'; // Orange/Yellow
-                } else {
-                    color = 'rgba(180, 120, 255, 0.9)'; // Purple
+                } 
+                // Vibrant color chance increases from 30% to 50%
+                else {
+                    const vibrantColors = [
+                        'rgba(180, 120, 255, 0.9)', // Purple
+                        'rgba(0, 255, 255, 0.9)',   // Cyan/Electric Blue
+                        'rgba(255, 0, 255, 0.9)',   // Magenta
+                        'rgba(50, 255, 50, 0.9)'    // Vibrant Green
+                    ];
+                    // Unlock more colors from the vibrant palette as combo increases
+                    const numColors = 1 + Math.floor(colorfulness * (vibrantColors.length - 1));
+                    color = vibrantColors[Math.floor(Math.random() * numColors)];
                 }
-                life = (0.03 + Math.random() * 0.07) * (1 + lateral * 1.8); // Reduced to 25% of original
-                size = (0.005 + Math.random() * 0.005) * (0.8 + lateralImportance); // Reduced to 25% of original
+
+                life = (0.03 + Math.random() * 0.07) * (1 + lateral * 1.8) * comboIntensity; // Reduced to 25% of original, scaled by combo
+                size = (0.005 + Math.random() * 0.005) * (0.8 + lateralImportance) * comboIntensity; // Reduced to 25% of original, scaled by combo
             }
 
             state.particles.push({

@@ -92,8 +92,9 @@ export class ParticleSystem {
           vy: (vehicle.vel?.y || 0) * 0.5 + Math.sin(angle) * speed,
           life: 0.2 + Math.random() * 0.3,
           maxLife: 0.5,
-          size: 0.02 + Math.random() * 0.02,
-          maxSize: 0.05,
+          // sizes reduced to 25% of previous values
+          size: (0.02 + Math.random() * 0.02) * 0.25,
+          maxSize: 0.05 * 0.25,
           color: color,
           alpha: 0.9,
           maxAlpha: 0.9,

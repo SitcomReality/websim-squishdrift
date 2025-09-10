@@ -224,7 +224,7 @@ export class DeathSystem {
     const hide=(el)=>{el.style.opacity='0'; el.style.transform='scale(0.98)'; el.style.transition='opacity .2s ease, transform .2s ease'; el.style.display='none';};
     const show=(el)=>{el.style.display='block'; requestAnimationFrame(()=>{el.style.opacity='1'; el.style.transform='scale(1)';});};
     hide(pedP); hide(vehP);
-    const timeAlive=Math.floor((Date.now()-(state.startTime||Date.now()))/1000));
+    const timeAlive=Math.floor((Date.now()-(state.startTime||Date.now()))/1000);
     const peds=state.stats?.enemiesKilled||0, veh=state.stats?.vehiclesDestroyed||0, score=state.scoringSystem?.getScore?.()||0, highestCombo=state.scoringSystem?.getHighestCombo?.()||0;
     const animate=(span,to,dur,fmt=(v)=>String(v))=>new Promise(res=>{
       if(!span){ res(); return; }

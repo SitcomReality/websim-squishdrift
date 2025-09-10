@@ -57,10 +57,17 @@ export class ParticleSystem {
 
   emitDriftParticles(state, vehicle) {
     state.particles = state.particles || [];
-    
+
+    const vehicleSpeed = Math.hypot(vehicle.vel?.x || 0, vehicle.vel?.y || 0);
+    if (vehicleSpeed < 0.1) return;
+
+    // Calculate lateral slip direction
+    const vx = vehicle.vel?.x || 0, vy = vehicle.vel?.y || 0;
+    const fwdX = Math.cos(vehicle.rot || 0), fwdY = Math.sin(vehicle.rot || 0);
+    const vCrossF = (vx * fwdY - vy * fwdX) / vehicleSpeed; // sin between vel and forward
+    const slipDirection = Math.sign(vCrossF); // -1 for right slide, 1 for left slide
+
     // Calculate rear wheel positions
-    const fwdX = Math.cos(vehicle.rot || 0);
-    const fwdY = Math.sin(vehicle.rot || 0);
     const perpX = -fwdY;
     const perpY = fwdX;
     
@@ -70,37 +77,55 @@ export class ParticleSystem {
     const rearX = vehicle.pos.x + fwdX * rearWheelOffset;
     const rearY = vehicle.pos.y + fwdY * rearWheelOffset;
     
-    const wheelPositions = [
-      { x: rearX - perpX * trackHalfWidth, y: rearY - perpY * trackHalfWidth }, // Left wheel
-      { x: rearX + perpX * trackHalfWidth, y: rearY + perpY * trackHalfWidth }  // Right wheel
-    ];
+    const wheelPositions = {
+      left: { x: rearX - perpX * trackHalfWidth, y: rearY - perpY * trackHalfWidth },
+      right: { x: rearX + perpX * trackHalfWidth, y: rearY + perpY * trackHalfWidth }
+    };
 
-    for (const pos of wheelPositions) {
-      const count = 2; // particles per wheel per frame
-      for (let i = 0; i < count; i++) {
-        const angle = Math.random() * Math.PI * 2;
-        const speed = 1 + Math.random() * 2;
-        
-        // Alternate between purple and white sparks
-        const color = Math.random() > 0.5 ? 'rgba(255, 255, 255, 0.9)' : 'rgba(180, 120, 255, 0.9)';
-        
-        state.particles.push({
-          type: 'spark',
-          x: pos.x,
-          y: pos.y,
-          vx: (vehicle.vel?.x || 0) * 0.5 + Math.cos(angle) * speed,
-          vy: (vehicle.vel?.y || 0) * 0.5 + Math.sin(angle) * speed,
-          life: 0.2 + Math.random() * 0.3,
-          maxLife: 0.5,
-          // sizes reduced to 25% of previous values
-          size: (0.02 + Math.random() * 0.02) * 0.25,
-          maxSize: 0.05 * 0.25,
-          color: color,
-          alpha: 0.9,
-          maxAlpha: 0.9,
-        });
-      }
+    // More particles based on speed
+    const baseCount = 1 + Math.floor(vehicleSpeed * 0.4);
+    
+    // Bias particle count based on slip direction
+    let leftCount = baseCount;
+    let rightCount = baseCount;
+    if (slipDirection > 0) { // Sliding left
+      leftCount = Math.ceil(baseCount * 1.5);
+    } else if (slipDirection < 0) { // Sliding right
+      rightCount = Math.ceil(baseCount * 1.5);
     }
+
+    const emitFromWheel = (pos, count) => {
+        for (let i = 0; i < count; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            // Faster particles based on vehicle speed
+            const particleSpeed = (0.5 + Math.random() * 0.8) * vehicleSpeed;
+            
+            // Alternate between purple and white sparks
+            const color = Math.random() > 0.5 ? 'rgba(255, 255, 255, 0.9)' : 'rgba(180, 120, 255, 0.9)';
+            
+            // Longer lasting particles based on vehicle speed
+            const life = (0.15 + Math.random() * 0.25) * (1 + vehicleSpeed / (vehicle.maxSpeed || 5));
+
+            state.particles.push({
+              type: 'spark',
+              x: pos.x,
+              y: pos.y,
+              vx: (vehicle.vel?.x || 0) * 0.5 + Math.cos(angle) * particleSpeed,
+              vy: (vehicle.vel?.y || 0) * 0.5 + Math.sin(angle) * particleSpeed,
+              life: life,
+              maxLife: life,
+              // sizes reduced to 25% of previous values
+              size: (0.02 + Math.random() * 0.02) * 0.25,
+              maxSize: 0.05 * 0.25,
+              color: color,
+              alpha: 0.9,
+              maxAlpha: 0.9,
+            });
+        }
+    };
+
+    emitFromWheel(wheelPositions.left, leftCount);
+    emitFromWheel(wheelPositions.right, rightCount);
   }
 
   emitSmoke(state, vehicle, damageLevel) {
@@ -143,6 +168,14 @@ export class ParticleSystem {
     }
   }
 
+  // Add method to emit sparks at a specific collision point
+  emitCollisionSparks(state, vehicle, contactPoint, power = 8) {
+    if (!vehicle || !contactPoint) return;
+    
+    // Calculate sparks at exact collision point
+    this.emitSparks(state, contactPoint, 10, power);
+  }
+
   emitSparks(state, pos, count = 6, power = 4, collisionNormal = null) {
     // Ensure particles array is initialized
     state.particles = state.particles || [];
@@ -169,14 +202,6 @@ export class ParticleSystem {
         maxAlpha: 1.0
       });
     }
-  }
-
-  // Add method to emit sparks at a specific collision point
-  emitCollisionSparks(state, vehicle, contactPoint, power = 8) {
-    if (!vehicle || !contactPoint) return;
-    
-    // Calculate sparks at exact collision point
-    this.emitSparks(state, contactPoint, 10, power);
   }
 
   emitBlood(state, pos, count = 8, power = 3) {

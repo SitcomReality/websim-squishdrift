@@ -14,6 +14,7 @@ export class SkidmarkSystem {
     this.skidSegmentLength = 0.05;
     this.rearWheelOffset = -0.3;
     this.playerVehicleSkidBoost = 2.0; // Boost volume for player vehicle
+    this.bigDriftGracePeriod = 3.0; // 3 seconds grace period for big drifts
   }
 
   update(state, dt) {
@@ -22,7 +23,7 @@ export class SkidmarkSystem {
     if (!ref) return;
 
     // Track blood stains for collision detection
-    const bloodStains = state.entities.filter(e => e.type === 'blood');  
+    const bloodStains = state.entities.filter(e => e.type === 'blood');
     
     // Emit new segments from vehicles
     for (const v of state.entities.filter(e => e.type === 'vehicle')) {
@@ -32,55 +33,51 @@ export class SkidmarkSystem {
       const drifting = lateralSlip >= this.skidLateralSlipThreshold;
 
       // --- BIG DRIFT LOGIC ---
-      v.driftState = v.driftState || { active: false, startTime: 0, distance: 0, lastPos: null, graceStart: 0, bigActive: false, lastDriftTime: 0 };
+      v.driftState = v.driftState || { active: false, startTime: 0, distance: 0, lastPos: null, gracePeriodTimer: 0 };
       const isActuallyDrifting = drifting && speed > 1.5;
 
       if (isActuallyDrifting) {
-         if (!v.driftState.active) {
-           // Start of a new drift
-           v.driftState.active = true;
-           v.driftState.startTime = state.time;
-           v.driftState.distance = 0;
-           v.driftState.lastPos = new Vec2(v.pos.x, v.pos.y);
-         } else {
-           // Continuing an existing drift
-           const dist = Math.hypot(v.pos.x - (v.driftState.lastPos?.x || v.pos.x), v.pos.y - (v.driftState.lastPos?.y || v.pos.y));
-           v.driftState.distance += dist;
-           if (v.driftState.lastPos) {
-                v.driftState.lastPos.x = v.pos.x;
-                v.driftState.lastPos.y = v.pos.y;
-           } else {
-                v.driftState.lastPos = new Vec2(v.pos.x, v.pos.y);
-           }
-         }
-         // When actively drifting, we are not in a grace period. Reset graceStart.
-         v.driftState.graceStart = 0;
-         v.driftState.lastDriftTime = state.time;
-         const duration = state.time - v.driftState.startTime;
-         if (duration > 2.0 || v.driftState.distance > 5.0) v.driftState.bigActive = true;
-         if (v.driftState.bigActive) state.particleSystem?.emitDriftParticles(state, v);
-      } else {
-        // Not drifting: check if we should start or continue a grace period.
-        const nowTime = state.time;
-        if (v.driftState.active) {
-          if (!v.driftState.graceStart) {
-            // The drift just stopped, begin the grace period.
-            v.driftState.graceStart = nowTime;
-          }
-
-          const GRACE_DURATION = 1.0; // 1 second grace period
-          // Keep emitting only if Big Drift was active and grace hasn't expired since last real drift
-          if (v.driftState.bigActive && (nowTime - v.driftState.lastDriftTime) < GRACE_DURATION) {
-            state.particleSystem?.emitDriftParticles(state, v);
-          } else {
-            // End Big Drift cleanly
-            v.driftState.bigActive = false;
-            v.driftState.active = false;
-            v.driftState.startTime = 0; v.driftState.distance = 0;
-            v.driftState.lastPos = null; v.driftState.graceStart = 0;
+        if (!v.driftState.active) {
+          // Start of a new drift. If in grace period, continue the old one.
+          if (v.driftState.gracePeriodTimer <= 0) {
+            v.driftState.startTime = state.time;
+            v.driftState.distance = 0;
+            v.driftState.lastPos = new Vec2(v.pos.x, v.pos.y);
           }
         }
-       }
+        v.driftState.active = true;
+        v.driftState.gracePeriodTimer = 0; // Reset grace period while actively drifting
+        
+        // Continuing a drift
+        if (v.driftState.lastPos) {
+          const dist = Math.hypot(v.pos.x - v.driftState.lastPos.x, v.pos.y - v.driftState.lastPos.y);
+          v.driftState.distance += dist;
+          v.driftState.lastPos.x = v.pos.x;
+          v.driftState.lastPos.y = v.pos.y;
+        } else {
+            v.driftState.lastPos = new Vec2(v.pos.x, v.pos.y);
+        }
+
+      } else {
+        // Not drifting
+        if (v.driftState.active) {
+            // Start grace period if we just stopped drifting
+            v.driftState.active = false;
+            v.driftState.gracePeriodTimer = this.bigDriftGracePeriod;
+        }
+      }
+
+      if (v.driftState.gracePeriodTimer > 0) {
+        v.driftState.gracePeriodTimer -= dt;
+      }
+
+      const duration = state.time - v.driftState.startTime;
+      const isBigDrift = v.driftState.active && (duration > 2.0 || v.driftState.distance > 5.0);
+      const inGracePeriod = !v.driftState.active && v.driftState.gracePeriodTimer > 0 && (duration > 2.0 || v.driftState.distance > 5.0);
+
+      if ((isBigDrift || inGracePeriod) && speed > 0.1) {
+          state.particleSystem?.emitDriftParticles(state, v);
+      }
 
       if ((drifting || hardBrake) && speed > 0.05) {
         // spacing against last drop using vehicle's center position

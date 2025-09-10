@@ -42,14 +42,19 @@ export class SkidmarkSystem {
            v.driftState.startTime = state.time;
            v.driftState.distance = 0;
            v.driftState.lastPos = new Vec2(v.pos.x, v.pos.y);
-           v.driftState.graceStart = 0; // reset any ending grace
          } else {
-           // Continuing a drift
-           const dist = Math.hypot(v.pos.x - v.driftState.lastPos.x, v.pos.y - v.driftState.lastPos.y);
+           // Continuing an existing drift
+           const dist = Math.hypot(v.pos.x - (v.driftState.lastPos?.x || v.pos.x), v.pos.y - (v.driftState.lastPos?.y || v.pos.y));
            v.driftState.distance += dist;
-           v.driftState.lastPos.x = v.pos.x;
-           v.driftState.lastPos.y = v.pos.y;
+           if (v.driftState.lastPos) {
+                v.driftState.lastPos.x = v.pos.x;
+                v.driftState.lastPos.y = v.pos.y;
+           } else {
+                v.driftState.lastPos = new Vec2(v.pos.x, v.pos.y);
+           }
          }
+         // When actively drifting, we are not in a grace period. Reset graceStart.
+         v.driftState.graceStart = 0;
 
          const duration = state.time - v.driftState.startTime;
          const isBigDrift = duration > 2.0 || v.driftState.distance > 5.0;
@@ -58,22 +63,28 @@ export class SkidmarkSystem {
            state.particleSystem?.emitDriftParticles(state, v);
          }
       } else {
-        // Not drifting: start/continue a short grace window so brief corrections won't end the big drift
+        // Not drifting: check if we should start or continue a grace period.
         const nowTime = state.time;
-        if (v.driftState.active && !v.driftState.graceStart) {
-          v.driftState.graceStart = nowTime; // begin grace
-        }
-        // If within 5s grace window, keep active but don't advance distance
-        const GRACE_DURATION = 5.0;
-        if (v.driftState.active && v.driftState.graceStart && (nowTime - v.driftState.graceStart) < GRACE_DURATION) {
-          // maintain active state but do not add distance; particles may continue if already big
-          const duration = nowTime - v.driftState.startTime;
-          const isBigDrift = duration > 2.0 || v.driftState.distance > 5.0;
-          if (isBigDrift) state.particleSystem?.emitDriftParticles(state, v);
-        } else {
-          // Grace expired or not active: reset state
-          v.driftState.active = false;
-          v.driftState.graceStart = 0;
+        if (v.driftState.active) {
+          if (!v.driftState.graceStart) {
+            // The drift just stopped, begin the grace period.
+            v.driftState.graceStart = nowTime;
+          }
+
+          const GRACE_DURATION = 1.0; // 1 second grace period
+          if ((nowTime - v.driftState.graceStart) < GRACE_DURATION) {
+            // We are within the grace period. Maintain active state.
+            // Particles for an existing big drift can continue during grace.
+            const duration = nowTime - v.driftState.startTime;
+            const isBigDrift = duration > 2.0 || v.driftState.distance > 5.0;
+            if (isBigDrift) {
+              state.particleSystem?.emitDriftParticles(state, v);
+            }
+          } else {
+            // Grace period has expired. End the drift.
+            v.driftState.active = false;
+            v.driftState.graceStart = 0;
+          }
         }
        }
 

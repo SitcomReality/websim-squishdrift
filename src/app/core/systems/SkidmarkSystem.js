@@ -32,7 +32,7 @@ export class SkidmarkSystem {
       const drifting = lateralSlip >= this.skidLateralSlipThreshold;
 
       // --- BIG DRIFT LOGIC ---
-      v.driftState = v.driftState || { active: false, startTime: 0, distance: 0, lastPos: null, graceStart: 0 };
+      v.driftState = v.driftState || { active: false, startTime: 0, distance: 0, lastPos: null, graceStart: 0, bigActive: false, lastDriftTime: 0 };
       const isActuallyDrifting = drifting && speed > 1.5;
 
       if (isActuallyDrifting) {
@@ -55,13 +55,10 @@ export class SkidmarkSystem {
          }
          // When actively drifting, we are not in a grace period. Reset graceStart.
          v.driftState.graceStart = 0;
-
+         v.driftState.lastDriftTime = state.time;
          const duration = state.time - v.driftState.startTime;
-         const isBigDrift = duration > 2.0 || v.driftState.distance > 5.0;
-
-         if (isBigDrift) {
-           state.particleSystem?.emitDriftParticles(state, v);
-         }
+         if (duration > 2.0 || v.driftState.distance > 5.0) v.driftState.bigActive = true;
+         if (v.driftState.bigActive) state.particleSystem?.emitDriftParticles(state, v);
       } else {
         // Not drifting: check if we should start or continue a grace period.
         const nowTime = state.time;
@@ -72,21 +69,15 @@ export class SkidmarkSystem {
           }
 
           const GRACE_DURATION = 1.0; // 1 second grace period
-          if ((nowTime - v.driftState.graceStart) < GRACE_DURATION) {
-            // We are within the grace period. Maintain active state.
-            // Particles for an existing big drift can continue during grace.
-            const duration = nowTime - v.driftState.startTime;
-            const isBigDrift = duration > 2.0 || v.driftState.distance > 5.0;
-            if (isBigDrift) {
-              state.particleSystem?.emitDriftParticles(state, v);
-            }
+          // Keep emitting only if Big Drift was active and grace hasn't expired since last real drift
+          if (v.driftState.bigActive && (nowTime - v.driftState.lastDriftTime) < GRACE_DURATION) {
+            state.particleSystem?.emitDriftParticles(state, v);
           } else {
-            // Grace period has expired. End the drift by resetting its state.
+            // End Big Drift cleanly
+            v.driftState.bigActive = false;
             v.driftState.active = false;
-            v.driftState.startTime = 0;
-            v.driftState.distance = 0;
-            v.driftState.lastPos = null;
-            v.driftState.graceStart = 0;
+            v.driftState.startTime = 0; v.driftState.distance = 0;
+            v.driftState.lastPos = null; v.driftState.graceStart = 0;
           }
         }
        }

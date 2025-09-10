@@ -94,9 +94,15 @@ export class ParticleSystem {
       rightCount = Math.ceil(baseCount * 1.5);
     }
 
+    // --- NEW: Calculate opposite direction of vehicle movement for particle emission ---
+    const oppositeAngle = Math.atan2(-vy, -vx);
+    const spread = Math.PI; // 180 degree spread for a more dynamic effect
+
     const emitFromWheel = (pos, count) => {
         for (let i = 0; i < count; i++) {
-            const angle = Math.random() * Math.PI * 2;
+            // Generate angle biased towards opposite direction of movement
+            const angle = oppositeAngle + (Math.random() - 0.5) * spread;
+
             // Faster particles based on vehicle speed
             const particleSpeed = (0.5 + Math.random() * 0.8) * vehicleSpeed;
             
@@ -110,8 +116,8 @@ export class ParticleSystem {
               type: 'spark',
               x: pos.x,
               y: pos.y,
-              vx: (vehicle.vel?.x || 0) * 0.5 + Math.cos(angle) * particleSpeed,
-              vy: (vehicle.vel?.y || 0) * 0.5 + Math.sin(angle) * particleSpeed,
+              vx: Math.cos(angle) * particleSpeed,
+              vy: Math.sin(angle) * particleSpeed,
               life: life,
               maxLife: life,
               // sizes reduced to 25% of previous values

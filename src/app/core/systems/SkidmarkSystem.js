@@ -1,5 +1,3 @@
-
-```javascript
 import { Vec2 } from '../../../utils/Vec2.js';
 
 export class SkidmarkSystem {

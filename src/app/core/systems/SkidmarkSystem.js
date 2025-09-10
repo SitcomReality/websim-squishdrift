@@ -63,8 +63,8 @@ export class SkidmarkSystem {
         if (v.driftState.active && !v.driftState.graceStart) {
           v.driftState.graceStart = nowTime; // begin grace
         }
-        // If within 1s grace window, keep active but don't advance distance
-        const GRACE_DURATION = 1.0;
+        // If within 2s grace window, keep active but don't advance distance
+        const GRACE_DURATION = 2.0;
         if (v.driftState.active && v.driftState.graceStart && (nowTime - v.driftState.graceStart) < GRACE_DURATION) {
           // maintain active state but do not add distance; particles may continue if already big
           const duration = nowTime - v.driftState.startTime;

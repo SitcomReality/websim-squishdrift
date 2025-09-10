@@ -58,16 +58,20 @@ export class ParticleSystem {
   emitDriftParticles(state, vehicle) {
     state.particles = state.particles || [];
 
-    const vehicleSpeed = Math.hypot(vehicle.vel?.x || 0, vehicle.vel?.y || 0);
-    if (vehicleSpeed < 0.1) return;
-
-    // Calculate lateral slip direction
     const vx = vehicle.vel?.x || 0, vy = vehicle.vel?.y || 0;
     const fwdX = Math.cos(vehicle.rot || 0), fwdY = Math.sin(vehicle.rot || 0);
-    const vCrossF = (vx * fwdY - vy * fwdX) / vehicleSpeed; // sin between vel and forward
-    const slipDirection = Math.sign(vCrossF); // -1 for right slide, 1 for left slide
+    const speed = Math.hypot(vx, vy);
+    if (speed < 0.05) return;
 
-    // Calculate rear wheel positions - use same logic as skidmarks
+    // lateral component (absolute sideways speed) is primary driver for 'big drift' effects
+    const lateral = Math.abs((vx * fwdY - vy * fwdX)); // magnitude of velocity perpendicular to forward
+    const longitudinal = Math.abs((vx * fwdX + vy * fwdY)); // forward/back component
+    // If mostly moving forward/back, dramatically reduce drift particles
+    const lateralImportance = lateral / (longitudinal + lateral + 1e-6);
+    if (lateralImportance < 0.08) return; // effectively no big-drift when almost straight
+    const slipDirection = Math.sign((vx * fwdY - vy * fwdX)); // -1 right, 1 left
+
+    // Calculate rear wheel positions - same logic as skidmarks
     const perpX = -fwdY;
     const perpY = fwdX;
     
@@ -91,35 +95,31 @@ export class ParticleSystem {
       right: { x: rearX + perpX * trackHalfWidth, y: rearY + perpY * trackHalfWidth }
     };
 
-    // More particles based on speed
-    const baseCount = 1 + Math.floor(vehicleSpeed * 0.4);
+    // Scale counts/speed/life by lateral intensity more strongly than by overall speed
+    const baseCount = 1 + Math.ceil(lateral * 3.5); // more sensitive to sideways motion
     
-    // Bias particle count based on slip direction
-    let leftCount = baseCount;
-    let rightCount = baseCount;
-    if (slipDirection > 0) { // Sliding left
-      leftCount = Math.ceil(baseCount * 1.5);
-    } else if (slipDirection < 0) { // Sliding right
-      rightCount = Math.ceil(baseCount * 1.5);
-    }
+    // Bias particle count heavily to the side being slid into
+    let leftCount = Math.floor(baseCount * (slipDirection >= 0 ? (1 + lateralImportance * 3.0) : (1 - lateralImportance * 0.5)));
+    let rightCount = Math.floor(baseCount * (slipDirection <= 0 ? (1 + lateralImportance * 3.0) : (1 - lateralImportance * 0.5)));
+    leftCount = Math.max(0, leftCount); rightCount = Math.max(0, rightCount);
 
-    // --- Calculate opposite direction of vehicle movement for particle emission ---
+    // emission direction biased opposite to instantaneous movement (creates "being spat out" illusion)
     const oppositeAngle = Math.atan2(-vy, -vx);
-    const spread = Math.PI; // 180 degree spread for a more dynamic effect
+    const spread = Math.PI * (0.6 + Math.min(0.9, lateralImportance * 1.5)); // narrower when less sliding, wider when big slide
 
     const emitFromWheel = (pos, count) => {
         for (let i = 0; i < count; i++) {
             // Generate angle biased towards opposite direction of movement
             const angle = oppositeAngle + (Math.random() - 0.5) * spread;
 
-            // Faster particles based on vehicle speed
-            const particleSpeed = (0.5 + Math.random() * 0.8) * vehicleSpeed;
+            // particle speed & lifetime scale with lateral magnitude (sideways speed)
+            const particleSpeed = (0.6 + Math.random() * 0.9) * (1 + lateral * 1.6);
             
             // Alternate between purple and white sparks
             const color = Math.random() > 0.5 ? 'rgba(255, 255, 255, 0.9)' : 'rgba(180, 120, 255, 0.9)';
             
             // Longer lasting particles based on vehicle speed
-            const life = (0.15 + Math.random() * 0.25) * (1 + vehicleSpeed / (vehicle.maxSpeed || 5));
+            const life = (0.12 + Math.random() * 0.28) * (1 + lateral * 1.8);
 
             state.particles.push({
               type: 'spark',
@@ -130,7 +130,7 @@ export class ParticleSystem {
               life: life,
               maxLife: life,
               // sizes reduced to 25% of previous values
-              size: (0.02 + Math.random() * 0.02) * 0.25,
+              size: (0.02 + Math.random() * 0.02) * 0.25 * (0.6 + lateralImportance),
               maxSize: 0.05 * 0.25,
               color: color,
               alpha: 0.9,

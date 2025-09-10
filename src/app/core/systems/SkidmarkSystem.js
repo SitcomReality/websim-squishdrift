@@ -72,6 +72,26 @@ export class SkidmarkSystem {
 
       if (v.driftState.gracePeriodTimer > 0) {
         v.driftState.gracePeriodTimer -= dt;
+        if (v.driftState.gracePeriodTimer <= 0) {
+          // Drift session has ended. Finalize stats.
+          const duration = state.time - v.driftState.startTime;
+          const distance = v.driftState.distance;
+
+          // Only update if it was a "big drift"
+          const wasBigDrift = duration > 2.0 || distance > 5.0;
+          if (wasBigDrift) {
+            if (!state.stats) state.stats = {}; // safety
+            state.stats.totalDriftDistance = (state.stats.totalDriftDistance || 0) + distance;
+            if (duration > (state.stats.longestDriftDuration || 0)) {
+              state.stats.longestDriftDuration = duration;
+            }
+          }
+
+          // Reset for next drift
+          v.driftState.startTime = 0;
+          v.driftState.distance = 0;
+          v.driftState.lastPos = null;
+        }
       }
 
       const duration = state.time - v.driftState.startTime;

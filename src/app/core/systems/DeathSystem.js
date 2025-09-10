@@ -218,14 +218,17 @@ export class DeathSystem {
     const statsEl=document.getElementById('death-stats');
     const timeP=statsEl.children[0], pedP=statsEl.children[1], vehP=statsEl.children[2];
     pedP.innerHTML='Squishes: <span id="enemies-killed">0</span>';
+    const driftDistP=document.createElement('p'); driftDistP.style.fontSize='18px'; driftDistP.style.marginTop='4px'; driftDistP.innerHTML='Distance Drifted: <span id="drift-distance">0</span>m'; driftDistP.style.display='none'; statsEl.appendChild(driftDistP);
+    const driftDurP=document.createElement('p'); driftDurP.style.fontSize='18px'; driftDurP.style.marginTop='4px'; driftDurP.innerHTML='Longest Drift: <span id="drift-duration">0.0</span>s'; driftDurP.style.display='none'; statsEl.appendChild(driftDurP);
     const comboP=document.createElement('p'); comboP.style.fontSize='18px'; comboP.style.marginTop='4px'; comboP.innerHTML='Highest Combo: <span id="highest-combo">0</span>'; comboP.style.display='none'; statsEl.appendChild(comboP);
     const scoreP=document.createElement('p'); scoreP.style.fontSize='24px'; scoreP.style.marginTop='6px'; scoreP.innerHTML='Score: <span id="final-score">0</span>'; scoreP.style.display='none'; statsEl.appendChild(scoreP);
     const restartBtn=document.getElementById('restart-button'); if(restartBtn) restartBtn.style.display='none';
     const hide=(el)=>{el.style.opacity='0'; el.style.transform='scale(0.98)'; el.style.transition='opacity .2s ease, transform .2s ease'; el.style.display='none';};
     const show=(el)=>{el.style.display='block'; requestAnimationFrame(()=>{el.style.opacity='1'; el.style.transform='scale(1)';});};
-    hide(pedP); hide(vehP);
+    hide(pedP); hide(vehP); hide(driftDistP); hide(driftDurP);
     const timeAlive=Math.floor((Date.now()-(state.startTime||Date.now()))/1000);
     const peds=state.stats?.enemiesKilled||0, veh=state.stats?.vehiclesDestroyed||0, score=state.scoringSystem?.getScore?.()||0, highestCombo=state.scoringSystem?.getHighestCombo?.()||0;
+    const longestDrift=state.stats?.longestDriftDuration||0, totalDriftDist=state.stats?.totalDriftDistance||0;
     const animate=(span,to,dur,fmt=(v)=>String(v))=>new Promise(res=>{
       if(!span){ res(); return; }
       const t0=performance.now();
@@ -253,6 +256,10 @@ export class DeathSystem {
     show(pedP); await animate(document.getElementById('enemies-killed'), peds, Math.min(1000, 600+peds*10));
     // vehicles
     show(vehP); await animate(document.getElementById('vehicles-destroyed'), veh, Math.min(1000, 600+veh*10));
+    // distance drifted
+    show(driftDistP); await animate(document.getElementById('drift-distance'), Math.round(totalDriftDist), Math.min(1000, 600+totalDriftDist*2));
+    // longest drift
+    show(driftDurP); await animate(document.getElementById('drift-duration'), longestDrift, 800, (v)=>v.toFixed(1));
     // highest combo (before score)
     show(comboP); await animate(document.getElementById('highest-combo'), highestCombo, 800);
     // score (final stat - now positioned last)

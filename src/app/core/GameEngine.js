@@ -78,7 +78,9 @@ export class GameEngine {
       this.stateManager.state.startTime = Date.now();
       this.stateManager.state.stats = {
         enemiesKilled: 0,
-        vehiclesDestroyed: 0
+        vehiclesDestroyed: 0,
+        longestDriftDuration: 0,
+        totalDriftDistance: 0
       };
     }
 
@@ -301,7 +303,9 @@ export class GameEngine {
     newState.startTime = Date.now();
     newState.stats = {
       enemiesKilled: 0,
-      vehiclesDestroyed: 0
+      vehiclesDestroyed: 0,
+      longestDriftDuration: 0,
+      totalDriftDistance: 0
     };
     newState.debugOverlay = this.debugOverlay;
     newState.scoringSystem = this.scoringSystem;

@@ -41,11 +41,11 @@ export class TitleScreen {
               </div>
               <div class="control-item">
                 <span class="action">Sprint</span>
-                <span class="keys"><kbd>Shift</kbd> / <kbd class="gamepad-button">A</kbd> / <kbd class="gamepad-button">RT</kbd></span>
+                <span class="keys"><kbd>Shift</kbd> / <kbd class="gamepad-button">RT</kbd></span>
               </div>
               <div class="control-item">
                 <span class="action">Fire</span>
-                <span class="keys"><kbd>LMB</kbd> / <kbd class="gamepad-button">RT</kbd></span>
+                <span class="keys"><kbd>LMB</kbd> / <kbd class="gamepad-button">A</kbd> / <kbd class="gamepad-button">R1</kbd></span>
               </div>
               <div class="control-item">
                 <span class="action">Interact</span>

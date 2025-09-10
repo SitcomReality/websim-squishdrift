@@ -138,7 +138,8 @@ export class InputSystem {
     if (gp.buttons[2]?.pressed) this.virtualKeys.add('KeyQ'); // X/Square -> flatten
     // Start button -> toggle pause (map to Escape to reuse existing pause handling)
     if (gp.buttons[9]?.pressed) this.virtualKeys.add('Escape');
-    if (gp.buttons[7]?.pressed || gp.buttons[5]?.pressed) this.virtualKeys.add('MouseLeft'); // RT/R1 -> fire
+    // Fire mapping: Right Shoulder (R1 - buttons[5]) OR A (buttons[0]) => MouseLeft (shoot)
+    if (gp.buttons[5]?.pressed || gp.buttons[0]?.pressed) this.virtualKeys.add('MouseLeft');
 
     // Dispatch start/restart actions on single-press transitions:
     // A (buttons[0]) or Start (buttons[9]) should act like pressing start/restart.
@@ -197,7 +198,8 @@ export class InputSystem {
     ui.append(left, right, btnFire, btnAbility, btnAccel, btnBrake, btnLeft, btnRight); rootWrap.appendChild(ui);
     // Touch state
     this._touch = { ui,left,right, lId:null, rId:null, lStart:null, rStart:null, lPos:null, rPos:null };
-    const onDown=(e,side)=>{ for (const t of e.changedTouches){ if (side==='L' && this._touch.lId==null){ this._touch.lId=t.identifier; this._touch.lStart={x:t.clientX,y:t.clientY}; this._touch.lPos=this._touch.lStart; } } e.preventDefault(); e.stopPropagation(); };
+    const onDown=(e,side)=>{ for (const t of e.changedTouches){ if (side==='L' && this._touch.lId==null){ this._touch.lId=t.identifier; this._touch.lStart={x:t.clientX,y:t.clientY}; this._touch.lPos=this._touch.lStart; }
+      if (side==='R' && this._touch.rId==null){ this._touch.rId=t.identifier; this._touch.rStart={x:t.clientX,y:t.clientY}; this._touch.rPos=this._touch.rStart; } } e.preventDefault(); e.stopPropagation(); };
     const onMove=(e)=>{ for (const t of e.changedTouches){ if (t.identifier===this._touch.lId) this._touch.lPos={x:t.clientX,y:t.clientY};
       if (t.identifier===this._touch.rId) this._touch.rPos={x:t.clientX,y:t.clientY}; } e.preventDefault(); };
     const onUp=(e)=>{ for (const t of e.changedTouches){ if (t.identifier===this._touch.lId){ this._touch.lId=null; this._touch.lStart=this._touch.lPos=null; }

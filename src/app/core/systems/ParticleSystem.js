@@ -125,7 +125,7 @@ export class ParticleSystem {
             if (isSuperSpark) {
                 color = 'rgba(255, 255, 180, 1.0)'; // Bright yellow
                 life = (0.1 + Math.random() * 0.1) * (1 + lateral * 2.0); // Reduced to 25% of original
-                size = (0.0125 + Math.random() * 0.0075) * (0.8 + lateralImportance); // Reduced to 25% of original
+                size = (0.01 + Math.random() * 0.005) * (0.8 + lateralImportance); // Reduced max size of super sparks
             } else {
                 // Mix of fiery colors + purple
                 const randColor = Math.random();

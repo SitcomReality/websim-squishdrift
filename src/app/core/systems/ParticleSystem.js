@@ -96,7 +96,7 @@ export class ParticleSystem {
     };
 
     // Scale counts/speed/life by lateral intensity more strongly than by overall speed
-    const baseCount = 1 + Math.ceil(lateral * 3.5); // more sensitive to sideways motion
+    const baseCount = 1 + Math.ceil(lateral * 1.2); // Reduced particle count significantly
     
     // Bias particle count heavily to the side being slid into
     let leftCount = Math.floor(baseCount * (slipDirection >= 0 ? (1 + lateralImportance * 3.0) : (1 - lateralImportance * 0.5)));
@@ -115,12 +115,31 @@ export class ParticleSystem {
             // particle speed & lifetime scale with lateral magnitude (sideways speed)
             const particleSpeed = (0.6 + Math.random() * 0.9) * (1 + lateral * 1.6);
             
-            // Alternate between purple and white sparks
-            const color = Math.random() > 0.5 ? 'rgba(255, 255, 255, 0.9)' : 'rgba(180, 120, 255, 0.9)';
-            
-            // Longer lasting particles based on vehicle speed
-            const life = (0.12 + Math.random() * 0.28) * (1 + lateral * 1.8);
+            // --- NEW FLAIR ---
+            const isSuperSpark = Math.random() < 0.05; // 5% chance for a super spark
 
+            let color;
+            let size;
+            let life;
+
+            if (isSuperSpark) {
+                color = 'rgba(255, 255, 180, 1.0)'; // Bright yellow
+                life = (0.4 + Math.random() * 0.4) * (1 + lateral * 2.0); // Lasts longer
+                size = (0.05 + Math.random() * 0.03) * (0.8 + lateralImportance); // Much bigger
+            } else {
+                // Mix of fiery colors + purple
+                const randColor = Math.random();
+                if (randColor < 0.4) {
+                    color = 'rgba(255, 255, 255, 0.9)'; // White
+                } else if (randColor < 0.7) {
+                    color = 'rgba(255, 220, 100, 0.9)'; // Orange/Yellow
+                } else {
+                    color = 'rgba(180, 120, 255, 0.9)'; // Purple
+                }
+                life = (0.12 + Math.random() * 0.28) * (1 + lateral * 1.8);
+                size = (0.02 + Math.random() * 0.02) * (0.8 + lateralImportance); // Increased size
+            }
+            
             state.particles.push({
               type: 'spark',
               x: pos.x,
@@ -129,9 +148,8 @@ export class ParticleSystem {
               vy: Math.sin(angle) * particleSpeed,
               life: life,
               maxLife: life,
-              // sizes reduced to 25% of previous values
-              size: (0.02 + Math.random() * 0.02) * 0.25 * (0.6 + lateralImportance),
-              maxSize: 0.05 * 0.25,
+              size: size,
+              maxSize: size * 1.5,
               color: color,
               alpha: 0.9,
               maxAlpha: 0.9,

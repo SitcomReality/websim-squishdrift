@@ -152,7 +152,7 @@ export class InputSystem {
       const deathOverlay = document.getElementById('death-overlay');
       if (deathOverlay) {
         // Click the restart button to trigger the existing, robust restart logic
-        const restartButton = deathOverlay.querySelector('#restart-button-sprite');
+        const restartButton = deathOverlay.querySelector('#restart-button-sprite') || deathOverlay.querySelector('#restart-button');
         if (restartButton) {
           restartButton.click();
         } else {

@@ -67,13 +67,22 @@ export class ParticleSystem {
     const vCrossF = (vx * fwdY - vy * fwdX) / vehicleSpeed; // sin between vel and forward
     const slipDirection = Math.sign(vCrossF); // -1 for right slide, 1 for left slide
 
-    // Calculate rear wheel positions
+    // Calculate rear wheel positions - use same logic as skidmarks
     const perpX = -fwdY;
     const perpY = fwdX;
     
     const rearWheelOffset = -0.3; // same as skidmarks
-    const trackHalfWidth = 0.23; // same as skidmarks
-    
+    // Adjust track width based on vehicle type to match skidmark positioning
+    let trackHalfWidth = 0.23; // default from skidmarks
+  
+    if (vehicle.vehicleType === 'truck') {
+      trackHalfWidth = 0.23; // Keep original for trucks
+    } else if (vehicle.vehicleType === 'compact' || vehicle.vehicleType === 'sports') {
+      trackHalfWidth = 0.23 * 0.6; // 60% width for compact/sports cars
+    } else {
+      trackHalfWidth = 0.23 * 0.6; // 60% width for other vehicles too
+    }
+
     const rearX = vehicle.pos.x + fwdX * rearWheelOffset;
     const rearY = vehicle.pos.y + fwdY * rearWheelOffset;
     
@@ -94,7 +103,7 @@ export class ParticleSystem {
       rightCount = Math.ceil(baseCount * 1.5);
     }
 
-    // --- NEW: Calculate opposite direction of vehicle movement for particle emission ---
+    // --- Calculate opposite direction of vehicle movement for particle emission ---
     const oppositeAngle = Math.atan2(-vy, -vx);
     const spread = Math.PI; // 180 degree spread for a more dynamic effect
 

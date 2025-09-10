@@ -1,5 +1,3 @@
-
-```javascript
 export class ParticleSystem {
   constructor() {
     this.pool = [];

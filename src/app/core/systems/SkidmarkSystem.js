@@ -31,6 +31,9 @@ export class SkidmarkSystem {
       const lateralSlip = this.computeLateralSlip(v);
       const hardBrake = (v.ctrl?.brake || 0) >= this.skidBrakeThreshold && speed >= this.skidMinSpeedForBraking;
       const drifting = lateralSlip >= this.skidLateralSlipThreshold;
+      
+      // Give vehicle a reference to this system instance for grace period constant
+      v._skidmarkSystem = this;
 
       // --- BIG DRIFT LOGIC ---
       v.driftState = v.driftState || { active: false, startTime: 0, distance: 0, lastPos: null, gracePeriodTimer: 0 };

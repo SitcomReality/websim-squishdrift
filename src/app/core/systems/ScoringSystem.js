@@ -17,16 +17,34 @@ export class ScoringSystem {
 
   update(state, dt) {
     const playerVehicle = state.control?.inVehicle ? state.control.vehicle : null;
-    this.comboPaused = playerVehicle ? !!playerVehicle.isBigDrifting : false;
+    
+    // --- NEW LOGIC: Tie combo timer to Big Drift Grace Period ---
+    if (playerVehicle && playerVehicle.isBigDrifting) {
+      // When actively drifting, the combo timer is effectively "paused" at max
+      if (playerVehicle.driftState?.active) {
+        this.comboPaused = true;
+        this.comboTimer = this.comboMaxTime; 
+      } 
+      // When in grace period, the combo timer becomes the grace period timer
+      else if (playerVehicle.driftState?.gracePeriodTimer > 0) {
+        this.comboPaused = false; // allow countdown
+        // Sync combo timer with drift grace period
+        this.comboMaxTime = playerVehicle._skidmarkSystem.bigDriftGracePeriod; // from SkidmarkSystem
+        this.comboTimer = playerVehicle.driftState.gracePeriodTimer;
+      }
+    } else {
+      // --- Standard combo countdown logic for on-foot or non-drifting ---
+      this.comboPaused = false;
+      this.comboMaxTime = 5; // Reset to default max time
 
-    if (!this.comboPaused && this.comboCount > 0) {
-      // The longer without a score, the faster the timer drains
-      const countdownAcceleration = 1 + (this.timeSinceLastScore / 10);
-      this.comboTimer -= dt * countdownAcceleration;
+      if (this.comboCount > 0) {
+        const countdownAcceleration = 1 + (this.timeSinceLastScore / 10);
+        this.comboTimer -= dt * countdownAcceleration;
 
-      if (this.comboTimer <= 0) {
-        this.comboCount = 0;
-        this.comboTimer = 0;
+        if (this.comboTimer <= 0) {
+          this.comboCount = 0;
+          this.comboTimer = 0;
+        }
       }
     }
     

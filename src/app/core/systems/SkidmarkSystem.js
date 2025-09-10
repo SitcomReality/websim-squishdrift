@@ -1,3 +1,5 @@
+
+```javascript
 import { Vec2 } from '../../../utils/Vec2.js';
 
 export class SkidmarkSystem {
@@ -22,7 +24,7 @@ export class SkidmarkSystem {
     if (!ref) return;
 
     // Track blood stains for collision detection
-    const bloodStains = state.entities.filter(e => e.type === 'blood');
+    const bloodStains = state.entities.filter(e => e.type === 'blood');  
     
     // Emit new segments from vehicles
     for (const v of state.entities.filter(e => e.type === 'vehicle')) {
@@ -32,34 +34,50 @@ export class SkidmarkSystem {
       const drifting = lateralSlip >= this.skidLateralSlipThreshold;
 
       // --- BIG DRIFT LOGIC ---
-      v.driftState = v.driftState || { active: false, startTime: 0, distance: 0, lastPos: null };
+      v.driftState = v.driftState || { active: false, startTime: 0, distance: 0, lastPos: null, graceStart: 0 };
       const isActuallyDrifting = drifting && speed > 1.5;
 
       if (isActuallyDrifting) {
-        if (!v.driftState.active) {
-          // Start of a new drift
-          v.driftState.active = true;
-          v.driftState.startTime = state.time;
-          v.driftState.distance = 0;
-          v.driftState.lastPos = new Vec2(v.pos.x, v.pos.y);
-        } else {
-          // Continuing a drift
-          const dist = Math.hypot(v.pos.x - v.driftState.lastPos.x, v.pos.y - v.driftState.lastPos.y);
-          v.driftState.distance += dist;
-          v.driftState.lastPos.x = v.pos.x;
-          v.driftState.lastPos.y = v.pos.y;
-        }
+         if (!v.driftState.active) {
+           // Start of a new drift
+           v.driftState.active = true;
+           v.driftState.startTime = state.time;
+           v.driftState.distance = 0;
+           v.driftState.lastPos = new Vec2(v.pos.x, v.pos.y);
+           v.driftState.graceStart = 0; // reset any ending grace
+         } else {
+           // Continuing a drift
+           const dist = Math.hypot(v.pos.x - v.driftState.lastPos.x, v.pos.y - v.driftState.lastPos.y);
+           v.driftState.distance += dist;
+           v.driftState.lastPos.x = v.pos.x;
+           v.driftState.lastPos.y = v.pos.y;
+         }
 
-        const duration = state.time - v.driftState.startTime;
-        const isBigDrift = duration > 2.0 || v.driftState.distance > 5.0;
+         const duration = state.time - v.driftState.startTime;
+         const isBigDrift = duration > 2.0 || v.driftState.distance > 5.0;
 
-        if (isBigDrift) {
-          state.particleSystem?.emitDriftParticles(state, v);
-        }
+         if (isBigDrift) {
+           state.particleSystem?.emitDriftParticles(state, v);
+         }
       } else {
-        // Not drifting, reset state
-        v.driftState.active = false;
-      }
+        // Not drifting: start/continue a short grace window so brief corrections won't end the big drift
+        const nowTime = state.time;
+        if (v.driftState.active && !v.driftState.graceStart) {
+          v.driftState.graceStart = nowTime; // begin grace
+        }
+        // If within 1s grace window, keep active but don't advance distance
+        const GRACE_DURATION = 1.0;
+        if (v.driftState.active && v.driftState.graceStart && (nowTime - v.driftState.graceStart) < GRACE_DURATION) {
+          // maintain active state but do not add distance; particles may continue if already big
+          const duration = nowTime - v.driftState.startTime;
+          const isBigDrift = duration > 2.0 || v.driftState.distance > 5.0;
+          if (isBigDrift) state.particleSystem?.emitDriftParticles(state, v);
+        } else {
+          // Grace expired or not active: reset state
+          v.driftState.active = false;
+          v.driftState.graceStart = 0;
+        }
+       }
 
       if ((drifting || hardBrake) && speed > 0.05) {
         // spacing against last drop using vehicle's center position

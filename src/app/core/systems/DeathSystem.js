@@ -138,7 +138,7 @@ export class DeathSystem {
         </div>
         <div id="death-stats" style="margin-bottom: 30px; font-size: 18px;">
           <p>Time Alive: <span id="time-alive">0:00</span></p>
-          <p>Enemies Eliminated: <span id="enemies-killed">0</span></p>
+          <p>Squishes: <span id="enemies-killed">0</span></p>
           <p>Vehicles Destroyed: <span id="vehicles-destroyed">0</span></p>
         </div>
         <button id="restart-button" class="death-restart-btn" aria-label="Restart game">Restart</button>
@@ -217,7 +217,7 @@ export class DeathSystem {
     }
     const statsEl=document.getElementById('death-stats');
     const timeP=statsEl.children[0], pedP=statsEl.children[1], vehP=statsEl.children[2];
-    pedP.innerHTML='Pedestrians Murdered: <span id="enemies-killed">0</span>';
+    pedP.innerHTML='Squishes: <span id="enemies-killed">0</span>';
     const scoreP=document.createElement('p'); scoreP.style.fontSize='24px'; scoreP.style.marginTop='6px'; scoreP.innerHTML='Score: <span id="final-score">0</span>'; scoreP.style.display='none'; statsEl.appendChild(scoreP);
     const comboP=document.createElement('p'); comboP.style.fontSize='18px'; comboP.style.marginTop='4px'; comboP.innerHTML='Highest Combo: <span id="highest-combo">0</span>'; comboP.style.display='none'; statsEl.appendChild(comboP);
     const restartBtn=document.getElementById('restart-button'); if(restartBtn) restartBtn.style.display='none';
@@ -249,13 +249,13 @@ export class DeathSystem {
     const fmtTime=(s)=>{const m=Math.floor(s/60), ss=String(s%60).padStart(2,'0'); return `${m}:${ss}`;};
     // time alive
     show(timeP); await animate(document.getElementById('time-alive'), timeAlive, Math.min(1000, 600+timeAlive*5), fmtTime);
-    // pedestrians
+    // pedestrians (now called "Squishes")
     show(pedP); await animate(document.getElementById('enemies-killed'), peds, Math.min(1000, 600+peds*10));
     // vehicles
     show(vehP); await animate(document.getElementById('vehicles-destroyed'), veh, Math.min(1000, 600+veh*10));
     // highest combo (before score)
     show(comboP); await animate(document.getElementById('highest-combo'), highestCombo, 800);
-    // score (final stat)
+    // score (final stat - now positioned last)
     show(scoreP); await animate(document.getElementById('final-score'), score, Math.min(1000, 600+score*0.5));
     
     // Play death music when restart button appears

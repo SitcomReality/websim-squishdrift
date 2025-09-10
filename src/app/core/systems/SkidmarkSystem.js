@@ -81,8 +81,11 @@ export class SkidmarkSystem {
               state.particleSystem?.emitDriftParticles(state, v);
             }
           } else {
-            // Grace period has expired. End the drift.
+            // Grace period has expired. End the drift by resetting its state.
             v.driftState.active = false;
+            v.driftState.startTime = 0;
+            v.driftState.distance = 0;
+            v.driftState.lastPos = null;
             v.driftState.graceStart = 0;
           }
         }

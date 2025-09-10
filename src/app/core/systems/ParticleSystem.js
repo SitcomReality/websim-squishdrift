@@ -176,7 +176,8 @@ export class ParticleSystem {
               life: life,
               maxLife: life,
               size: size,
-              maxSize: size * 1.25, // Max size reduced to 1.25x instead of 2.5x
+              // Cap max growth to ~0.6x the base size so particles don't swell excessively
+              maxSize: Math.max(size * 0.12, size * 0.6),
               color: color,
               alpha: 0.9,
               maxAlpha: 0.9,
@@ -245,7 +246,7 @@ export class ParticleSystem {
       const s = power * (0.4 + Math.random());
 
       // Create smaller sparks - halved the base size
-      const sparkSize = 0.01 + Math.random() * 0.015; // Changed from 0.03 to 0.015
+      const sparkSize = 0.01 + Math.random() * 0.015; // Changed from 0.03 to 0.015 (half)
 
       state.particles.push({
         type: 'spark',
@@ -256,7 +257,8 @@ export class ParticleSystem {
         life: 0.15 + Math.random() * 0.2,
         maxLife: 0.15 + Math.random() * 0.2,
         size: sparkSize,
-        maxSize: sparkSize * 1.25, // Max size reduced to 1.25x instead of 2.5x
+        // Cap spark growth so they only reach ~60% larger than base at most
+        maxSize: Math.max(sparkSize * 0.08, sparkSize * 0.6),
         color: 'rgba(255,200,50,1)',
         alpha: 1.0,
         maxAlpha: 1.0
@@ -302,8 +304,8 @@ export class ParticleSystem {
         // Draw dynamic sparks
         const lifeRatio = Math.max(0, p.life / p.maxLife);
 
-        // Sparks start small and expand briefly before fading
-        const currentSize = p.size + (p.maxSize - p.size) * (1 - lifeRatio) * 0.3;
+        // Sparks start small and expand briefly before fading; reduce growth fraction so max scale ~50% of prior
+        const currentSize = p.size + (p.maxSize - p.size) * (1 - lifeRatio) * 0.15;
         const currentAlpha = p.alpha * lifeRatio;
 
         // Create gradient for spark effect

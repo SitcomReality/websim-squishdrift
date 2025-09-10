@@ -31,6 +31,36 @@ export class SkidmarkSystem {
       const hardBrake = (v.ctrl?.brake || 0) >= this.skidBrakeThreshold && speed >= this.skidMinSpeedForBraking;
       const drifting = lateralSlip >= this.skidLateralSlipThreshold;
 
+      // --- BIG DRIFT LOGIC ---
+      v.driftState = v.driftState || { active: false, startTime: 0, distance: 0, lastPos: null };
+      const isActuallyDrifting = drifting && speed > 1.5;
+
+      if (isActuallyDrifting) {
+        if (!v.driftState.active) {
+          // Start of a new drift
+          v.driftState.active = true;
+          v.driftState.startTime = state.time;
+          v.driftState.distance = 0;
+          v.driftState.lastPos = new Vec2(v.pos.x, v.pos.y);
+        } else {
+          // Continuing a drift
+          const dist = Math.hypot(v.pos.x - v.driftState.lastPos.x, v.pos.y - v.driftState.lastPos.y);
+          v.driftState.distance += dist;
+          v.driftState.lastPos.x = v.pos.x;
+          v.driftState.lastPos.y = v.pos.y;
+        }
+
+        const duration = state.time - v.driftState.startTime;
+        const isBigDrift = duration > 2.0 || v.driftState.distance > 5.0;
+
+        if (isBigDrift) {
+          state.particleSystem?.emitDriftParticles(state, v);
+        }
+      } else {
+        // Not drifting, reset state
+        v.driftState.active = false;
+      }
+
       if ((drifting || hardBrake) && speed > 0.05) {
         // spacing against last drop using vehicle's center position
         if (!v._lastSkidPos) v._lastSkidPos = new Vec2(v.pos.x, v.pos.y);

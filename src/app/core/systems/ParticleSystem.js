@@ -55,6 +55,53 @@ export class ParticleSystem {
     }
   }
 
+  emitDriftParticles(state, vehicle) {
+    state.particles = state.particles || [];
+    
+    // Calculate rear wheel positions
+    const fwdX = Math.cos(vehicle.rot || 0);
+    const fwdY = Math.sin(vehicle.rot || 0);
+    const perpX = -fwdY;
+    const perpY = fwdX;
+    
+    const rearWheelOffset = -0.3; // same as skidmarks
+    const trackHalfWidth = 0.23; // same as skidmarks
+    
+    const rearX = vehicle.pos.x + fwdX * rearWheelOffset;
+    const rearY = vehicle.pos.y + fwdY * rearWheelOffset;
+    
+    const wheelPositions = [
+      { x: rearX - perpX * trackHalfWidth, y: rearY - perpY * trackHalfWidth }, // Left wheel
+      { x: rearX + perpX * trackHalfWidth, y: rearY + perpY * trackHalfWidth }  // Right wheel
+    ];
+
+    for (const pos of wheelPositions) {
+      const count = 2; // particles per wheel per frame
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 1 + Math.random() * 2;
+        
+        // Alternate between purple and white sparks
+        const color = Math.random() > 0.5 ? 'rgba(255, 255, 255, 0.9)' : 'rgba(180, 120, 255, 0.9)';
+        
+        state.particles.push({
+          type: 'spark',
+          x: pos.x,
+          y: pos.y,
+          vx: (vehicle.vel?.x || 0) * 0.5 + Math.cos(angle) * speed,
+          vy: (vehicle.vel?.y || 0) * 0.5 + Math.sin(angle) * speed,
+          life: 0.2 + Math.random() * 0.3,
+          maxLife: 0.5,
+          size: 0.02 + Math.random() * 0.02,
+          maxSize: 0.05,
+          color: color,
+          alpha: 0.9,
+          maxAlpha: 0.9,
+        });
+      }
+    }
+  }
+
   emitSmoke(state, vehicle, damageLevel) {
     // Ensure particles array is initialized
     state.particles = state.particles || [];

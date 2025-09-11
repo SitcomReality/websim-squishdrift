@@ -9,7 +9,7 @@ import { DeathSystem } from './systems/DeathSystem.js';
 import { ScoringSystem } from './systems/ScoringSystem.js';
 import { DamageTextSystem } from './systems/DamageTextSystem.js';
 import { ExplosionSystem } from './systems/ExplosionSystem.js';
-import { ParticleSystem } from './systems/ParticleSystem.js';
+import { ParticleSystem } from './systems/particles/index.js';
 import { AudioManager } from './AudioManager.js';
 
 export class GameEngine {

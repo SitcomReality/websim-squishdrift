@@ -176,8 +176,8 @@ export class ParticleSystem {
               life: life,
               maxLife: life,
               size: size,
-              // Cap max growth to ~0.3x the base size so particles don't swell excessively
-              maxSize: Math.max(size * 0.06, size * 0.3),
+              // Cap max growth to ~0.6x the base size so particles don't swell excessively
+              maxSize: Math.max(size * 0.12, size * 0.6),
               color: color,
               alpha: 0.9,
               maxAlpha: 0.9,
@@ -257,8 +257,8 @@ export class ParticleSystem {
         life: 0.15 + Math.random() * 0.2,
         maxLife: 0.15 + Math.random() * 0.2,
         size: sparkSize,
-        // Cap spark growth so they only reach ~30% of base to avoid oversized sparks
-        maxSize: Math.max(sparkSize * 0.04, sparkSize * 0.3),
+        // Cap spark growth so they only reach ~60% larger than base at most
+        maxSize: Math.max(sparkSize * 0.08, sparkSize * 0.6),
         color: 'rgba(255,200,50,1)',
         alpha: 1.0,
         maxAlpha: 1.0
@@ -304,9 +304,23 @@ export class ParticleSystem {
         // Draw dynamic sparks
         const lifeRatio = Math.max(0, p.life / p.maxLife);
 
-        // Sparks start small and expand briefly before fading; reduce growth fraction so max scale ~half the previous expansion
-        const currentSize = p.size + (p.maxSize - p.size) * (1 - lifeRatio) * 0.075;
+        // Sparks start small and expand briefly before fading
+        let growth = (p.maxSize - p.size) * (1 - lifeRatio) * 0.15;
+        // --- NEW: Hard cap on maximum particle size to prevent them from getting too large ---
+        const MAX_PARTICLE_SIZE = 0.025; // in world units
+        const currentSize = Math.min(p.size + growth, MAX_PARTICLE_SIZE);
         const currentAlpha = p.alpha * lifeRatio;
+        
+        // Use the particle's assigned color for the gradient
+        // The default of 'rgba(255,255,200,${currentAlpha})' will be used if p.color is not a valid rgba string
+        const baseColor = p.color || `rgba(255,255,200,${currentAlpha})`;
+        let r=255, g=255, b=200;
+        const match = baseColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+        if (match) {
+            r = parseInt(match[1], 10);
+            g = parseInt(match[2], 10);
+            b = parseInt(match[3], 10);
+        }
 
         // Create gradient for spark effect
         const gradient = ctx.createRadialGradient(
@@ -314,10 +328,10 @@ export class ParticleSystem {
           p.x * ts, p.y * ts, currentSize * ts
         );
 
-        // Bright yellow center fading to orange edges
-        gradient.addColorStop(0, `rgba(255,255,200,${currentAlpha})`);
-        gradient.addColorStop(0.3, `rgba(255,200,100,${currentAlpha * 0.8})`);
-        gradient.addColorStop(1, `rgba(255,100,50,${currentAlpha * 0.3})`);
+        // Center is bright, edges fade to a darker shade of the particle's color
+        gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${currentAlpha})`);
+        gradient.addColorStop(0.3, `rgba(${Math.round(r*0.9)}, ${Math.round(g*0.8)}, ${Math.round(b*0.5)}, ${currentAlpha * 0.8})`);
+        gradient.addColorStop(1, `rgba(${Math.round(r*0.8)}, ${Math.round(g*0.5)}, ${Math.round(b*0.2)}, ${currentAlpha * 0.3})`);
 
         ctx.fillStyle = gradient;
         ctx.beginPath();

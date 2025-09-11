@@ -26,7 +26,7 @@ export const TileColor = {
   [Tile.RoadW]: '#2F2F2F',
   [Tile.Median]: '#404040', // dark grey for medians
   [Tile.Intersection]: '#2F2F2F', // same as roads
-  [Tile.Footpath]: '#D3D3D3', // light grey
+  [Tile.Footpath]: '#A9A9A9', // Changed from '#D3D3D3' to a darker grey
   [Tile.BuildingFloor]: '#f8f9fa',
   [Tile.BuildingWall]: '#9ca3af',
   [Tile.Park]: '#228B22', // dark green

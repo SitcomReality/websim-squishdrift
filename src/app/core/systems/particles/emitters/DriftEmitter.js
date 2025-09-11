@@ -4,6 +4,11 @@ export class DriftEmitter {
   emitDriftParticles(state, vehicle) {
     state.particles = state.particles || [];
 
+    const isPlayerVehicle = state.control?.inVehicle && state.control.vehicle === vehicle;
+    const comboCount = isPlayerVehicle ? (state.comboCount || 0) : 0;
+    const comboForScaling = Math.min(comboCount, 10);
+    const comboIntensity = (comboForScaling + 2) / 9.5;
+
     const vx = vehicle.vel?.x || 0, vy = vehicle.vel?.y || 0;
     const fwdX = Math.cos(vehicle.rot || 0), fwdY = Math.sin(vehicle.rot || 0);
     const speed = Math.hypot(vx, vy);
@@ -15,11 +20,6 @@ export class DriftEmitter {
     if (lateralImportance < 0.08) return;
 
     const slipDirection = Math.sign((vx * fwdY - vy * fwdX));
-
-    const isPlayerVehicle = state.control?.inVehicle && state.control.vehicle === vehicle;
-    const comboCount = isPlayerVehicle ? (state.comboCount || 0) : 0;
-    const comboForScaling = Math.min(comboCount, 10);
-    const comboIntensity = (comboForScaling + 2) / 9.5;
 
     const perpX = -fwdY, perpY = fwdX;
     const rearWheelOffset = -0.3;
@@ -36,8 +36,8 @@ export class DriftEmitter {
     };
 
     const baseCount = (1 + Math.ceil(lateral * 0.6)) * comboIntensity;
-    let leftCount = Math.floor(baseCount * (slipDirection >= 0 ? (1 + lateralImportance * 3.0) : (1 - lateralImportance * 0.5));
-    let rightCount = Math.floor(baseCount * (slipDirection <= 0 ? (1 + lateralImportance * 3.0) : (1 - lateralImportance * 0.5));
+    let leftCount = Math.floor(baseCount * (slipDirection >= 0 ? (1 + lateralImportance * 3.0) : (1 - lateralImportance * 0.5)));
+    let rightCount = Math.floor(baseCount * (slipDirection <= 0 ? (1 + lateralImportance * 3.0) : (1 - lateralImportance * 0.5)));
     leftCount = Math.max(0, leftCount); rightCount = Math.max(0, rightCount);
 
     const oppositeAngle = Math.atan2(-vy, -vx);
@@ -110,7 +110,3 @@ export class DriftEmitter {
     emitFromWheel(wheelPositions.right, rightCount);
   }
 }
-
-
-```
-</output>

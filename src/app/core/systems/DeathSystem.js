@@ -139,7 +139,6 @@ export class DeathSystem {
         <div id="death-stats" style="margin-bottom: 30px; font-size: 18px;">
           <p>Time Alive: <span id="time-alive">0:00</span></p>
           <p>Squishes: <span id="enemies-killed">0</span></p>
-          <p>Vehicles Destroyed: <span id="vehicles-destroyed">0</span></p>
         </div>
         <button id="restart-button" class="death-restart-btn" aria-label="Restart game">Restart</button>
       </div>
@@ -244,7 +243,7 @@ export class DeathSystem {
     const show=(el)=>{el.style.display='block'; requestAnimationFrame(()=>{el.style.opacity='1'; el.style.transform='scale(1)';});};
     hide(pedP); hide(vehP); hide(driftDistP); hide(driftDurP);
     const timeAlive=Math.floor((Date.now()-(state.startTime||Date.now()))/1000);
-    const peds=state.stats?.enemiesKilled||0, veh=state.stats?.vehiclesDestroyed||0, score=state.scoringSystem?.getScore?.()||0, highestCombo=state.scoringSystem?.getHighestCombo?.()||0;
+    const peds=state.stats?.enemiesKilled||0, score=state.scoringSystem?.getScore?.()||0, highestCombo=state.scoringSystem?.getHighestCombo?.()||0;
     const longestDrift=state.stats?.longestDriftDuration||0, totalDriftDist=state.stats?.totalDriftDistance||0;
     const animate=(span,to,dur,fmt=(v)=>String(v))=>new Promise(res=>{
       if(!span){ res(); return; }

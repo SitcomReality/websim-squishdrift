@@ -1,4 +1,4 @@
-import { Vec2 } from '../../../utils/Vec2.js';
+import { Vec2 } from '/src/utils/Vec2.js';
 
 export class DriftEmitter {
   emitDriftParticles(state, vehicle) {

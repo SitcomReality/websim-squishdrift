@@ -53,7 +53,7 @@ export class BuildingGenerator {
   createBuilding(tiles, rect) {
     const building = {
       rect,
-      height: 40 + this.rand() * 80,
+      height: 40 + this.rand() * 80, // Increased from 40 + this.rand() * 80 to allow up to 3x higher buildings
       color: `hsl(${Math.floor(this.rand() * 40 + 190)}, 20%, ${Math.floor(this.rand() * 20 + 55)}%)`,
       // Add properties for animation
       originalHeight: 0,

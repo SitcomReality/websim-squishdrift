@@ -9,7 +9,7 @@ import { VehicleMovementSystem } from '../vehicles/physics/VehicleMovementSystem
 import { VehicleCollisionSystem } from '../vehicles/physics/VehicleCollisionSystem.js';
 import { SkidmarkSystem } from './systems/SkidmarkSystem.js';
 import { WeaponSystem } from './systems/WeaponSystem.js';
-import { ParticleSystem } from './systems/ParticleSystem.js';
+import { ParticleSystem } from './systems/particles/index.js';
 import { EngineAudioSystem } from './systems/EngineAudioSystem.js';
 import { AnimationSystem } from './systems/AnimationSystem.js';
 
@@ -36,7 +36,10 @@ export class SystemManager {
     this.systems.collision.cameraSystem = this.systems.camera;
     /* attach camera system to state for global access */
     const s = this.stateManager.getState?.();
-    if (s) s.cameraSystem = this.systems.camera;
+    if (s) {
+      s.cameraSystem = this.systems.camera;
+      s.particleSystem = this.systems.particles; // ensure emitters accessible via state
+    }
   }
 
   update(dt) {

@@ -79,7 +79,11 @@ export class ParticleSystem {
 
     // This factor scales from ~0.2 (0x combo) up to ~1.26 (10x combo).
     // Reaches 1.0 (current base intensity) at ~7.5x combo.
-    const comboIntensity = (comboForScaling + 2) / 9.5;
+    // --- NEW --- Retuned combo intensity curve. It now peaks around 7-8x and then slightly decreases.
+    // The effect at 5x combo will be less intense than before, but the max intensity is capped and more controlled.
+    const comboProgress = comboForScaling / 10; // 0.0 to 1.0
+    // A curve that peaks around 0.75 (7-8x combo) and has a max value of ~1.1
+    const comboIntensity = 0.2 + (1.5 * Math.sin(comboProgress * Math.PI));
 
     // Calculate rear wheel positions - same logic as skidmarks
     const perpX = -fwdY;
@@ -147,7 +151,7 @@ export class ParticleSystem {
                 coronaColor = vibrantColors[Math.floor(Math.random() * numColors)];
 
                 life = (0.08 + Math.random() * 0.08) * (1 + lateral * 1.5) * comboIntensity; // Shorter, more impactful lifetime
-                size = (0.008 + Math.random() * 0.004) * (0.8 + lateralImportance) * comboIntensity; // Significantly smaller size
+                size = (0.006 + Math.random() * 0.003) * (0.8 + lateralImportance) * comboIntensity; // Reduced base size
             } else {
                 // --- NEW: Colorfulness scales with combo ---
                 const colorfulness = comboForScaling / 10; // 0.0 to 1.0
@@ -169,7 +173,7 @@ export class ParticleSystem {
                 }
 
                 life = (0.03 + Math.random() * 0.07) * (1 + lateral * 1.8) * comboIntensity; // Reduced to 25% of original, scaled by combo
-                size = (0.005 + Math.random() * 0.005) * (0.8 + lateralImportance) * comboIntensity; // Reduced to 25% of original, scaled by combo
+                size = (0.004 + Math.random() * 0.004) * (0.8 + lateralImportance) * comboIntensity; // Reduced base size
             }
 
             const spark = {
@@ -182,7 +186,7 @@ export class ParticleSystem {
               maxLife: life,
               size: size,
               // Cap max growth to ~0.6x the base size so particles don't swell excessively
-              maxSize: Math.max(size * 0.12, size * 0.6),
+              maxSize: size * 1.6,
               color: color,
               coronaColor: coronaColor, // Store corona color for super sparks
               alpha: 0.9,
@@ -327,8 +331,8 @@ export class ParticleSystem {
         // ... existing smoke drawing ...
       } else if (p.type === 'spark') {
         // Draw dynamic sparks
-        const growth = (p.maxSize - p.size) * (1 - lifeRatio) * 0.15;
-        const MAX_PARTICLE_SIZE = 0.025;
+        const growth = (p.maxSize - p.size) * (1 - lifeRatio);
+        const MAX_PARTICLE_SIZE = 0.04;
         const currentSize = Math.min(p.size + growth, MAX_PARTICLE_SIZE);
         const currentAlpha = p.alpha * lifeRatio;
 

@@ -64,7 +64,9 @@ export class DriftEmitter {
           const numColors = 1 + Math.floor((comboForScaling / 10) * (vibrantColors.length - 1));
           coronaColor = vibrantColors[Math.floor(Math.random() * numColors)];
           life = (0.08 + Math.random() * 0.08) * (1 + lateral * 1.5) * comboIntensity;
-          size = (0.008 + Math.random() * 0.004) * (0.8 + lateralImportance) * comboIntensity;
+          // Cap super-spark size growth so high combos don't create oversized particles.
+          const comboSizeCap = 1 - 0.5 * (comboForScaling / 10); // 1.0 -> 0.5 as combo goes 0->10
+          size = (0.008 + Math.random() * 0.004) * (0.8 + lateralImportance) * comboIntensity * Math.max(0.5, comboSizeCap);
         } else {
           const colorfulness = comboForScaling / 10;
           const randColor = Math.random();
@@ -77,7 +79,9 @@ export class DriftEmitter {
             color = vibrantColors[Math.floor(Math.random() * numColors)];
           }
           life = (0.03 + Math.random() * 0.07) * (1 + lateral * 1.8) * comboIntensity;
-          size = (0.005 + Math.random() * 0.005) * (0.8 + lateralImportance) * comboIntensity;
+          // Cap normal drift particle size growth similarly to avoid "softball" effect at high combo
+          const comboSizeCapNorm = 1 - 0.5 * (comboForScaling / 10);
+          size = (0.005 + Math.random() * 0.005) * (0.8 + lateralImportance) * comboIntensity * Math.max(0.5, comboSizeCapNorm);
         }
 
         const spark = {

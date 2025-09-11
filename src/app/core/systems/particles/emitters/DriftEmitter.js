@@ -70,11 +70,10 @@ export class DriftEmitter {
           color = 'rgba(255, 255, 220, 1.0)';
           const numColors = 1 + Math.floor((comboForEffects / 10) * (vibrantColors.length - 1));
           coronaColor = vibrantColors[Math.floor(Math.random() * numColors)];
-          life = (0.08 + Math.random() * 0.08) * (1 + lateral * 1.5) * comboEffectIntensity;
-          
-          // NEW: Cap super spark size at half of previous maximum
-          const baseSize = 0.008 + Math.random() * 0.004;
-          const sizeMultiplier = Math.min(0.5, (0.8 + lateralImportance) * comboEffectIntensity);
+          // Slightly longer-lived and larger super-sparks with a gentler cap for more presence
+          life = (0.10 + Math.random() * 0.12) * (1 + lateral * 1.6) * (0.8 + comboEffectIntensity * 0.6);
+          const baseSize = 0.012 + Math.random() * 0.006; // increased base
+          const sizeMultiplier = Math.min(0.9, 0.5 + (0.6 + lateralImportance) * comboEffectIntensity); // gentler cap up to ~0.9
           size = baseSize * sizeMultiplier;
         } else {
           const colorfulness = comboForEffects / 10;
@@ -87,11 +86,10 @@ export class DriftEmitter {
             const numColors = 1 + Math.floor(colorfulness * (vibrantColors.length - 1));
             color = vibrantColors[Math.floor(Math.random() * numColors)];
           }
-          life = (0.03 + Math.random() * 0.07) * (1 + lateral * 1.8) * comboEffectIntensity;
-          
-          // NEW: Cap regular spark size at half of previous maximum
-          const baseSize = 0.005 + Math.random() * 0.005;
-          const sizeMultiplier = Math.min(0.5, (0.8 + lateralImportance) * comboEffectIntensity);
+          // Increase regular spark presence: slightly longer life and bigger base sizes with gentle cap
+          life = (0.04 + Math.random() * 0.09) * (1 + lateral * 1.9) * Math.max(0.6, comboEffectIntensity);
+          const baseSize = 0.007 + Math.random() * 0.006;
+          const sizeMultiplier = Math.min(0.85, 0.45 + (0.5 + lateralImportance) * comboEffectIntensity);
           size = baseSize * sizeMultiplier;
         }
 

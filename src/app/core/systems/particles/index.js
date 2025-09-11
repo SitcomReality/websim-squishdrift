@@ -4,7 +4,7 @@ export class ParticleSystem {
     this._modules = null;
   }
 
-  _ensure() {
+  async _ensure() {
     if (this._modules) return this._modules;
     const { ParticlesUpdater } = await import('./updaters/ParticlesUpdater.js');
     const { SmokeEmitter } = await import('./emitters/SmokeEmitter.js');

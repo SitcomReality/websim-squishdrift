@@ -179,7 +179,6 @@ export function createInitialState(seed = null) {
   
   // Add flatten ability state
   state.isFlattened = false;
-  state.effects = []; // For transient visual effects like shockwaves
   
   return state;
 }

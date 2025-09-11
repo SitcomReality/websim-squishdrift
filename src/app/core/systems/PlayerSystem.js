@@ -35,7 +35,7 @@ export class PlayerSystem {
     this.healthSystem.updateHealth(state, player);
     
     // Update flatten system
-    this.flattenSystem.update(state, input);
+    this.flattenSystem.update(state, input, dt);
     
     // Update movement system
     this.movementSystem.handlePlayerMovement(state, player, input, dt);

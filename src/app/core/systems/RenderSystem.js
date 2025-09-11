@@ -16,28 +16,6 @@ import { drawDamageIndicator } from '../../entities/drawDamageIndicator.js';
 import { drawDamageText } from '../../entities/drawDamageText.js';
 import { drawExplosion } from '../../entities/drawExplosion.js';
 
-function drawShockwave(r, state, wave) {
-  const { ctx } = r, ts = state.world.tileSize;
-  const now = performance.now();
-  const elapsed = now - wave.startTime;
-  const progress = elapsed / wave.duration;
-
-  if (progress < 0 || progress > 1) return;
-
-  const maxRadius = Math.max(r.canvas.width, r.canvas.height) / (state.camera.zoom || 1);
-  const currentRadius = maxRadius * progress;
-  const alpha = 1 - progress;
-  const lineWidth = (1 - progress) * 8; // Line gets thinner as it expands
-
-  ctx.save();
-  ctx.strokeStyle = `rgba(${wave.color[0]}, ${wave.color[1]}, ${wave.color[2]}, ${alpha})`;
-  ctx.lineWidth = lineWidth;
-  ctx.beginPath();
-  ctx.arc(wave.pos.x * ts, wave.pos.y * ts, currentRadius, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.restore();
-}
-
 export class RenderSystem {
   render(state, renderer, debugOverlay) {
     if (!state || !renderer || !renderer.ctx || !renderer.canvas) {
@@ -69,8 +47,7 @@ export class RenderSystem {
     const hTiles = Math.ceil(canvas.height/(ts*z))+2;
     const sx = Math.floor((state.camera?.x || 0) - wTiles/2);
     const sy = Math.floor((state.camera?.y || 0) - hTiles/2);
-    const oceanColor = state.isFlattened ? '#2c2a4f' : '#b7e3f8';
-    ctx.fillStyle = oceanColor; // ocean
+    ctx.fillStyle = '#b7e3f8'; // ocean
     ctx.fillRect(sx*ts, sy*ts, wTiles*ts, hTiles*ts);
     
     drawTiles(renderer, state, 'ground');
@@ -146,21 +123,6 @@ export class RenderSystem {
       }
     }
     
-    // Draw transient effects like shockwaves
-    const now = performance.now();
-    if (state.effects) {
-      for (let i = state.effects.length - 1; i >= 0; i--) {
-        const effect = state.effects[i];
-        if (now - effect.startTime > effect.duration) {
-          state.effects.splice(i, 1);
-        } else {
-          if (effect.type === 'shockwave') {
-            drawShockwave(renderer, state, effect);
-          }
-        }
-      }
-    }
-    
     // Draw explosions in front of everything except roofs
     const explosions = state.explosions || [];
     for (const explosion of explosions) {
@@ -183,6 +145,22 @@ export class RenderSystem {
     
     // Draw damage text and floating text ON TOP of everything
     drawDamageText(renderer, state);
+    
+    // Flatten pulse FX (expanding ring + tint)
+    if (state.flattenFX?.active) {
+      const fx = state.flattenFX, p = Math.min(1, fx.t / fx.duration);
+      const ts = state.world.tileSize, z = state.camera?.zoom || 1;
+      const cx = Math.floor(canvas.width/2), cy = Math.floor(canvas.height/2);
+      const sx = cx + (fx.origin.x - (state.camera?.x||0)) * ts * z;
+      const sy = cy + (fx.origin.y - (state.camera?.y||0)) * ts * z;
+      const color = fx.mode === 'down' ? 'rgba(0,229,255,' : 'rgba(255,209,102,';
+      const r = (Math.hypot(canvas.width, canvas.height) * 0.5) * p;
+      ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+      ctx.strokeStyle = `${color}${1 - p})`; ctx.lineWidth = 6 + 24 * (1 - p);
+      ctx.beginPath(); ctx.arc(sx, sy, r, 0, Math.PI*2); ctx.stroke();
+      ctx.fillStyle = `${color}${0.08 * (1 - p)})`; ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.restore();
+    }
     
     // Draw debug overlay if enabled
     if (debugOverlay && debugOverlay.enabled) {

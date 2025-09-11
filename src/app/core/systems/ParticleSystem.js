@@ -74,11 +74,12 @@ export class ParticleSystem {
     // --- NEW: Combo-based intensity scaling ---
     // Only apply combo intensity to the player's vehicle
     const isPlayerVehicle = state.control?.inVehicle && state.control.vehicle === vehicle;
-    const rawCombo = isPlayerVehicle ? (state.comboCount || 0) : 0;
-    const effectiveCombo = Math.min(rawCombo, 5); // cap size/intensity growth at 5x
-    const over5Ratio = Math.max(0, rawCombo - 5) / 5; // 0..1 for 5->10
-    const emissionAttenuation = 1 - 0.35 * over5Ratio; // slightly pull back by 10x
-    const comboIntensity = (effectiveCombo + 2) / 9.5; // reaches ~1.0 around 5x, no more growth after
+    const comboCount = isPlayerVehicle ? (state.comboCount || 0) : 0;
+    const comboForScaling = Math.min(comboCount, 10);
+
+    // This factor scales from ~0.2 (0x combo) up to ~1.26 (10x combo).
+    // Reaches 1.0 (current base intensity) at ~7.5x combo.
+    const comboIntensity = (comboForScaling + 2) / 9.5;
 
     // Calculate rear wheel positions - same logic as skidmarks
     const perpX = -fwdY;
@@ -108,13 +109,13 @@ export class ParticleSystem {
     const baseCount = (1 + Math.ceil(lateral * 0.6)) * comboIntensity; // Reduced particle count by 50% and scaled by combo
 
     // Bias particle count heavily to the side being slid into
-    let leftCount = Math.floor(baseCount * (slipDirection >= 0 ? (1 + lateralImportance * 3.0) : (1 - lateralImportance * 0.5))) * emissionAttenuation;
-    let rightCount = Math.floor(baseCount * (slipDirection <= 0 ? (1 + lateralImportance * 3.0) : (1 - lateralImportance * 0.5))) * emissionAttenuation;
+    let leftCount = Math.floor(baseCount * (slipDirection >= 0 ? (1 + lateralImportance * 3.0) : (1 - lateralImportance * 0.5)));
+    let rightCount = Math.floor(baseCount * (slipDirection <= 0 ? (1 + lateralImportance * 3.0) : (1 - lateralImportance * 0.5)));
     leftCount = Math.max(0, leftCount); rightCount = Math.max(0, rightCount);
 
     // emission direction biased opposite to instantaneous movement (creates "being spat out" illusion)
     const oppositeAngle = Math.atan2(-vy, -vx);
-    const spread = Math.PI * (0.6 + Math.min(0.9, lateralImportance * 1.5)) * (1 - 0.15 * over5Ratio); // narrower when less sliding, wider when big slide
+    const spread = Math.PI * (0.6 + Math.min(0.9, lateralImportance * 1.5)); // narrower when less sliding, wider when big slide
 
     const emitFromWheel = (pos, count) => {
         for (let i = 0; i < count; i++) {
@@ -125,7 +126,7 @@ export class ParticleSystem {
             const particleSpeed = (0.6 + Math.random() * 0.9) * (1 + lateral * 1.6);
 
             // --- REFINED SUPER SPARK LOGIC ---
-            const superSparkChance = Math.min(0.06, 0.02 + 0.08 * (effectiveCombo / 5)); // cap at 6%
+            const superSparkChance = 0.02 + 0.1 * (comboForScaling / 10); // 2% at 0x, up to 12% at 10x
             const isSuperSpark = Math.random() < superSparkChance;
             const vibrantColors = [
                 'rgba(180, 120, 255, 0.9)', // Purple
@@ -142,14 +143,14 @@ export class ParticleSystem {
             if (isSuperSpark) {
                 color = 'rgba(255, 255, 220, 1.0)'; // Core is brilliant white/yellow
                 // Pick a corona color from the vibrant palette, unlocked by combo
-                const numColors = 1 + Math.floor((effectiveCombo / 5) * (vibrantColors.length - 1)));
+                const numColors = 1 + Math.floor((comboForScaling / 10) * (vibrantColors.length - 1));
                 coronaColor = vibrantColors[Math.floor(Math.random() * numColors)];
 
                 life = (0.08 + Math.random() * 0.08) * (1 + lateral * 1.5) * comboIntensity; // Shorter, more impactful lifetime
-                size = (0.006 + Math.random() * 0.003) * (0.8 + lateralImportance) * comboIntensity; // smaller super sparks
+                size = (0.008 + Math.random() * 0.004) * (0.8 + lateralImportance) * comboIntensity; // Significantly smaller size
             } else {
                 // --- NEW: Colorfulness scales with combo ---
-                const colorfulness = effectiveCombo / 5; // 0.0 to 1.0
+                const colorfulness = comboForScaling / 10; // 0.0 to 1.0
                 const randColor = Math.random();
                 
                 // Chance of white sparks decreases as combo increases (from 60% to 10%)
@@ -163,12 +164,12 @@ export class ParticleSystem {
                 // Vibrant color chance increases from 20% to 70%
                 else {
                     // Unlock more colors from the vibrant palette as combo increases
-                    const numColors = 1 + Math.floor(colorfulness * (vibrantColors.length - 1)));
+                    const numColors = 1 + Math.floor(colorfulness * (vibrantColors.length - 1));
                     color = vibrantColors[Math.floor(Math.random() * numColors)];
                 }
 
                 life = (0.03 + Math.random() * 0.07) * (1 + lateral * 1.8) * comboIntensity; // Reduced to 25% of original, scaled by combo
-                size = (0.003 + Math.random() * 0.004) * (0.8 + lateralImportance) * comboIntensity; // smaller normal sparks
+                size = (0.005 + Math.random() * 0.005) * (0.8 + lateralImportance) * comboIntensity; // Reduced to 25% of original, scaled by combo
             }
 
             const spark = {
@@ -199,7 +200,7 @@ export class ParticleSystem {
                     vy: spark.vy * 0.8,
                     life: spark.life * 1.2, // Lives a bit longer
                     maxLife: spark.life * 1.2,
-                    size: spark.size * 1.4, // reduced from 2.5 to avoid huge coronas
+                    size: spark.size * 2.5, // Larger but transparent
                     color: coronaColor.replace('0.9', '0.0'), // Fully transparent to start
                     endColor: coronaColor.replace('0.9', '0.3'), // Fades into this color
                 });
@@ -327,7 +328,7 @@ export class ParticleSystem {
       } else if (p.type === 'spark') {
         // Draw dynamic sparks
         const growth = (p.maxSize - p.size) * (1 - lifeRatio) * 0.15;
-        const MAX_PARTICLE_SIZE = 0.0125; // halved from 0.025
+        const MAX_PARTICLE_SIZE = 0.025;
         const currentSize = Math.min(p.size + growth, MAX_PARTICLE_SIZE);
         const currentAlpha = p.alpha * lifeRatio;
 

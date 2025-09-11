@@ -162,6 +162,11 @@ export class RenderSystem {
       ctx.restore();
     }
     
+    // NEW: Flatten warning effect (subtle circle that increases in speed and intensity)
+    if (state.flattenWarningFX?.active) {
+      this.drawFlattenWarningEffect(state, renderer);
+    }
+    
     // Draw debug overlay if enabled
     if (debugOverlay && debugOverlay.enabled) {
       drawRoadDebug(renderer, state);
@@ -172,6 +177,70 @@ export class RenderSystem {
     
     // Draw mouse reticule
     this.drawMouseReticule(state, renderer);
+  }
+
+  drawFlattenWarningEffect(state, renderer) {
+    const { ctx } = renderer;
+    const { canvas } = renderer;
+    const warning = state.flattenWarningFX;
+    
+    if (!warning || !warning.intensity) return;
+    
+    const ts = state.world?.tileSize || 24;
+    const z = state.camera?.zoom || 1;
+    const cx = Math.floor(canvas.width/2);
+    const cy = Math.floor(canvas.height/2);
+    
+    // Calculate screen position of warning origin
+    const sx = cx + (warning.origin.x - (state.camera?.x||0)) * ts * z;
+    const sy = cy + (warning.origin.y - (state.camera?.y||0)) * ts * z;
+    
+    // Calculate effect parameters based on intensity
+    const intensity = warning.intensity;
+    const speed = warning.speed || 2.0;
+    const size = (warning.size || 0.3) * ts * z;
+    
+    // Create pulsing effect based on time and intensity
+    const time = (Date.now() % (1000 / speed)) / (1000 / speed);
+    const pulse = Math.sin(time * Math.PI * 2) * 0.5 + 0.5;
+    const currentSize = size * (0.7 + pulse * 0.3);
+    
+    // Calculate opacity based on intensity and pulse
+    const baseOpacity = 0.3;
+    const pulseOpacity = pulse * 0.2;
+    const totalOpacity = (baseOpacity + pulseOpacity) * intensity;
+    
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    
+    // Draw warning circle with pulsing effect
+    ctx.strokeStyle = `rgba(255, 209, 102, ${totalOpacity})`;
+    ctx.lineWidth = 3 + (pulse * 2);
+    ctx.setLineDash([8, 4]);
+    ctx.lineDashOffset = -((Date.now() / 100) % 12);
+    
+    ctx.beginPath();
+    ctx.arc(sx, sy, currentSize, 0, Math.PI * 2);
+    ctx.stroke();
+    
+    // Draw inner circle that increases with intensity
+    const innerSize = currentSize * 0.6;
+    ctx.strokeStyle = `rgba(255, 180, 50, ${totalOpacity * 0.7})`;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 2]);
+    ctx.lineDashOffset = ((Date.now() / 80) % 6);
+    
+    ctx.beginPath();
+    ctx.arc(sx, sy, innerSize, 0, Math.PI * 2);
+    ctx.stroke();
+    
+    // Add subtle glow effect
+    ctx.fillStyle = `rgba(255, 209, 102, ${totalOpacity * 0.1})`;
+    ctx.beginPath();
+    ctx.arc(sx, sy, currentSize * 0.8, 0, Math.PI * 2);
+    ctx.fill();
+    
+    ctx.restore();
   }
 
   drawVehicleGlow(state, renderer) {
@@ -224,6 +293,46 @@ export class RenderSystem {
     ctx.beginPath();
     ctx.arc(centerX, centerY, currentSize, 0, Math.PI * 2);
     ctx.stroke();
+    
+    ctx.restore();
+  }
+
+  drawParticles(state, renderer) {
+    const ps = state.particles || [];
+    if (!ps.length) return;
+    
+    const { ctx } = renderer;
+    const ts = state.world.tileSize;
+    
+    ctx.save();
+    
+    for (const p of ps) {
+      if (p.type === 'smoke') {
+        // Draw smoke particles with soft edges
+        const radius = p.size * ts;
+        const gradient = ctx.createRadialGradient(p.x * ts, p.y * ts, 0, p.x * ts, p.y * ts, radius);
+        
+        // Create greyscale gradient for smoke
+        const color = p.color || 'hsl(0, 0%, 30%)';
+        gradient.addColorStop(0, color.replace('%)', `%, ${p.alpha})`));
+        gradient.addColorStop(0.7, color.replace('%)', `%, ${p.alpha * 0.5})`));
+        gradient.addColorStop(1, color.replace('%)', `%, 0%)`));
+        
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(p.x * ts, p.y * ts, radius, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        // Existing particle drawing
+        const alpha = Math.max(0, Math.min(1, p.life / p.maxLife || 1));
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = p.color; // use original color and globalAlpha instead of string replace
+        ctx.beginPath();
+        ctx.arc(p.x * ts, p.y * ts, p.size * ts, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+    }
     
     ctx.restore();
   }
@@ -312,46 +421,6 @@ export class RenderSystem {
         ctx.restore();
       });
     }
-  }
-
-  drawParticles(state, renderer) {
-    const ps = state.particles || [];
-    if (!ps.length) return;
-    
-    const { ctx } = renderer;
-    const ts = state.world.tileSize;
-    
-    ctx.save();
-    
-    for (const p of ps) {
-      if (p.type === 'smoke') {
-        // Draw smoke particles with soft edges
-        const radius = p.size * ts;
-        const gradient = ctx.createRadialGradient(p.x * ts, p.y * ts, 0, p.x * ts, p.y * ts, radius);
-        
-        // Create greyscale gradient for smoke
-        const color = p.color || 'hsl(0, 0%, 30%)';
-        gradient.addColorStop(0, color.replace('%)', `%, ${p.alpha})`));
-        gradient.addColorStop(0.7, color.replace('%)', `%, ${p.alpha * 0.5})`));
-        gradient.addColorStop(1, color.replace('%)', `%, 0%)`));
-        
-        ctx.fillStyle = gradient;
-        ctx.beginPath();
-        ctx.arc(p.x * ts, p.y * ts, radius, 0, Math.PI * 2);
-        ctx.fill();
-      } else {
-        // Existing particle drawing
-        const alpha = Math.max(0, Math.min(1, p.life / p.maxLife || 1));
-        ctx.globalAlpha = alpha;
-        ctx.fillStyle = p.color; // use original color and globalAlpha instead of string replace
-        ctx.beginPath();
-        ctx.arc(p.x * ts, p.y * ts, p.size * ts, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.globalAlpha = 1;
-      }
-    }
-    
-    ctx.restore();
   }
 
   drawMouseReticule(state, renderer) {

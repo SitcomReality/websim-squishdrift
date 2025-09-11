@@ -35,6 +35,63 @@ export class FlattenSystem {
       state.flattenFX.t += dt;
       if (state.flattenFX.t >= state.flattenFX.duration) state.flattenFX.active = false;
     }
+
+    // NEW: Handle flatten warning effect
+    this.updateFlattenWarning(state);
+  }
+
+  updateFlattenWarning(state) {
+    const combo = state.comboCount || state.scoringSystem?.comboCount || 0;
+    const flattenAuto = state.flattenAuto || {};
+    
+    // Only show warning when flatten is active and about to expire
+    if (!flattenAuto.active || !state.isFlattened) return;
+    
+    const now = Date.now();
+    const timeLeft = flattenAuto.expiresAt - now;
+    const warningStart = 3000; // 3 seconds before expiration
+    
+    if (timeLeft <= warningStart && timeLeft > 0) {
+      // Calculate warning intensity (0 to 1)
+      const warningProgress = 1 - (timeLeft / warningStart);
+      const intensity = Math.pow(warningProgress, 2); // Quadratic increase
+      
+      // Get reference position (player or vehicle)
+      const ref = state.control?.inVehicle ? state.control.vehicle?.pos : state.entities.find(e=>e.type==='player')?.pos;
+      if (!ref) return;
+      
+      // Calculate animation speed based on intensity
+      const baseSpeed = 2.0;
+      const maxSpeed = 8.0;
+      const currentSpeed = baseSpeed + (maxSpeed - baseSpeed) * intensity;
+      
+      // Calculate effect size based on intensity
+      const baseSize = 0.3;
+      const maxSize = 0.8;
+      const currentSize = baseSize + (maxSize - baseSize) * intensity;
+      
+      // Initialize warning effect if not exists
+      if (!state.flattenWarningFX) {
+        state.flattenWarningFX = {
+          active: true,
+          startTime: now,
+          warningStart: warningStart,
+          origin: { x: ref.x, y: ref.y }
+        };
+      }
+      
+      // Update effect parameters
+      state.flattenWarningFX.intensity = intensity;
+      state.flattenWarningFX.speed = currentSpeed;
+      state.flattenWarningFX.size = currentSize;
+      state.flattenWarningFX.timeLeft = timeLeft;
+      
+    } else {
+      // Clear warning effect when not in warning period
+      if (state.flattenWarningFX) {
+        state.flattenWarningFX = null;
+      }
+    }
   }
 
   triggerFlattenAnimations(state) {

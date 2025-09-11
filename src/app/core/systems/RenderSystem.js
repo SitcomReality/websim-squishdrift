@@ -16,6 +16,28 @@ import { drawDamageIndicator } from '../../entities/drawDamageIndicator.js';
 import { drawDamageText } from '../../entities/drawDamageText.js';
 import { drawExplosion } from '../../entities/drawExplosion.js';
 
+function drawShockwave(r, state, wave) {
+  const { ctx } = r, ts = state.world.tileSize;
+  const now = performance.now();
+  const elapsed = now - wave.startTime;
+  const progress = elapsed / wave.duration;
+
+  if (progress < 0 || progress > 1) return;
+
+  const maxRadius = Math.max(r.canvas.width, r.canvas.height) / (state.camera.zoom || 1);
+  const currentRadius = maxRadius * progress;
+  const alpha = 1 - progress;
+  const lineWidth = (1 - progress) * 8; // Line gets thinner as it expands
+
+  ctx.save();
+  ctx.strokeStyle = `rgba(${wave.color[0]}, ${wave.color[1]}, ${wave.color[2]}, ${alpha})`;
+  ctx.lineWidth = lineWidth;
+  ctx.beginPath();
+  ctx.arc(wave.pos.x * ts, wave.pos.y * ts, currentRadius, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+}
+
 export class RenderSystem {
   render(state, renderer, debugOverlay) {
     if (!state || !renderer || !renderer.ctx || !renderer.canvas) {
@@ -47,7 +69,8 @@ export class RenderSystem {
     const hTiles = Math.ceil(canvas.height/(ts*z))+2;
     const sx = Math.floor((state.camera?.x || 0) - wTiles/2);
     const sy = Math.floor((state.camera?.y || 0) - hTiles/2);
-    ctx.fillStyle = '#b7e3f8'; // ocean
+    const oceanColor = state.isFlattened ? '#2c2a4f' : '#b7e3f8';
+    ctx.fillStyle = oceanColor; // ocean
     ctx.fillRect(sx*ts, sy*ts, wTiles*ts, hTiles*ts);
     
     drawTiles(renderer, state, 'ground');
@@ -120,6 +143,21 @@ export class RenderSystem {
         case 'damage_indicator':
           drawDamageIndicator(renderer, state, entity);
           break;
+      }
+    }
+    
+    // Draw transient effects like shockwaves
+    const now = performance.now();
+    if (state.effects) {
+      for (let i = state.effects.length - 1; i >= 0; i--) {
+        const effect = state.effects[i];
+        if (now - effect.startTime > effect.duration) {
+          state.effects.splice(i, 1);
+        } else {
+          if (effect.type === 'shockwave') {
+            drawShockwave(renderer, state, effect);
+          }
+        }
       }
     }
     

@@ -241,7 +241,9 @@ export class DeathSystem {
     const restartBtn=document.getElementById('restart-button'); if(restartBtn) restartBtn.style.display='none';
     const hide=(el)=>{el.style.opacity='0'; el.style.transform='scale(0.98)'; el.style.transition='opacity .2s ease, transform .2s ease'; el.style.display='none';};
     const show=(el)=>{el.style.display='block'; requestAnimationFrame(()=>{el.style.opacity='1'; el.style.transform='scale(1)';});};
-    hide(pedP); hide(vehP); hide(driftDistP); hide(driftDurP);
+    hide(pedP); 
+    hide(driftDistP); 
+    hide(driftDurP);
     const timeAlive=Math.floor((Date.now()-(state.startTime||Date.now()))/1000);
     const peds=state.stats?.enemiesKilled||0, score=state.scoringSystem?.getScore?.()||0, highestCombo=state.scoringSystem?.getHighestCombo?.()||0;
     const longestDrift=state.stats?.longestDriftDuration||0, totalDriftDist=state.stats?.totalDriftDistance||0;
@@ -271,7 +273,7 @@ export class DeathSystem {
     // pedestrians (now called "Squishes")
     show(pedP); await animate(document.getElementById('enemies-killed'), peds, Math.min(1000, 600+peds*10));
     // vehicles
-    show(vehP); await animate(document.getElementById('vehicles-destroyed'), veh, Math.min(1000, 600+veh*10));
+    // show(vehP); await animate(document.getElementById('vehicles-destroyed'), veh, Math.min(1000, 600+veh*10));
     // distance drifted
     show(driftDistP); await animate(document.getElementById('drift-distance'), Math.round(totalDriftDist * 10), Math.min(1000, 600+totalDriftDist*2));
     // longest drift

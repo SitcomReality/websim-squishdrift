@@ -125,39 +125,44 @@ export class ParticleSystem {
             // particle speed & lifetime scale with lateral magnitude (sideways speed)
             const particleSpeed = (0.6 + Math.random() * 0.9) * (1 + lateral * 1.6);
 
-            // --- NEW FLAIR ---
+            // --- REFINED SUPER SPARK LOGIC ---
             const superSparkChance = 0.02 + 0.1 * (comboForScaling / 10); // 2% at 0x, up to 12% at 10x
             const isSuperSpark = Math.random() < superSparkChance;
+            const vibrantColors = [
+                'rgba(180, 120, 255, 0.9)', // Purple
+                'rgba(0, 255, 255, 0.9)',   // Cyan/Electric Blue
+                'rgba(255, 0, 255, 0.9)',   // Magenta
+                'rgba(50, 255, 50, 0.9)'    // Vibrant Green
+            ];
 
             let color;
             let size;
             let life;
+            let coronaColor = null;
 
             if (isSuperSpark) {
-                color = 'rgba(255, 255, 180, 1.0)'; // Bright yellow
-                life = (0.1 + Math.random() * 0.1) * (1 + lateral * 2.0) * comboIntensity; // Reduced to 25% of original, scaled by combo
-                size = (0.01 + Math.random() * 0.005) * (0.8 + lateralImportance) * comboIntensity; // Reduced max size of super sparks, scaled by combo
+                color = 'rgba(255, 255, 220, 1.0)'; // Core is brilliant white/yellow
+                // Pick a corona color from the vibrant palette, unlocked by combo
+                const numColors = 1 + Math.floor((comboForScaling / 10) * (vibrantColors.length - 1));
+                coronaColor = vibrantColors[Math.floor(Math.random() * numColors)];
+
+                life = (0.08 + Math.random() * 0.08) * (1 + lateral * 1.5) * comboIntensity; // Shorter, more impactful lifetime
+                size = (0.008 + Math.random() * 0.004) * (0.8 + lateralImportance) * comboIntensity; // Significantly smaller size
             } else {
                 // --- NEW: Colorfulness scales with combo ---
                 const colorfulness = comboForScaling / 10; // 0.0 to 1.0
                 const randColor = Math.random();
                 
-                // Chance of white sparks decreases as combo increases (from 40% to 20%)
-                if (randColor < 0.4 * (1 - colorfulness * 0.5)) {
+                // Chance of white sparks decreases as combo increases (from 60% to 10%)
+                if (randColor < 0.6 * (1 - colorfulness * 0.85)) {
                     color = 'rgba(255, 255, 255, 0.9)'; // White
                 } 
-                // Orange/Yellow is a constant 30% chance
-                else if (randColor < 0.7) {
+                // Orange/Yellow is a constant 20% chance
+                else if (randColor < 0.8) {
                     color = 'rgba(255, 220, 100, 0.9)'; // Orange/Yellow
                 } 
-                // Vibrant color chance increases from 30% to 50%
+                // Vibrant color chance increases from 20% to 70%
                 else {
-                    const vibrantColors = [
-                        'rgba(180, 120, 255, 0.9)', // Purple
-                        'rgba(0, 255, 255, 0.9)',   // Cyan/Electric Blue
-                        'rgba(255, 0, 255, 0.9)',   // Magenta
-                        'rgba(50, 255, 50, 0.9)'    // Vibrant Green
-                    ];
                     // Unlock more colors from the vibrant palette as combo increases
                     const numColors = 1 + Math.floor(colorfulness * (vibrantColors.length - 1));
                     color = vibrantColors[Math.floor(Math.random() * numColors)];
@@ -167,7 +172,7 @@ export class ParticleSystem {
                 size = (0.005 + Math.random() * 0.005) * (0.8 + lateralImportance) * comboIntensity; // Reduced to 25% of original, scaled by combo
             }
 
-            state.particles.push({
+            const spark = {
               type: 'spark',
               x: pos.x,
               y: pos.y,
@@ -179,9 +184,27 @@ export class ParticleSystem {
               // Cap max growth to ~0.6x the base size so particles don't swell excessively
               maxSize: Math.max(size * 0.12, size * 0.6),
               color: color,
+              coronaColor: coronaColor, // Store corona color for super sparks
               alpha: 0.9,
               maxAlpha: 0.9,
-            });
+            };
+            state.particles.push(spark);
+
+            // --- NEW: Emit a "ghost" particle for each super spark ---
+            if (isSuperSpark) {
+                state.particles.push({
+                    type: 'ghost',
+                    x: pos.x,
+                    y: pos.y,
+                    vx: spark.vx * 0.8, // Slightly slower
+                    vy: spark.vy * 0.8,
+                    life: spark.life * 1.2, // Lives a bit longer
+                    maxLife: spark.life * 1.2,
+                    size: spark.size * 2.5, // Larger but transparent
+                    color: coronaColor.replace('0.9', '0.0'), // Fully transparent to start
+                    endColor: coronaColor.replace('0.9', '0.3'), // Fades into this color
+                });
+            }
         }
     };
 
@@ -260,8 +283,7 @@ export class ParticleSystem {
         // Cap spark growth so they only reach ~60% larger than base at most
         maxSize: Math.max(sparkSize * 0.08, sparkSize * 0.6),
         color: 'rgba(255,200,50,1)',
-        alpha: 1.0,
-        maxAlpha: 1.0
+        alpha: 1.0
       });
     }
   }
@@ -296,23 +318,20 @@ export class ParticleSystem {
     const ts = state.world.tileSize;
 
     ctx.save();
+    ctx.globalCompositeOperation = 'lighter'; // Additive blending for a brighter, more energetic look
 
     for (const p of ps) {
+      const lifeRatio = Math.max(0, p.life / p.maxLife);
+
       if (p.type === 'smoke') {
         // ... existing smoke drawing ...
       } else if (p.type === 'spark') {
         // Draw dynamic sparks
-        const lifeRatio = Math.max(0, p.life / p.maxLife);
-
-        // Sparks start small and expand briefly before fading
-        let growth = (p.maxSize - p.size) * (1 - lifeRatio) * 0.15;
-        // --- NEW: Hard cap on maximum particle size to prevent them from getting too large ---
-        const MAX_PARTICLE_SIZE = 0.025; // in world units
+        const growth = (p.maxSize - p.size) * (1 - lifeRatio) * 0.15;
+        const MAX_PARTICLE_SIZE = 0.025;
         const currentSize = Math.min(p.size + growth, MAX_PARTICLE_SIZE);
         const currentAlpha = p.alpha * lifeRatio;
-        
-        // Use the particle's assigned color for the gradient
-        // The default of 'rgba(255,255,200,${currentAlpha})' will be used if p.color is not a valid rgba string
+
         const baseColor = p.color || `rgba(255,255,200,${currentAlpha})`;
         let r=255, g=255, b=200;
         const match = baseColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
@@ -322,16 +341,18 @@ export class ParticleSystem {
             b = parseInt(match[3], 10);
         }
 
-        // Create gradient for spark effect
-        const gradient = ctx.createRadialGradient(
-          p.x * ts, p.y * ts, 0,
-          p.x * ts, p.y * ts, currentSize * ts
-        );
+        const gradient = ctx.createRadialGradient(p.x * ts, p.y * ts, 0, p.x * ts, p.y * ts, currentSize * ts);
 
-        // Center is bright, edges fade to a darker shade of the particle's color
-        gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${currentAlpha})`);
-        gradient.addColorStop(0.3, `rgba(${Math.round(r*0.9)}, ${Math.round(g*0.8)}, ${Math.round(b*0.5)}, ${currentAlpha * 0.8})`);
-        gradient.addColorStop(1, `rgba(${Math.round(r*0.8)}, ${Math.round(g*0.5)}, ${Math.round(b*0.2)}, ${currentAlpha * 0.3})`);
+        // --- NEW: Super Spark Rendering with Corona ---
+        if (p.coronaColor) {
+            gradient.addColorStop(0, `rgba(255, 255, 240, ${currentAlpha})`); // Bright core
+            gradient.addColorStop(0.4, `rgba(${r}, ${g}, ${b}, ${currentAlpha * 0.8})`);
+            gradient.addColorStop(1, p.coronaColor.replace('0.9', `${currentAlpha * 0.5}`));
+        } else {
+            gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${currentAlpha})`);
+            gradient.addColorStop(0.3, `rgba(${Math.round(r*0.9)}, ${Math.round(g*0.8)}, ${Math.round(b*0.5)}, ${currentAlpha * 0.8})`);
+            gradient.addColorStop(1, `rgba(${Math.round(r*0.8)}, ${Math.round(g*0.5)}, ${Math.round(b*0.2)}, ${currentAlpha * 0.3})`);
+        }
 
         ctx.fillStyle = gradient;
         ctx.beginPath();
@@ -345,9 +366,32 @@ export class ParticleSystem {
           ctx.arc(p.x * ts, p.y * ts, currentSize * ts * 0.3, 0, Math.PI * 2);
           ctx.fill();
         }
+      } else if (p.type === 'ghost') {
+        // --- NEW: Ghost Particle Rendering ---
+        // Fades in to mid-life, then fades out
+        const peakTime = 0.5;
+        const alphaProgress = lifeRatio > peakTime ? (1 - lifeRatio) / (1 - peakTime) : lifeRatio / peakTime;
+        
+        const currentSize = p.size * ts;
+        const endColorMatch = p.endColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
+        if (endColorMatch) {
+            const r = endColorMatch[1];
+            const g = endColorMatch[2];
+            const b = endColorMatch[3];
+            const maxAlpha = parseFloat(endColorMatch[4]);
+            const currentAlpha = maxAlpha * alphaProgress;
+            
+            const gradient = ctx.createRadialGradient(p.x * ts, p.y * ts, 0, p.x * ts, p.y * ts, currentSize);
+            gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${currentAlpha * 0.5})`);
+            gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+            
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(p.x * ts, p.y * ts, currentSize, 0, Math.PI * 2);
+            ctx.fill();
+        }
       } else if (p.type === 'blood') {
         // Draw blood particles with fade-out
-        const lifeRatio = Math.max(0, p.life / p.maxLife);
         const currentAlpha = p.alpha * lifeRatio;
         const currentSize = p.size * ts;
 

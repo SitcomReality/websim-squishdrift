@@ -172,7 +172,7 @@ export class RenderSystem {
         const freq = 1 + intensity * 6;          // speeds up as it nears 0
         const baseRadius = Math.min(canvas.width, canvas.height) * 0.12;
         // determine origin (fallback to player if no current fx origin)
-        const ref = state.flattenFX?.origin || (state.control?.inVehicle ? state.control.vehicle?.pos : state.entities.find(e=>e.type==='player')?.pos) || {x:0,y:0};
+        const ref = (state.control?.inVehicle ? state.control.vehicle?.pos : state.entities.find(e=>e.type==='player')?.pos) || state.flattenFX?.origin || {x:0,y:0};
         const ts = state.world.tileSize, z = state.camera?.zoom || 1;
         const cx = Math.floor(canvas.width/2), cy = Math.floor(canvas.height/2);
         const sx = cx + (ref.x - (state.camera?.x||0)) * ts * z;

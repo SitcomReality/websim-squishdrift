@@ -38,6 +38,7 @@ export class HUDManager {
         `;
         itemHud.appendChild(row);
         this.findExistingElements();
+        row.style.display = 'none'; // Initially hidden
       }
     }
   }

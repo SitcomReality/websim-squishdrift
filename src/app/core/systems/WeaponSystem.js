@@ -217,7 +217,7 @@ export class WeaponSystem {
       return;
     }
     
-    const isFiring = input.mousePos && input.keys.has('MouseLeft');
+    const isFiring = input.keys.has('MouseLeft');
     const justPressed = input.pressed && input.pressed.has('MouseLeft');
     const CLICK_COOLDOWN = 250; // ms - rate limit click SFX when holding
     
@@ -233,8 +233,9 @@ export class WeaponSystem {
           
           const itemNameEl = document.getElementById('item-name');
           if (itemNameEl) itemNameEl.textContent = 'None';
-          const ammoContainer = document.getElementById('ammo-container');
-          if (ammoContainer) ammoContainer.remove();
+          
+          const ammoContainerEl = document.getElementById('ammo-container');
+          if (ammoContainerEl) ammoContainerEl.style.display = 'none';
         }
         return;
       }
@@ -253,6 +254,23 @@ export class WeaponSystem {
       if (!debugEnabled) {
         weapon.ammo--;
       }
+    }
+    
+    // Handle empty weapon click
+    if (isFiring && weapon.ammo <= 0 && !debugEnabled) {
+        if (justPressed && now - (player.lastClickTime || 0) >= CLICK_COOLDOWN) {
+          const pos = (state.control?.inVehicle && state.control.vehicle?.pos) ? state.control.vehicle.pos : player.pos;
+          state.audio?.playSfxAt?.('click', pos, state);
+          player.lastClickTime = now;
+          player.equippedWeapon = null;
+          
+          const itemNameEl = document.getElementById('item-name');
+          if (itemNameEl) itemNameEl.textContent = 'None';
+          
+          const ammoContainerEl = document.getElementById('ammo-container');
+          if (ammoContainerEl) ammoContainerEl.style.display = 'none';
+        }
+        return;
     }
     
     // Handle click when no weapon is equipped (single-shot via pressed + cooldown)

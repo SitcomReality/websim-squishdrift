@@ -77,10 +77,16 @@ export function getOccludersInRadius(state, lightPosition, lightRadius) {
         const dy = entity.pos.y - lightPosition.y;
         if (dx * dx + dy * dy > lightRadiusSq) continue;
         
+        // --- NEW: Scale up occluder hitboxes slightly so shadows start outside the sprite ---
+        const occluderScale = 1.15;
+
         if (entity.type === 'vehicle') {
-            occluders.push(getVerticesFromShape(entityOBB(entity)));
+            const obb = entityOBB(entity);
+            obb.ext[0] *= occluderScale;
+            obb.ext[1] *= occluderScale;
+            occluders.push(getVerticesFromShape(obb));
         } else if (entity.type === 'npc' || entity.type === 'player') {
-            const size = (entity.hitboxW || 0.15) / 2;
+            const size = ((entity.hitboxW || 0.15) / 2) * occluderScale;
             const pedAABB = { cx: entity.pos.x, cy: entity.pos.y, axes: [{ x: 1, y: 0 }, { x: 0, y: 1 }], ext: [size, size] };
             occluders.push(getVerticesFromShape(pedAABB));
         }

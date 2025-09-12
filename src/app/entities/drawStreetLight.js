@@ -1,5 +1,5 @@
 import { Vec2 } from '../../utils/Vec2.js';
-import { Tile } from '../map/TileTypes.js';
+import { Tile } from '../../map/TileTypes.js';
 
 export function drawStreetLight(r, state, lightEntity) {
   const { ctx } = r, ts = state.world.tileSize;

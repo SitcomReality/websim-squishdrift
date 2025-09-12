@@ -15,6 +15,7 @@ import { drawProjectile } from '../../entities/drawProjectile.js';
 import { drawDamageIndicator } from '../../entities/drawDamageIndicator.js';
 import { drawDamageText } from '../../entities/drawDamageText.js';
 import { drawExplosion } from '../../entities/drawExplosion.js';
+import { drawStreetLight } from '../../entities/drawStreetLight.js';
 
 export class RenderSystem {
   constructor() {
@@ -125,6 +126,9 @@ export class RenderSystem {
           break;
         case 'damage_indicator':
           drawDamageIndicator(renderer, state, entity);
+          break;
+        case 'light':
+          drawStreetLight(renderer, state, entity);
           break;
       }
     }

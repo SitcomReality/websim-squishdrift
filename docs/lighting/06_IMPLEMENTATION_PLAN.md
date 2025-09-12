@@ -9,7 +9,6 @@ The goal of this phase is to establish the core lighting system, render a "night
 -   **Step 1.1: Create the Core Lighting System**
     -   **Action**: Create the main `LightingSystem` class. Initially, it will only be responsible for drawing a semi-transparent "darkness" overlay on the canvas.
     -   **File**: `src/app/core/systems/LightingSystem.js` (new file)
-    -   **Status**: ✅ Done
 
 -   **Step 1.2: Integrate the Lighting System**
     -   **Action**: Instantiate the `LightingSystem` within the `SystemManager` and make it accessible on the global game state.
@@ -70,3 +69,4 @@ This final phase will add smaller, high-impact features like muzzle flashes and 
 -   **Step 3.3: Final Tuning and Performance Optimizations**
     -   **Action**: Make final adjustments to light properties, ray counts, and culling strategies within the `LightingSystem` to balance visual quality with performance.
     -   **File**: `src/app/core/systems/LightingSystem.js` (modify)
+

@@ -12,7 +12,6 @@ import { WeaponSystem } from './systems/WeaponSystem.js';
 import { ParticleSystem } from './systems/particles/index.js';
 import { EngineAudioSystem } from './systems/EngineAudioSystem.js';
 import { AnimationSystem } from './systems/AnimationSystem.js';
-import { LightingSystem } from './systems/LightingSystem.js';
 
 export class SystemManager {
   constructor(stateManager) {
@@ -20,7 +19,6 @@ export class SystemManager {
     this.systems = {
       player: new PlayerSystem(),
       vehicle: new VehicleSystem(),
-      lighting: new LightingSystem(),
       bullet: new BulletSystem(),
       npc: new NPCSystem(),
       camera: new CameraSystem(),
@@ -41,7 +39,6 @@ export class SystemManager {
     if (s) {
       s.cameraSystem = this.systems.camera;
       s.particleSystem = this.systems.particles; // ensure emitters accessible via state
-      s.lightingSystem = this.systems.lighting; // expose lighting system on state
     }
   }
 

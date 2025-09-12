@@ -16,7 +16,6 @@ import { drawExplosion } from '../../entities/drawExplosion.js';
 import { drawStreetLight } from '../../entities/drawStreetLight.js';
 import { drawVehicleGlow } from './rendering/drawVehicleGlow.js';
 import { drawParticles } from './rendering/drawParticles.js';
-import { applyLighting } from './rendering/applyLighting.js';
 
 export class RenderSystem {
   constructor() {
@@ -203,7 +202,34 @@ export class RenderSystem {
       }
     }
     
-    // Apply lighting buffer (offscreen composition)
-    applyLighting({ ctx, canvas }, state, this.lightingCanvas, this.lightingCtx);
+    // Draw lighting overlay if system is present
+    if (state.lightingSystem && this.lightingCanvas) {
+      const { width, height } = canvas;
+      if (this.lightingCanvas.width !== width || this.lightingCanvas.height !== height) {
+        this.lightingCanvas.width = width;
+        this.lightingCanvas.height = height;
+      }
+
+      const lightingRenderer = { canvas: this.lightingCanvas, ctx: this.lightingCtx };
+      
+      // The main renderer has the world transform applied. We need to apply the same transform
+      // to our offscreen lighting canvas before rendering lights.
+      this.lightingCtx.save();
+      this.lightingCtx.setTransform(ctx.getTransform());
+
+      // Render lights and shadows to the offscreen buffer.
+      state.lightingSystem.render(state, lightingRenderer);
+
+      this.lightingCtx.restore();
+
+      // Now, draw the completed lighting buffer onto the main canvas.
+      // We use 'multiply' to darken the scene based on the light map.
+      // We need to do this in screen space, so we reset the transform on the main context.
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.globalCompositeOperation = 'multiply';
+      ctx.drawImage(this.lightingCanvas, 0, 0);
+      ctx.restore(); // Restores world transform and composite operation for any subsequent draws.
+    }
   }
 }

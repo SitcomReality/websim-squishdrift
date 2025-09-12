@@ -16,10 +16,9 @@ export class MobileControls {
         abilityButton.textContent = 'Enter';
         abilityButton.dataset.action = 'KeyE';
       } else {
-        abilityButton.textContent = 'Flatten';
-        abilityButton.dataset.action = 'KeyQ';
+        abilityButton.textContent = 'Enter';
+        abilityButton.dataset.action = 'KeyE';
       }
     }
   }
 }
-

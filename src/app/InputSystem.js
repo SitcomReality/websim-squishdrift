@@ -144,11 +144,7 @@ export class InputSystem {
 
     // Primary mappings
     if (gp.buttons[3]?.pressed) this.virtualKeys.add('KeyE'); // Y/Triangle -> enter/exit (only one)
-    // Only Y (buttons[3]) is used for enter/exit. Flatten should only be triggered by B (buttons[1]) or X (buttons[2]).
-    if (gp.buttons[1]?.pressed) this.virtualKeys.add('KeyQ'); // B/Circle -> flatten
-    if (gp.buttons[2]?.pressed) this.virtualKeys.add('KeyQ'); // X/Square -> flatten
-    // Start button -> toggle pause (map to Escape to reuse existing pause handling)
-    if (gp.buttons[9]?.pressed) this.virtualKeys.add('Escape');
+    // Only Y (buttons[3]) is used for enter/exit.
     // Fire mapping: Right Shoulder (R1 - buttons[5]) OR A (buttons[0]) OR Left Trigger (buttons[6]) => MouseLeft (shoot)
     // When firing from a gamepad we still want to trigger the game's shoot action
     // but avoid overriding the player's facing by the mouse position. Mark that

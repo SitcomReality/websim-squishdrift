@@ -23,10 +23,6 @@ export class RenderSystem {
     // Create an offscreen canvas for the lighting buffer
     this.lightingCanvas = document.createElement('canvas');
     this.lightingCtx = this.lightingCanvas.getContext('2d');
-    
-    // NEW: Create an offscreen canvas for elements that are NOT darkened by the lighting system
-    this.undarkenedCanvas = document.createElement('canvas');
-    this.undarkenedCtx = this.undarkenedCanvas.getContext('2d');
   }
 
   render(state, renderer) {
@@ -37,19 +33,6 @@ export class RenderSystem {
     
     const { ctx, canvas } = renderer;
     
-    // --- NEW: Setup for layered rendering ---
-    const { width, height } = canvas;
-    if (this.undarkenedCanvas.width !== width || this.undarkenedCanvas.height !== height) {
-        this.undarkenedCanvas.width = width;
-        this.undarkenedCanvas.height = height;
-    }
-    this.undarkenedCtx.clearRect(0, 0, width, height);
-    
-    // The main renderer for elements that will be darkened
-    const mainRenderer = renderer;
-    // The offscreen renderer for elements that will NOT be darkened
-    const undarkenedRenderer = { ...renderer, canvas: this.undarkenedCanvas, ctx: this.undarkenedCtx };
-
     // Clear canvas
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -67,9 +50,6 @@ export class RenderSystem {
     const snapY = Math.round((state.camera?.y || 0) * ts * z) / z;
     ctx.translate(-snapX, -snapY);
     
-    // --- NEW: Apply the same transform to the undarkened canvas context ---
-    this.undarkenedCtx.setTransform(ctx.getTransform());
-    
     // Draw layers
     const wTiles = Math.ceil(canvas.width/(ts*z))+2;
     const hTiles = Math.ceil(canvas.height/(ts*z))+2;
@@ -78,20 +58,18 @@ export class RenderSystem {
     ctx.fillStyle = '#b7e3f8'; // ocean
     ctx.fillRect(sx*ts, sy*ts, wTiles*ts, hTiles*ts);
     
-    drawTiles(mainRenderer, state, 'ground');
-    
-    // --- MODIFIED: Draw building floors and flattened roofs to the UNDARKENED canvas ---
+    drawTiles(renderer, state, 'ground');
+    // When flattened, draw roofs on the ground before entities.
     if (state.isFlattened) {
-      drawBuildings(undarkenedRenderer, state, 'roofs_flat');
+      drawBuildings(renderer, state, 'roofs_flat');
     }
-    drawTiles(undarkenedRenderer, state, 'floors');
-    
-    drawSkidmarks(mainRenderer, state);
+    drawTiles(renderer, state, 'floors');
+    drawSkidmarks(renderer, state);
     
     // When flattened, draw roofs on the ground before entities
     // Draw only already-flattened roofs on the ground before entities.
     // This ensures tall building walls remain visible while they are animating.
-    drawBuildings(mainRenderer, state, 'roofs_flat_animating');
+    drawBuildings(renderer, state, 'roofs_flat_animating');
     
     // Sort entities by y-position for proper z-ordering
     const entities = [...(state.entities || [])].sort((a, b) => {
@@ -115,27 +93,26 @@ export class RenderSystem {
     for (const entity of entities) {
       if (!entity || !entity.pos) continue;
       
-      // --- MODIFIED: Draw main entities to the UNDARKENED canvas ---
       switch (entity.type) {
         case 'player':
-          drawPlayer(undarkenedRenderer, state, entity);
-          drawHealthBar(undarkenedRenderer, entity);
+          drawPlayer(renderer, state, entity);
+          drawHealthBar(renderer, entity);
           break;
         case 'vehicle':
-          drawVehicle(undarkenedRenderer, state, entity);
+          drawVehicle(renderer, state, entity);
           // Remove health bar for vehicles
           break;
         case 'npc':
-          drawNPC(undarkenedRenderer, state, entity);
+          drawNPC(renderer, state, entity);
           break;
         case 'item':
-          drawItem(undarkenedRenderer, state, entity);
+          drawItem(renderer, state, entity);
           break;
         case 'emergency':
-          drawEmergency(undarkenedRenderer, state, entity);
+          drawEmergency(renderer, state, entity);
           break;
         case 'blood':
-          drawBlood(mainRenderer, state, entity); // Blood stays on the ground layer
+          drawBlood(renderer, state, entity);
           break;
         case 'bullet':
           ctx.save();
@@ -146,13 +123,13 @@ export class RenderSystem {
           ctx.restore();
           break;
         case 'projectile':
-          drawProjectile(undarkenedRenderer, state, entity);
+          drawProjectile(renderer, state, entity);
           break;
         case 'damage_indicator':
-          drawDamageIndicator(undarkenedRenderer, state, entity);
+          drawDamageIndicator(renderer, state, entity);
           break;
         case 'light':
-          drawStreetLight(undarkenedRenderer, state, entity);
+          drawStreetLight(renderer, state, entity);
           break;
       }
     }
@@ -163,56 +140,20 @@ export class RenderSystem {
       drawExplosion(renderer, state, explosion);
     }
     
-    // --- MODIFIED: Draw building walls to the UNDARKENED canvas ---
-    // This makes them appear lit, but they still cast shadows from their base.
+    // Draw buildings: always render walls for any building that still has height,
+    // then draw roofs. drawBuildings internally skips walls/roofs based on currentHeight.
     if (!state.isFlattened) {
-      drawBuildings(undarkenedRenderer, state, 'walls');
-      drawBuildings(undarkenedRenderer, state, 'roofs');
+      drawBuildings(renderer, state, 'walls');
+      drawBuildings(renderer, state, 'roofs');
     } else {
       // In flattened mode, only draw walls/roofs for buildings that are still animating down.
-      drawBuildings(undarkenedRenderer, state, 'walls_animating');
-      drawBuildings(undarkenedRenderer, state, 'roofs_animating');
+      drawBuildings(renderer, state, 'walls_animating');
+      drawBuildings(renderer, state, 'roofs_animating');
     }
     
-    // --- MODIFIED: Draw particles to the UNDARKENED canvas ---
-    drawParticles(state, undarkenedRenderer);
+    // Draw particles (including smoke)
+    drawParticles(state, renderer);
     
-    // --- MODIFIED: Apply lighting to the MAIN canvas BEFORE drawing the undarkened layer ---
-    if (state.lightingSystem && this.lightingCanvas) {
-      const { width, height } = canvas;
-      if (this.lightingCanvas.width !== width || this.lightingCanvas.height !== height) {
-        this.lightingCanvas.width = width;
-        this.lightingCanvas.height = height;
-      }
-
-      const lightingRenderer = { canvas: this.lightingCanvas, ctx: this.lightingCtx };
-      
-      // The main renderer has the world transform applied. We need to apply the same transform
-      // to our offscreen lighting canvas before rendering lights.
-      this.lightingCtx.save();
-      this.lightingCtx.setTransform(ctx.getTransform());
-
-      // Render lights and shadows to the offscreen buffer.
-      state.lightingSystem.render(state, lightingRenderer);
-
-      this.lightingCtx.restore();
-
-      // Now, draw the completed lighting buffer onto the main canvas.
-      // We use 'multiply' to darken the scene based on the light map.
-      // We need to do this in screen space, so we reset the transform on the main context.
-      ctx.save();
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.globalCompositeOperation = 'multiply';
-      ctx.drawImage(this.lightingCanvas, 0, 0);
-      ctx.restore(); // Restores world transform and composite operation for any subsequent draws.
-    }
-
-    // --- NEW: Draw the undarkened layer on top of the lit/darkened main layer ---
-    ctx.save();
-    ctx.setTransform(1, 0, 0, 1, 0, 0); // Use screen space
-    ctx.drawImage(this.undarkenedCanvas, 0, 0);
-    ctx.restore();
-
     // Draw damage text and floating text ON TOP of everything
     drawDamageText(renderer, state);
     

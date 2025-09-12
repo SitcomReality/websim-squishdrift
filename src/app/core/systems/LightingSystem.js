@@ -31,10 +31,8 @@ export class LightingSystem {
     // The transform is now set by the RenderSystem before this is called.
     // We start by clearing the lighting buffer and filling it with darkness.
     ctx.save();
-    // --- MODIFICATION: Use the renderer's canvas, which could be an offscreen one ---
     ctx.setTransform(1, 0, 0, 1, 0, 0); // Use screen space for clearing
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    // --- END MODIFICATION ---
     ctx.restore(); // Restore world transform
 
     // Draw darkness overlay

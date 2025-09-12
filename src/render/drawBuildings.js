@@ -2,69 +2,70 @@ export function drawBuildings(r, state, mode = 'all') {
   const { ctx } = r, ts = state.world.tileSize, map = state.world.map;
   const cam = state.camera, perspectiveScale = 0.8;
   
-  // --- NEW: Tree trunks should be drawn in this pass to be included on the undarkened layer ---
-  const buildingsAndTrees = [...map.buildings];
+  // Sort buildings and trees by y-position + height for proper z-ordering
+  const sortedElements = [...map.buildings];
+  
+  // Add trees to sorting array
   if (map.trees) {
-    for (const tree of map.trees) {
-        buildingsAndTrees.push({
-            isTree: true,
-            treeData: tree,
-            // Use rect-like properties for sorting
-            rect: { x: Math.floor(tree.pos.x), y: Math.floor(tree.pos.y), width: 1, height: 1 },
-            height: (tree.currentTrunkHeight ?? tree.trunkHeight),
-            currentHeight: (tree.currentTrunkHeight ?? tree.trunkHeight),
-        });
-    }
+    map.trees.forEach(tree => {
+      sortedElements.push({
+        type: 'tree',
+        pos: tree.pos,
+        height: (tree.currentTrunkHeight ?? tree.trunkHeight) + (tree.currentLeafHeight ?? tree.leafHeight),
+        tree: tree
+      });
+    });
   }
   
-  // Sort buildings and trees by y-position for proper z-ordering
-  const sortedElements = buildingsAndTrees.sort((a, b) => {
-    const aY = a.rect.y + a.rect.height;
-    const bY = b.rect.y + b.rect.height;
-    return aY - bY;
+  // Sort by y-position + height for proper z-ordering
+  sortedElements.sort((a, b) => {
+    const aY = a.rect ? (a.rect.y + a.rect.height) : (a.pos.y + 1);
+    const bY = b.rect ? (b.rect.y + b.rect.height) : (b.pos.y + 1);
+    const aHeight = a.currentHeight ?? a.height ?? 0;
+    const bHeight = b.currentHeight ?? b.height ?? 0;
+    const aZ = aY + (aHeight / ts) * 0.1;
+    const bZ = bY + (bHeight / ts) * 0.1;
+    return aZ - bZ;
   });
 
   for (const element of sortedElements) {
-    // --- NEW: Handle drawing either a building or a tree ---
-    if (element.isTree) {
-      drawTree(r, state, element.treeData, mode);
-      continue;
-    }
-    
-    const b = element;
-    const floorRect = { 
+    if (element.type === 'tree') {
+      drawTree(r, state, element.tree, mode);
+    } else {
+      const b = element;
+      const floorRect = { 
         x: b.rect.x * ts, 
         y: b.rect.y * ts, 
         w: b.rect.width * ts, 
         h: b.rect.height * ts 
-    };
-    
-    // Check if camera is inside building
-    const isCamInside = (cam.x >= b.rect.x && 
-                        cam.x < b.rect.x + b.rect.width && 
-                        cam.y >= b.rect.y && 
-                        cam.y < b.rect.y + b.rect.height);
-    
-    const bHeight = b.currentHeight ?? b.height;
-    if (bHeight <= 0.1) { // When flattened, just draw the roof on the ground
+      };
+      
+      // Check if camera is inside building
+      const isCamInside = (cam.x >= b.rect.x && 
+                          cam.x < b.rect.x + b.rect.width && 
+                          cam.y >= b.rect.y && 
+                          cam.y < b.rect.y + b.rect.height);
+      
+      const bHeight = b.currentHeight ?? b.height;
+      if (bHeight <= 0.1) { // When flattened, just draw the roof on the ground
         if (mode === 'roofs' || mode === 'all' || mode === 'roofs_flat') {
-            ctx.fillStyle = b.color;
-            ctx.fillRect(floorRect.x, floorRect.y, floorRect.w, floorRect.h);
-            ctx.strokeStyle = 'rgba(0,0,0,0.2)';
-            ctx.lineWidth = 1;
-            ctx.strokeRect(floorRect.x, floorRect.y, floorRect.w, floorRect.h);
+          ctx.fillStyle = b.color;
+          ctx.fillRect(floorRect.x, floorRect.y, floorRect.w, floorRect.h);
+          ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(floorRect.x, floorRect.y, floorRect.w, floorRect.h);
         }
         continue;
-    }
-    
-    // If mode is for flat things and building isn't flattened, skip drawing anything for this building
-    if ((mode === 'roofs_flat' || mode === 'roofs_flat_animating') && bHeight > 0.1) continue;
-    
-    // Calculate roof offset based on camera position
-    let roofOffset = { x: 0, y: 0 };
-    let roofScale = 1;
-    
-    if (!isCamInside) {
+      }
+      
+      // If mode is for flat things and building isn't flattened, skip drawing anything for this building
+      if ((mode === 'roofs_flat' || mode === 'roofs_flat_animating') && bHeight > 0.1) continue;
+      
+      // Calculate roof offset based on camera position
+      let roofOffset = { x: 0, y: 0 };
+      let roofScale = 1;
+      
+      if (!isCamInside) {
         const bx = b.rect.x + b.rect.width/2, by = b.rect.y + b.rect.height/2;
         const dir = { x: bx - cam.x, y: by - cam.y };
         const len = Math.hypot(dir.x, dir.y) || 1;
@@ -76,23 +77,23 @@ export function drawBuildings(r, state, mode = 'all') {
         // Perspective scale increases with building height
         const heightFactor = Math.min(1.2, 1 + (bHeight / 200) * 0.3);
         roofScale = heightFactor;
-    }
-    
-    const scaledW = floorRect.w * roofScale;
-    const scaledH = floorRect.h * roofScale;
-    const roofRect = { 
+      }
+      
+      const scaledW = floorRect.w * roofScale;
+      const scaledH = floorRect.h * roofScale;
+      const roofRect = { 
         x: floorRect.x + roofOffset.x - (scaledW - floorRect.w) / 2, 
         y: floorRect.y + roofOffset.y - (scaledH - floorRect.h) / 2, 
         w: scaledW, 
         h: scaledH 
-    };
-    
-    const hue = 200;
-    const topWallColor = `hsl(${hue}, 20%, 75%)`;
-    const sideWallColor = `hsl(${hue}, 20%, 65%)`;
-    
-    // Draw walls connecting floor to roof
-    if (mode === 'walls' || mode === 'all' || mode === 'walls_animating') {
+      };
+      
+      const hue = 200;
+      const topWallColor = `hsl(${hue}, 20%, 75%)`;
+      const sideWallColor = `hsl(${hue}, 20%, 65%)`;
+      
+      // Draw walls connecting floor to roof
+      if (mode === 'walls' || mode === 'all' || mode === 'walls_animating') {
         ctx.fillStyle = sideWallColor;
         ctx.beginPath();
         ctx.moveTo(floorRect.x, floorRect.y);
@@ -145,15 +146,16 @@ export function drawBuildings(r, state, mode = 'all') {
         ctx.lineTo(floorRect.x, floorRect.y + floorRect.h);
         ctx.closePath();
         ctx.fill();
-    }
-    
-    // Draw roof
-    if (mode === 'roofs' || mode === 'all' || mode === 'roofs_animating') {
+      }
+      
+      // Draw roof
+      if (mode === 'roofs' || mode === 'all' || mode === 'roofs_animating') {
         ctx.fillStyle = b.color;
         ctx.fillRect(roofRect.x, roofRect.y, roofRect.w, roofRect.h);
         ctx.strokeStyle = 'rgba(0,0,0,0.2)';
         ctx.lineWidth = 1;
         ctx.strokeRect(roofRect.x, roofRect.y, roofRect.w, roofRect.h);
+      }
     }
   }
 }
@@ -165,9 +167,8 @@ function drawTree(r, state, tree, mode) {
   const trunkHeight = tree.currentTrunkHeight ?? tree.trunkHeight;
   const leafHeight = tree.currentLeafHeight ?? tree.leafHeight;
 
-  // --- MODIFIED: Draw flattened tree trunk to be included on undarkened layer ---
   if (trunkHeight + leafHeight <= 0.1) {
-    if (mode !== 'roofs_flat' && mode !== 'floors') {
+    if (mode !== 'roofs_flat') {
         return;
     }
     // When flattened, draw the leaf roof in front of the trunk
@@ -175,20 +176,21 @@ function drawTree(r, state, tree, mode) {
     const leafX = tree.pos.x * ts - leafWidth / 2;
     const leafY = tree.pos.y * ts - leafWidth / 2;
     
-    // Draw trunk first (behind) - this is the "floor"
-    ctx.globalAlpha = 1.0; // It's a floor tile, should be opaque
+    // Draw trunk first (behind)
+    ctx.globalAlpha = 0.75;
     ctx.fillStyle = tree.trunkColor;
     const trunkWidth = ts * 0.3;
     const trunkX = tree.pos.x * ts - trunkWidth / 2;
     const trunkY = tree.pos.y * ts - trunkWidth / 2;
     ctx.fillRect(trunkX, trunkY, trunkWidth, trunkWidth);
+    ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(trunkX, trunkY, trunkWidth, trunkWidth);
     
     // Draw leaves in front (with higher opacity)
     ctx.globalAlpha = 0.9;
     ctx.fillStyle = tree.leafColor;
     ctx.fillRect(leafX, leafY, leafWidth, leafWidth);
-    ctx.strokeStyle = 'rgba(0,0,0,0.2)';
-    ctx.lineWidth = 1;
     ctx.strokeRect(leafX, leafY, leafWidth, leafWidth);
     ctx.globalAlpha = 1.0;
     return;
@@ -223,17 +225,17 @@ function drawTree(r, state, tree, mode) {
   
   // Draw trunk (impassable)
   const trunkRect = { 
-      x: trunkX, 
-      y: trunkY, 
-      w: trunkWidth, 
-      h: trunkWidth 
+    x: trunkX, 
+    y: trunkY, 
+    w: trunkWidth, 
+    h: trunkWidth 
   };
   
   const trunkRoofRect = { 
-      x: trunkX + trunkRoofOffset.x - (trunkWidth - trunkWidth) / 2, 
-      y: trunkY + trunkRoofOffset.y - (trunkWidth - trunkWidth) / 2, 
-      w: trunkWidth, 
-      h: trunkWidth 
+    x: trunkX + trunkRoofOffset.x - (trunkWidth - trunkWidth) / 2, 
+    y: trunkY + trunkRoofOffset.y - (trunkWidth - trunkWidth) / 2, 
+    w: trunkWidth, 
+    h: trunkWidth 
   };
   
   // Draw trunk walls
@@ -282,25 +284,25 @@ function drawTree(r, state, tree, mode) {
   
   // Draw leaves (drawn after trunk, in front of buildings)
   const leafFloorRect = { 
-      x: leafX, 
-      y: leafY, 
-      w: leafWidth, 
-      h: leafWidth 
+    x: leafX, 
+    y: leafY, 
+    w: leafWidth, 
+    h: leafWidth 
   };
   
   const leafRoofRect = { 
-      x: leafX + leafRoofOffset.x - (leafWidth - leafWidth) / 2, 
-      y: leafY + leafRoofOffset.y - (leafWidth - leafWidth) / 2, 
-      w: leafWidth, 
-      h: leafWidth 
+    x: leafX + leafRoofOffset.x - (leafWidth - leafWidth) / 2, 
+    y: leafY + leafRoofOffset.y - (leafWidth - leafWidth) / 2, 
+    w: leafWidth, 
+    h: leafWidth 
   };
   
   // The 'floor' of the leaves should be at the same projected height as the top of the trunk.
   const leafFloorProjectedRect = {
-      x: leafX + trunkRoofOffset.x,
-      y: leafY + trunkRoofOffset.y,
-      w: leafWidth,
-      h: leafWidth
+    x: leafX + trunkRoofOffset.x,
+    y: leafY + trunkRoofOffset.y,
+    w: leafWidth,
+    h: leafWidth
   };
   
   // Draw leaves with 75% opacity

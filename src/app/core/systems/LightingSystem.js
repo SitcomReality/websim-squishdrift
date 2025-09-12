@@ -1,4 +1,6 @@
 // src/app/core/systems/LightingSystem.js
+import { getOccludersInRadius, computeVisibilityPolygon } from '../../../render/occlusion.js';
+
 export class LightingSystem {
   constructor() {
     this.enabled = true;
@@ -46,26 +48,43 @@ export class LightingSystem {
 
     for (const entity of lightEntities) {
         const light = entity.light;
-        const lx = entity.pos.x * ts;
-        const ly = entity.pos.y * ts;
+        const lightPosition = entity.pos;
+        
+        const occluders = getOccludersInRadius(state, lightPosition, light.radius);
+        const visibilityPolygon = computeVisibilityPolygon(lightPosition, light.radius, occluders);
+        
+        ctx.save();
+
+        // Create clipping path from visibility polygon
+        ctx.beginPath();
+        if (visibilityPolygon.length > 0) {
+            ctx.moveTo(visibilityPolygon[0].x * ts, visibilityPolygon[0].y * ts);
+            for (let i = 1; i < visibilityPolygon.length; i++) {
+                ctx.lineTo(visibilityPolygon[i].x * ts, visibilityPolygon[i].y * ts);
+            }
+        }
+        ctx.closePath();
+        ctx.clip();
+        
+        // Render the light source within the clipped region
+        const lx_px = lightPosition.x * ts;
+        const ly_px = lightPosition.y * ts;
         const radiusPx = light.radius * ts;
 
         // Handle flicker
         const intensity = light.intensity * (1 - light.flicker + Math.random() * light.flicker * 2);
 
-        const gradient = ctx.createRadialGradient(lx, ly, 0, lx, ly, radiusPx);
-        
-        // The gradient's alpha channel determines how much is erased.
-        // We use the light's intensity to control the alpha.
-        // The color itself doesn't matter for destination-out.
+        const gradient = ctx.createRadialGradient(lx_px, ly_px, 0, lx_px, ly_px, radiusPx);
         gradient.addColorStop(0, `rgba(0,0,0,${intensity})`);
         gradient.addColorStop(0.3, `rgba(0,0,0,${intensity * 0.7})`);
         gradient.addColorStop(1, 'rgba(0,0,0,0)');
 
         ctx.fillStyle = gradient;
         ctx.beginPath();
-        ctx.arc(lx, ly, radiusPx, 0, Math.PI * 2);
+        ctx.arc(lx_px, ly_px, radiusPx, 0, Math.PI * 2);
         ctx.fill();
+        
+        ctx.restore(); // remove clip
     }
 
     // Render vehicle headlights
@@ -82,26 +101,46 @@ export class LightingSystem {
         const worldOffsetX = lightDef.offset.x * cos - lightDef.offset.y * sin;
         const worldOffsetY = lightDef.offset.x * sin + lightDef.offset.y * cos;
         
-        const lx = (vehicle.pos.x + worldOffsetX) * ts;
-        const ly = (vehicle.pos.y + worldOffsetY) * ts;
+        const lightPosition = { x: vehicle.pos.x + worldOffsetX, y: vehicle.pos.y + worldOffsetY };
+
+        const occluders = getOccludersInRadius(state, lightPosition, lightDef.radius);
+        const visibilityPolygon = computeVisibilityPolygon(lightPosition, lightDef.radius, occluders);
+
+        ctx.save();
+        
+        // Create clipping path from visibility polygon
+        ctx.beginPath();
+        if (visibilityPolygon.length > 0) {
+            ctx.moveTo(visibilityPolygon[0].x * ts, visibilityPolygon[0].y * ts);
+            for (let i = 1; i < visibilityPolygon.length; i++) {
+                ctx.lineTo(visibilityPolygon[i].x * ts, visibilityPolygon[i].y * ts);
+            }
+        }
+        ctx.closePath();
+        ctx.clip();
+
+        const lx_px = lightPosition.x * ts;
+        const ly_px = lightPosition.y * ts;
         const radiusPx = lightDef.radius * ts;
 
         if (lightDef.kind === 'cone') {
           const startAngle = vehicle.rot - lightDef.coneAngle / 2;
           const endAngle = vehicle.rot + lightDef.coneAngle / 2;
           
-          const gradient = ctx.createRadialGradient(lx, ly, 0, lx, ly, radiusPx);
+          const gradient = ctx.createRadialGradient(lx_px, ly_px, 0, lx_px, ly_px, radiusPx);
           gradient.addColorStop(0, `rgba(0,0,0,${lightDef.intensity})`);
           gradient.addColorStop(0.5, `rgba(0,0,0,${lightDef.intensity * 0.5})`);
           gradient.addColorStop(1, 'rgba(0,0,0,0)');
           
           ctx.fillStyle = gradient;
           ctx.beginPath();
-          ctx.moveTo(lx, ly);
-          ctx.arc(lx, ly, radiusPx, startAngle, endAngle);
+          ctx.moveTo(lx_px, ly_px);
+          ctx.arc(lx_px, ly_px, radiusPx, startAngle, endAngle);
           ctx.closePath();
           ctx.fill();
         }
+        
+        ctx.restore(); // remove clip
       }
     }
 

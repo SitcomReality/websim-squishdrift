@@ -4,7 +4,7 @@ import { getOccludersInRadius, computeVisibilityPolygon } from '../../../render/
 export class LightingSystem {
   constructor() {
     this.enabled = true;
-    this.nightAlpha = 0.94; // 0..1
+    this.nightAlpha = 0.8; // 0..1
     this.color = '#000000';
   }
 
@@ -34,14 +34,12 @@ export class LightingSystem {
     const prevOp = ctx.globalCompositeOperation;
 
     // 1. Darken the scene with multiply
-    ctx.globalCompositeOperation = 'multiply';
-    const darkness = 1.0 - this.nightAlpha;
-    const darknessRgb = Math.floor(255 * darkness);
-    ctx.fillStyle = `rgb(${darknessRgb}, ${darknessRgb}, ${darknessRgb})`;
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = `rgba(0,0,0,${this.nightAlpha})`;
     ctx.fillRect(sx * ts, sy * ts, wTiles * ts, hTiles * ts);
 
     // 2. Additive lights
-    ctx.globalCompositeOperation = 'screen';
+    ctx.globalCompositeOperation = 'destination-out';
 
     const lightEntities = (state.entities || []).filter(e => e.type === 'light' && e.light?.active);
 
@@ -80,13 +78,10 @@ export class LightingSystem {
         }
 
         const gradient = ctx.createRadialGradient(lx_px, ly_px, 0, lx_px, ly_px, radiusPx);
-        const color = light.color || 'rgba(255,240,200,1)';
-        const baseColor = color.substring(0, color.lastIndexOf(','));
-        
-        gradient.addColorStop(0, `${baseColor}, ${intensity})`);
-        gradient.addColorStop(0.3, `${baseColor}, ${intensity * 0.7})`);
-        gradient.addColorStop(1, `${baseColor}, 0)`);
-
+        const maxA = Math.min(0.9, intensity);
+        gradient.addColorStop(0, `rgba(0,0,0,${maxA})`);
+        gradient.addColorStop(0.5, `rgba(0,0,0,${maxA * 0.6})`);
+        gradient.addColorStop(1, `rgba(0,0,0,0)`);
         ctx.fillStyle = gradient;
         ctx.beginPath();
         ctx.arc(lx_px, ly_px, radiusPx, 0, Math.PI * 2);
@@ -145,12 +140,10 @@ export class LightingSystem {
           const endAngle = vehicle.rot + lightDef.coneAngle / 2;
           
           const gradient = ctx.createRadialGradient(lx_px, ly_px, 0, lx_px, ly_px, radiusPx);
-          const color = lightDef.color || 'rgba(255,255,255,1)';
-          const baseColor = color.substring(0, color.lastIndexOf(',')) || 'rgba(255,255,255';
-
-          gradient.addColorStop(0, `${baseColor}, ${vIntensity})`);
-          gradient.addColorStop(0.5, `${baseColor}, ${vIntensity * 0.5})`);
-          gradient.addColorStop(1, `${baseColor}, 0)`);
+          const maxA = Math.min(0.8, vIntensity);
+          gradient.addColorStop(0, `rgba(0,0,0,${maxA})`);
+          gradient.addColorStop(0.5, `rgba(0,0,0,${maxA * 0.55})`);
+          gradient.addColorStop(1, `rgba(0,0,0,0)`);
           
           ctx.fillStyle = gradient;
           ctx.beginPath();

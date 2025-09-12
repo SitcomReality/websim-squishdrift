@@ -17,6 +17,12 @@ import { drawDamageText } from '../../entities/drawDamageText.js';
 import { drawExplosion } from '../../entities/drawExplosion.js';
 
 export class RenderSystem {
+  constructor() {
+    // Create an offscreen canvas for the lighting buffer
+    this.lightingCanvas = document.createElement('canvas');
+    this.lightingCtx = this.lightingCanvas.getContext('2d');
+  }
+
   render(state, renderer, debugOverlay) {
     if (!state || !renderer || !renderer.ctx || !renderer.canvas) {
       console.error('Invalid state or renderer');

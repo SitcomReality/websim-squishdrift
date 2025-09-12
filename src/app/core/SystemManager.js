@@ -49,6 +49,7 @@ export class SystemManager {
     const state = this.stateManager.getState();
     const input = this.stateManager.inputManager?.getInput();
     if (state && !state.cameraSystem) state.cameraSystem = this.systems.camera;
+    if (state && !state.lightingSystem) state.lightingSystem = this.systems.lighting;
     this.systems.player.update(state, input, dt);
     this.systems.vehicle.update(state, input, dt);
     this.systems.bullet.update(state, dt);

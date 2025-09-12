@@ -6,8 +6,9 @@ import { RoadGenerator } from './generation/RoadGenerator.js';
 import { BuildingGenerator } from './generation/BuildingGenerator.js';
 import { GraphBuilder } from './generation/GraphBuilder.js';
 import { sanitizeMap } from './MapPostProcess.js';
+import { LightSource } from '../app/components/LightSource.js';
 
-export async function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4) {
+export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4) {
   const rand = rng(seed);
   const cityLayout = new CityLayout(blocksWide, blocksHigh);
   const tiles = cityLayout.createEmptyTiles();
@@ -321,8 +322,6 @@ export async function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHi
   }
   
   // Add new streetlights for the perimeter footpath, adjacent to intersections
-  const { LightSource } = await import('../app/components/LightSource.js');
-
   for (let gy = 0; gy <= blocksHigh; gy++) {
     for (let gx = 0; gx <= blocksWide; gx++) {
       const isPerimeterIntersection = (gx === 0 || gx === blocksWide || gy === 0 || gy === blocksHigh);

@@ -21,6 +21,11 @@ export class LightingSystem {
     const { ctx, canvas } = renderer;
     if (!ctx || !canvas || !state?.world?.tileSize || !state?.camera) return;
 
+    // Preserve previous canvas state values we will override later
+    const prevAlpha = ctx.globalAlpha;
+    const prevOp = ctx.globalCompositeOperation;
+    ctx.save();
+
     const ts = state.world.tileSize;
 
     // The transform is now set by the RenderSystem before this is called.

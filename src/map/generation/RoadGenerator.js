@@ -239,7 +239,7 @@ export class RoadGenerator {
             type:'light', 
             pos:{ x: lightX, y: lightY }, 
             light: new LightSource({ 
-              radius: 7, 
+              radius: 3.5, // Reduced from 7 to 3.5 (half the distance)
               intensity: 0.9, 
               color: 'rgba(255,240,200,1)', 
               flicker: 0.05 

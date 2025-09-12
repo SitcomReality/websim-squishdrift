@@ -154,6 +154,7 @@ export class InputSystem {
     // player-facing for the shot (we temporarily suppress mousePos for this frame).
     if (gp.buttons[5]?.pressed || gp.buttons[0]?.pressed) {
       this.virtualKeys.add('MouseLeft');
+      if (!this.keys.has('MouseLeft')) this.pressed.add('MouseLeft'); // Manually add to pressed set
       this._gamepadFiredThisPoll = true;
     }
 

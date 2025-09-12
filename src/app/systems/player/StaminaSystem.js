@@ -16,7 +16,7 @@ export class StaminaSystem {
   updateStamina(state, player, input, dt) {
     const gp = navigator.getGamepads()[input.gamepadIndex ?? 0];
     // Right trigger (buttons[7]) should sprint when on foot; keep A (buttons[0]) also as sprint.
-    const gamepadSprint = (gp?.buttons[0]?.pressed) || (gp?.buttons[7]?.pressed && !state?.control?.inVehicle);
+    const gamepadSprint = (gp?.buttons[0]?.pressed && !player.equippedWeapon) || (gp?.buttons[7]?.pressed && !state?.control?.inVehicle);
     const isRunning = input.keys.has('ShiftLeft') || input.keys.has('ShiftRight') || gamepadSprint;
     // Consider joystick/gamepad movement as movement as well
     const isMoving = !!(

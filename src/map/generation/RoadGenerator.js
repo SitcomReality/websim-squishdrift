@@ -1,10 +1,12 @@
 import { Tile } from '../TileTypes.js';
+import { LightSource } from '../../app/components/LightSource.js';
 
 export class RoadGenerator {
   constructor(cityLayout, rand) {
     this.cityLayout = cityLayout;
     this.rand = rand;
     this.roundabouts = [];
+    this.streetLights = [];
   }
 
   generateRoads(tiles) {
@@ -70,6 +72,7 @@ export class RoadGenerator {
     }
 
     this.createZebraCrossings(tiles, cx, cy);
+    this.createStreetLights(cx, cy);
   }
 
   createStandardRoundabout(tiles, cx, cy, set) {
@@ -200,5 +203,21 @@ export class RoadGenerator {
 
   getRoundabouts() {
     return this.roundabouts;
+  }
+
+  getStreetLights() {
+    return this.streetLights;
+  }
+
+  // Place four street lights near the corners of the intersection plaza
+  createStreetLights(cx, cy) {
+    const width = this.cityLayout.width, height = this.cityLayout.height;
+    const corners = [[-2.5,-2.5],[2.5,-2.5],[-2.5,2.5],[2.5,2.5]];
+    for (const [dx, dy] of corners) {
+      const x = cx + dx, y = cy + dy;
+      if (x > 0 && y > 0 && x < width && y < height) {
+        this.streetLights.push({ type:'light', pos:{ x, y }, light: new LightSource({ radius: 7, intensity: 0.9, color: 'rgba(255,240,200,1)', flicker: 0.05 }) });
+      }
+    }
   }
 }

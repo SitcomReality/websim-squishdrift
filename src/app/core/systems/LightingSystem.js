@@ -68,6 +68,43 @@ export class LightingSystem {
         ctx.fill();
     }
 
+    // Render vehicle headlights
+    const vehicles = (state.entities || []).filter(e => e.type === 'vehicle' && e.lightSources);
+    for (const vehicle of vehicles) {
+      if (!vehicle.lightSources) continue;
+
+      for (const lightDef of vehicle.lightSources) {
+        if (!lightDef.active) continue;
+
+        // Transform light offset from vehicle-local to world space
+        const cos = Math.cos(vehicle.rot);
+        const sin = Math.sin(vehicle.rot);
+        const worldOffsetX = lightDef.offset.x * cos - lightDef.offset.y * sin;
+        const worldOffsetY = lightDef.offset.x * sin + lightDef.offset.y * cos;
+        
+        const lx = (vehicle.pos.x + worldOffsetX) * ts;
+        const ly = (vehicle.pos.y + worldOffsetY) * ts;
+        const radiusPx = lightDef.radius * ts;
+
+        if (lightDef.kind === 'cone') {
+          const startAngle = vehicle.rot - lightDef.coneAngle / 2;
+          const endAngle = vehicle.rot + lightDef.coneAngle / 2;
+          
+          const gradient = ctx.createRadialGradient(lx, ly, 0, lx, ly, radiusPx);
+          gradient.addColorStop(0, `rgba(0,0,0,${lightDef.intensity})`);
+          gradient.addColorStop(0.5, `rgba(0,0,0,${lightDef.intensity * 0.5})`);
+          gradient.addColorStop(1, 'rgba(0,0,0,0)');
+          
+          ctx.fillStyle = gradient;
+          ctx.beginPath();
+          ctx.moveTo(lx, ly);
+          ctx.arc(lx, ly, radiusPx, startAngle, endAngle);
+          ctx.closePath();
+          ctx.fill();
+        }
+      }
+    }
+
     ctx.globalAlpha = prevAlpha;
     ctx.globalCompositeOperation = prevOp;
     ctx.restore();

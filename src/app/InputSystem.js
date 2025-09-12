@@ -162,11 +162,12 @@ export class InputSystem {
 
     // Dispatch start/restart actions on single-press transitions:
     // A (buttons[0]) or Start (buttons[9]) should act like pressing start/restart.
-    const aPressed = !!gp.buttons[0]?.pressed;
     const startPressed = !!gp.buttons[9]?.pressed;
-    const prevAPressed = !!prevButtons[0];
     const prevStartPressed = !!prevButtons[9];
-    if ((aPressed && !prevAPressed) || (startPressed && !prevStartPressed)) {
+    // Only treat the physical Start button as a start/restart trigger.
+    // (A is used for firing and should not invoke start/restart to avoid interfering
+    //  with shooting behavior.)
+    if (startPressed && !prevStartPressed) {
       // If death overlay visible, request restart; always emit game-start for title handling too.
       window.dispatchEvent(new CustomEvent('game-start'));
       const deathOverlay = document.getElementById('death-overlay');

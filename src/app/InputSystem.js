@@ -64,11 +64,16 @@ export class InputSystem {
     this.gamepadMoveVector = { x: 0, y: 0 };
     this.gamepadAimVector = { x: 0, y: 0 };
     this._prevGamepadButtons = [];
+    this._gamepadFiredThisPoll = false;
   }
   
   // Note: do not clear this.pressed here — callers should clear it once systems
   // have consumed the input for the frame. This preserves one-frame "pressed" events.
   update(){
+    // If a gamepad fire was registered during polling, temporarily suppress
+    // the mousePos for this frame so firing doesn't snap player to mouse.
+    const savedMouse = this.mousePos;
+    if (this._gamepadFiredThisPoll) this.mousePos = null;
     // Rebuild virtual input each frame
     this.virtualKeys.clear();
     this._pollGamepad();
@@ -80,6 +85,8 @@ export class InputSystem {
       this.keys.add(k);
     }
     this.prevVirtualKeys = new Set(this.virtualKeys);
+    // restore real mouse position after we've built virtual keys for the frame
+    if (this._gamepadFiredThisPoll) this.mousePos = savedMouse;
   }
   
   // Clear one-frame pressed events. Call this after systems have run for the frame.
@@ -100,6 +107,8 @@ export class InputSystem {
     // Compare button transitions to detect single-press events (for start/restart)
     const prevButtons = this._prevGamepadButtons || [];
     this._prevGamepadButtons = gp.buttons.map(b => !!b.pressed);
+    // reset per-poll fire marker
+    this._gamepadFiredThisPoll = false;
     // DEBUG: log gamepad state to help diagnose button mapping issues
     if (gp.buttons.some(b => b.pressed) || gp.axes.some(a => Math.abs(a) > 0.1)) {
         try { 
@@ -139,7 +148,14 @@ export class InputSystem {
     // Start button -> toggle pause (map to Escape to reuse existing pause handling)
     if (gp.buttons[9]?.pressed) this.virtualKeys.add('Escape');
     // Fire mapping: Right Shoulder (R1 - buttons[5]) OR A (buttons[0]) => MouseLeft (shoot)
-    if (gp.buttons[5]?.pressed || gp.buttons[0]?.pressed) this.virtualKeys.add('MouseLeft');
+    // When firing from a gamepad we still want to trigger the game's shoot action
+    // but avoid overriding the player's facing by the mouse position. Mark that
+    // this frame's fire came from the gamepad so downstream code can rely on
+    // player-facing for the shot (we temporarily suppress mousePos for this frame).
+    if (gp.buttons[5]?.pressed || gp.buttons[0]?.pressed) {
+      this.virtualKeys.add('MouseLeft');
+      this._gamepadFiredThisPoll = true;
+    }
 
     // Dispatch start/restart actions on single-press transitions:
     // A (buttons[0]) or Start (buttons[9]) should act like pressing start/restart.

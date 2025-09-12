@@ -9,7 +9,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  z-index: 9999; /* Higher z-index than mobile controls */
+  z-index: 9999;
   font-family: 'Noto Sans', system-ui, sans-serif;
   color: white;
   overflow-y: auto;
@@ -26,7 +26,7 @@
 #title-image {
   width: 512px;
   height: 128px;
-  margin: 0 auto 40px;
+  margin: 0 auto 20px;
   background-image: url('/uisprites.png');
   background-size: 512px 384px;
   background-position: 0 0;
@@ -37,30 +37,37 @@
 }
 
 #controls-section {
-  margin-bottom: 30px;
+  margin-bottom: 20px;
 }
 
 #controls-section h2 {
-  font-size: 24px;
-  margin-bottom: 16px;
+  font-size: 18px;
+  margin-bottom: 12px;
   color: #FFD700;
+}
+
+.controls-grid {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
 }
 
 .controls-column {
   border: 1px solid rgba(255,255,255,0.15);
-  border-radius: 10px;
-  padding: 16px;
+  border-radius: 8px;
+  padding: 12px;
   background: rgba(0,0,0,0.35);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
+  min-width: 140px;
 }
 
 .controls-column h3 {
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 600;
   margin: 0 0 4px 0;
-  color: #fca5a5; /* Light red for headings */
+  color: #fca5a5;
   text-align: center;
 }
 
@@ -68,8 +75,9 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 0;
+  padding: 4px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 14px;
 }
 
 .controls-column .control-item:last-child {
@@ -77,41 +85,51 @@
 }
 
 .control-item .action {
-  font-size: 16px;
   color: #e2e8f0;
 }
 
 .control-item .keys {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   color: #94a3b8;
+}
+
+#items-section {
+  margin-bottom: 20px;
+}
+
+#items-section h2 {
+  font-size: 18px;
+  margin-bottom: 12px;
+  color: #FFD700;
 }
 
 .items-grid {
   display: flex;
   justify-content: center;
-  gap: 30px;
+  gap: 16px;
   flex-wrap: wrap;
   margin: 0 auto;
 }
 
 .item-sprite {
-  width: 64px;
-  height: 64px;
-  margin: 0 auto 8px;
+  width: 32px;
+  height: 32px;
+  margin: 0 auto 4px;
   background-size: contain;
   background-repeat: no-repeat;
 }
 
 .item-label {
-  font-size: 14px;
+  font-size: 12px;
+  margin: 0;
 }
 
 /* Start button sprite */
 #start-button {
-  width: 256px;
-  height: 128px;
+  width: 200px;
+  height: 100px;
   margin: 0 auto;
   background-image: url('/uisprites.png');
   background-size: 512px 384px;
@@ -149,13 +167,13 @@
 }
 
 #pause-overlay h1 {
-  font-size: 48px;
-  margin-bottom: 20px;
+  font-size: 36px;
+  margin-bottom: 16px;
 }
 
 #pause-overlay p {
-  font-size: 20px;
-  margin-bottom: 30px;
+  font-size: 16px;
+  margin-bottom: 20px;
 }
 
 /* Item sprite backgrounds */
@@ -171,11 +189,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 2px 6px;
-  min-width: 28px;
-  height: 28px;
+  padding: 2px 4px;
+  min-width: 24px;
+  height: 24px;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: bold;
   line-height: 1;
   color: #e2e8f0;
@@ -187,18 +205,43 @@
 }
 
 .controls-column kbd.gamepad-button {
-  min-width: 30px;
-  height: 30px;
+  min-width: 24px;
+  height: 24px;
   background-color: #0b1220;
   border-color: #1e88e5;
   color: #dbeafe;
-  border-radius: 50%; /* Circular buttons */
+  border-radius: 50%;
 }
 
-/* Responsive tweaks to keep parity with existing site styles */
+/* Responsive tweaks */
 @media (max-width: 768px) {
-  #title-image { margin-bottom: 24px; }
-  #controls-section { margin-bottom: 18px; }
-  #start-button { width: 200px; height: 100px; aspect-ratio: 2/1; }
-  .items-grid { gap: 16px; }
+  #title-screen { padding: 15px; }
+  #title-content { padding: 0 10px; }
+  #title-image { width: 90vw; max-width: 400px; height: auto; aspect-ratio: 4/1; }
+  #controls-section h2, #items-section h2 { font-size: 16px; margin-bottom: 8px; }
+  .controls-grid { gap: 12px; }
+  .controls-column { min-width: 120px; }
+  .controls-column h3 { font-size: 14px; }
+  .control-item { font-size: 12px; padding: 3px 0; }
+  .control-item .keys { gap: 3px; }
+  .controls-column kbd { min-width: 20px; height: 20px; font-size: 10px; }
+  .controls-column kbd.gamepad-button { min-width: 20px; height: 20px; }
+  .items-grid { gap: 12px; }
+  .item-sprite { width: 28px; height: 28px; }
+  .item-label { font-size: 11px; }
+  #start-button { width: 160px; height: 80px; aspect-ratio: 2/1; }
+}
+
+@media (max-width: 480px) {
+  #title-screen { padding: 10px; }
+  #title-image { width: 95vw; max-width: 350px; }
+  #controls-section { margin-bottom: 16px; }
+  #items-section { margin-bottom: 16px; }
+  .controls-grid { flex-direction: column; gap: 8px; }
+  .controls-column { min-width: 140px; }
+  .control-item { font-size: 11px; padding: 2px 0; }
+  .items-grid { gap: 8px; }
+  .item-sprite { width: 24px; height: 24px; }
+  .item-label { font-size: 10px; }
+  #start-button { width: 140px; height: 70px; aspect-ratio: 2/1; }
 }

@@ -242,6 +242,9 @@ export class RenderSystem {
       ctx.drawImage(this.lightingCanvas, 0, 0);
       ctx.restore(); // Restores world transform and composite operation for any subsequent draws.
     }
+
+    // Re-impose interior darkness on extruded building geometry to avoid lit roofs jutting out
+    this.applyBuildingSelfShadow(state, renderer);
   }
 
   drawVehicleGlow(state, renderer) {
@@ -452,6 +455,74 @@ export class RenderSystem {
     ctx.lineTo(mouseX, mouseY + 15);
     ctx.stroke();
     
+    ctx.restore();
+  }
+
+  // Darken the projected 2.5D building volume so walls/roofs match the interior darkness
+  applyBuildingSelfShadow(state, renderer) {
+    const { ctx } = renderer;
+    const ts = state.world?.tileSize || 24;
+    const cam = state.camera;
+    const night = state.lightingSystem?.nightAlpha ?? 0.9;
+    const map = state.world?.map; if (!map?.buildings?.length) return;
+
+    const perspectiveScale = 0.8;
+    ctx.save();
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = `rgba(0,0,0,${Math.min(1, night * 0.8)})`;
+
+    for (const b of map.buildings) {
+      const h = (b.currentHeight ?? b.height) || 0;
+      if (h <= 0.1) continue;
+      const floor = { x: b.rect.x * ts, y: b.rect.y * ts, w: b.rect.width * ts, h: b.rect.height * ts };
+
+      // Same roof offset logic as drawBuildings
+      const bx = b.rect.x + b.rect.width / 2, by = b.rect.y + b.rect.height / 2;
+      const dirX = bx - cam.x, dirY = by - cam.y;
+      const len = Math.hypot(dirX, dirY) || 1;
+      const ux = dirX / len, uy = dirY / len;
+      const offsetMag = h * perspectiveScale * Math.min(1, len / 20);
+      const roofScale = Math.min(1.2, 1 + (h / 200) * 0.3);
+      const sw = floor.w * roofScale, sh = floor.h * roofScale;
+
+      const roof = {
+        x: floor.x + ux * offsetMag - (sw - floor.w) / 2,
+        y: floor.y + uy * offsetMag - (sh - floor.h) / 2,
+        w: sw, h: sh
+      };
+
+      // Draw the four side quads of the prism (floor->roof)
+      // West/East sides
+      ctx.beginPath();
+      ctx.moveTo(floor.x, floor.y);
+      ctx.lineTo(roof.x, roof.y);
+      ctx.lineTo(roof.x, roof.y + roof.h);
+      ctx.lineTo(floor.x, floor.y + floor.h);
+      ctx.closePath(); ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(floor.x + floor.w, floor.y);
+      ctx.lineTo(roof.x + roof.w, roof.y);
+      ctx.lineTo(roof.x + roof.w, roof.y + roof.h);
+      ctx.lineTo(floor.x + floor.w, floor.y + floor.h);
+      ctx.closePath(); ctx.fill();
+
+      // North/South sides
+      ctx.beginPath();
+      ctx.moveTo(floor.x, floor.y);
+      ctx.lineTo(roof.x, roof.y);
+      ctx.lineTo(roof.x + roof.w, roof.y);
+      ctx.lineTo(floor.x + floor.w, floor.y);
+      ctx.closePath(); ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(floor.x, floor.y + floor.h);
+      ctx.lineTo(roof.x, roof.y + roof.h);
+      ctx.lineTo(roof.x + roof.w, roof.y + roof.h);
+      ctx.lineTo(floor.x + floor.w, floor.y + floor.h);
+      ctx.closePath(); ctx.fill();
+    }
+
     ctx.restore();
   }
 }

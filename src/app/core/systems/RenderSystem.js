@@ -247,6 +247,9 @@ export class RenderSystem {
   }
 
   drawDebugHitboxes(state, renderer) {
+    // Disable debug hitbox rendering
+    return;
+    
     const { ctx } = renderer;
     const ts = state.world?.tileSize || 24;
     

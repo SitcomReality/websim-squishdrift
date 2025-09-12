@@ -141,15 +141,16 @@ export function computeVisibilityPolygon(lightPosition, lightRadius, occluders) 
     const segments = [];
 
     const processedOccluderPolygons = occluders.map(occluder => {
-        const offsetAmount = occluder.size;
+        // Shrink polygon slightly toward the light so lit area reaches the occluder boundary
+        const shrink = Math.max(0.02, (occluder.size || 0.1) * 0.6);
         return occluder.polygon.map(vertex => {
             const dx = vertex.x - lightPosition.x;
             const dy = vertex.y - lightPosition.y;
             const dist = Math.hypot(dx, dy);
             if (dist < 0.001) return vertex;
 
-            const newX = vertex.x + (dx / dist) * offsetAmount;
-            const newY = vertex.y + (dy / dist) * offsetAmount;
+            const newX = vertex.x - (dx / dist) * shrink;
+            const newY = vertex.y - (dy / dist) * shrink;
             return { x: newX, y: newY };
         });
     });

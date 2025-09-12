@@ -24,7 +24,7 @@ export class TitleScreen {
 
     overlay.innerHTML = `
       <div id="title-content">
-        <div id="title-image"></div>
+        <h1 id="game-title">Squishdrift</h1>
         ${!isMobile ? `
         <div id="controls-section">
           <h2>Controls</h2>
@@ -58,7 +58,7 @@ export class TitleScreen {
             <div style="text-align: center;"><div class="item-sprite item-bribe"></div><p class="item-label">Bribe</p></div>
           </div>
         </div>
-        <div id="start-button"></div>
+        <button id="start-button" class="title-start-button" aria-label="Start game">START</button>
       </div>
     `;
 

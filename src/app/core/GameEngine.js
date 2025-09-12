@@ -4,7 +4,7 @@ import { RenderingManager } from './RenderingManager.js';
 import { InputManager } from './InputManager.js';
 import { SpawnManager } from './SpawnManager.js';
 import { HUDManager } from './HUDManager.js';
-import { DebugManager } from './DebugManager.js';
+
 import { DeathSystem } from './systems/DeathSystem.js';
 import { ScoringSystem } from './systems/ScoringSystem.js';
 import { DamageTextSystem } from './systems/DamageTextSystem.js';
@@ -13,14 +13,14 @@ import { ParticleSystem } from './systems/particles/index.js';
 import { AudioManager } from './AudioManager.js';
 
 export class GameEngine {
-  constructor(canvas, { debugEl } = {}) {
+  constructor(canvas) {
     this.stateManager = new GameStateManager();
     this.systemManager = new SystemManager(this.stateManager);
     this.renderingManager = new RenderingManager(canvas);
     this.inputManager = new InputManager(canvas);
     this.spawnManager = new SpawnManager(this.stateManager);
     this.hudManager = new HUDManager();
-    this.debugManager = new DebugManager(debugEl, this.stateManager);
+    
     this.deathSystem = new DeathSystem();
     this.scoringSystem = new ScoringSystem();
     this.damageTextSystem = new DamageTextSystem();
@@ -85,7 +85,6 @@ export class GameEngine {
     }
 
     // Expose commonly used references for external code (main.js expects these)
-    this.debugOverlay = this.debugManager.debugOverlay;
     this.renderer = this.renderingManager.renderer;
     // Make debugOverlay available on state for renderer/debug visuals
     if (this.stateManager.state) this.stateManager.state.debugOverlay = this.debugOverlay;
@@ -183,7 +182,6 @@ export class GameEngine {
     if (state.gamePaused) {
       this.inputManager.update?.();
       if (this.inputManager?.inputSystem?.clearPressed) this.inputManager.inputSystem.clearPressed();
-      this.debugManager.update();
       this.hudManager.update();
       return;
     }
@@ -212,7 +210,6 @@ export class GameEngine {
       this.inputManager.inputSystem.clearPressed();
     }
 
-    this.debugManager.update();
     this.hudManager.update();
   }
 
@@ -308,7 +305,6 @@ export class GameEngine {
       longestDriftDuration: 0,
       totalDriftDistance: 0
     };
-    newState.debugOverlay = this.debugOverlay;
     newState.scoringSystem = this.scoringSystem;
     newState.damageTextSystem = this.damageTextSystem;
     newState.explosionSystem = this.explosionSystem;

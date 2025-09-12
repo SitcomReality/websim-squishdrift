@@ -11,8 +11,6 @@ window.game = null;
 
 // Game elements - initialize game first
 const canvas = document.getElementById('game');
-const debugEl = document.getElementById('debug');
-const toggleBtn = document.getElementById('toggle-debug');
 
 let game = null; // defer creation until initializeWithLoading()
 window.game = null;
@@ -26,7 +24,7 @@ async function initializeWithLoading() {
     const loadedAssets = await loadingSystem.loadAssets();
     
     // Initialize game with loaded assets (single authoritative instance)
-    game = new GameEngine(canvas, { debugEl });
+    game = new GameEngine(canvas);
     window.game = game; // Make globally accessible
     
     // Pass loaded assets to game state
@@ -78,9 +76,9 @@ async function initializeWithLoading() {
     }
     
   } catch (error) {
-    console.error('Failed to initialize game:', error);
+    console.error('Failed to initialize a game:', error);
     // Fallback to basic initialization without loading screen
-    game = new GameEngine(canvas, { debugEl });
+    game = new GameEngine(canvas);
     window.game = game; // Make globally accessible
     
     // Setup audio controls even in fallback

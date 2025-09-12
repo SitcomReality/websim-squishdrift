@@ -1,6 +1,6 @@
 import { drawTiles } from '../../../render/drawTiles.js';
 import { drawBuildings } from '../../../render/drawBuildings.js';
-import { drawRoadDebug } from '../../../render/drawRoadDebug.js';
+
 import { drawPlayer } from '../../entities/drawPlayer.js';
 import { drawVehicle } from '../../entities/drawVehicle.js';
 import { drawNPC } from '../../entities/drawNPC.js';
@@ -26,7 +26,7 @@ export class RenderSystem {
     this.lightingCtx = this.lightingCanvas.getContext('2d');
   }
 
-  render(state, renderer, debugOverlay) {
+  render(state, renderer) {
     if (!state || !renderer || !renderer.ctx || !renderer.canvas) {
       console.error('Invalid state or renderer');
       return;

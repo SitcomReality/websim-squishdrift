@@ -56,11 +56,11 @@ export class CameraSystem {
     cam.zoom = (cam.zoom ?? cam.defaultZoom) + (desiredZoom - (cam.zoom ?? cam.defaultZoom)) * lerpRate;
     
     // manual zoom only when debug is enabled
-    if (state.debugOverlay?.enabled && input) { 
+    if (input) { 
       const minZ = cam.defaultZoom, maxZ = cam.defaultZoom * 2;
-      cam.zoom = Math.min(maxZ, Math.max(minZ, cam.zoom + (input.zoomDelta || 0)));
+      
       input.zoomDelta = 0;
-    } else if (input) { input.zoomDelta = 0; }
+    }
 
     // Apply shake effect
     let shakeX = 0, shakeY = 0;

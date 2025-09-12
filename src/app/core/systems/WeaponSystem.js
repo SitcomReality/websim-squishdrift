@@ -222,7 +222,7 @@ export class WeaponSystem {
     const CLICK_COOLDOWN = 250; // ms - rate limit click SFX when holding
     
     if (isFiring && now - weapon.lastFireTime >= weapon.fireRate) {
-      if (weapon.ammo <= 0 && !debugEnabled) {
+      if (weapon.ammo <= 0) {
         // Only play click on a true mouse press (not while held) and rate-limit it
         if (justPressed && now - (player.lastClickTime || 0) >= CLICK_COOLDOWN) {
           const pos = (state.control?.inVehicle && state.control.vehicle?.pos) ? state.control.vehicle.pos : player.pos;
@@ -251,13 +251,11 @@ export class WeaponSystem {
       this.projectileManager.fireProjectile(state, player);
       weapon.lastFireTime = now;
       
-      if (!debugEnabled) {
-        weapon.ammo--;
-      }
+      weapon.ammo--;
     }
     
     // Handle empty weapon click
-    if (isFiring && weapon.ammo <= 0 && !debugEnabled) {
+    if (isFiring && weapon.ammo <= 0) {
         if (justPressed && now - (player.lastClickTime || 0) >= CLICK_COOLDOWN) {
           const pos = (state.control?.inVehicle && state.control.vehicle?.pos) ? state.control.vehicle.pos : player.pos;
           state.audio?.playSfxAt?.('click', pos, state);

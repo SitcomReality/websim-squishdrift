@@ -36,7 +36,7 @@ export class SpawnManager {
   despawnEntities(state, player, despawnRadius) {
     for (let i = state.entities.length - 1; i >= 0; i--) {
       const entity = state.entities[i];
-      if (entity.type === 'player') continue;
+      if (entity.type === 'player' || entity.type === 'light') continue;
       
       const referencePos = state.control.inVehicle 
         ? state.control.vehicle.pos 

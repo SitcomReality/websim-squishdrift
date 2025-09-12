@@ -41,7 +41,7 @@ export class LightingSystem {
     ctx.fillRect(sx * ts, sy * ts, wTiles * ts, hTiles * ts);
 
     // 2. Additive lights
-    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalCompositeOperation = 'screen';
 
     const lightEntities = (state.entities || []).filter(e => e.type === 'light' && e.light?.active);
 

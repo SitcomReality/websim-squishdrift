@@ -30,9 +30,10 @@ function getVerticesFromShape(shape) {
  * @param {object} state - The game state.
  * @param {{x : number, y: number}} lightPosition - The world-space position of the light.
  * @param {number} lightRadius - The radius of the light.
+ * @param {object|null} sourceEntity - The entity emitting the light, to be excluded from occlusion checks.
  * @returns {Array<Array<{x : number, y : number}>>} A list of occluder polygons.
  */
-export function getOccludersInRadius(state, lightPosition, lightRadius) {
+export function getOccludersInRadius(state, lightPosition, lightRadius, sourceEntity = null) {
     const occluders = [];
     const lightRadiusSq = lightRadius * lightRadius;
     const { map } = state.world;
@@ -56,7 +57,10 @@ export function getOccludersInRadius(state, lightPosition, lightRadius) {
                 const building = (map.buildings || []).find(b => tx >= b.rect.x && tx < b.rect.x + b.rect.width && ty >= b.rect.y && ty < b.rect.y + b.rect.height);
                 if (building && !processedBuildings.has(building) && (building.currentHeight ?? building.height) > 0.1) {
                     const buildingAABB = { cx: building.rect.x + building.rect.width / 2, cy: building.rect.y + building.rect.height / 2, axes: [{ x: 1, y: 0 }, { x: 0, y: 1 }], ext: [building.rect.width / 2, building.rect.height / 2] };
-                    occluders.push(getVerticesFromShape(buildingAABB));
+                    occluders.push({
+                        polygon: getVerticesFromShape(buildingAABB),
+                        size: building.rect.width / 2
+                    });
                     processedBuildings.add(building);
                 }
             }
@@ -64,7 +68,10 @@ export function getOccludersInRadius(state, lightPosition, lightRadius) {
             // Trees
             const tree = (map.trees || []).find(t => Math.floor(t.pos.x) === tx && Math.floor(t.pos.y) === ty);
             if (tree && !processedTrees.has(tree) && (tree.currentTrunkHeight ?? tree.trunkHeight) > 0.1) {
-                occluders.push(getVerticesFromShape(aabbForTrunk(tx, ty)));
+                occluders.push({
+                    polygon: getVerticesFromShape(aabbForTrunk(tx, ty)),
+                    size: 0.3 / 2 // aabbForTrunk uses a default size of 0.3
+                });
                 processedTrees.add(tree);
             }
         }
@@ -72,17 +79,24 @@ export function getOccludersInRadius(state, lightPosition, lightRadius) {
 
     // 2. Vehicles and Pedestrians (dynamic occluders)
     for (const entity of state.entities) {
+        if (entity === sourceEntity) continue; // Exclude the light-emitting entity
         if (!entity.pos) continue;
         const dx = entity.pos.x - lightPosition.x;
         const dy = entity.pos.y - lightPosition.y;
         if (dx * dx + dy * dy > lightRadiusSq) continue;
         
         if (entity.type === 'vehicle') {
-            occluders.push(getVerticesFromShape(entityOBB(entity)));
+            occluders.push({
+                polygon: getVerticesFromShape(entityOBB(entity)),
+                size: Math.hypot(entity.hitboxW || 0.9, entity.hitboxH || 0.5) / 2
+            });
         } else if (entity.type === 'npc' || entity.type === 'player') {
             const size = (entity.hitboxW || 0.15) / 2;
             const pedAABB = { cx: entity.pos.x, cy: entity.pos.y, axes: [{ x: 1, y: 0 }, { x: 0, y: 1 }], ext: [size, size] };
-            occluders.push(getVerticesFromShape(pedAABB));
+            occluders.push({
+                polygon: getVerticesFromShape(pedAABB),
+                size: size
+            });
         }
     }
 
@@ -119,13 +133,28 @@ function getIntersection(ray, segment) {
  * Computes a visibility polygon for a light source given a set of occluders.
  * @param {{x,y}} lightPosition - The position of the light source.
  * @param {number} lightRadius - The radius of the light.
- * @param {Array<Array<{x,y}>>} occluders - An array of occluder polygons.
+ * @param {Array<Object>} occluders - An array of occluder objects, each with a polygon and size.
  * @returns {Array<{x,y}>} The vertices of the visibility polygon.
  */
 export function computeVisibilityPolygon(lightPosition, lightRadius, occluders) {
     const allVertices = [];
     const segments = [];
-    for (const polygon of occluders) {
+
+    const processedOccluderPolygons = occluders.map(occluder => {
+        const offsetAmount = occluder.size;
+        return occluder.polygon.map(vertex => {
+            const dx = vertex.x - lightPosition.x;
+            const dy = vertex.y - lightPosition.y;
+            const dist = Math.hypot(dx, dy);
+            if (dist < 0.001) return vertex;
+
+            const newX = vertex.x + (dx / dist) * offsetAmount;
+            const newY = vertex.y + (dy / dist) * offsetAmount;
+            return { x: newX, y: newY };
+        });
+    });
+
+    for (const polygon of processedOccluderPolygons) {
         for (let i = 0; i < polygon.length; i++) {
             allVertices.push(polygon[i]);
             segments.push({ p1: polygon[i], p2: polygon[(i + 1) % polygon.length] });

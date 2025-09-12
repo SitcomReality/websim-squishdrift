@@ -144,7 +144,10 @@ export class InputSystem {
 
     // Primary mappings
     if (gp.buttons[3]?.pressed) this.virtualKeys.add('KeyE'); // Y/Triangle -> enter/exit (only one)
-    // Only Y (buttons[3]) is used for enter/exit.
+    // Only Y (buttons[3]) is used for enter/exit. Flatten should only be triggered by B (buttons[1]) or X (buttons[2]).
+    // Removed direct gamepad bindings for flatten (player no longer has manual control).
+    // Start button -> toggle pause (map to Escape to reuse existing pause handling)
+    if (gp.buttons[9]?.pressed) this.virtualKeys.add('Escape');
     // Fire mapping: Right Shoulder (R1 - buttons[5]) OR A (buttons[0]) OR Left Trigger (buttons[6]) => MouseLeft (shoot)
     // When firing from a gamepad we still want to trigger the game's shoot action
     // but avoid overriding the player's facing by the mouse position. Mark that
@@ -234,14 +237,14 @@ export class InputSystem {
     
     // Context-sensitive ability button
     btnAbility.addEventListener('touchstart', (e) => {
-      const action = btnAbility.dataset.action || 'KeyQ'; // Default to flatten
+      const action = btnAbility.dataset.action || 'KeyE'; // Default to enter/exit (no manual flatten)
       press(action);
       e.preventDefault();
       e.stopPropagation();
     }, { passive: false });
     
     btnAbility.addEventListener('touchend', (e) => {
-      const action = btnAbility.dataset.action || 'KeyQ';
+      const action = btnAbility.dataset.action || 'KeyE';
       this.virtualKeys.delete(action);
       this.keys.delete(action); // Also clear from main keys set
       e.preventDefault();
@@ -249,7 +252,7 @@ export class InputSystem {
     });
     
     btnAbility.addEventListener('click', (e) => {
-      const action = btnAbility.dataset.action || 'KeyQ';
+      const action = btnAbility.dataset.action || 'KeyE';
       press(action);
       setTimeout(() => this.virtualKeys.delete(action), 50);
       e.preventDefault();

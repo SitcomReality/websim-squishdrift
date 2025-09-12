@@ -15,9 +15,12 @@ export class MobileControls {
       if (nearbyVehicle) {
         abilityButton.textContent = 'Enter';
         abilityButton.dataset.action = 'KeyE';
+        abilityButton.style.display = '';
       } else {
-        abilityButton.textContent = 'Enter';
-        abilityButton.dataset.action = 'KeyE';
+        // Hide ability button while on foot — manual flattening is removed.
+        abilityButton.textContent = '';
+        abilityButton.dataset.action = '';
+        abilityButton.style.display = 'none';
       }
     }
   }

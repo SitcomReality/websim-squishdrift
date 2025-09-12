@@ -1,3 +1,5 @@
+import { InputSystem } from '../InputSystem.js';
+
 export class InputManager {
   constructor(canvas) {
     this.inputSystem = new InputSystem(canvas);
@@ -11,4 +13,3 @@ export class InputManager {
     return this.inputSystem;
   }
 }
-

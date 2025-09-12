@@ -4,6 +4,8 @@ export class FlattenSystem {
   }
 
   update(state, input, dt) {
+    // Manual flattening removed: flattening is now controlled automatically by combo-based auto-flatten.
+    
     // Auto-flatten when combo hits multiples of 10 for 10s; reset timer on new multiple
     const combo = state.comboCount || state.scoringSystem?.comboCount || 0;
     state.flattenAuto = state.flattenAuto || { active:false, expiresAt:0, lastHandledMultiple:0 };

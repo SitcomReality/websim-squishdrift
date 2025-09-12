@@ -11,13 +11,16 @@ export class FacingSystem {
 
     // Check for mouse activity to switch input priority
     const mouseMoved = input.mousePos && (this.lastMousePos.x !== input.mousePos.x || this.lastMousePos.y !== input.mousePos.y);
-    const mouseClicked = input.pressed.has('MouseLeft');
+    const mouseClicked = input.pressed.has('MouseLeft') && !input.firedFromGamepadThisFrame;
 
     if (isGamepadAiming) {
         this.lastAimingInput = 'gamepad';
     } else if (mouseMoved || mouseClicked) {
         this.lastAimingInput = 'mouse';
     }
+    
+    // If we fired with gamepad this frame, prefer gamepad aiming/facing
+    if (input.firedFromGamepadThisFrame) this.lastAimingInput = 'gamepad';
     
     // Store current mouse position for next frame's comparison
     if (input.mousePos) {

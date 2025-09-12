@@ -87,6 +87,8 @@ export class InputSystem {
     this.prevVirtualKeys = new Set(this.virtualKeys);
     // restore real mouse position after we've built virtual keys for the frame
     if (this._gamepadFiredThisPoll) this.mousePos = savedMouse;
+    // expose fire source to other systems (read-only per frame)
+    this.firedFromGamepadThisFrame = this._gamepadFiredThisPoll;
   }
   
   // Clear one-frame pressed events. Call this after systems have run for the frame.

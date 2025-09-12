@@ -57,8 +57,8 @@ export class MovementSystem {
         
         // Check if player can run based on stamina
         const gp = navigator.getGamepads()[input.gamepadIndex ?? 0];
-        // Right trigger (buttons[7]) should sprint when on foot; keep A (buttons[0]) also as sprint.
-        const gamepadSprint = (gp?.buttons[0]?.pressed) || (gp?.buttons[7]?.pressed && !state?.control?.inVehicle);
+        // Right trigger (buttons[7]) should sprint when on foot; remove A (buttons[0]) from sprint.
+        const gamepadSprint = (gp?.buttons[7]?.pressed && !state?.control?.inVehicle);
         const isRunning = input.keys.has('ShiftLeft') || input.keys.has('ShiftRight') || gamepadSprint;
         let moveSpeed = player.moveSpeed || 1.5;
         

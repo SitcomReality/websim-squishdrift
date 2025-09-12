@@ -149,12 +149,12 @@ export class InputSystem {
     if (gp.buttons[2]?.pressed) this.virtualKeys.add('KeyQ'); // X/Square -> flatten
     // Start button -> toggle pause (map to Escape to reuse existing pause handling)
     if (gp.buttons[9]?.pressed) this.virtualKeys.add('Escape');
-    // Fire mapping: Right Shoulder (R1 - buttons[5]) OR A (buttons[0]) => MouseLeft (shoot)
+    // Fire mapping: Right Shoulder (R1 - buttons[5]) OR A (buttons[0]) OR Left Trigger (buttons[6]) => MouseLeft (shoot)
     // When firing from a gamepad we still want to trigger the game's shoot action
     // but avoid overriding the player's facing by the mouse position. Mark that
     // this frame's fire came from the gamepad so downstream code can rely on
     // player-facing for the shot (we temporarily suppress mousePos for this frame).
-    if (gp.buttons[5]?.pressed || gp.buttons[0]?.pressed) {
+    if (gp.buttons[5]?.pressed || gp.buttons[0]?.pressed || gp.buttons[6]?.pressed) {
       this.virtualKeys.add('MouseLeft');
       if (!this.keys.has('MouseLeft')) this.pressed.add('MouseLeft'); // Manually add to pressed set
       this._gamepadFiredThisPoll = true;

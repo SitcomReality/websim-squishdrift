@@ -1,0 +1,269 @@
+#title-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  font-family: 'Noto Sans', system-ui, sans-serif;
+  color: white;
+  overflow-y: auto;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+#title-content {
+  text-align: center;
+  max-width: 600px;
+  width: 100%;
+}
+
+#game-title {
+  font-size: 64px;
+  font-weight: 900;
+  margin: 0 auto 20px;
+  color: #00e5ff;
+  text-shadow: 
+    0 0 10px rgba(0, 229, 255, 0.8),
+    0 0 20px rgba(0, 229, 255, 0.6),
+    0 0 30px rgba(0, 229, 255, 0.4),
+    0 0 40px rgba(0, 229, 255, 0.2);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  background: linear-gradient(45deg, #00e5ff, #00ffcc);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: title-glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes title-glow {
+  0% {
+    filter: drop-shadow(0 0 5px rgba(0, 229, 255, 0.6)) brightness(1);
+  }
+  100% {
+    filter: drop-shadow(0 0 15px rgba(0, 229, 255, 1)) brightness(1.2);
+  }
+}
+
+#controls-section {
+  margin-bottom: 20px;
+}
+
+#controls-section h2 {
+  font-size: 18px;
+  margin-bottom: 12px;
+  color: #FFD700;
+}
+
+.controls-grid {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+}
+
+.controls-column {
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 8px;
+  padding: 12px;
+  background: rgba(0,0,0,0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 140px;
+}
+
+.controls-column h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+  color: #fca5a5;
+  text-align: center;
+}
+
+.control-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 14px;
+}
+
+.controls-column .control-item:last-child {
+  border-bottom: none;
+}
+
+.control-item .action {
+  color: #e2e8f0;
+  margin-right: 12px;
+}
+
+.control-item .keys {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #94a3b8;
+}
+
+#items-section {
+  margin-bottom: 20px;
+}
+
+#items-section h2 {
+  font-size: 18px;
+  margin-bottom: 12px;
+  color: #FFD700;
+}
+
+.items-grid {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: 0 auto;
+}
+
+.item-sprite {
+  width: 32px;
+  height: 32px;
+  margin: 0 auto 4px;
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+
+.item-label {
+  font-size: 12px;
+  margin: 0;
+}
+
+/* Start button - styled like death screen restart button */
+.title-start-button {
+  display: inline-block;
+  padding: 14px 32px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #08131a;
+  background: linear-gradient(180deg, #fff 0%, #f0f0f3 100%);
+  border: 0;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), inset 0 -2px 0 rgba(0, 0, 0, 0.06);
+  transition: transform .12s ease, box-shadow .12s ease, opacity .12s ease;
+  margin: 0 auto;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.title-start-button:active {
+  transform: translateY(1px) scale(.995);
+}
+
+.title-start-button:hover {
+  transform: scale(1.03);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55), inset 0 -2px 0 rgba(0, 0, 0, 0.08);
+}
+
+/* Add new styles for controls keys and buttons */
+.controls-column kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 4px;
+  min-width: 24px;
+  height: 24px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  font-weight: bold;
+  line-height: 1;
+  color: #e2e8f0;
+  background-color: #334155;
+  border: 1px solid #64748b;
+  border-bottom-width: 3px;
+  border-radius: 6px;
+  vertical-align: middle;
+}
+
+.controls-column kbd.gamepad-button {
+  min-width: 24px;
+  height: 24px;
+  background-color: #0b1220;
+  border-color: #1e88e5;
+  color: #dbeafe;
+  border-radius: 50%;
+}
+
+/* Pause overlay */
+.pause-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-family: 'Noto Sans', system-ui, sans-serif;
+  z-index: 10000;
+}
+
+.pause-overlay h1 {
+  font-size: 36px;
+  margin-bottom: 16px;
+}
+
+.pause-overlay p {
+  font-size: 16px;
+  margin-bottom: 20px;
+}
+
+/* Item sprite backgrounds */
+.item-pistol { background-image: url('/pickup_pistol.png'); }
+.item-shotgun { background-image: url('/pickup_shotgun.png'); }
+.item-ak { background-image: url('/pickup_ak47.png'); }
+.item-grenade { background-image: url('/pickup_grenade.png'); }
+.item-health { background-image: url('/pickup_health.png'); }
+.item-bribe { background-image: url('/pickup_bribe.png'); }
+
+/* Responsive tweaks */
+@media (max-width: 768px) {
+  #title-screen { padding: 15px; }
+  #title-content { padding: 0 10px; }
+  #game-title { font-size: 48px; }
+  #controls-section h2, #items-section h2 { font-size: 16px; margin-bottom: 8px; }
+  .controls-grid { gap: 12px; }
+  .controls-column { min-width: 120px; }
+  .controls-column h3 { font-size: 14px; }
+  .control-item { font-size: 12px; padding: 3px 0; }
+  .control-item .action { margin-right: 8px; }
+  .control-item .keys { gap: 3px; }
+  .controls-column kbd { min-width: 20px; height: 20px; font-size: 10px; }
+  .controls-column kbd.gamepad-button { min-width: 20px; height: 20px; }
+  .items-grid { gap: 12px; }
+  .item-sprite { width: 28px; height: 28px; }
+  .item-label { font-size: 11px; }
+  .title-start-button { font-size: 18px; padding: 12px 28px; }
+}
+
+@media (max-width: 480px) {
+  #title-screen { padding: 10px; }
+  #game-title { font-size: 36px; }
+  #controls-section { margin-bottom: 16px; }
+  #items-section { margin-bottom: 16px; }
+  .controls-grid { flex-direction: column; gap: 8px; }
+  .controls-column { min-width: 140px; }
+  .control-item { font-size: 11px; padding: 2px 0; }
+  .control-item .action { margin-right: 6px; }
+  .items-grid { gap: 8px; }
+  .item-sprite { width: 24px; height: 24px; }
+  .item-label { font-size: 10px; }
+  .title-start-button { font-size: 16px; padding: 10px 24px; }
+}

@@ -1,0 +1,123 @@
+import { VehicleArchetype, VehicleTypes } from '../vehicles/VehicleTypes.js';
+
+export function drawVehicle(renderer, state, v) {
+  const { ctx } = renderer;
+  const ts = state.world.tileSize;
+  
+  // Get vehicle type and corresponding sprite
+  const vehicleType = v.vehicleType || 'sedan';
+  const vehicleImages = state.vehicleImages || {};
+  
+  // Map vehicle types to sprite names
+  const spriteMap = {
+    'compact': 'compact',
+    'sedan': 'sedan',
+    'truck': 'truck',
+    'sports': 'sport', // Fix: map "sports" to "sport"
+    'emergency': 'police',
+    'firetruck': 'firetruck',
+    'ambulance': 'ambulance',
+    'police': 'police'
+  };
+  
+  const spriteName = spriteMap[vehicleType] || vehicleType;
+  const img = vehicleImages[spriteName];
+  
+  if (!img) {
+    // Fallback to box drawing if image not loaded
+    drawBoxVehicle(renderer, state, v);
+    return;
+  }
+  
+  ctx.save();
+  ctx.translate(v.pos.x * ts, v.pos.y * ts);
+  
+  // Rotate 90 degrees clockwise to fix sideways driving
+  ctx.rotate(v.rot + Math.PI/2);
+  
+  // Calculate scale based on image dimensions and hitbox
+  const imageWidth = img.width;
+  const imageHeight = img.height;
+  
+  // Scale to match hitbox dimensions
+  const targetWidth = ts * (v.hitboxW || 0.9);
+  const targetHeight = ts * (v.hitboxH || 0.5);
+  
+  // Calculate scale factors accounting for rotation
+  // Since we're rotating 90 degrees, width becomes height and vice versa
+  const scaleX = targetWidth / imageHeight;
+  const scaleY = targetHeight / imageWidth;
+  
+  // Center the image
+  const offsetX = -imageWidth * scaleY / 2;
+  const offsetY = -imageHeight * scaleX / 2;
+  
+  // Draw the sprite with correct scaling
+  ctx.drawImage(
+    img,
+    offsetX,
+    offsetY,
+    imageWidth * scaleY,
+    imageHeight * scaleX
+  );
+  
+  // Draw siren for emergency vehicles
+  if (v.siren && v.vehicleType === 'emergency') {
+    const now = Date.now();
+    const blink = Math.floor(now / 500) % 2 === 0;
+    
+    ctx.fillStyle = blink ? '#FF0000' : '#0000FF';
+    ctx.beginPath();
+    ctx.arc(0, -targetHeight/2 - 10, 5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  
+  ctx.restore();
+}
+
+// Fallback box drawing function
+function drawBoxVehicle(renderer, state, v) {
+  const { ctx } = renderer;
+  const ts = state.world.tileSize;
+  const w = ts * (v.width || 0.9);
+  const h = ts * (v.height || 0.5);
+  
+  ctx.save();
+  ctx.translate(v.pos.x * ts, v.pos.y * ts);
+  // Rotate 90 degrees clockwise for box fallback
+  ctx.rotate(v.rot + Math.PI/2);
+  ctx.fillStyle = v.color || '#555';
+  ctx.fillRect(-w/2, -h/2, w, h);
+  ctx.restore();
+}
+
+// Helper function to darken a color
+function darkenColor(color, amount) {
+  // Handle hex colors
+  if (color.startsWith('#')) {
+    let hex = color.slice(1);
+    let r = parseInt(hex.substr(0, 2), 16);
+    let g = parseInt(hex.substr(2, 2), 16);
+    let b = parseInt(hex.substr(4, 2), 16);
+    
+    r = Math.floor(r * (1 - amount));
+    g = Math.floor(g * (1 - amount));
+    b = Math.floor(b * (1 - amount));
+    
+    return `rgb(${r}, ${g}, ${b})`;
+  }
+  
+  // Handle hsl colors
+  if (color.startsWith('hsl')) {
+    const match = color.match(/\d+/g);
+    if (match && match.length >= 3) {
+      const h = match[0];
+      const s = match[1];
+      const l = Math.max(0, Math.floor(parseInt(match[2]) * (1 - amount)));
+      return `hsl(${h}, ${s}%, ${l}%)`;
+    }
+  }
+  
+  // Fallback
+  return color;
+}

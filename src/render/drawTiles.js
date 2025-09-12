@@ -1,0 +1,346 @@
+import { Tile, TileColor } from '../map/TileTypes.js';
+import { drawExplosion } from '../app/entities/drawExplosion.js';
+
+export function drawTiles(r, state, layer = 'all') {
+  const { ctx } = r, ts = state.world.tileSize, map = state.world.map;
+  const cam = state.camera, perspectiveScale = 0.8;
+  const z = cam.zoom || 1;
+  const wTiles = Math.ceil(r.canvas.width/(ts*z))+2, hTiles = Math.ceil(r.canvas.height/(ts*z))+2;
+  const sx = Math.floor(cam.x - wTiles/2), sy = Math.floor(cam.y - hTiles/2);
+  const floorTypes = new Set([Tile.BuildingFloor]);
+  const seamPad = 0.5; // overlap tiles by 0.5px to hide seams
+  
+  for (let y=0; y<hTiles; y++) for (let x=0; x<wTiles; x++){
+    const gx = sx + x, gy = sy + y; if (gy<0||gx<0||gy>=map.height||gx>=map.width) continue;
+    const t = map.tiles[gy][gx];
+    if (layer === 'ground' && floorTypes.has(t)) continue;
+    if (layer === 'floors' && !floorTypes.has(t)) continue;
+    
+    // Handle zebra crossings with special rendering
+    if (isZebraCrossing(t)) {
+      drawZebraCrossing(r, gx, gy, ts, t, seamPad);
+    } else if (t === Tile.RoundaboutCenter) {
+      // Draw road background first with overlap
+      r.ctx.fillStyle = TileColor[Tile.RoadN];
+      r.ctx.fillRect(gx*ts - seamPad, gy*ts - seamPad, ts + seamPad*2, ts + seamPad*2);
+      
+      // Draw circular grass patch centered in the tile
+      const cx = gx*ts + ts/2, cy = gy*ts + ts/2;
+      const radius = ts * 0.36;
+      r.ctx.save();
+      r.ctx.beginPath();
+      r.ctx.arc(cx, cy, radius, 0, Math.PI*2);
+      r.ctx.closePath();
+      r.ctx.fillStyle = TileColor[Tile.Grass] || '#90EE90';
+      r.ctx.fill();
+      r.ctx.restore();
+    } else {
+      r.ctx.fillStyle = TileColor[t] || '#f5f5f5';
+      r.ctx.fillRect(gx*ts - seamPad, gy*ts - seamPad, ts + seamPad*2, ts + seamPad*2);
+    }
+    
+    // Only draw arrows for uni-directional lanes in intersections
+    drawIntersectionArrows(r, gx, gy, ts, t, state);
+    
+    if (t === Tile.BuildingWall) {
+      r.ctx.fillStyle = 'rgba(0,0,0,0.2)';
+      r.ctx.fillRect(gx*ts, gy*ts + ts*0.7, ts, ts*0.3);
+    }
+  }
+  
+  // Draw dashed lines on straight roads
+  drawDashedLines(r, state);
+  
+  // Draw particles
+  drawParticles(r, state);
+}
+
+function isZebraCrossing(tile) {
+  return tile >= Tile.ZebraCrossingN && tile <= Tile.ZebraCrossingW;
+}
+
+function drawZebraCrossing(r, gx, gy, ts, tileType, seamPad) {
+  const { ctx } = r;
+  
+  // Base road color with overlap
+  ctx.fillStyle = TileColor[Tile.RoadN];
+  ctx.fillRect(gx*ts - seamPad, gy*ts - seamPad, ts + seamPad*2, ts + seamPad*2);
+  
+  // Zebra crossing stripes
+  ctx.fillStyle = TileColor[tileType]; // Use the lighter grey for stripes
+  
+  const stripeWidth = ts * 0.15; // 15% of tile width
+  const gapWidth = stripeWidth; // Equal gap between stripes
+  
+  switch(tileType) {
+    case Tile.ZebraCrossingN:
+    case Tile.ZebraCrossingS:
+      // Vertical stripes for N/S roads - move right by half stripe width
+      for (let i = 0; i < 5; i++) {
+        const x = gx*ts + (i * (stripeWidth + gapWidth)) + gapWidth/2 + stripeWidth/2;
+        if (x + stripeWidth <= (gx+1)*ts) {
+          ctx.fillRect(x, gy*ts, stripeWidth, ts);
+        }
+      }
+      break;
+      
+    case Tile.ZebraCrossingE:
+    case Tile.ZebraCrossingW:
+      // Horizontal stripes for E/W roads - move down by half stripe width
+      for (let i = 0; i < 5; i++) {
+        const y = gy*ts + (i * (stripeWidth + gapWidth)) + gapWidth/2 + stripeWidth/2;
+        if (y + stripeWidth <= (gy+1)*ts) {
+          ctx.fillRect(gx*ts, y, ts, stripeWidth);
+        }
+      }
+      break;
+  }
+}
+
+function drawIntersectionArrows(r, gx, gy, ts, tileType, state) {
+  const { ctx } = r;
+  
+  // Only draw arrows for specific uni-directional road tiles in intersections
+  const uniDirectionalTiles = [Tile.RoadN, Tile.RoadE, Tile.RoadS, Tile.RoadW];
+  
+  if (!uniDirectionalTiles.includes(tileType)) return;
+  
+  // Check if this is part of an intersection by checking for roundabout center
+  const map = state.world.map;
+  
+  // Check for a roundabout center within 2 tiles
+  let isInIntersection = false;
+  const checkRadius = 2;
+  
+  for (let dy = -checkRadius; dy <= checkRadius; dy++) {
+    for (let dx = -checkRadius; dx <= checkRadius; dx++) {
+      const checkX = gx + dx;
+      const checkY = gy + dy;
+      
+      if (checkX >= 0 && checkX < map.width && 
+          checkY >= 0 && checkY < map.height) {
+        if (map.tiles[checkY][checkX] === Tile.RoundaboutCenter) {
+          isInIntersection = true;
+          break;
+        }
+      }
+    }
+  }
+  
+  if (!isInIntersection) return;
+  
+  // Calculate Manhattan distance to nearest roundabout center
+  let minDistance = Infinity;
+  for (let dy = -checkRadius; dy <= checkRadius; dy++) {
+    for (let dx = -checkRadius; dx <= checkRadius; dx++) {
+      const checkX = gx + dx;
+      const checkY = gy + dy;
+      
+      if (checkX >= 0 && checkX < map.width && 
+          checkY >= 0 && checkY < map.height) {
+        if (map.tiles[checkY][checkX] === Tile.RoundaboutCenter) {
+          const distance = Math.abs(dx) + Math.abs(dy);
+          minDistance = Math.min(minDistance, distance);
+        }
+      }
+    }
+  }
+  
+  // Only draw arrows on tiles that are adjacent to the roundabout center
+  // This ensures we only get the 8 tiles forming the plus shape
+  if (minDistance !== 1) return;
+  
+  // Determine direction based on tile type
+  let direction = null;
+  switch(tileType) {
+    case Tile.RoadN: direction = 'N'; break;
+    case Tile.RoadE: direction = 'E'; break;
+    case Tile.RoadS: direction = 'S'; break;
+    case Tile.RoadW: direction = 'W'; break;
+  }
+  
+  if (!direction) return;
+  
+  const cx = gx * ts + ts/2;
+  const cy = gy * ts + ts/2;
+  
+  // Use zebra crossing color for arrows
+  ctx.fillStyle = TileColor[Tile.ZebraCrossingN];
+  ctx.strokeStyle = TileColor[Tile.ZebraCrossingN];
+  ctx.lineWidth = 2;
+  
+  // Draw arrow based on direction
+  const arrowLength = ts * 0.4;
+  const arrowHeadSize = ts * 0.1;
+  
+  ctx.save();
+  ctx.translate(cx, cy);
+  
+  switch(direction) {
+    case 'N':
+      ctx.beginPath();
+      ctx.moveTo(0, arrowLength/2);
+      ctx.lineTo(0, -arrowLength/2);
+      ctx.moveTo(-arrowHeadSize, -arrowLength/2 + arrowHeadSize);
+      ctx.lineTo(0, -arrowLength/2);
+      ctx.lineTo(arrowHeadSize, -arrowLength/2 + arrowHeadSize);
+      ctx.stroke();
+      break;
+    case 'S':
+      ctx.beginPath();
+      ctx.moveTo(0, -arrowLength/2);
+      ctx.lineTo(0, arrowLength/2);
+      ctx.moveTo(-arrowHeadSize, arrowLength/2 - arrowHeadSize);
+      ctx.lineTo(0, arrowLength/2);
+      ctx.lineTo(arrowHeadSize, arrowLength/2 - arrowHeadSize);
+      ctx.stroke();
+      break;
+    case 'E':
+      ctx.beginPath();
+      ctx.moveTo(-arrowLength/2, 0);
+      ctx.lineTo(arrowLength/2, 0);
+      ctx.moveTo(arrowLength/2 - arrowHeadSize, -arrowHeadSize);
+      ctx.lineTo(arrowLength/2, 0);
+      ctx.lineTo(arrowLength/2 - arrowHeadSize, arrowHeadSize);
+      ctx.stroke();
+      break;
+    case 'W':
+      ctx.beginPath();
+      ctx.moveTo(arrowLength/2, 0);
+      ctx.lineTo(-arrowLength/2, 0);
+      ctx.moveTo(-arrowLength/2 + arrowHeadSize, -arrowHeadSize);
+      ctx.lineTo(-arrowLength/2, 0);
+      ctx.lineTo(-arrowLength/2 + arrowHeadSize, arrowHeadSize);
+      ctx.stroke();
+      break;
+  }
+  
+  ctx.restore();
+}
+
+function drawDashedLines(r, state) {
+  const { ctx } = r, ts = state.world.tileSize, map = state.world.map;
+  const z = state.camera.zoom || 1;
+  const wTiles = Math.ceil(r.canvas.width/(ts*z))+2, hTiles = Math.ceil(r.canvas.height/(ts*z))+2;
+  const sx = Math.floor(state.camera.x - wTiles/2), sy = Math.floor(state.camera.y - hTiles/2);
+  
+  ctx.save();
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([12, 8]); // Changed from [6, 4] to [12, 8] for single longer dash
+  
+  // Check each tile for straight road sections
+  for (let y = 0; y < hTiles; y++) {
+    for (let x = 0; x < wTiles; x++) {
+      const gx = sx + x, gy = sy + y;
+      if (gy < 0 || gx < 0 || gy >= map.height || gx >= map.width) continue;
+      
+      const tile = map.tiles[gy][gx];
+      
+      // Only draw on road tiles adjacent to median strip
+      if (tile === Tile.RoadE || tile === Tile.RoadW) {
+        // Check if this tile is adjacent to median strip
+        const isNextToMedian = (gy > 0 && map.tiles[gy-1][gx] === Tile.Median) || 
+                              (gy < map.height-1 && map.tiles[gy+1][gx] === Tile.Median);
+        
+        if (isNextToMedian) {
+          // Determine which side the median is on to position line correctly
+          const medianIsAbove = gy > 0 && map.tiles[gy-1][gx] === Tile.Median;
+          
+          if (!isIntersectionArea(map, gx, gy)) {
+            // Horizontal road, draw line on bottom edge if median is above, top if below
+            const lineY = medianIsAbove ? (gy + 1) * ts : gy * ts;
+            ctx.beginPath();
+            ctx.moveTo(gx * ts + ts * 0.25, lineY); // Start 25% into tile
+            ctx.lineTo((gx + 1) * ts - ts * 0.25, lineY); // End 25% before tile end
+            ctx.stroke();
+          }
+        }
+      }
+      
+      if (tile === Tile.RoadN || tile === Tile.RoadS) {
+        // Check if this tile is adjacent to median strip
+        const isNextToMedian = (gx > 0 && map.tiles[gy][gx-1] === Tile.Median) || 
+                              (gx < map.width-1 && map.tiles[gy][gx+1] === Tile.Median);
+        
+        if (isNextToMedian) {
+          // Determine which side the median is on to position line correctly
+          const medianIsLeft = gx > 0 && map.tiles[gy][gx-1] === Tile.Median;
+          
+          if (!isIntersectionArea(map, gx, gy)) {
+            // Vertical road, draw line on right edge if median is left, left if right
+            const lineX = medianIsLeft ? (gx + 1) * ts : gx * ts;
+            ctx.beginPath();
+            ctx.moveTo(lineX, gy * ts + ts * 0.25); // Start 25% into tile
+            ctx.lineTo(lineX, (gy + 1) * ts - ts * 0.25); // End 25% before tile end
+            ctx.stroke();
+          }
+        }
+      }
+    }
+  }
+  
+  ctx.restore();
+}
+
+function isIntersectionArea(map, x, y) {
+  // Check if this tile is near an intersection (within 2 tiles of a roundabout center)
+  const checkRadius = 2;
+  
+  for (let dy = -checkRadius; dy <= checkRadius; dy++) {
+    for (let dx = -checkRadius; dx <= checkRadius; dx++) {
+      const checkX = x + dx;
+      const checkY = y + dy;
+      
+      if (checkX >= 0 && checkX < map.width && 
+          checkY >= 0 && checkY < map.height) {
+        const tile = map.tiles[checkY][checkX];
+        if (tile === Tile.RoundaboutCenter || tile === Tile.Intersection) {
+          return true;
+        }
+      }
+    }
+  }
+  
+  return false;
+}
+
+function drawParticles(r, state) {
+  const ps = state.particles || [];
+  if (!ps.length) return;
+  
+  const { ctx } = r;
+  const ts = state.world.tileSize;
+  
+  ctx.save();
+  
+  for (const p of ps) {
+    if (p.type === 'smoke') {
+      // Draw smoke particles with soft edges
+      const radius = p.size * ts;
+      const gradient = ctx.createRadialGradient(p.x * ts, p.y * ts, 0, p.x * ts, p.y * ts, radius);
+      
+      // Create greyscale gradient for smoke
+      const color = p.color || 'hsl(0, 0%, 30%)';
+      gradient.addColorStop(0, color.replace('%)', `%, ${p.alpha})`));
+      gradient.addColorStop(0.7, color.replace('%)', `%, ${p.alpha * 0.5})`));
+      gradient.addColorStop(1, color.replace('%)', `%, 0%)`));
+      
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(p.x * ts, p.y * ts, radius, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      // Existing particle drawing
+      const alpha = Math.max(0, Math.min(1, p.life / p.maxLife || 1));
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = p.color; // use original color and globalAlpha instead of string replace
+      ctx.beginPath();
+      ctx.arc(p.x * ts, p.y * ts, p.size * ts, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+  }
+  
+  ctx.restore();
+}

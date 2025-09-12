@@ -22,27 +22,25 @@ export class LightingSystem {
     if (!ctx || !canvas || !state?.world?.tileSize || !state?.camera) return;
 
     const ts = state.world.tileSize;
-    const z = state.camera.zoom || 1;
 
-    // Compute visible world rect in tile space (match other renderers)
-    const wTiles = Math.ceil(canvas.width / (ts * z)) + 2;
-    const hTiles = Math.ceil(canvas.height / (ts * z)) + 2;
-    const sx = Math.floor((state.camera.x || 0) - wTiles / 2);
-    const sy = Math.floor((state.camera.y || 0) - hTiles / 2);
-
-    // Draw darkness in world space (assumes world transform already applied)
+    // The transform is now set by the RenderSystem before this is called.
+    // We start by clearing the lighting buffer and filling it with darkness.
     ctx.save();
-    const prevOp = ctx.globalCompositeOperation;
-    const prevAlpha = ctx.globalAlpha;
+    ctx.setTransform(1, 0, 0, 1, 0, 0); // Use screen space for clearing
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.restore(); // Restore world transform
 
+    // Draw darkness overlay
     ctx.globalCompositeOperation = 'source-over';
-    ctx.globalAlpha = this.nightAlpha;
-    ctx.fillStyle = this.color;
-    ctx.fillRect(sx * ts, sy * ts, wTiles * ts, hTiles * ts);
+    ctx.fillStyle = `rgba(0,0,0, ${this.nightAlpha})`;
+    // Use screen-space coordinates to fill the whole buffer, regardless of camera
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.restore();
 
     // Render light sources using destination-out to erase darkness
     ctx.globalCompositeOperation = 'destination-out';
-    ctx.globalAlpha = 1.0; // Reset alpha for drawing lights
 
     const lightEntities = (state.entities || []).filter(e => e.type === 'light' && e.light?.active);
 
@@ -81,7 +79,10 @@ export class LightingSystem {
         }
 
         const gradient = ctx.createRadialGradient(lx_px, ly_px, 0, lx_px, ly_px, radiusPx);
-        gradient.addColorStop(0, `rgba(0,0,0,${intensity})`);
+        // The gradient for destination-out should be opaque where light is bright
+        // and transparent where it's dim. Color doesn't matter, only alpha.
+        const color = `rgba(0,0,0,${intensity})`;
+        gradient.addColorStop(0, color);
         gradient.addColorStop(0.3, `rgba(0,0,0,${intensity * 0.7})`);
         gradient.addColorStop(1, 'rgba(0,0,0,0)');
 
@@ -143,7 +144,8 @@ export class LightingSystem {
           const endAngle = vehicle.rot + lightDef.coneAngle / 2;
           
           const gradient = ctx.createRadialGradient(lx_px, ly_px, 0, lx_px, ly_px, radiusPx);
-          gradient.addColorStop(0, `rgba(0,0,0,${vIntensity})`);
+          const color = `rgba(0,0,0,${vIntensity})`;
+          gradient.addColorStop(0, color);
           gradient.addColorStop(0.5, `rgba(0,0,0,${vIntensity * 0.5})`);
           gradient.addColorStop(1, 'rgba(0,0,0,0)');
           

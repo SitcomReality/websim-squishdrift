@@ -210,25 +210,33 @@ export class RenderSystem {
     this.drawMouseReticule(state, renderer);
     
     // Draw lighting overlay if system is present
-    if (state.lightingSystem) {
-      // Save current transform and switch to world space
+    if (state.lightingSystem && this.lightingCanvas) {
+      const { width, height } = canvas;
+      if (this.lightingCanvas.width !== width || this.lightingCanvas.height !== height) {
+        this.lightingCanvas.width = width;
+        this.lightingCanvas.height = height;
+      }
+
+      const lightingRenderer = { canvas: this.lightingCanvas, ctx: this.lightingCtx };
+      
+      // The main renderer has the world transform applied. We need to apply the same transform
+      // to our offscreen lighting canvas before rendering lights.
+      this.lightingCtx.save();
+      this.lightingCtx.setTransform(ctx.getTransform());
+
+      // Render lights and shadows to the offscreen buffer.
+      state.lightingSystem.render(state, lightingRenderer);
+
+      this.lightingCtx.restore();
+
+      // Now, draw the completed lighting buffer onto the main canvas.
+      // We use 'multiply' to darken the scene based on the light map.
+      // We need to do this in screen space, so we reset the transform on the main context.
       ctx.save();
-      const ts = state.world?.tileSize || 24;
-      const z = state.camera?.zoom || 1;
-      const cx = Math.floor(canvas.width/2);
-      const cy = Math.floor(canvas.height/2);
-      ctx.setTransform(1,0,0,1,0,0);
-      ctx.translate(cx, cy);
-      ctx.scale(z, z);
-      const snapX = Math.round((state.camera?.x || 0) * ts * z) / z;
-      const snapY = Math.round((state.camera?.y || 0) * ts * z) / z;
-      ctx.translate(-snapX, -snapY);
-      
-      // Render the lighting overlay
-      state.lightingSystem.render(state, renderer);
-      
-      // Restore original transform
-      ctx.restore();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.globalCompositeOperation = 'multiply';
+      ctx.drawImage(this.lightingCanvas, 0, 0);
+      ctx.restore(); // Restores world transform and composite operation for any subsequent draws.
     }
   }
 

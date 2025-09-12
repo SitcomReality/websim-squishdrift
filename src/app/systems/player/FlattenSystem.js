@@ -48,27 +48,54 @@ export class FlattenSystem {
   }
 
   triggerFlattenAnimations(state) {
+    if (!state || !state.world || !state.world.map) return;
+    
     const map = state.world.map;
-    const isFlattening = state.isFlattened;
-    const now = performance.now();
-
+    const now = Date.now();
+    
+    // Trigger building animations
     if (map.buildings) {
       for (const building of map.buildings) {
-        building.animationState = {
-          type: isFlattening ? 'shrink' : 'grow',
-          startTime: now,
-          duration: isFlattening ? 300 : 600
-        };
+        if (!building.animationState) {
+          if (state.isFlattened) {
+            // Start shrink animation
+            building.animationState = {
+              type: 'shrink',
+              startTime: now,
+              duration: 300
+            };
+          }
+        } else {
+          // Start grow animation
+          building.animationState = {
+            type: 'grow',
+            startTime: now,
+            duration: 600
+          };
+        }
       }
     }
-
+    
+    // Trigger tree animations
     if (map.trees) {
       for (const tree of map.trees) {
-        tree.animationState = {
-          type: isFlattening ? 'shrink' : 'grow',
-          startTime: now,
-          duration: isFlattening ? 300 : 600
-        };
+        if (!tree.animationState) {
+          if (state.isFlattened) {
+            // Start shrink animation
+            tree.animationState = {
+              type: 'shrink',
+              startTime: now,
+              duration: 300
+            };
+          }
+        } else {
+          // Start grow animation
+          tree.animationState = {
+            type: 'grow',
+            startTime: now,
+            duration: 600
+          };
+        }
       }
     }
   }

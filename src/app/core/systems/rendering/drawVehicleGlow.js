@@ -31,4 +31,24 @@ export function drawVehicleGlow(state, renderer) {
   const currentSize = startSize + (endSize - startSize) * progress;
   
   const startAlpha = 0.8;
-  const endAlpha
+  const endAlpha = 0;
+  const currentAlpha = startAlpha - (startAlpha - endAlpha) * progress;
+  
+  // Only draw if still visible
+  if (currentAlpha <= 0) return;
+  
+  const centerX = vehicle.pos.x * ts;
+  const centerY = vehicle.pos.y * ts;
+  
+  ctx.save();
+  ctx.globalCompositeOperation = 'screen';
+  ctx.strokeStyle = `rgba(255, 255, 255, ${currentAlpha})`;
+  ctx.lineWidth = 2;
+  
+  // Draw the expanding circle
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, currentSize, 0, Math.PI * 2);
+  ctx.stroke();
+  
+  ctx.restore();
+}

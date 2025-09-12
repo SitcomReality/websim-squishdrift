@@ -202,14 +202,6 @@ export class RenderSystem {
       }
     }
     
-    // Draw debug overlay if enabled
-    if (debugOverlay && debugOverlay.enabled) {
-      drawRoadDebug(renderer, state);
-      drawPedestrianDebug(renderer, state);
-      drawSpawnDebug(renderer, state);
-      this.drawDebugHitboxes(state, renderer);
-    }
-    
     // Draw mouse reticule
     this.drawMouseReticule(state, renderer);
     

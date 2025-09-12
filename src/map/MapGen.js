@@ -79,7 +79,8 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
     roads,
     peds,
     buildings,
-    trees
+    trees,
+    streetLights: roadGenerator.getStreetLights()
   };
 
   // --- NEW: expand map with 2-tile border (shift = 2)
@@ -308,6 +309,14 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
     if (t.pos) {
       t.pos.x += shift;
       t.pos.y += shift;
+    }
+  }
+
+  // Shift street lights
+  for (const l of map.streetLights) {
+    if (l.pos) {
+      l.pos.x += shift;
+      l.pos.y += shift;
     }
   }
   

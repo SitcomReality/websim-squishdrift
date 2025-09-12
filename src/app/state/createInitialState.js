@@ -23,6 +23,9 @@ export function createInitialState(seed = null) {
     rand,
     seed: finalSeed // Store seed for debugging
   };
+  if (map.streetLights) {
+    state.entities.push(...map.streetLights);
+  }
   let spawnX = map.width / 2, spawnY = map.height / 2, bestDist = Infinity;
   for (let y = 0; y < map.height; y++) for (let x = 0; x < map.width; x++) {
     const t = map.tiles[y][x];

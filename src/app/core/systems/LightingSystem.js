@@ -51,27 +51,28 @@ export class LightingSystem {
         const lightPosition = entity.pos;
         
         const occluders = getOccludersInRadius(state, lightPosition, light.radius);
-        const visibilityPolygon = computeVisibilityPolygon(lightPosition, light.radius, occluders);
         
         ctx.save();
 
-        // Create clipping path from visibility polygon
-        ctx.beginPath();
-        if (visibilityPolygon.length > 0) {
-            ctx.moveTo(visibilityPolygon[0].x * ts, visibilityPolygon[0].y * ts);
-            for (let i = 1; i < visibilityPolygon.length; i++) {
-                ctx.lineTo(visibilityPolygon[i].x * ts, visibilityPolygon[i].y * ts);
+        if (occluders.length > 0) {
+            const visibilityPolygon = computeVisibilityPolygon(lightPosition, light.radius, occluders);
+            // Create clipping path from visibility polygon
+            ctx.beginPath();
+            if (visibilityPolygon.length > 0) {
+                ctx.moveTo(visibilityPolygon[0].x * ts, visibilityPolygon[0].y * ts);
+                for (let i = 1; i < visibilityPolygon.length; i++) {
+                    ctx.lineTo(visibilityPolygon[i].x * ts, visibilityPolygon[i].y * ts);
+                }
             }
+            ctx.closePath();
+            ctx.clip();
         }
-        ctx.closePath();
-        ctx.clip();
         
-        // Render the light source within the clipped region
+        // Render the light source (clipped if occluders were present)
         const lx_px = lightPosition.x * ts;
         const ly_px = lightPosition.y * ts;
         const radiusPx = light.radius * ts;
 
-        // Validate numeric values to avoid canvas API errors
         const rawIntensity = Number.isFinite(light.intensity) ? light.intensity : 1;
         const intensity = Math.max(0, Math.min(1, rawIntensity * (1 - (light.flicker || 0) + Math.random() * (light.flicker || 0) * 2)));
         if (!isFinite(lx_px) || !isFinite(ly_px) || !isFinite(radiusPx) || radiusPx <= 0) {
@@ -109,26 +110,27 @@ export class LightingSystem {
         const lightPosition = { x: vehicle.pos.x + worldOffsetX, y: vehicle.pos.y + worldOffsetY };
 
         const occluders = getOccludersInRadius(state, lightPosition, lightDef.radius);
-        const visibilityPolygon = computeVisibilityPolygon(lightPosition, lightDef.radius, occluders);
 
         ctx.save();
         
-        // Create clipping path from visibility polygon
-        ctx.beginPath();
-        if (visibilityPolygon.length > 0) {
-            ctx.moveTo(visibilityPolygon[0].x * ts, visibilityPolygon[0].y * ts);
-            for (let i = 1; i < visibilityPolygon.length; i++) {
-                ctx.lineTo(visibilityPolygon[i].x * ts, visibilityPolygon[i].y * ts);
+        if (occluders.length > 0) {
+            const visibilityPolygon = computeVisibilityPolygon(lightPosition, lightDef.radius, occluders);
+            // Create clipping path from visibility polygon
+            ctx.beginPath();
+            if (visibilityPolygon.length > 0) {
+                ctx.moveTo(visibilityPolygon[0].x * ts, visibilityPolygon[0].y * ts);
+                for (let i = 1; i < visibilityPolygon.length; i++) {
+                    ctx.lineTo(visibilityPolygon[i].x * ts, visibilityPolygon[i].y * ts);
+                }
             }
+            ctx.closePath();
+            ctx.clip();
         }
-        ctx.closePath();
-        ctx.clip();
 
         const lx_px = lightPosition.x * ts;
         const ly_px = lightPosition.y * ts;
         const radiusPx = lightDef.radius * ts;
 
-        // Validate vehicle headlight numeric values
         const rawVDI = Number.isFinite(lightDef.intensity) ? lightDef.intensity : 1;
         const vIntensity = Math.max(0, Math.min(1, rawVDI));
         if (!isFinite(lx_px) || !isFinite(ly_px) || !isFinite(radiusPx) || radiusPx <= 0) {

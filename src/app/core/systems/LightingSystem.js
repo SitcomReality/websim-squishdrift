@@ -71,8 +71,13 @@ export class LightingSystem {
         const ly_px = lightPosition.y * ts;
         const radiusPx = light.radius * ts;
 
-        // Handle flicker
-        const intensity = light.intensity * (1 - light.flicker + Math.random() * light.flicker * 2);
+        // Validate numeric values to avoid canvas API errors
+        const rawIntensity = Number.isFinite(light.intensity) ? light.intensity : 1;
+        const intensity = Math.max(0, Math.min(1, rawIntensity * (1 - (light.flicker || 0) + Math.random() * (light.flicker || 0) * 2)));
+        if (!isFinite(lx_px) || !isFinite(ly_px) || !isFinite(radiusPx) || radiusPx <= 0) {
+            ctx.restore();
+            continue;
+        }
 
         const gradient = ctx.createRadialGradient(lx_px, ly_px, 0, lx_px, ly_px, radiusPx);
         gradient.addColorStop(0, `rgba(0,0,0,${intensity})`);
@@ -123,13 +128,21 @@ export class LightingSystem {
         const ly_px = lightPosition.y * ts;
         const radiusPx = lightDef.radius * ts;
 
+        // Validate vehicle headlight numeric values
+        const rawVDI = Number.isFinite(lightDef.intensity) ? lightDef.intensity : 1;
+        const vIntensity = Math.max(0, Math.min(1, rawVDI));
+        if (!isFinite(lx_px) || !isFinite(ly_px) || !isFinite(radiusPx) || radiusPx <= 0) {
+          ctx.restore();
+          continue;
+        }
+
         if (lightDef.kind === 'cone') {
           const startAngle = vehicle.rot - lightDef.coneAngle / 2;
           const endAngle = vehicle.rot + lightDef.coneAngle / 2;
           
           const gradient = ctx.createRadialGradient(lx_px, ly_px, 0, lx_px, ly_px, radiusPx);
-          gradient.addColorStop(0, `rgba(0,0,0,${lightDef.intensity})`);
-          gradient.addColorStop(0.5, `rgba(0,0,0,${lightDef.intensity * 0.5})`);
+          gradient.addColorStop(0, `rgba(0,0,0,${vIntensity})`);
+          gradient.addColorStop(0.5, `rgba(0,0,0,${vIntensity * 0.5})`);
           gradient.addColorStop(1, 'rgba(0,0,0,0)');
           
           ctx.fillStyle = gradient;

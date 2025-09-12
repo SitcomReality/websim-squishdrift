@@ -7,8 +7,6 @@ import { drawNPC } from '../../entities/drawNPC.js';
 import { drawItem } from '../../entities/drawItem.js';
 import { drawEmergency } from '../../entities/drawEmergency.js';
 import { drawHealthBar } from '../../entities/drawHealthBar.js';
-import { drawPedestrianDebug } from '../../../render/drawPedestrianDebug.js';
-import { drawSpawnDebug } from '../../../render/drawSpawnDebug.js';
 import { drawSkidmarks } from '../../../render/drawSkidmarks.js';
 import { drawBlood } from '../../entities/drawBlood.js';
 import { drawProjectile } from '../../entities/drawProjectile.js';

@@ -189,13 +189,11 @@ export class LightingSystem {
           // Cone check for headlights
           if (L.kind === 'cone') {
             // Normalize angle difference into [-PI,PI] then abs it
-            const normalizeAngle = (a) => {
-              while (a <= -Math.PI) a += Math.PI * 2;
-              while (a > Math.PI) a -= Math.PI * 2;
-              return a;
-            };
             let ang = Math.atan2(dy, dx) - (L.direction || 0);
-            ang = Math.abs(normalizeAngle(ang));
+            ang = ang + Math.PI * 3; // shift positive
+            ang = ang % (Math.PI * 2);
+            ang = ang - Math.PI;
+            ang = Math.abs(ang);
             if (ang > (L.coneAngle||0)) continue;
           }
           const dirN = { x: (dx/dist)||0, y: (dy/dist)||0 };
@@ -211,10 +209,10 @@ export class LightingSystem {
         const h = (b.currentHeight ?? b.height) || 0; if (h <= 0.1) continue;
         const x=b.rect.x, y=b.rect.y, w=b.rect.width, ht=b.rect.height;
         const edges = [
-          { p1:{x,     y},     p2:{x: x + w, y    }, n:{x:0,  y:-1} }, // top
-          { p1:{x,     y+ht},  p2:{x: x + w, y+ht}, n:{x:0,  y:1 } }, // bottom
-          { p1:{x,     y},     p2:{x,   y+ht}, n:{x:-1, y:0 } }, // left
-          { p1:{x: x + w, y},  p2:{x: x + w, y+ht}, n:{x:1,  y:0 } }  // right
+          { p1:{x: x,     y: y},     p2:{x: x + w, y: y    }, n:{x:0,  y:-1} }, // top
+          { p1:{x: x,     y: y+ht},  p2:{x: x + w, y: y+ht}, n:{x:0,  y:1 } }, // bottom
+          { p1:{x: x,     y: y},     p2:{x: x,     y: y+ht}, n:{x:-1, y:0 } }, // left
+          { p1:{x: x + w, y: y},     p2:{x: x + w, y: y+ht}, n:{x:1,  y:0 } }  // right
         ];
         for (const e of edges) {
           const mx=(e.p1.x+e.p2.x)/2, my=(e.p1.y+e.p2.y)/2;

@@ -1,6 +1,6 @@
 import { aabbForTrunk } from '../app/vehicles/physics/geom.js';
 
-export function drawBuildings(r, state, mode = 'all') {
+export function drawBuildings(r, state, mode = 'all', lightingCanvas) {
   const { ctx } = r, ts = state.world.tileSize, map = state.world.map;
   const cam = state.camera, perspectiveScale = 0.8;
   
@@ -183,22 +183,22 @@ export function drawBuildings(r, state, mode = 'all') {
             }
 
             const finalLightness = Math.min(95, face.baseLightness + totalIllumination * 25);
-            ctx.fillStyle = `hsl(${hue}, 20%, ${finalLightness}%)`;
-            
+            const baseStyle = `hsl(${hue}, 20%, ${finalLightness}%)`;
             ctx.beginPath();
             ctx.moveTo(face.p1.x, face.p1.y);
             ctx.lineTo(face.rp1.x, face.rp1.y);
             ctx.lineTo(face.rp2.x, face.rp2.y);
             ctx.lineTo(face.p2.x, face.p2.y);
             ctx.closePath();
-            ctx.fill();
+            fillWithLight(ctx, baseStyle, lightingCanvas);
         }
       }
       
       // Draw roof
       if (mode === 'roofs' || mode === 'all' || mode === 'roofs_animating') {
-        ctx.fillStyle = b.color;
-        ctx.fillRect(roofRect.x, roofRect.y, roofRect.w, roofRect.h);
+        ctx.beginPath();
+        ctx.rect(roofRect.x, roofRect.y, roofRect.w, roofRect.h);
+        fillWithLight(ctx, b.color, lightingCanvas);
         ctx.strokeStyle = 'rgba(0,0,0,0.2)';
         ctx.lineWidth = 1;
         ctx.strokeRect(roofRect.x, roofRect.y, roofRect.w, roofRect.h);
@@ -262,6 +262,18 @@ function segmentIntersectsAABB(p1, p2, aabb) {
     if (!check(dy, ry + rh - y1)) return false;
 
     return t0 <= t1;
+}
+
+function fillWithLight(ctx, baseStyle, lightingCanvas) {
+  ctx.fillStyle = baseStyle; ctx.fill();
+  if (!lightingCanvas) return;
+  const pat = ctx.createPattern(lightingCanvas, 'no-repeat');
+  if (!pat) return;
+  const inv = ctx.getTransform().inverse();
+  pat.setTransform?.(inv);
+  ctx.globalCompositeOperation = 'screen';
+  ctx.fillStyle = pat; ctx.fill();
+  ctx.globalCompositeOperation = 'source-over';
 }
 
 function drawTree(r, state, tree, mode) {
@@ -343,16 +355,13 @@ function drawTree(r, state, tree, mode) {
   };
   
   // Draw trunk walls
-  ctx.fillStyle = tree.trunkColor;
-  
-  // Front and back walls
   ctx.beginPath();
   ctx.moveTo(trunkRect.x, trunkRect.y);
   ctx.lineTo(trunkRoofRect.x, trunkRoofRect.y);
   ctx.lineTo(trunkRoofRect.x + trunkRoofRect.w, trunkRoofRect.y);
   ctx.lineTo(trunkRect.x + trunkRect.w, trunkRect.y);
   ctx.closePath();
-  ctx.fill();
+  fillWithLight(ctx, tree.trunkColor, lightingCanvas);
   
   ctx.beginPath();
   ctx.moveTo(trunkRect.x, trunkRect.y + trunkRect.h);
@@ -360,7 +369,7 @@ function drawTree(r, state, tree, mode) {
   ctx.lineTo(trunkRoofRect.x + trunkRoofRect.w, trunkRoofRect.y + trunkRoofRect.h);
   ctx.lineTo(trunkRect.x + trunkRect.w, trunkRect.y + trunkRect.h);
   ctx.closePath();
-  ctx.fill();
+  fillWithLight(ctx, tree.trunkColor, lightingCanvas);
   
   // Side walls
   ctx.beginPath();
@@ -369,7 +378,7 @@ function drawTree(r, state, tree, mode) {
   ctx.lineTo(trunkRoofRect.x, trunkRoofRect.y + trunkRoofRect.h);
   ctx.lineTo(trunkRect.x, trunkRect.y + trunkRect.h);
   ctx.closePath();
-  ctx.fill();
+  fillWithLight(ctx, tree.trunkColor, lightingCanvas);
   
   ctx.beginPath();
   ctx.moveTo(trunkRect.x + trunkRect.w, trunkRect.y);
@@ -377,14 +386,12 @@ function drawTree(r, state, tree, mode) {
   ctx.lineTo(trunkRoofRect.x + trunkRoofRect.w, trunkRoofRect.y + trunkRoofRect.h);
   ctx.lineTo(trunkRect.x + trunkRect.w, trunkRect.y + trunkRect.h);
   ctx.closePath();
-  ctx.fill();
+  fillWithLight(ctx, tree.trunkColor, lightingCanvas);
   
   // Draw trunk top
-  ctx.fillStyle = tree.trunkColor;
-  ctx.fillRect(trunkRoofRect.x, trunkRoofRect.y, trunkRoofRect.w, trunkRoofRect.h);
-  ctx.strokeStyle = 'rgba(0,0,0,0.2)';
-  ctx.lineWidth = 1;
-  ctx.strokeRect(trunkRoofRect.x, trunkRoofRect.y, trunkRoofRect.w, trunkRoofRect.h);
+  ctx.beginPath();
+  ctx.rect(trunkRoofRect.x, trunkRoofRect.y, trunkRoofRect.w, trunkRoofRect.h);
+  fillWithLight(ctx, tree.trunkColor, lightingCanvas);
   
   // Draw leaves (drawn after trunk, in front of buildings)
   const leafFloorRect = { 
@@ -411,16 +418,13 @@ function drawTree(r, state, tree, mode) {
   
   // Draw leaves with 75% opacity
   ctx.globalAlpha = 0.75;
-  ctx.fillStyle = tree.leafColor;
-  
-  // Front and back walls
   ctx.beginPath();
   ctx.moveTo(leafFloorProjectedRect.x, leafFloorProjectedRect.y);
   ctx.lineTo(leafRoofRect.x, leafRoofRect.y);
   ctx.lineTo(leafRoofRect.x + leafRoofRect.w, leafRoofRect.y);
   ctx.lineTo(leafFloorProjectedRect.x + leafFloorProjectedRect.w, leafFloorProjectedRect.y);
   ctx.closePath();
-  ctx.fill();
+  fillWithLight(ctx, tree.leafColor, lightingCanvas);
   
   ctx.beginPath();
   ctx.moveTo(leafFloorProjectedRect.x, leafFloorProjectedRect.y + leafFloorProjectedRect.h);
@@ -428,7 +432,7 @@ function drawTree(r, state, tree, mode) {
   ctx.lineTo(leafRoofRect.x + leafRoofRect.w, leafRoofRect.y + leafRoofRect.h);
   ctx.lineTo(leafFloorProjectedRect.x + leafFloorProjectedRect.w, leafFloorProjectedRect.y + leafFloorProjectedRect.h);
   ctx.closePath();
-  ctx.fill();
+  fillWithLight(ctx, tree.leafColor, lightingCanvas);
   
   // Side walls
   ctx.beginPath();
@@ -437,7 +441,7 @@ function drawTree(r, state, tree, mode) {
   ctx.lineTo(leafRoofRect.x, leafRoofRect.y + leafRoofRect.h);
   ctx.lineTo(leafFloorProjectedRect.x, leafFloorProjectedRect.y + leafFloorProjectedRect.h);
   ctx.closePath();
-  ctx.fill();
+  fillWithLight(ctx, tree.leafColor, lightingCanvas);
   
   ctx.beginPath();
   ctx.moveTo(leafFloorProjectedRect.x + leafFloorProjectedRect.w, leafFloorProjectedRect.y);
@@ -445,14 +449,12 @@ function drawTree(r, state, tree, mode) {
   ctx.lineTo(leafRoofRect.x + leafRoofRect.w, leafRoofRect.y + leafRoofRect.h);
   ctx.lineTo(leafFloorProjectedRect.x + leafFloorProjectedRect.w, leafFloorProjectedRect.y + leafFloorProjectedRect.h);
   ctx.closePath();
-  ctx.fill();
+  fillWithLight(ctx, tree.leafColor, lightingCanvas);
   
   // Draw leaves top with 75% opacity
-  ctx.fillStyle = tree.leafColor;
-  ctx.fillRect(leafRoofRect.x, leafRoofRect.y, leafRoofRect.w, leafRoofRect.h);
-  ctx.strokeStyle = 'rgba(0,0,0,0.2)';
-  ctx.lineWidth = 1;
-  ctx.strokeRect(leafRoofRect.x, leafRoofRect.y, leafRoofRect.w, leafRoofRect.h);
+  ctx.beginPath();
+  ctx.rect(leafRoofRect.x, leafRoofRect.y, leafRoofRect.w, leafRoofRect.h);
+  fillWithLight(ctx, tree.leafColor, lightingCanvas);
   
   // Reset opacity
   ctx.globalAlpha = 1.0;

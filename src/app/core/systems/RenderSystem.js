@@ -23,6 +23,10 @@ export class RenderSystem {
     // Create an offscreen canvas for the lighting buffer
     this.lightingCanvas = document.createElement('canvas');
     this.lightingCtx = this.lightingCanvas.getContext('2d');
+    
+    // Create an offscreen canvas for 3D elements (buildings)
+    this.threeDCanvas = document.createElement('canvas');
+    this.threeDCtx = this.threeDCanvas.getContext('2d');
   }
 
   render(state, renderer) {
@@ -140,17 +144,30 @@ export class RenderSystem {
       drawExplosion(renderer, state, explosion);
     }
     
-    // Draw buildings: always render walls for any building that still has height,
-    // then draw roofs. drawBuildings internally skips walls/roofs based on currentHeight.
-    if (!state.isFlattened) {
-      drawBuildings(renderer, state, 'walls');
-      drawBuildings(renderer, state, 'roofs');
-    } else {
-      // In flattened mode, only draw walls/roofs for buildings that are still animating down.
-      drawBuildings(renderer, state, 'walls_animating');
-      drawBuildings(renderer, state, 'roofs_animating');
+    // Prepare 3D elements buffer
+    const { width, height } = canvas;
+    if (this.threeDCanvas.width !== width || this.threeDCanvas.height !== height) {
+        this.threeDCanvas.width = width;
+        this.threeDCanvas.height = height;
     }
+    this.threeDCtx.clearRect(0, 0, width, height);
+    const threeDRenderer = { canvas: this.threeDCanvas, ctx: this.threeDCtx, ts: renderer.ts };
     
+    // Draw buildings and other 3D elements to offscreen buffer
+    this.threeDCtx.save();
+    this.threeDCtx.setTransform(ctx.getTransform());
+    if (!state.isFlattened) {
+      drawBuildings(threeDRenderer, state, 'walls');
+      drawBuildings(threeDRenderer, state, 'roofs');
+    } else {
+      drawBuildings(threeDRenderer, state, 'walls_animating');
+      drawBuildings(threeDRenderer, state, 'roofs_animating');
+    }
+    this.threeDCtx.restore();
+
+    // Draw the 3D buffer to the main canvas
+    ctx.drawImage(this.threeDCanvas, -cx, -cy);
+
     // Draw particles (including smoke)
     drawParticles(state, renderer);
     
@@ -162,7 +179,6 @@ export class RenderSystem {
     
     // Draw lighting overlay if system is present
     if (state.lightingSystem && this.lightingCanvas) {
-      const { width, height } = canvas;
       if (this.lightingCanvas.width !== width || this.lightingCanvas.height !== height) {
         this.lightingCanvas.width = width;
         this.lightingCanvas.height = height;

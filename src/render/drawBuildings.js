@@ -1,3 +1,5 @@
+import { aabbForTrunk } from '../app/vehicles/physics/geom.js';
+
 export function drawBuildings(r, state, mode = 'all') {
   const { ctx } = r, ts = state.world.tileSize, map = state.world.map;
   const cam = state.camera, perspectiveScale = 0.8;
@@ -157,6 +159,8 @@ export function drawBuildings(r, state, mode = 'all') {
 
                 if (distSq > light.radius * light.radius) continue;
 
+                if (isOccluded(state, lightPos, { x: wallCenterX, y: wallCenterY }, b)) continue;
+
                 const dist = Math.sqrt(distSq);
                 const lightDir = { x: -dx / dist, y: -dy / dist };
 
@@ -201,6 +205,63 @@ export function drawBuildings(r, state, mode = 'all') {
       }
     }
   }
+}
+
+function isOccluded(state, p1, p2, ignoreBuilding) {
+    const dx = p2.x - p1.x;
+    const dy = p2.y - p1.y;
+    const dist = Math.hypot(dx, dy);
+
+    for (const building of state.world.map.buildings) {
+        if (building === ignoreBuilding) continue;
+        if ((building.currentHeight ?? building.height) <= 0.1) continue;
+        if (segmentIntersectsAABB(p1, p2, building.rect)) return true;
+    }
+
+    for (const tree of state.world.map.trees || []) {
+        if ((tree.currentTrunkHeight ?? tree.trunkHeight) <= 0.1) continue;
+        const trunkAABB = {
+            x: Math.floor(tree.pos.x) + 0.5 - 0.15,
+            y: Math.floor(tree.pos.y) + 0.5 - 0.15,
+            width: 0.3,
+            height: 0.3
+        };
+        if (segmentIntersectsAABB(p1, p2, trunkAABB)) return true;
+    }
+    return false;
+}
+
+function segmentIntersectsAABB(p1, p2, aabb) {
+    const { x: x1, y: y1 } = p1;
+    const { x: x2, y: y2 } = p2;
+    const { x: rx, y: ry, width: rw, height: rh } = aabb;
+
+    let t0 = 0, t1 = 1;
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+
+    const check = (p, q) => {
+        if (p === 0) {
+            if (q < 0) return false;
+        } else {
+            const t = q / p;
+            if (p < 0) {
+                if (t > t1) return false;
+                if (t > t0) t0 = t;
+            } else {
+                if (t < t0) return false;
+                if (t < t1) t1 = t;
+            }
+        }
+        return true;
+    };
+
+    if (!check(-dx, x1 - rx)) return false;
+    if (!check(dx, rx + rw - x1)) return false;
+    if (!check(-dy, y1 - ry)) return false;
+    if (!check(dy, ry + rh - y1)) return false;
+
+    return t0 <= t1;
 }
 
 function drawTree(r, state, tree, mode) {

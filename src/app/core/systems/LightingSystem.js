@@ -209,10 +209,10 @@ export class LightingSystem {
         const h = (b.currentHeight ?? b.height) || 0; if (h <= 0.1) continue;
         const x=b.rect.x, y=b.rect.y, w=b.rect.width, ht=b.rect.height;
         const edges = [
-          { p1:{x,     y},     p2:{x+w, y    }, n:{x:0,  y:-1} }, // top
-          { p1:{x,     y+ht},  p2:{x+w, y+ht}, n:{x:0,  y:1 } }, // bottom
+          { p1:{x,     y},     p2:{x: x + w, y    }, n:{x:0,  y:-1} }, // top
+          { p1:{x,     y+ht},  p2:{x: x + w, y+ht}, n:{x:0,  y:1 } }, // bottom
           { p1:{x,     y},     p2:{x,   y+ht}, n:{x:-1, y:0 } }, // left
-          { p1:{x:x+w, y},     p2:{x+w, y+ht}, n:{x:1,  y:0 } }  // right
+          { p1:{x: x + w, y},  p2:{x: x + w, y+ht}, n:{x:1,  y:0 } }  // right
         ];
         for (const e of edges) {
           const mx=(e.p1.x+e.p2.x)/2, my=(e.p1.y+e.p2.y)/2;

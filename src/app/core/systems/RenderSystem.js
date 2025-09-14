@@ -194,6 +194,11 @@ export class RenderSystem {
       // Render lights and shadows to the offscreen buffer.
       state.lightingSystem.render(state, lightingRenderer);
 
+      // Make the completed lighting canvas available to drawBuildings by passing it as a 4th arg.
+      // drawBuildings currently accepts (renderer, state, mode), extra args are safe and
+      // allow drawBuildings to read the lighting canvas if it wants.
+      drawBuildings(renderer, state, 'all', this.lightingCanvas);
+
       this.lightingCtx.restore();
 
       // Now, draw the completed lighting buffer onto the main canvas.

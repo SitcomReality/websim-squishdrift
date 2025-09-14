@@ -53,6 +53,3 @@ export function gatherAllLights(state) {
   });
   return all;
 }
-```
-
-</output>

@@ -13,3 +13,4 @@ export function drawBuildings(r, state, mode = 'all', lightingCanvas) {
     else drawBuilding3D(r, state, el, mode, lightingCanvas, allLights);
   }
 }
+

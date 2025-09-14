@@ -43,4 +43,20 @@ export function drawTree3D(r, state, tree, mode, lightingCanvas) {
 
   ctx.globalAlpha = 0.75;
   const leafQuads = [
-    [{x :leafFloorProjectedRect.x,y :leafFloorProjectedRect.y}, {x :leafRoofRect.x,y :leafRoofRect.y}, {
+    [{x: leafFloorProjectedRect.x, y: leafFloorProjectedRect.y}, {x: leafRoofRect.x, y: leafRoofRect.y}, {x: leafRoofRect.x + leafRoofRect.w, y: leafRoofRect.y}, {x: leafFloorProjectedRect.x + leafFloorProjectedRect.w, y: leafFloorProjectedRect.y}],
+    [{x: leafFloorProjectedRect.x, y: leafFloorProjectedRect.y + leafFloorProjectedRect.h}, {x: leafRoofRect.x, y: leafRoofRect.y + leafRoofRect.h}, {x: leafRoofRect.x + leafRoofRect.w, y: leafRoofRect.y + leafRoofRect.h}, {x: leafFloorProjectedRect.x + leafFloorProjectedRect.w, y: leafFloorProjectedRect.y + leafFloorProjectedRect.h}],
+    [{x: leafFloorProjectedRect.x, y: leafFloorProjectedRect.y}, {x: leafRoofRect.x, y: leafRoofRect.y}, {x: leafRoofRect.x, y: leafRoofRect.y + leafRoofRect.h}, {x: leafFloorProjectedRect.x, y: leafFloorProjectedRect.y + leafFloorProjectedRect.h}],
+    [{x: leafFloorProjectedRect.x + leafFloorProjectedRect.w, y: leafFloorProjectedRect.y}, {x: leafRoofRect.x + leafRoofRect.w, y: leafRoofRect.y}, {x: leafRoofRect.x + leafRoofRect.w, y: leafRoofRect.y + leafRoofRect.h}, {x: leafFloorProjectedRect.x + leafFloorProjectedRect.w, y: leafFloorProjectedRect.y + leafFloorProjectedRect.h}],
+  ];
+  for (const q of leafQuads) {
+    ctx.beginPath();
+    ctx.moveTo(q[0].x, q[0].y);
+    for (let i = 1; i < q.length; i++) ctx.lineTo(q[i].x, q[i].y);
+    ctx.closePath();
+    fillWithLight(ctx, tree.leafColor, lightingCanvas);
+  }
+  ctx.beginPath();
+  ctx.rect(leafRoofRect.x, leafRoofRect.y, leafRoofRect.w, leafRoofRect.h);
+  fillWithLight(ctx, tree.leafColor, lightingCanvas);
+  ctx.globalAlpha = 1.0;
+}

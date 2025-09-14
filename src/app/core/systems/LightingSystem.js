@@ -166,67 +166,6 @@ export class LightingSystem {
       }
     }
 
-    // --- Wall illumination pass: brighten walls using adjacent ground light ---
-    const map = state.world?.map; if (map?.buildings?.length) {
-      // Collect lights (static + vehicle headlights resolved to world)
-      const lights = [];
-      for (const e of (state.entities||[])) {
-        if (e.type === 'light' && e.light?.active) lights.push({pos:e.pos, ...e.light});
-        if (e.type === 'vehicle' && e.lightSources) {
-          const c=Math.cos(e.rot||0), s=Math.sin(e.rot||0);
-          for (const L of e.lightSources) if (L.active){
-            const ox=L.offset.x*c - L.offset.y*s, oy=L.offset.x*s + L.offset.y*c;
-            lights.push({pos:{x:e.pos.x+ox,y:e.pos.y+oy}, kind:'cone', radius:L.radius, intensity:L.intensity, direction:e.rot||0, coneAngle:L.coneAngle||Math.PI/6});
-          }
-        }
-      }
-      // Helper to accumulate ground light at a point
-      const groundLightAt = (p, n) => {
-        let sum = 0;
-        for (const L of lights) {
-          const dx = p.x - L.pos.x, dy = p.y - L.pos.y;
-          const dist = Math.hypot(dx, dy); if (dist > (L.radius||0)) continue;
-          // Cone check for headlights
-          if (L.kind === 'cone') {
-            // Normalize angle difference into [-PI,PI] then abs it
-            let ang = Math.atan2(dy, dx) - (L.direction || 0);
-            ang = ang + Math.PI * 3; // shift positive
-            ang = ang % (Math.PI * 2);
-            ang = ang - Math.PI;
-            ang = Math.abs(ang);
-            if (ang > (L.coneAngle||0)) continue;
-          }
-          const dirN = { x: (dx/dist)||0, y: (dy/dist)||0 };
-          const facing = Math.max(0, -(dirN.x*n.x + dirN.y*n.y)); // prefer light on face normal
-          const falloff = 1 - (dist / (L.radius||1));
-          sum += (L.intensity||1) * falloff * (0.5 + 0.5 * facing);
-        }
-        return Math.min(1, sum);
-      };
-      // Draw a thin destination-out stroke along each wall edge proportional to ground light there
-      ctx.save(); ctx.globalCompositeOperation = 'destination-out'; ctx.lineCap = 'round';
-      for (const b of map.buildings) {
-        const h = (b.currentHeight ?? b.height) || 0; if (h <= 0.1) continue;
-        const x=b.rect.x, y=b.rect.y, w=b.rect.width, ht=b.rect.height;
-        const edges = [
-          { p1:{x: x,     y: y},     p2:{x: x + w, y: y    }, n:{x:0,  y:-1} }, // top
-          { p1:{x: x,     y: y+ht},  p2:{x: x + w, y: y+ht}, n:{x:0,  y:1 } }, // bottom
-          { p1:{x: x,     y: y},     p2:{x: x,     y: y+ht}, n:{x:-1, y:0 } }, // left
-          { p1:{x: x + w, y: y},     p2:{x: x + w, y: y+ht}, n:{x:1,  y:0 } }  // right
-        ];
-        for (const e of edges) {
-          const mx=(e.p1.x+e.p2.x)/2, my=(e.p1.y+e.p2.y)/2;
-          const sample={ x: mx + e.n.x*0.2, y: my + e.n.y*0.2 };
-          const I = groundLightAt(sample, e.n); if (I <= 0) continue;
-          const alpha = Math.max(0, Math.min(0.9, I * 0.85));
-          ctx.strokeStyle = `rgba(0,0,0,${alpha})`;
-          ctx.lineWidth = ts * 0.18;
-          ctx.beginPath(); ctx.moveTo(e.p1.x*ts, e.p1.y*ts); ctx.lineTo(e.p2.x*ts, e.p2.y*ts); ctx.stroke();
-        }
-      }
-      ctx.restore();
-    }
-
     ctx.globalAlpha = prevAlpha;
     ctx.globalCompositeOperation = prevOp;
     ctx.restore();

@@ -2,6 +2,28 @@ export function drawBuildings(r, state, mode = 'all') {
   const { ctx } = r, ts = state.world.tileSize, map = state.world.map;
   const cam = state.camera, perspectiveScale = 0.8;
   
+  // --- Step 3.2: Gather all light sources for wall illumination ---
+  const allLights = [];
+  // Add static lights
+  allLights.push(...(state.entities || []).filter(e => e.type === 'light' && e.light?.active));
+  // Add dynamic vehicle lights
+  (state.entities || []).filter(e => e.type === 'vehicle' && e.lightSources).forEach(v => {
+    if (v.lightSources) {
+      v.lightSources.forEach(lsDef => {
+        if (lsDef.active) {
+          const cos = Math.cos(v.rot);
+          const sin = Math.sin(v.rot);
+          const worldOffsetX = lsDef.offset.x * cos - lsDef.offset.y * sin;
+          const worldOffsetY = lsDef.offset.x * sin + lsDef.offset.y * cos;
+          allLights.push({
+            pos: { x: v.pos.x + worldOffsetX, y: v.pos.y + worldOffsetY },
+            light: { ...lsDef, kind: 'cone', direction: v.rot }
+          });
+        }
+      });
+    }
+  });
+
   // Sort buildings and trees by y-position + height for proper z-ordering
   const sortedElements = [...map.buildings];
   
@@ -89,63 +111,84 @@ export function drawBuildings(r, state, mode = 'all') {
       };
       
       const hue = 200;
-      const topWallColor = `hsl(${hue}, 20%, 75%)`;
-      const sideWallColor = `hsl(${hue}, 20%, 65%)`;
-      
+      const baseLightness = 65; // Side wall base lightness
+      const topWallBaseLightness = 75;
+
+      const wallFaces = [
+        { normal: { x: 0, y: -1 }, baseLightness: topWallBaseLightness, // Top
+          p1: { x: floorRect.x, y: floorRect.y }, 
+          p2: { x: floorRect.x + floorRect.w, y: floorRect.y },
+          rp1: { x: roofRect.x, y: roofRect.y },
+          rp2: { x: roofRect.x + roofRect.w, y: roofRect.y }
+        },
+        { normal: { x: 0, y: 1 }, baseLightness: topWallBaseLightness, // Bottom
+          p1: { x: floorRect.x, y: floorRect.y + floorRect.h },
+          p2: { x: floorRect.x + floorRect.w, y: floorRect.y + floorRect.h },
+          rp1: { x: roofRect.x, y: roofRect.y + roofRect.h },
+          rp2: { x: roofRect.x + roofRect.w, y: roofRect.y + roofRect.h }
+        },
+        { normal: { x: -1, y: 0 }, baseLightness: baseLightness, // Left
+          p1: { x: floorRect.x, y: floorRect.y },
+          p2: { x: floorRect.x, y: floorRect.y + floorRect.h },
+          rp1: { x: roofRect.x, y: roofRect.y },
+          rp2: { x: roofRect.x, y: roofRect.y + roofRect.h }
+        },
+        { normal: { x: 1, y: 0 }, baseLightness: baseLightness, // Right
+          p1: { x: floorRect.x + floorRect.w, y: floorRect.y },
+          p2: { x: floorRect.x + floorRect.w, y: floorRect.y + floorRect.h },
+          rp1: { x: roofRect.x + roofRect.w, y: roofRect.y },
+          rp2: { x: roofRect.x + roofRect.w, y: roofRect.y + roofRect.h }
+        }
+      ];
+
       // Draw walls connecting floor to roof
       if (mode === 'walls' || mode === 'all' || mode === 'walls_animating') {
-        ctx.fillStyle = sideWallColor;
-        ctx.beginPath();
-        ctx.moveTo(floorRect.x, floorRect.y);
-        ctx.lineTo(roofRect.x, roofRect.y);
-        ctx.lineTo(roofRect.x, roofRect.y + roofRect.h);
-        ctx.lineTo(floorRect.x, floorRect.y + floorRect.h);
-        ctx.closePath();
-        ctx.fill();
+        for (const face of wallFaces) {
+            const wallCenterX = (b.rect.x + b.rect.width / 2) + face.normal.x * (b.rect.width / 2);
+            const wallCenterY = (b.rect.y + b.rect.height / 2) + face.normal.y * (b.rect.height / 2);
+            
+            let totalIllumination = 0;
+            for (const lightEntity of allLights) {
+                const light = lightEntity.light;
+                const lightPos = lightEntity.pos;
+                const dx = wallCenterX - lightPos.x;
+                const dy = wallCenterY - lightPos.y;
+                const distSq = dx * dx + dy * dy;
 
-        ctx.fillStyle = sideWallColor;
-        ctx.beginPath();
-        ctx.moveTo(floorRect.x + floorRect.w, floorRect.y);
-        ctx.lineTo(roofRect.x + roofRect.w, roofRect.y);
-        ctx.lineTo(roofRect.x + roofRect.w, roofRect.y + roofRect.h);
-        ctx.lineTo(floorRect.x + floorRect.w, floorRect.y + floorRect.h);
-        ctx.closePath();
-        ctx.fill();
+                if (distSq > light.radius * light.radius) continue;
 
-        ctx.fillStyle = topWallColor;
-        ctx.beginPath();
-        ctx.moveTo(floorRect.x, floorRect.y);
-        ctx.lineTo(roofRect.x, roofRect.y);
-        ctx.lineTo(roofRect.x + roofRect.w, roofRect.y);
-        ctx.lineTo(floorRect.x + floorRect.w, floorRect.y);
-        ctx.closePath();
-        ctx.fill();
+                const dist = Math.sqrt(distSq);
+                const lightDir = { x: -dx / dist, y: -dy / dist };
 
-        ctx.beginPath();
-        ctx.moveTo(floorRect.x, floorRect.y + floorRect.h);
-        ctx.lineTo(roofRect.x, roofRect.y + roofRect.h);
-        ctx.lineTo(roofRect.x + roofRect.w, roofRect.y + roofRect.h);
-        ctx.lineTo(floorRect.x + floorRect.w, floorRect.y + floorRect.h);
-        ctx.closePath();
-        ctx.fill();
+                let angleFactor = 1;
+                if (light.kind === 'cone') {
+                    const coneAngle = light.coneAngle / 2;
+                    const lightAngle = light.direction;
+                    const angleToWall = Math.atan2(lightDir.y, lightDir.x);
+                    let angleDiff = Math.abs(lightAngle - angleToWall);
+                    if (angleDiff > Math.PI) angleDiff = 2 * Math.PI - angleDiff;
+                    if (angleDiff > coneAngle) continue;
+                    angleFactor = 1 - (angleDiff / coneAngle);
+                }
+                
+                const dot = lightDir.x * face.normal.x + lightDir.y * face.normal.y;
+                if (dot <= 0) continue;
 
-        // Ensure West/East outer walls are drawn like North/South (visible from outside)
-        ctx.fillStyle = topWallColor;
-        ctx.beginPath();
-        ctx.moveTo(floorRect.x + floorRect.w, floorRect.y);
-        ctx.lineTo(roofRect.x + roofRect.w, roofRect.y);
-        ctx.lineTo(roofRect.x + roofRect.w, roofRect.y + roofRect.h);
-        ctx.lineTo(floorRect.x + floorRect.w, floorRect.y + floorRect.h);
-        ctx.closePath();
-        ctx.fill();
+                const falloff = 1 - (dist / light.radius);
+                totalIllumination += light.intensity * dot * falloff * angleFactor;
+            }
 
-        ctx.beginPath();
-        ctx.moveTo(floorRect.x, floorRect.y);
-        ctx.lineTo(roofRect.x, roofRect.y);
-        ctx.lineTo(roofRect.x, roofRect.y + roofRect.h);
-        ctx.lineTo(floorRect.x, floorRect.y + floorRect.h);
-        ctx.closePath();
-        ctx.fill();
+            const finalLightness = Math.min(95, face.baseLightness + totalIllumination * 25);
+            ctx.fillStyle = `hsl(${hue}, 20%, ${finalLightness}%)`;
+            
+            ctx.beginPath();
+            ctx.moveTo(face.p1.x, face.p1.y);
+            ctx.lineTo(face.rp1.x, face.rp1.y);
+            ctx.lineTo(face.rp2.x, face.rp2.y);
+            ctx.lineTo(face.p2.x, face.p2.y);
+            ctx.closePath();
+            ctx.fill();
+        }
       }
       
       // Draw roof

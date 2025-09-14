@@ -115,7 +115,7 @@ export class LightingSystem {
         
         const lightPosition = { x: vehicle.pos.x + worldOffsetX, y: vehicle.pos.y + worldOffsetY };
 
-        const occluders = getOccludersInRadius(state, lightPosition, lightDef.radius, vehicle);
+        const occluders = getOccludersInRadius(state, lightPosition, lightDef.radius);
 
         ctx.save();
         

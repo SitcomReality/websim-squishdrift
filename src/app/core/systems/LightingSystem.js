@@ -188,7 +188,7 @@ export class LightingSystem {
           const dist = Math.hypot(dx, dy); if (dist > (L.radius||0)) continue;
           // Cone check for headlights
           if (L.kind === 'cone') {
-            let ang = Math.abs(((Math.atan2(dy,dx) - (L.direction||0) + Math.PI*3)%(Math.PI*2)) - Math.PI);
+            let ang = Math.abs(((Math.atan2(dy,dx) - (L.direction||0) + Math.PI * 3)%(Math.PI * 2)) - Math.PI);
             if (ang > (L.coneAngle||0)) continue;
           }
           const dirN = { x: (dx/dist)||0, y: (dy/dist)||0 };

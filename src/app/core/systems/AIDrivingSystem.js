@@ -86,6 +86,11 @@ export class AIDrivingSystem {
     // If currently retreating, skip normal route following logic;
     // movement will be handled in updateMovement.
     if (v.retreatState && v.retreatState.active) {
+      // NEW: Apply a slight turn while reversing to get unstuck.
+      if (typeof v.retreatState.steerDir !== 'number') {
+        v.retreatState.steerDir = (Math.random() > 0.5 ? 1 : -1) * 0.4;
+      }
+      v.ctrl.steer = v.retreatState.steerDir;
       return;
     }
 

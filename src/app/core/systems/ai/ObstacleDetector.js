@@ -1,5 +1,3 @@
-src/app/core/systems/ai/ObstacleDetector.js
-```javascript
 export class ObstacleDetector {
   constructor() {}
 
@@ -24,6 +22,3 @@ export class ObstacleDetector {
     return null;
   }
 }
-
-
-```

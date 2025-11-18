@@ -1,5 +1,5 @@
-import { Vec2 } from '../../utils/Vec2.js';
-import { Health } from '../components/Health.js';
+import { Vec2 } from '../../../utils/Vec2.js';
+import { Health } from '../../components/Health.js';
 import { handleVehicleDestruction } from '../../vehicles/physics/handlers/VehicleCollisionUtils.js';
 
 export class CollisionSystem {

@@ -19,7 +19,9 @@ export class VehicleMovementSystem {
     
         this.maxSteerAngle = Math.PI / 3;
     
-        this.lowSpeedSteerFactor = 4;
+        // At very low speeds we allow a bit of extra steering so the player can "wiggle" out,
+        // but keep this modest so AI cars don't spin in place.
+        this.lowSpeedSteerFactor = 2;
     
         this.wheelBase = 2.5;
   }
@@ -81,8 +83,20 @@ export class VehicleMovementSystem {
       const turningRadius = this.wheelBase / Math.tan(steerAngle);
       v.angularVelocity = speed / turningRadius;
     } else {
+      // At (almost) zero forward speed, avoid letting AI cars pirouette forever.
+      // Allow stronger in-place steering only for player-controlled vehicles,
+      // or when an AI is explicitly in a retreat manoeuvre to get unstuck.
       const steerAngle = steer * this.maxSteerAngle;
-      v.angularVelocity = steerAngle * this.lowSpeedSteerFactor;
+      const isPlayerControlled = !!v.controlled;
+      const isRetreatingAI = !!(v.retreatState && v.retreatState.active);
+      const hasDriveIntent = Math.abs(v.ctrl?.throttle || 0) > 0.1;
+
+      if ((isPlayerControlled && hasDriveIntent) || isRetreatingAI) {
+        v.angularVelocity = steerAngle * this.lowSpeedSteerFactor;
+      } else {
+        // For normal AI driving at low speed, suppress in-place spinning.
+        v.angularVelocity = 0;
+      }
     }
     
     v.rot += v.angularVelocity * dt;

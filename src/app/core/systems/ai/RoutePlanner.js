@@ -2,7 +2,7 @@
 // Provides path creation and basic waypoint iteration.
 // This file previously contained stray triple-backtick wrappers which have been removed.
 
-export default class RoutePlanner {
+export class RoutePlanner {
   constructor() {
     this.waypoints = [];
     this.index = 0;

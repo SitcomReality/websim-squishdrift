@@ -12,7 +12,6 @@ import { WeaponSystem } from './systems/WeaponSystem.js';
 import { ParticleSystem } from './systems/particles/index.js';
 import { EngineAudioSystem } from './systems/EngineAudioSystem.js';
 import { AnimationSystem } from './systems/AnimationSystem.js';
-import { LightingSystem } from './systems/LightingSystem.js';
 
 export class SystemManager {
   constructor(stateManager) {
@@ -31,8 +30,7 @@ export class SystemManager {
       collision: new CollisionSystem(),
       particles: new ParticleSystem(),
       engineAudio: new EngineAudioSystem(),
-      animation: new AnimationSystem(),
-      lighting: new LightingSystem()
+      animation: new AnimationSystem()
     };
     // Connect camera system to collision system for screen shake
     this.systems.collision.cameraSystem = this.systems.camera;
@@ -41,7 +39,6 @@ export class SystemManager {
     if (s) {
       s.cameraSystem = this.systems.camera;
       s.particleSystem = this.systems.particles; // ensure emitters accessible via state
-      s.lightingSystem = this.systems.lighting; // expose lighting system to state
     }
   }
 
@@ -49,7 +46,6 @@ export class SystemManager {
     const state = this.stateManager.getState();
     const input = this.stateManager.inputManager?.getInput();
     if (state && !state.cameraSystem) state.cameraSystem = this.systems.camera;
-    if (state && !state.lightingSystem) state.lightingSystem = this.systems.lighting;
     this.systems.player.update(state, input, dt);
     this.systems.vehicle.update(state, input, dt);
     this.systems.bullet.update(state, dt);
@@ -65,7 +61,6 @@ export class SystemManager {
     this.systems.particles.update(state, dt);
     this.systems.engineAudio.update(state, dt);
     this.systems.animation.update(state);
-    this.systems.lighting.update(state, dt);
   }
 
   getSystems() {

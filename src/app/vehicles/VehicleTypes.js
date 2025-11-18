@@ -154,7 +154,7 @@ export const VehicleTypes = {
 // Helper function to create a vehicle with type
 export function createVehicle(type, pos, options = {}) {
   const base = VehicleTypes[type] || VehicleTypes.sedan;
-  const vehicle = {
+  return {
     type: 'vehicle',
     vehicleType: type,
     pos: { x: pos.x, y: pos.y },
@@ -167,33 +167,6 @@ export function createVehicle(type, pos, options = {}) {
     color: options.color || randomColorForType(base),
     health: new Health(base.maxHealth || 100)
   };
-
-  // Add runtime headlight entities configuration so LightingSystem can pick them up.
-  // Two headlights (left/right) expressed in vehicle-local offsets; LightingSystem should
-  // transform these by vehicle.pos/rot when rendering lights.
-  const hl = base.headlights || VehicleArchetype.headlights || { spacing: 0.25, frontOffset: 0.6, color: '#fff', radius: 7, intensity: 0.9, coneAngle: Math.PI / 6 };
-  vehicle.lightSources = [
-    { // left headlight
-      offset: { x: hl.frontOffset, y: - (hl.spacing || 0.25) / 2 },
-      kind: 'cone',
-      radius: hl.radius,
-      intensity: hl.intensity ?? 0.9,
-      color: hl.color || '#fff',
-      coneAngle: hl.coneAngle || Math.PI / 6,
-      active: true
-    },
-    { // right headlight
-      offset: { x: hl.frontOffset, y: (hl.spacing || 0.25) / 2 },
-      kind: 'cone',
-      radius: hl.radius,
-      intensity: hl.intensity ?? 0.9,
-      color: hl.color || '#fff',
-      coneAngle: hl.coneAngle || Math.PI / 6,
-      active: true
-    }
-  ];
-
-  return vehicle;
 }
 
 function randomColorForType(base){

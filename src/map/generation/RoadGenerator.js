@@ -1,12 +1,10 @@
 import { Tile } from '../TileTypes.js';
-import { LightSource } from '../../app/components/LightSource.js';
 
 export class RoadGenerator {
   constructor(cityLayout, rand) {
     this.cityLayout = cityLayout;
     this.rand = rand;
     this.roundabouts = [];
-    this.streetLights = [];
   }
 
   generateRoads(tiles) {
@@ -72,7 +70,6 @@ export class RoadGenerator {
     }
 
     this.createZebraCrossings(tiles, cx, cy);
-    this.createStreetLights(tiles, cx, cy);
   }
 
   createStandardRoundabout(tiles, cx, cy, set) {
@@ -203,50 +200,5 @@ export class RoadGenerator {
 
   getRoundabouts() {
     return this.roundabouts;
-  }
-
-  getStreetLights() {
-    return this.streetLights;
-  }
-
-  // Place four street lights near the corners of the intersection plaza
-  createStreetLights(tiles, cx, cy) {
-    const width = this.cityLayout.width, height = this.cityLayout.height;
-
-    // Define corner offsets for zebra crossings relative to intersection center
-    const corners = [
-        { dx: -3, dy: -3 }, // Top-left
-        { dx: 3, dy: -3 },  // Top-right
-        { dx: -3, dy: 3 },  // Bottom-left
-        { dx: 3, dy: 3 }   // Bottom-right
-    ];
-
-    for (const corner of corners) {
-      const x = cx + corner.dx;
-      const y = cy + corner.dy;
-
-      // Check if the corner is within map bounds and is a footpath
-      if (x >= 0 && y >= 0 && x < width && y < height && tiles[y][x] === Tile.Footpath) {
-        // Place a streetlight at the center of the footpath tile
-        const lightX = x + 0.5;
-        const lightY = y + 0.5;
-        
-        // Check for existing light to avoid duplicates
-        const alreadyExists = this.streetLights.some(l => l.pos.x === lightX && l.pos.y === lightY);
-        
-        if (!alreadyExists) {
-          this.streetLights.push({ 
-            type:'light', 
-            pos:{ x: lightX, y: lightY }, 
-            light: new LightSource({ 
-              radius: 3.5, // Reduced from 7 to 3.5 (half the distance)
-              intensity: 0.9, 
-              color: 'rgba(255,240,200,1)', 
-              flicker: 0.05 
-            }) 
-          });
-        }
-      }
-    }
   }
 }

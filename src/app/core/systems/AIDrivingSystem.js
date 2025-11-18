@@ -9,7 +9,10 @@ export class AIDrivingSystem {
       v.drivingStyle = v.drivingStyle || 'normal'; // Default to normal driving
       v.aiTargetSpeed = v.aiTargetSpeed || (v.drivingStyle === 'reckless' ? 4.0 : 1.5);
       v.impatience = v.impatience || 0;
-      
+      // NEW: track stuck timer and retreat state
+      v.stuckTimer = v.stuckTimer || 0;
+      // v.retreatState: { active: bool, remaining: number }
+
       // Check if vehicle is damaged and should panic
       this.checkVehiclePanic(v);
       
@@ -80,6 +83,12 @@ export class AIDrivingSystem {
   updateRouteFollowing(state, v, roads, dt, allObstacles) {
     if (!v.plannedRoute || !v.plannedRoute.length) return;
     
+    // If currently retreating, skip normal route following logic;
+    // movement will be handled in updateMovement.
+    if (v.retreatState && v.retreatState.active) {
+      return;
+    }
+
     // Always maintain minimum path length - extend path BEFORE it runs out
     const MIN_PATH_LENGTH = 5;
     if (v.plannedRoute.length - v.currentPathIndex < MIN_PATH_LENGTH) {
@@ -332,8 +341,55 @@ export class AIDrivingSystem {
     // Smooth throttle/brake control to avoid oscillation: use deadband and lerp
     const fwd = { x: Math.cos(v.rot || 0), y: Math.sin(v.rot || 0) };
     const vLong = (v.vel?.x || 0) * fwd.x + (v.vel?.y || 0) * fwd.y;
-    // targetSpeed already set in updateRouteFollowing, ensure defined
-    const target = v.aiTargetSpeed || 3.0;
+    const speed = Math.hypot(v.vel.x, v.vel.y);
+
+    // --- NEW: stuck detection and retreat trigger for AI vehicles ---
+    // Only for non-controlled vehicles
+    if (!v.controlled) {
+      const tryingToMoveForward = (v.ctrl?.throttle || 0) > 0.5;
+      const effectivelyStopped = speed < 0.1;
+      if (tryingToMoveForward && effectivelyStopped) {
+        v.stuckTimer = (v.stuckTimer || 0) + dt;
+      } else {
+        v.stuckTimer = 0;
+      }
+
+      // If stuck for a short time and not already retreating, start a retreat
+      if (!v.retreatState || !v.retreatState.active) {
+        const STUCK_THRESHOLD = 0.7; // seconds at low speed
+        if (v.stuckTimer > STUCK_THRESHOLD) {
+          const minDist = 0.5;
+          const maxDist = 2.0;
+          const retreatDist = minDist + Math.random() * (maxDist - minDist);
+          v.retreatState = {
+            active: true,
+            remaining: retreatDist
+          };
+          // Clear impatience so we don't immediately treat this as traffic jam
+          v.impatience = 0;
+          // Reset stuck timer
+          v.stuckTimer = 0;
+        }
+      }
+    }
+
+    // If retreating, override targetSpeed and controls to move backwards
+    let target = v.aiTargetSpeed || 3.0;
+    if (v.retreatState && v.retreatState.active) {
+      // Simple straight reverse: negative target speed along current forward axis
+      const retreatSpeed = 2.0; // tiles/sec while reversing
+      target = -retreatSpeed;
+
+      // Apply retreat progress based on movement along -forward direction
+      const backwardComponent = -(vLong); // positive when moving backwards
+      if (backwardComponent > 0) {
+        v.retreatState.remaining -= backwardComponent * dt;
+      }
+      if (v.retreatState.remaining <= 0) {
+        v.retreatState.active = false;
+      }
+    }
+
     const accelBand = 0.2;
     let desiredThrottle = 0, desiredBrake = 0, desiredHandbrake = false;
     

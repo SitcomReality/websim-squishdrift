@@ -6,7 +6,6 @@ import { RoadGenerator } from './generation/RoadGenerator.js';
 import { BuildingGenerator } from './generation/BuildingGenerator.js';
 import { GraphBuilder } from './generation/GraphBuilder.js';
 import { sanitizeMap } from './MapPostProcess.js';
-import { LightSource } from '../app/components/LightSource.js';
 
 export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4) {
   const rand = rng(seed);
@@ -80,8 +79,7 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
     roads,
     peds,
     buildings,
-    trees,
-    streetLights: roadGenerator.getStreetLights()
+    trees
   };
 
   // --- NEW: expand map with 2-tile border (shift = 2)
@@ -312,75 +310,6 @@ export function generateCity(seed = 'alpha-seed', blocksWide = 4, blocksHigh = 4
       t.pos.y += shift;
     }
   }
-
-  // Shift street lights
-  for (const l of map.streetLights) {
-    if (l.pos) {
-      l.pos.x += shift;
-      l.pos.y += shift;
-    }
-  }
   
-  // Add new streetlights for the perimeter footpath, adjacent to intersections
-  for (let gy = 0; gy <= blocksHigh; gy++) {
-    for (let gx = 0; gx <= blocksWide; gx++) {
-      const isPerimeterIntersection = (gx === 0 || gx === blocksWide || gy === 0 || gy === blocksHigh);
-      if (!isPerimeterIntersection) continue;
-
-      const center = cityLayout.getIntersectionCenter(gx, gy);
-      const shiftedCx = center.x + shift;
-      const shiftedCy = center.y + shift;
-
-      // Define potential light positions on the outer footpath relative to intersection center
-      const corners = [
-          { dx: -3, dy: -3 }, { dx: 3, dy: -3 },
-          { dx: -3, dy: 3 },  { dx: 3, dy: 3 }
-      ];
-
-      for (const corner of corners) {
-        // Map corner to the outer footpath ring
-        let lightX, lightY;
-
-        if (gy === 0 && corner.dy < 0) { // Top edge
-          lightX = shiftedCx + corner.dx;
-          lightY = shift - 1;
-        } else if (gy === blocksHigh && corner.dy > 0) { // Bottom edge
-          lightX = shiftedCx + corner.dx;
-          lightY = shift + cityLayout.height;
-        } else if (gx === 0 && corner.dx < 0) { // Left edge
-          lightX = shift - 1;
-          lightY = shiftedCy + corner.dy;
-        } else if (gx === blocksWide && corner.dx > 0) { // Right edge
-          lightX = shift + cityLayout.width;
-          lightY = shiftedCy + corner.dy;
-        } else {
-          continue; // Not a perimeter corner for this intersection
-        }
-        
-        // Check if the tile is a footpath and add a light
-        if (lightX >= 0 && lightY >= 0 && lightX < newWidth && lightY < newHeight && newTiles[lightY][lightX] === Tile.Footpath) {
-            const lightPosX = lightX + 0.5;
-            const lightPosY = lightY + 0.5;
-            
-            // Avoid duplicates
-            const alreadyExists = map.streetLights.some(l => l.pos.x === lightPosX && l.pos.y === lightPosY);
-            
-            if (!alreadyExists) {
-              map.streetLights.push({
-                type: 'light',
-                pos: { x: lightPosX, y: lightPosY },
-                light: new LightSource({
-                  radius: 3.5,
-                  intensity: 0.9,
-                  color: 'rgba(255,240,200,1)',
-                  flicker: 0.05
-                })
-              });
-            }
-        }
-      }
-    }
-  }
-
   return map;
 }

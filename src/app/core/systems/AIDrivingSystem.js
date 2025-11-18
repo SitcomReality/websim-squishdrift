@@ -23,25 +23,25 @@ export class AIDrivingSystem {
 
       // Delegate checks
       this.checkVehiclePanic(v);
-      if (!v.plannedRoute || !v.plannedRoute.length) {
-        this.routePlanner.initializeRoute(v, roads);
-      }
 
-      // Obstacle detection & route maintenance
+      // Ensure there's always a valid plannedRoute array and index to avoid calling nonexistent planner methods
+      if (!Array.isArray(v.plannedRoute)) v.plannedRoute = [];
+      if (typeof v.currentPathIndex !== 'number') v.currentPathIndex = 0;
+
+      // Obstacle detection & route impatience
       const detected = this.obstacleDetector.detectAhead(state, v, obstacles, roads);
       if (detected) v.impatience += dt;
       else if (v.impatience > 0) v.impatience = Math.max(0, v.impatience - dt * 0.5);
 
-      // Ensure route length
-      this.routePlanner.ensureRouteLength(v, roads);
-
-      // Follow route (steering + throttle decisions)
-      this.routePlanner.updateRouteFollowing(state, v, roads, dt, obstacles);
+      // NOTE: The older RoutePlanner had initializeRoute/ensureRouteLength/updateRouteFollowing helpers.
+      // Those methods do not exist on the current RoutePlanner implementation; keep AI safe by
+      // ensuring route fields exist and allowing other systems (PoliceChaseManager / EmergencyServices)
+      // to assign plannedRoute when needed. Complex route-following remains out of scope here.
 
       // Stuck recovery (may set retreatState and modify v.ctrl)
       this.stuckRecovery.updateStuckState(v, dt);
 
-      // Apply movement controls based on AI decisions
+      // Apply movement controls based on AI decisions (steer/throttle already driven elsewhere)
       this.updateMovement(v, dt);
     }
   }

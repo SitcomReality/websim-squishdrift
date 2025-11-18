@@ -1,4 +1,4 @@
-import { CollisionSystem } from '../systems/CollisionSystem.js';
+import { CollisionSystem } from './systems/CollisionSystem.js';
 import { PlayerSystem } from './systems/PlayerSystem.js';
 import { VehicleSystem } from './systems/VehicleSystem.js';
 import { BulletSystem } from './systems/BulletSystem.js';

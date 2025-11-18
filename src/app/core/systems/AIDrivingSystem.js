@@ -352,7 +352,10 @@ export class AIDrivingSystem {
     // Only for non-controlled vehicles
     if (!v.controlled) {
       const tryingToMoveForward = (v.ctrl?.throttle || 0) > 0.5;
-      const effectivelyStopped = speed < 0.1;
+      // FIXED: Check longitudinal progress, not just total speed (prevents counting spin as valid movement)
+      const makingProgress = vLong > 0.15;
+      const effectivelyStopped = !makingProgress;
+      
       if (tryingToMoveForward && effectivelyStopped) {
         v.stuckTimer = (v.stuckTimer || 0) + dt;
       } else {

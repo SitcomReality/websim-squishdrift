@@ -377,6 +377,8 @@ export class AIDrivingSystem {
           v.impatience = 0;
           // Reset stuck timer
           v.stuckTimer = 0;
+          // Disable steering during retreat to prevent in-place pivoting
+          v.ctrl.steer = 0;
         }
       }
     }
@@ -405,10 +407,19 @@ export class AIDrivingSystem {
       desiredThrottle = 0; 
       desiredBrake = 0; 
       desiredHandbrake = true; // Use handbrake when we want to stop completely
-    } else if (vLong < target - accelBand) { 
-      desiredThrottle = 1; 
-      desiredBrake = 0; 
-      desiredHandbrake = false;
+    } else if (vLong < target - accelBand) {
+      // Going slower than target
+      if (target < 0) {
+        // Target is negative (reverse) - use negative throttle
+        desiredThrottle = -1;
+        desiredBrake = 0;
+        desiredHandbrake = false;
+      } else {
+        // Target is positive (forward) - accelerate normally
+        desiredThrottle = 1;
+        desiredBrake = 0;
+        desiredHandbrake = false;
+      }
     } else if (vLong > target + accelBand) { 
       desiredThrottle = 0; 
       desiredBrake = 0.6; 

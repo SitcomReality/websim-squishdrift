@@ -78,17 +78,10 @@ export class VehicleMovementSystem {
       v.vel.y -= (v.vel.y / speed) * rollingAccel * dt;
     }
     
-    // NEW: use forward (longitudinal) speed for steering/pivot decisions,
-    // so sideways sliding from collisions doesn't cause on-the-spot pirouettes.
-    const fwdX = Math.cos(v.rot || 0);
-    const fwdY = Math.sin(v.rot || 0);
-    const vLong = (v.vel?.x || 0) * fwdX + (v.vel?.y || 0) * fwdY;
-    const forwardSpeed = Math.abs(vLong);
-    
-    if (forwardSpeed > 0.3) {
+    if (speed > 0.1) {
       const steerAngle = steer * this.maxSteerAngle;
-      const turningRadius = this.wheelBase / Math.tan(steerAngle || 1e-6);
-      v.angularVelocity = (vLong / turningRadius);
+      const turningRadius = this.wheelBase / Math.tan(steerAngle);
+      v.angularVelocity = speed / turningRadius;
     } else {
       // At (almost) zero forward speed, avoid letting AI cars pirouette forever.
       // Allow stronger in-place steering only for player-controlled vehicles,
@@ -101,7 +94,7 @@ export class VehicleMovementSystem {
       if ((isPlayerControlled && hasDriveIntent) || isRetreatingAI) {
         v.angularVelocity = steerAngle * this.lowSpeedSteerFactor;
       } else {
-        // For normal AI driving at low forward speed, suppress in-place spinning.
+        // For normal AI driving at low speed, suppress in-place spinning.
         v.angularVelocity = 0;
       }
     }
@@ -109,15 +102,6 @@ export class VehicleMovementSystem {
     v.rot += v.angularVelocity * dt;
     v.pos.x += v.vel.x * dt;
     v.pos.y += v.vel.y * dt;
-    
-    // NEW: aggressively damp residual spin for AI when not moving forward,
-    // so collision impulses don't leave them slowly spinning forever.
-    if (!v.controlled && forwardSpeed < 0.2) {
-      v.angularVelocity *= 0.5;
-      if (Math.abs(v.angularVelocity) < 0.1) {
-        v.angularVelocity = 0;
-      }
-    }
     
     this.calculateWheelSlip(v);
     v.brakeLight = brake > 0.1;

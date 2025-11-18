@@ -1,5 +1,6 @@
 import { Vec2 } from '../../utils/Vec2.js';
 import { Health } from '../components/Health.js';
+import { handleVehicleDestruction } from '../../vehicles/physics/handlers/VehicleCollisionUtils.js';
 
 export class CollisionSystem {
   constructor() {
@@ -86,34 +87,7 @@ export class CollisionSystem {
   }
 
   handleVehicleDestruction(state, vehicle) {
-    // Create explosion
-    if (state.explosionSystem) {
-      state.explosionSystem.createExplosion(state, vehicle.pos);
-    }
-    
-    // remove fixed-intensity shake; ExplosionSystem now handles distance-based shake
-    // if (state.cameraSystem) { state.cameraSystem.addShake(1.0); }
-    
-    // Register crimes
-    if (state.scoringSystem) {
-      state.scoringSystem.addCrime(state, 'destroy_vehicle', vehicle);
-    }
-    
-    // Remove vehicle from entities
-    const vehicleIndex = state.entities.indexOf(vehicle);
-    if (vehicleIndex > -1) {
-      state.entities.splice(vehicleIndex, 1);
-    }
-    
-    // If this was the player's vehicle, handle death
-    if (state.control?.vehicle === vehicle) {
-      const deathSystem = state._engine?.systems?.death || 
-                         state.deathSystem || 
-                         state._engine?.deathSystem;
-      if (deathSystem && deathSystem.handlePlayerDeath) {
-        deathSystem.handlePlayerDeath(state);
-      }
-    }
+    handleVehicleDestruction(state, vehicle);
   }
 
   // Check collisions between vehicles and pedestrians
@@ -227,7 +201,7 @@ export class CollisionSystem {
               this.addDamageText(state, player.pos, damage);
             }
             // Handle vehicle destruction if it runs out of health
-            this.handleVehicleDestruction(state, vehicle);
+            handleVehicleDestruction(state, vehicle);
             // Knockback away from vehicle (scaled by damage)
             const k = Math.min(1, damage / 30) * 0.35;
             player.pos.x += toPlayerN.x * k;

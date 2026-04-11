@@ -14,7 +14,7 @@ export class TitleScreen {
       const link = document.createElement('link');
       link.id = 'title-screen-styles';
       link.rel = 'stylesheet';
-      link.href = '/title-screen.css';
+      link.href = './title-screen.css';
       document.head.appendChild(link);
     }
 

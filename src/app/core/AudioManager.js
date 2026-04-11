@@ -32,40 +32,40 @@ export class AudioManager {
   async init() {
     if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
     await Promise.all([
-      this.load('/sfx/pickup_health.mp3', 'pickup_health'),
-      this.load('/sfx/pickup_bribe.mp3', 'pickup_bribe'),
-      this.load('/sfx/pickup_default.mp3', 'pickup_default'),
-      this.load('/sfx/shoot01.mp3', 'shoot01'),
-      this.load('/sfx/shoot02.mp3', 'shoot02'),
-      this.load('/sfx/explosion01.mp3', 'explosion01'),
-      this.load('/sfx/explosion02.mp3', 'explosion02'),
-      this.load('/sfx/impact02.mp3', 'impact02'),
-      this.load('/sfx/impact03.mp3', 'impact03'),
-      this.load('/sfx/pedestrian_death.mp3', 'pedestrian_death'),
-      this.load('/sfx/oof02.mp3', 'oof02'),
-      this.load('/sfx/tire_screech01.mp3', 'tire_screech01'),
-      this.load('/sfx/tire_screech02.mp3', 'tire_screech02'),
-      this.load('/sfx/tire_screech03.mp3', 'tire_screech03'),
-      this.load('/sfx/siren.mp3', 'siren'), // Add siren audio
-      this.load('/sfx/projectile_hit.mp3', 'projectile_hit'),
-      this.load('/sfx/ouch.mp3', 'ouch'),
-      this.load('/sfx/click.mp3', 'click'),
+      this.load('./sfx/pickup_health.mp3', 'pickup_health'),
+      this.load('./sfx/pickup_bribe.mp3', 'pickup_bribe'),
+      this.load('./sfx/pickup_default.mp3', 'pickup_default'),
+      this.load('./sfx/shoot01.mp3', 'shoot01'),
+      this.load('./sfx/shoot02.mp3', 'shoot02'),
+      this.load('./sfx/explosion01.mp3', 'explosion01'),
+      this.load('./sfx/explosion02.mp3', 'explosion02'),
+      this.load('./sfx/impact02.mp3', 'impact02'),
+      this.load('./sfx/impact03.mp3', 'impact03'),
+      this.load('./sfx/pedestrian_death.mp3', 'pedestrian_death'),
+      this.load('./sfx/oof02.mp3', 'oof02'),
+      this.load('./sfx/tire_screech01.mp3', 'tire_screech01'),
+      this.load('./sfx/tire_screech02.mp3', 'tire_screech02'),
+      this.load('./sfx/tire_screech03.mp3', 'tire_screech03'),
+      this.load('./sfx/siren.mp3', 'siren'), // Add siren audio
+      this.load('./sfx/projectile_hit.mp3', 'projectile_hit'),
+      this.load('./sfx/ouch.mp3', 'ouch'),
+      this.load('./sfx/click.mp3', 'click'),
       // engine loops
-      this.load('/sfx/engine_compact.mp3', 'engine_compact'),
-      this.load('/sfx/engine_emergency.mp3', 'engine_emergency'),
-      this.load('/sfx/engine_sedan.mp3', 'engine_sedan'),
-      this.load('/sfx/engine_sport.mp3', 'engine_sport'),
-      this.load('/sfx/engine_truck.mp3', 'engine_truck'),
-      this.load('/sfx/tire_skid_loop.mp3', 'tire_skid_loop'), // new loop SFX
+      this.load('./sfx/engine_compact.mp3', 'engine_compact'),
+      this.load('./sfx/engine_emergency.mp3', 'engine_emergency'),
+      this.load('./sfx/engine_sedan.mp3', 'engine_sedan'),
+      this.load('./sfx/engine_sport.mp3', 'engine_sport'),
+      this.load('./sfx/engine_truck.mp3', 'engine_truck'),
+      this.load('./sfx/tire_skid_loop.mp3', 'tire_skid_loop'), // new loop SFX
       // Load death music
-      this.load('/music/damocles.mp3', 'damocles'),
+      this.load('./music/damocles.mp3', 'damocles'),
       // Add flatten ability sounds
-      this.load('/sfx/flatten_down.mp3', 'flatten_down'),
-      this.load('/sfx/flatten_up.mp3', 'flatten_up')
+      this.load('./sfx/flatten_down.mp3', 'flatten_down'),
+      this.load('./sfx/flatten_up.mp3', 'flatten_up')
     ]).catch(()=>{ /* ignore load errors gracefully */ });
     
     // Load main theme
-    this.mainTheme = new Audio('/music/player2.mp3');
+    this.mainTheme = new Audio('./music/player2.mp3');
     this.mainTheme.loop = true;
     this.mainTheme.volume = this.musicVolume;
     this.mainTheme.muted = !!this.musicMuted;
@@ -264,7 +264,7 @@ export class AudioManager {
   playDeathMusic() {
     if (this.deathMusic) return; // Already playing
     
-    this.deathMusic = new Audio('/music/damocles.mp3');
+    this.deathMusic = new Audio('./music/damocles.mp3');
     this.deathMusic.volume = this.musicMuted ? 0 : this.musicVolume;
     this.deathMusic.muted = this.musicMuted;
     this.deathMusic.loop = false;

@@ -58,7 +58,7 @@ export class GameEngine {
     // Load explosion image
     if (this.stateManager.state) {
       const explosionImage = new Image();
-      explosionImage.src = '/Explosion_001_Tile_8x8_256x256.png';
+      explosionImage.src = './Explosion_001_Tile_8x8_256x256.png';
       explosionImage.onload = () => {
         this.stateManager.state.explosionImage = explosionImage;
       };
@@ -108,7 +108,7 @@ export class GameEngine {
 
     for (const [name, fileName] of Object.entries(pickupMap)) {
       const img = new Image();
-      img.src = `/${fileName}`;
+      img.src = `./${fileName}`;
       img.onload = () => {
         if (this.stateManager.state) {
           if (!this.stateManager.state.pickupImages) {
@@ -127,7 +127,7 @@ export class GameEngine {
     vehicleTypes.forEach(type => {
       const img = new Image();
       const fileType = (type === 'sports' ? 'sport' : type);
-      img.src = `/vehicle_${fileType}.png`;
+      img.src = `./vehicle_${fileType}.png`;
       img.onload = () => {
         if (this.stateManager.state) {
           if (!this.stateManager.state.vehicleImages) {
@@ -146,14 +146,14 @@ export class GameEngine {
             this.stateManager.state.pedestrianImages = {};
         }
         const bodiesImg = new Image();
-        bodiesImg.src = '/pedestrian_bodies.png';
+        bodiesImg.src = './pedestrian_bodies.png';
         bodiesImg.onload = () => {
             if (this.stateManager.state.pedestrianImages) {
               this.stateManager.state.pedestrianImages.bodies = bodiesImg;
             }
         };
         const armsImg = new Image();
-        armsImg.src = '/pedestrian_arms.png';
+        armsImg.src = './pedestrian_arms.png';
         armsImg.onload = () => {
             if (this.stateManager.state.pedestrianImages) {
               this.stateManager.state.pedestrianImages.arms = armsImg;
@@ -317,7 +317,7 @@ export class GameEngine {
 
     // Reload explosion image for the new state
     const explosionImage = new Image();
-    explosionImage.src = '/Explosion_001_Tile_8x8_256x256.png';
+    explosionImage.src = './Explosion_001_Tile_8x8_256x256.png';
     explosionImage.onload = () => {
       newState.explosionImage = explosionImage;
     };

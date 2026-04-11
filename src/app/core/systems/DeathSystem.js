@@ -294,7 +294,7 @@ export class DeathSystem {
     if (this.deathMusic && !this.deathMusic.paused) return;
     
     // Create new audio element for death music
-    this.deathMusic = new Audio('/music/damocles.mp3');
+    this.deathMusic = new Audio('./music/damocles.mp3');
     this.deathMusic.volume = state.audio.musicMuted ? 0 : state.audio.musicVolume;
     this.deathMusic.muted = state.audio.musicMuted;
     

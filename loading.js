@@ -63,8 +63,8 @@ export class LoadingSystem {
 
     titleOverlay.innerHTML = `
       <div id="title-content" style="text-align: center;">
-        <div id="title-image" style="width: 512px; height: 128px; margin: 0 auto 40px; background-image: url('/uisprites.png'); background-size: 512px 384px; background-position: 0 0; background-repeat: no-repeat;"></div>
-        <div id="start-button" style="width: 256px; height: 128px; margin: 0 auto; background-image: url('/uisprites.png'); background-size: 512px 384px; background-position: 0 -256px; background-repeat: no-repeat; cursor: pointer; transition: transform 0.2s ease;"></div>
+        <div id="title-image" style="width: 512px; height: 128px; margin: 0 auto 40px; background-image: url('./uisprites.png'); background-size: 512px 384px; background-position: 0 0; background-repeat: no-repeat;"></div>
+        <div id="start-button" style="width: 256px; height: 128px; margin: 0 auto; background-image: url('./uisprites.png'); background-size: 512px 384px; background-position: 0 -256px; background-repeat: no-repeat; cursor: pointer; transition: transform 0.2s ease;"></div>
       </div>
     `;
 
@@ -194,37 +194,37 @@ export class LoadingSystem {
   getAssetList() {
     return [
       // Images
-      { type: 'image', src: '/uisprites.png', name: 'UI Sprites', key: 'uiSprites' },
-      { type: 'image', src: '/Explosion_001_Tile_8x8_256x256.png', name: 'Explosions', key: 'explosion' },
+      { type: 'image', src: './uisprites.png', name: 'UI Sprites', key: 'uiSprites' },
+      { type: 'image', src: './Explosion_001_Tile_8x8_256x256.png', name: 'Explosions', key: 'explosion' },
       
       // Vehicle images
-      { type: 'image', src: '/vehicle_ambulance.png', name: 'Ambulance', key: 'vehicle_ambulance' },
-      { type: 'image', src: '/vehicle_compact.png', name: 'Compact Car', key: 'vehicle_compact' },
-      { type: 'image', src: '/vehicle_firetruck.png', name: 'Firetruck', key: 'vehicle_firetruck' },
-      { type: 'image', src: '/vehicle_police.png', name: 'Police Car', key: 'vehicle_police' },
-      { type: 'image', src: '/vehicle_sedan.png', name: 'Sedan', key: 'vehicle_sedan' },
-      { type: 'image', src: '/vehicle_sport.png', name: 'Sports Car', key: 'vehicle_sport' },
-      { type: 'image', src: '/vehicle_truck.png', name: 'Truck', key: 'vehicle_truck' },
+      { type: 'image', src: './vehicle_ambulance.png', name: 'Ambulance', key: 'vehicle_ambulance' },
+      { type: 'image', src: './vehicle_compact.png', name: 'Compact Car', key: 'vehicle_compact' },
+      { type: 'image', src: './vehicle_firetruck.png', name: 'Firetruck', key: 'vehicle_firetruck' },
+      { type: 'image', src: './vehicle_police.png', name: 'Police Car', key: 'vehicle_police' },
+      { type: 'image', src: './vehicle_sedan.png', name: 'Sedan', key: 'vehicle_sedan' },
+      { type: 'image', src: './vehicle_sport.png', name: 'Sports Car', key: 'vehicle_sport' },
+      { type: 'image', src: './vehicle_truck.png', name: 'Truck', key: 'vehicle_truck' },
       
       // Pickup images
-      { type: 'image', src: '/pickup_health.png', name: 'Health Pack', key: 'pickup_health' },
-      { type: 'image', src: '/pickup_bribe.png', name: 'Bribe Money', key: 'pickup_bribe' },
-      { type: 'image', src: '/pickup_pistol.png', name: 'Pistol', key: 'pickup_pistol' },
-      { type: 'image', src: '/pickup_shotgun.png', name: 'Shotgun', key: 'pickup_shotgun' },
-      { type: 'image', src: '/pickup_ak47.png', name: 'AK47', key: 'pickup_ak47' },
-      { type: 'image', src: '/pickup_grenade.png', name: 'Grenade', key: 'pickup_grenade' },
+      { type: 'image', src: './pickup_health.png', name: 'Health Pack', key: 'pickup_health' },
+      { type: 'image', src: './pickup_bribe.png', name: 'Bribe Money', key: 'pickup_bribe' },
+      { type: 'image', src: './pickup_pistol.png', name: 'Pistol', key: 'pickup_pistol' },
+      { type: 'image', src: './pickup_shotgun.png', name: 'Shotgun', key: 'pickup_shotgun' },
+      { type: 'image', src: './pickup_ak47.png', name: 'AK47', key: 'pickup_ak47' },
+      { type: 'image', src: './pickup_grenade.png', name: 'Grenade', key: 'pickup_grenade' },
       
       // Pedestrian sprites
-      { type: 'image', src: '/pedestrian_bodies.png', name: 'Pedestrian Bodies', key: 'pedestrian_bodies' },
-      { type: 'image', src: '/pedestrian_arms.png', name: 'Pedestrian Arms', key: 'pedestrian_arms' },
+      { type: 'image', src: './pedestrian_bodies.png', name: 'Pedestrian Bodies', key: 'pedestrian_bodies' },
+      { type: 'image', src: './pedestrian_arms.png', name: 'Pedestrian Arms', key: 'pedestrian_arms' },
       
       // Audio files
-      { type: 'audio', src: '/sfx/engine_compact.mp3', name: 'Engine Sounds', key: 'engine_compact' },
-      { type: 'audio', src: '/sfx/engine_emergency.mp3', name: 'Emergency Engine', key: 'engine_emergency' },
-      { type: 'audio', src: '/sfx/engine_sedan.mp3', name: 'Sedan Engine', key: 'engine_sedan' },
-      { type: 'audio', src: '/sfx/engine_sport.mp3', name: 'Sports Engine', key: 'engine_sport' },
-      { type: 'audio', src: '/sfx/engine_truck.mp3', name: 'Truck Engine', key: 'engine_truck' },
-      { type: 'audio', src: '/sfx/oof02.mp3', name: 'Oof Sound 2', key: 'oof02' }
+      { type: 'audio', src: './sfx/engine_compact.mp3', name: 'Engine Sounds', key: 'engine_compact' },
+      { type: 'audio', src: './sfx/engine_emergency.mp3', name: 'Emergency Engine', key: 'engine_emergency' },
+      { type: 'audio', src: './sfx/engine_sedan.mp3', name: 'Sedan Engine', key: 'engine_sedan' },
+      { type: 'audio', src: './sfx/engine_sport.mp3', name: 'Sports Engine', key: 'engine_sport' },
+      { type: 'audio', src: './sfx/engine_truck.mp3', name: 'Truck Engine', key: 'engine_truck' },
+      { type: 'audio', src: './sfx/oof02.mp3', name: 'Oof Sound 2', key: 'oof02' }
     ];
   }
 

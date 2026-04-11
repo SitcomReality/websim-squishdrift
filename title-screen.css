@@ -226,12 +226,12 @@
 }
 
 /* Item sprite backgrounds */
-.item-pistol { background-image: url('/pickup_pistol.png'); }
-.item-shotgun { background-image: url('/pickup_shotgun.png'); }
-.item-ak { background-image: url('/pickup_ak47.png'); }
-.item-grenade { background-image: url('/pickup_grenade.png'); }
-.item-health { background-image: url('/pickup_health.png'); }
-.item-bribe { background-image: url('/pickup_bribe.png'); }
+.item-pistol { background-image: url('pickup_pistol.png'); }
+.item-shotgun { background-image: url('pickup_shotgun.png'); }
+.item-ak { background-image: url('pickup_ak47.png'); }
+.item-grenade { background-image: url('pickup_grenade.png'); }
+.item-health { background-image: url('pickup_health.png'); }
+.item-bribe { background-image: url('pickup_bribe.png'); }
 
 /* Responsive tweaks */
 @media (max-width: 768px) {
